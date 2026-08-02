@@ -15,7 +15,7 @@ import { EvolutionDefinition } from './types/player';
 import { PlayerCarousel } from './components/PlayerCarousel';
 import { EvoPoolModal } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
-import { Trophy, RefreshCw, LayoutGrid, CreditCard, Layers } from 'lucide-react';
+import { Trophy, RefreshCw, LayoutGrid, CreditCard, Layers, Zap } from 'lucide-react';
 
 export default function App() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('rodri-91');
@@ -37,6 +37,7 @@ export default function App() {
     evosPool: string[];
     generatedPaths: EvolutionPath[];
     manualPaths: EvolutionPath[];
+    maxOvrCap: number;
   };
 
   const [playerStates, setPlayerStates] = useState<Record<string, PlayerEvoState>>({});
@@ -45,7 +46,8 @@ export default function App() {
     activePathId: 'empty-path',
     evosPool: [],
     generatedPaths: [],
-    manualPaths: []
+    manualPaths: [],
+    maxOvrCap: 99
   };
 
   const updateState = (updates: Partial<PlayerEvoState>) => {
@@ -54,24 +56,56 @@ export default function App() {
         activePathId: 'empty-path',
         evosPool: [],
         generatedPaths: [],
-        manualPaths: []
+        manualPaths: [],
+        maxOvrCap: 99
       };
+      
+      const newState = { ...current, ...updates };
+      
+      // Persist state silently
+      fetch(`/api/saves/${selectedPlayerId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newState)
+      }).catch(e => console.error('Failed to save player state:', e));
+
       return {
         ...prev,
-        [selectedPlayerId]: { ...current, ...updates }
+        [selectedPlayerId]: newState
       };
     });
   };
+
+  // Load persistence data when player changes
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/saves/${selectedPlayerId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!active) return;
+        if (!data.error) {
+          setPlayerStates(prev => ({
+            ...prev,
+            [selectedPlayerId]: data
+          }));
+        }
+      })
+      .catch(e => console.error('No save found or error loading:', e));
+
+    return () => { active = false; };
+  }, [selectedPlayerId]);
 
   const activePathId = currentState.activePathId;
   const evosPool = currentState.evosPool;
   const generatedPaths = currentState.generatedPaths;
   const manualPaths = currentState.manualPaths;
+  const maxOvrCap = currentState.maxOvrCap ?? 99;
 
   const setActivePathId = (val: string | ((prev: string) => string)) => updateState({ activePathId: typeof val === 'function' ? val(currentState.activePathId) : val });
   const setEvosPool = (val: string[] | ((prev: string[]) => string[])) => updateState({ evosPool: typeof val === 'function' ? val(currentState.evosPool) : val });
   const setGeneratedPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ generatedPaths: typeof val === 'function' ? val(currentState.generatedPaths) : val });
   const setManualPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ manualPaths: typeof val === 'function' ? val(currentState.manualPaths) : val });
+  const setMaxOvrCap = (val: number) => updateState({ maxOvrCap: val });
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   const [isManualPathOpen, setIsManualPathOpen] = useState(false);
@@ -99,6 +133,21 @@ export default function App() {
   const activeChemBoosts = useMemo(() => {
     return activeChemName ? chemStyles[activeChemName] || {} : {};
   }, [activeChemName]);
+
+  const handleDeletePath = (pathId: string) => {
+    let newActivePathId = currentState.activePathId;
+    if (newActivePathId === pathId) {
+      newActivePathId = 'empty-path';
+    }
+    const newGenerated = currentState.generatedPaths.filter(p => p.id !== pathId);
+    const newManual = currentState.manualPaths.filter(p => p.id !== pathId);
+
+    updateState({
+      activePathId: newActivePathId,
+      generatedPaths: newGenerated,
+      manualPaths: newManual
+    });
+  };
 
   // Queue of the last two clicked nodes (indices -1 to length-1)
   const [selectionQueue, setSelectionQueue] = useState<[number, number]>([-1, 0]);
@@ -162,20 +211,17 @@ export default function App() {
         if (pStep) {
           pStats = pStep.statsAfter;
           pOvr = pStep.ovrAfter;
+          
+          const beforeGold = aPlayStyles.base.gold;
+          const beforeSilver = aPlayStyles.base.silver;
+          const afterGold = pStep.playStylesAfter.base.gold;
+          const afterSilver = pStep.playStylesAfter.base.silver;
+          
+          const addedGold = afterGold.filter(ps => !beforeGold.includes(ps));
+          const addedSilver = afterSilver.filter(ps => !beforeSilver.includes(ps));
+          
+          pPlayStyles.ev = { gold: addedGold, silver: addedSilver };
         }
-        
-        const addedGold = new Set<string>();
-        const addedSilver = new Set<string>();
-        for (let i = baseNode + 1; i <= previewNode; i++) {
-          const step = chainResult.steps[i];
-          if (!step) continue;
-          const evoDef = availableEvolutions[step.evoId];
-          if (evoDef) {
-            evoDef.playStylesAdded.gold.forEach(ps => addedGold.add(ps));
-            evoDef.playStylesAdded.silver.forEach(ps => addedSilver.add(ps));
-          }
-        }
-        pPlayStyles.ev = { gold: Array.from(addedGold), silver: Array.from(addedSilver) };
       }
     }
 
@@ -296,6 +342,8 @@ export default function App() {
     
     // For multi-step diffs, aggregate the limits and boosts!
     const aggregatedBoosts: Record<string, { boost: number, limit: number }> = {};
+    const aggregatedOvrBoost = { boost: 0, limit: 0 };
+    
     for (let i = baseNode + 1; i <= previewNode; i++) {
       const evoId = activePath.chainIds[i];
       const evo = availableEvolutions[evoId];
@@ -307,22 +355,28 @@ export default function App() {
             aggregatedBoosts[subKey].boost += evo.subStatBoosts[subKey].boost;
             aggregatedBoosts[subKey].limit = Math.max(aggregatedBoosts[subKey].limit, evo.subStatBoosts[subKey].limit);
          });
+         
+         if (evo.ovrBoost) {
+           aggregatedOvrBoost.boost += evo.ovrBoost.boost;
+           aggregatedOvrBoost.limit = Math.max(aggregatedOvrBoost.limit, evo.ovrBoost.limit);
+         }
       }
     }
 
-    if (Object.keys(aggregatedBoosts).length === 0) return null;
+    if (Object.keys(aggregatedBoosts).length === 0 && aggregatedOvrBoost.boost === 0) return null;
 
     return {
       id: 'aggregated',
       name: 'Aggregated Path',
       subStatBoosts: aggregatedBoosts,
+      ovrBoost: aggregatedOvrBoost.boost > 0 ? aggregatedOvrBoost : undefined,
       playStylesAdded: { gold: [], silver: [] },
       requirements: {}
     } as unknown as EvolutionDefinition;
   }, [baseNode, previewNode, activePath.chainIds, availableEvolutions]);
 
   return (
-    <div className="min-h-screen bg-[#121212] py-6 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
+    <div className="min-h-screen bg-[#121212] py-4 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
       <div className="bg-[#1A1C1A] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-6xl border border-gray-800/80">
         
         {/* Top Navbar / Header Bar */}
@@ -414,8 +468,10 @@ export default function App() {
           onOpenManualPath={() => setIsManualPathOpen(true)}
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
+          maxOvrCap={maxOvrCap}
+          onMaxOvrCapChange={setMaxOvrCap}
           onAnalyze={() => {
-            const results = analyzeEvolutions(evosPool, 3, playerBio, initialOvrData, statsData, playStylesData);
+            const results = analyzeEvolutions(evosPool, 3, playerBio, initialOvrData, statsData, playStylesData, maxOvrCap);
             setGeneratedPaths(results);
             if (results.length > 0) {
               setActivePathId(results[0].id);
@@ -431,10 +487,63 @@ export default function App() {
           activeEvo={activeEvo}
           selectedNodes={safeNodes}
           onNodeClick={handleNodeClick}
+          playStyles={previewPlayStyles}
+          onDeletePath={handleDeletePath}
         />
 
         {activeTab === 'workbench' && (
           <>
+            {/* Chemistry Related Stats */}
+            <div className="flex flex-wrap gap-x-12 gap-y-3 text-[14px] bg-[#1a1c1a] p-3 rounded-xl border border-gray-800 shadow-md mb-4 mt-0">
+              <div className="flex flex-col min-w-[130px]">
+                <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-fcGreen" />
+                  AcceleRATE
+                </span>
+                <span className={`font-bold text-lg transition-colors ${accelerateType === 'Lengthy' ? 'text-fcGreen drop-shadow-[0_0_8px_rgba(30,215,96,0.4)]' : 'text-white'}`}>
+                  {accelerateType}
+                </span>
+              </div>
+
+              <div className="flex flex-col">
+                <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">Face Stats</span>
+                <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
+                  <span className="text-gray-300">{faceSum.activeBase}</span>
+                  {previewOvr !== activeBaseOvr && (
+                    <>
+                      <span className="text-gray-600 text-sm">➜</span>
+                      <span className="text-[#EBB626] font-bold">{faceSum.effective}</span>
+                    </>
+                  )}
+                  {faceSum.diff > 0 && (
+                    <>
+                      <span className="text-fcGreen text-sm">➜</span>
+                      <span className="text-fcGreen font-bold">{faceSum.chem} <span className="text-sm">(+{faceSum.diff})</span></span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col ml-4 md:ml-8">
+                <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">IGS (In-Game Stats)</span>
+                <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
+                  <span className="text-gray-300">{igs.activeBase}</span>
+                  {previewOvr !== activeBaseOvr && (
+                    <>
+                      <span className="text-gray-600 text-sm">➜</span>
+                      <span className="text-[#EBB626] font-bold">{igs.effective}</span>
+                    </>
+                  )}
+                  {igs.diff > 0 && (
+                    <>
+                      <span className="text-fcGreen text-sm">➜</span>
+                      <span className="text-fcGreen font-bold">{igs.chem} <span className="text-sm">(+{igs.diff})</span></span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <StatsGrid
               baseStats={activeBaseStats}
               previewStats={previewStats}

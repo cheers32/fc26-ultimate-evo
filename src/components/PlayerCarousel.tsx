@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PlayerData } from '../types/player';
+import { ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 interface PlayerCarouselProps {
   players: Record<string, PlayerData>;
@@ -12,8 +13,31 @@ export const PlayerCarousel: React.FC<PlayerCarouselProps> = ({
   selectedPlayerId,
   onSelectPlayer
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const selectedPlayer = players[selectedPlayerId];
+
   return (
-    <div className="w-full flex overflow-x-auto py-4 px-2 gap-4 snap-x hide-scrollbar mb-6 border-b border-gray-800/80">
+    <div className="mb-4 border-b border-gray-800/80">
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-3 hover:bg-[#1f211f] transition-colors rounded-t-lg"
+      >
+        <div className="flex items-center gap-3">
+          <Users className="w-5 h-5 text-fcGreen" />
+          <span className="text-sm font-bold text-gray-300 uppercase tracking-wider">
+            Player Selection 
+          </span>
+          {!isExpanded && selectedPlayer && (
+            <span className="text-xs text-gray-500 bg-[#1a1c1a] px-2 py-1 rounded-md border border-gray-800">
+              Current: {selectedPlayer.bio.name} ({selectedPlayer.ovr.base})
+            </span>
+          )}
+        </div>
+        {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+      </button>
+
+      {isExpanded && (
+        <div className="w-full flex overflow-x-auto py-4 px-2 gap-4 snap-x hide-scrollbar bg-black/20">
       {Object.values(players).map((player) => {
         const isSelected = player.id === selectedPlayerId;
         return (
@@ -58,6 +82,8 @@ export const PlayerCarousel: React.FC<PlayerCarouselProps> = ({
           </div>
         );
       })}
+      </div>
+      )}
     </div>
   );
 };

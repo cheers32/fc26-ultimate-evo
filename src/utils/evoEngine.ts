@@ -122,35 +122,107 @@ export function simulateEvoChain(
     // Apply Face & Sub Stat Boosts
     Object.keys(currentStats).forEach((faceKey) => {
       const faceData = currentStats[faceKey];
-      const faceBoostObj = evo.faceBoosts[faceKey];
+      const faceBoostObj = evo.faceBoosts?.[faceKey];
+
+      const hasHardcodedSubs = Object.keys(faceData.subs).some(subKey => evo.subStatBoosts?.[subKey]);
+
+      if (faceBoostObj && !hasHardcodedSubs) {
+        // EA Dynamic Prorating Distribution Algorithm
+        const targetFace = Math.min(faceData.baseFace + faceBoostObj.boost, faceBoostObj.limit);
+        const faceDiff = targetFace - faceData.baseFace;
+        const subStatCap = 99; // Sub-stats are not bounded by Face stat cap, only by 99
+
+        if (faceDiff > 0) {
+          // EA uses the actual diff for the ratio if the face stat is capped
+          const ratio = faceDiff / faceData.baseFace;
+
+          // Track the rounding loss tie-breaker
+          const tieBreaker: Record<string, number> = {};
+
+          // 1. Proportional growth (bounded at subStatCap)
+          Object.keys(faceData.subs).forEach(subKey => {
+            const subData = faceData.subs[subKey];
+            const exactBoost = subData.base * ratio;
+            const appliedBoost = Math.round(exactBoost);
+            
+            subData.base = Math.min(subData.base + appliedBoost, subStatCap);
+            // Tie-breaker is the amount of exact boost that was lost due to rounding
+            tieBreaker[subKey] = exactBoost - appliedBoost;
+          });
+
+          // 2. Compensation loop (redistribute lost points due to cap or rounding errors)
+          const calculateFace = () => {
+            let sum = 0;
+            Object.values(faceData.subs).forEach((s: any) => { sum += s.base * s.w; });
+            return sum;
+          };
+
+          // EA adds points one-by-one to the stat that lost the most from rounding
+          while (Math.round(calculateFace() + 1e-6) < targetFace) {
+            const uncappedKeys = Object.keys(faceData.subs).filter(k => faceData.subs[k].base < subStatCap);
+            if (uncappedKeys.length === 0) break; // Hard limit reached
+            
+            uncappedKeys.sort((a, b) => tieBreaker[b] - tieBreaker[a]);
+            const targetKey = uncappedKeys[0];
+            
+            faceData.subs[targetKey].base = Math.min(faceData.subs[targetKey].base + 1, subStatCap);
+            // Decrease tie-breaker so it doesn't hoard all points
+            tieBreaker[targetKey] -= 1;
+          }
+        }
+      } else {
+        Object.keys(faceData.subs).forEach((subKey) => {
+          const subData = faceData.subs[subKey];
+          const subBoostObj = evo.subStatBoosts?.[subKey];
+          if (subBoostObj) {
+            const newEv = Math.max(subData.base, Math.min(subData.base + subBoostObj.boost, subBoostObj.limit));
+            subData.base = newEv; // Chain progression converts result to base for next step
+          }
+        });
+      }
+
+      // Calculate the new weighted average of the updated sub-stats
+      let calculatedFace = 0;
+      Object.values(faceData.subs).forEach((s: any) => {
+        calculatedFace += s.base * s.w;
+      });
+      calculatedFace = Math.round(calculatedFace);
+
       if (faceBoostObj) {
-        const newEvFace = Math.max(faceData.baseFace, Math.min(faceData.baseFace + faceBoostObj.boost, faceBoostObj.limit));
+        // If there is an explicit face boost (e.g. 'Pace +30 (92)'), we apply the explicit boost limits,
+        // but the actual face stat will always be at least the true weighted average of the sub stats.
+        const explicitFace = Math.max(faceData.baseFace, Math.min(faceData.baseFace + faceBoostObj.boost, faceBoostObj.limit));
+        const newEvFace = Math.max(explicitFace, calculatedFace);
+        faceData.baseFace = newEvFace;
+        faceData.evFace = newEvFace;
+      } else {
+        // If no explicit face boost, the face stat is simply the updated weighted average
+        // (FC ensures Face Stats never decrease during an evolution)
+        const newEvFace = Math.max(faceData.baseFace, calculatedFace);
         faceData.baseFace = newEvFace;
         faceData.evFace = newEvFace;
       }
-
-      Object.keys(faceData.subs).forEach((subKey) => {
-        const subData = faceData.subs[subKey];
-        const subBoostObj = evo.subStatBoosts[subKey];
-        if (subBoostObj) {
-          const newEv = Math.max(subData.base, Math.min(subData.base + subBoostObj.boost, subBoostObj.limit));
-          subData.base = newEv; // Chain progression converts result to base for next step
-        }
-      });
     });
 
     // Apply PlayStyles
+    const goldLimit = evo.playStylesLimit?.gold ?? 99;
     evo.playStylesAdded.gold.forEach((ps) => {
       if (!currentPlayStyles.base.gold.includes(ps)) {
-        currentPlayStyles.base.gold.push(ps);
+        if (currentPlayStyles.base.gold.length < goldLimit) {
+          currentPlayStyles.base.gold.push(ps);
+        }
       }
       // If upgraded to gold, remove from silver
       currentPlayStyles.base.silver = currentPlayStyles.base.silver.filter(s => s !== ps);
     });
+
+    const silverLimit = evo.playStylesLimit?.silver ?? 99;
     evo.playStylesAdded.silver.forEach((ps) => {
       // Only add to silver if they don't already have it as gold or silver
       if (!currentPlayStyles.base.silver.includes(ps) && !currentPlayStyles.base.gold.includes(ps)) {
-        currentPlayStyles.base.silver.push(ps);
+        if (currentPlayStyles.base.silver.length < silverLimit) {
+          currentPlayStyles.base.silver.push(ps);
+        }
       }
     });
 
@@ -201,7 +273,8 @@ export function analyzeEvolutions(
   baseBio: PlayerBio,
   baseOvr: OvrData,
   baseStats: StatsData,
-  basePlayStyles: PlayStylesData
+  basePlayStyles: PlayStylesData,
+  maxOvrCap: number = 99
 ): EvolutionPath[] {
   const validPaths: FullChainResult[] = [];
   
@@ -210,20 +283,23 @@ export function analyzeEvolutions(
     
     if (currentChainIds.length > 0) {
       currentResult = simulateEvoChain(currentChainIds, baseBio, baseOvr, baseStats, basePlayStyles);
-      if (currentResult.isValidChain) {
+      if (currentResult.isValidChain && currentResult.finalOvr <= maxOvrCap) {
         validPaths.push(currentResult);
       } else {
-        return; // Stop branching if invalid
+        return; // Stop branching if invalid or exceeds OVR cap
       }
     }
     
     if (currentChainIds.length >= maxDepth) return;
     
     for (const evoId of poolIds) {
-      if (currentChainIds.includes(evoId)) continue;
-      
       const evo = availableEvolutions[evoId];
       if (!evo) continue;
+
+      const count = currentChainIds.filter(id => id === evoId).length;
+      const maxAllowed = evo.maxRepeatable || 1;
+      
+      if (count >= maxAllowed) continue;
       
       let latestOvr = baseOvr.base;
       let latestBio = baseBio;
@@ -250,20 +326,26 @@ export function analyzeEvolutions(
   dfs([]);
   
   validPaths.sort((a, b) => {
-    if (b.finalOvr !== a.finalOvr) return b.finalOvr - a.finalOvr;
-    const sumA = Object.values(a.finalStats).reduce((acc, f) => acc + f.baseFace, 0);
-    const sumB = Object.values(b.finalStats).reduce((acc, f) => acc + f.baseFace, 0);
-    return sumB - sumA;
+    // Calculate IGS for a
+    const igsA = Object.values(a.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
+    // Calculate IGS for b
+    const igsB = Object.values(b.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
+    return igsB - igsA; // Sort by IGS descending
   });
   
   const topPaths = validPaths.slice(0, 3);
-  return topPaths.map((result, idx) => ({
-    id: `auto-path-${Date.now()}-${idx}`,
-    name: `System Auto Path ${idx + 1}`,
-    description: `Optimal chain spanning ${result.chainIds.length} EVOs. Reaches ${result.finalOvr} OVR.`,
-    isRecommended: true,
-    chainIds: [...result.chainIds],
-    steps: [...result.steps]
-  }));
+  return topPaths.map((result, idx) => {
+    const igs = Object.values(result.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
+    const faceSum = Object.values(result.finalStats).reduce((acc, f) => acc + f.baseFace, 0);
+    
+    return {
+      id: `auto-path-${Date.now()}-${idx}`,
+      name: `Auto Gen (${result.chainIds.length} Evos) | OVR: ${result.finalOvr} | Base Stats: ${faceSum} | IGS: ${igs}`,
+      description: `Optimal chain spanning ${result.chainIds.length} EVOs. Reaches ${result.finalOvr} OVR.`,
+      isRecommended: true,
+      chainIds: [...result.chainIds],
+      steps: [...result.steps]
+    };
+  });
 }
 

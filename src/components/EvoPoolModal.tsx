@@ -96,6 +96,11 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
                         Max PAC {evo.requirements.maxPace}
                       </span>
                     )}
+                    {evo.maxRepeatable && evo.maxRepeatable > 1 && (
+                      <span className="px-2 py-1 bg-fcGold/20 rounded text-fcGold border border-fcGold/40 font-bold">
+                        Repeatable: {evo.maxRepeatable}
+                      </span>
+                    )}
                   </div>
                 </div>
               );

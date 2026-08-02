@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition } from '../types/player';
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
-import { Layers, ExternalLink, Plus, Zap, Settings, Beaker } from 'lucide-react';
+import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X } from 'lucide-react';
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -17,6 +17,8 @@ interface HeaderCardProps {
   onOpenManualPath: () => void;
   originalIgs: number;
   originalFaceSum: number;
+  maxOvrCap: number;
+  onMaxOvrCapChange: (val: number) => void;
   onAnalyze: () => void;
   evosPoolCount: number;
   evoPreview: boolean;
@@ -37,6 +39,8 @@ interface HeaderCardProps {
   activeEvo?: EvolutionDefinition | null;
   selectedNodes: [number, number];
   onNodeClick: (nodeIndex: number) => void;
+  playStyles: import('../types/player').PlayStylesData;
+  onDeletePath?: (pathId: string) => void;
 }
 
 export const HeaderCard: React.FC<HeaderCardProps> = ({
@@ -52,6 +56,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenManualPath,
   originalIgs,
   originalFaceSum,
+  maxOvrCap,
+  onMaxOvrCapChange,
   onAnalyze,
   evosPoolCount,
   evoPreview,
@@ -61,10 +67,35 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   faceSum,
   activeEvo,
   selectedNodes,
-  onNodeClick
+  onNodeClick,
+  playStyles,
+  onDeletePath
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
+  const isEvo = isLockedOrEvo;
+  
+  // Gold PlayStyles stats
+  const goldBase = playStyles.base.gold.length;
+  const goldLimit = playStyles.limits.gold;
+  const goldEvTotal = playStyles.ev.gold.length;
+  let goldAdded = 0;
+  if (isEvo) {
+    const availGold = Math.max(0, goldLimit - goldBase);
+    goldAdded = Math.min(availGold, goldEvTotal);
+  }
+  const goldCurrent = goldBase + goldAdded;
+
+  // Silver PlayStyles stats
+  const silverBase = playStyles.base.silver.length;
+  const silverLimit = playStyles.limits.silver;
+  const silverEvTotal = playStyles.ev.silver.length;
+  let silverAdded = 0;
+  if (isEvo) {
+    const availSilver = Math.max(0, silverLimit - silverBase);
+    silverAdded = Math.min(availSilver, silverEvTotal);
+  }
+  const silverCurrent = silverBase + silverAdded;
   
   const actualOvrBoost = previewOvr - activeBaseOvr;
   let ovrChip = null;
@@ -82,123 +113,158 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     : null;
 
   return (
-    <div className="flex flex-col gap-6 mb-8">
-      {/* Player Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-gray-800 pb-6">
-      <div>
-        <div className="flex items-center gap-4 mb-2 flex-wrap">
-          <h1 className="text-4xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-            {bio.name}
-          </h1>
-          <a
-            href={futbinLink}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-2.5 py-1.5 flex items-center gap-1.5 transition-colors shadow-sm ml-2"
-            title="View on FUTBIN"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            FUTBIN
-          </a>
+    <div className="flex flex-col gap-4 mb-4">
+      {/* Player Header Section (Ultra Compressed) */}
+      <div className="flex flex-col gap-2 bg-[#1f211f]/60 p-2.5 rounded-xl border border-gray-800/80 backdrop-blur-sm">
+        
+        {/* Row 1: Name, OVR, and Basic Bio */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-800/60 pb-2">
+          {/* Name & FUTBIN */}
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+              {bio.name}
+            </h1>
+            <a
+              href={futbinLink}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[10px] bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1 transition-colors shadow-sm"
+              title="View on FUTBIN"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
           
           {/* Main OVR Rating Badge */}
-          <div
-            id="ovr-badge"
-            className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-3.5 py-1 rounded-lg font-bold text-xl shadow-lg border border-yellow-300 flex items-center gap-2 whitespace-nowrap transition-all duration-300"
-          >
-            <span className="text-black/60 text-xs font-semibold tracking-wider">OVR</span>
+          <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-2 py-0.5 rounded font-bold text-base shadow-sm border border-yellow-300 flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-black/60 text-[10px] font-semibold tracking-wider">OVR</span>
             <span>{activeBaseOvr}</span>
-
             {showEvoOvr && (
               <>
-                <span className="text-black/50 text-sm font-normal">➜</span>
+                <span className="text-black/50 text-xs font-normal">➜</span>
                 <span>{previewOvr}</span>
               </>
             )}
-
             {ovrChip && (
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ml-1 ${ovrChip.className}`}>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ml-0.5 ${ovrChip.className}`}>
                 {ovrChip.text}
               </span>
             )}
           </div>
+
+          {/* Compressed Bio */}
+          <div className="flex flex-wrap items-center gap-3 text-[#1db954] font-bold text-xs ml-auto">
+            <span className="flex items-center gap-1"><span className="text-sm leading-none">🇪🇸</span> {bio.nation}</span>
+            <span className="flex items-center gap-1"><span className="text-sm leading-none">⚽</span> {bio.league}</span>
+            <span className="flex items-center gap-1"><span className="text-sm leading-none">🛡️</span> {bio.club}</span>
+            <span className="flex items-center gap-1"><span className="text-sm leading-none">🌟</span> <span className="text-yellow-400">{bio.rarity}</span></span>
+            <div className="flex items-center gap-3 text-gray-400 font-medium pl-3 border-l border-gray-700/60">
+              <span className="flex items-center gap-1">📏 {bio.height}</span>
+              <span className="flex items-center gap-1">👟 {bio.footAge}</span>
+            </div>
           </div>
         </div>
 
-        <div className="text-fcTextDim font-medium text-[15px] flex flex-wrap items-center gap-3 mt-4">
-          <span className="text-yellow-400 font-bold">{bio.rarity}</span>
-          <span className="text-gray-600">|</span>
-          <span>{bio.primaryPositions}</span>
-          <span className="text-gray-600">|</span>
-          <span className="text-gray-400 text-xs">{bio.club} • {bio.nation}</span>
-        </div>
-      </div>
+        {/* Row 2: PlayStyles (Left), Positions & Skills (Right) */}
+        <div className="flex items-start justify-between gap-x-5 gap-y-2">
+          {/* PlayStyles */}
+          {(playStyles.base.gold.length > 0 || playStyles.ev.gold.length > 0 || playStyles.base.silver.length > 0 || playStyles.ev.silver.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Gold PlayStyles */}
+              {(playStyles.base.gold.length > 0 || playStyles.ev.gold.length > 0) && (
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="px-1 py-0.5 rounded text-[9px] font-bold bg-yellow-900/40 text-yellow-500 border border-yellow-700/50 mr-0.5">
+                    {goldCurrent}
+                  </span>
+                  {playStyles.base.gold.map((ps) => (
+                    <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-yellow-900/40 text-yellow-500 border-yellow-700/50">{ps}</span>
+                  ))}
+                  {isEvo && (
+                    <>
+                      {playStyles.ev.gold.slice(0, goldAdded).map((ps) => (
+                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-yellow-900/40 text-yellow-500 border-yellow-700/50 flex items-center gap-1 shadow-[0_0_8px_rgba(234,179,8,0.2)]">
+                          {ps} <span className="text-[7px] font-black bg-green-900/60 text-green-400 px-0.5 rounded">NEW</span>
+                        </span>
+                      ))}
+                      {playStyles.ev.gold.slice(goldAdded).map((ps) => (
+                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-[#1f2937] text-gray-500 border-red-900/50 opacity-60 flex items-center gap-1">
+                          <span className="line-through decoration-red-500 decoration-2">{ps}</span> <span className="text-[7px] font-black text-red-400">LIMIT</span>
+                        </span>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
 
-      {/* Base Info & Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-[14px] bg-[#1f211f]/60 p-4 rounded-xl border border-gray-800/80 backdrop-blur-sm">
-        <div className="flex flex-col">
-          <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">Height</span>
-          <span className="font-medium text-white">{bio.height}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">Foot & Age</span>
-          <span className="font-medium text-white">{bio.footAge}</span>
-        </div>
-        <div className="flex flex-col min-w-[130px]">
-          <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">AcceleRATE</span>
-          <span className={`font-bold transition-colors ${accelerateType === 'Lengthy' ? 'text-fcGreen drop-shadow-[0_0_8px_rgba(30,215,96,0.4)]' : 'text-white'}`}>
-            {accelerateType}
-          </span>
-        </div>
+              {/* Silver PlayStyles */}
+              {(playStyles.base.silver.length > 0 || playStyles.ev.silver.length > 0) && (
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="px-1 py-0.5 rounded text-[9px] font-bold bg-gray-800 text-gray-300 border border-gray-600 mr-0.5">
+                    {silverCurrent}
+                  </span>
+                  {playStyles.base.silver.map((ps) => (
+                    <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-gray-800 text-gray-300 border-gray-600">{ps}</span>
+                  ))}
+                  {isEvo && (
+                    <>
+                      {playStyles.ev.silver.slice(0, silverAdded).map((ps) => (
+                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-gray-800 text-gray-300 border-gray-600 flex items-center gap-1 shadow-[0_0_8px_rgba(255,255,255,0.1)]">
+                          {ps} <span className="text-[7px] font-black bg-green-900/60 text-green-400 px-0.5 rounded">NEW</span>
+                        </span>
+                      ))}
+                      {playStyles.ev.silver.slice(silverAdded).map((ps) => (
+                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-[#1f2937] text-gray-500 border-red-900/50 opacity-60 flex items-center gap-1">
+                          <span className="line-through decoration-red-500 decoration-2">{ps}</span> <span className="text-[7px] font-black text-red-400">LIMIT</span>
+                        </span>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
-        <div className="flex flex-col">
-          <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">Face Stats</span>
-          <div className="font-medium flex items-center gap-1 font-mono">
-            <span className="text-gray-400">{faceSum.activeBase}</span>
-            {previewOvr !== activeBaseOvr && (
-              <>
-                <span className="text-gray-600 text-xs">➜</span>
-                <span className="text-[#EBB626] font-bold">{faceSum.effective}</span>
-              </>
-            )}
-            {faceSum.diff > 0 && (
-              <>
-                <span className="text-fcGreen text-xs">➜</span>
-                <span className="text-fcGreen font-bold">{faceSum.chem} (+{faceSum.diff})</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col">
-          <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">IGS</span>
-          <div className="font-medium flex items-center gap-1 font-mono">
-            <span className="text-gray-400">{igs.activeBase}</span>
-            {previewOvr !== activeBaseOvr && (
-              <>
-                <span className="text-gray-600 text-xs">➜</span>
-                <span className="text-[#EBB626] font-bold">{igs.effective}</span>
-              </>
-            )}
-            {igs.diff > 0 && (
-              <>
-                <span className="text-fcGreen text-xs">➜</span>
-                <span className="text-fcGreen font-bold">{igs.chem} (+{igs.diff})</span>
-              </>
-            )}
+          <div className="flex flex-wrap items-center gap-4 ml-auto shrink-0 mt-0.5">
+            {/* Positions */}
+            <div className="flex items-center gap-1.5 text-gray-300 font-bold text-xs">
+              <span className="text-sm leading-none">🎯</span> {bio.primaryPositions}
+            </div>
+            
+            {/* Skills & Weak Foot */}
+            <div className="flex items-center gap-4 text-xs font-medium text-white border-l border-gray-700/60 pl-4">
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">SM</span>
+                <span>{bio.skillMoves} <span className="text-yellow-400">★</span></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">WF</span>
+                <span>{bio.weakFoot} <span className="text-yellow-400">★</span></span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
     {/* Path Selection & Action Buttons */}
-    <div className="flex flex-col gap-3 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-4 shadow-md">
+    <div className="flex flex-col gap-2 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-3 shadow-md">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Beaker className="w-4 h-4 text-fcGreen" />
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Evolution Lab</h3>
             </div>
             
-            <div className="flex gap-1">
+            <div className="flex gap-1 items-center">
+              <div className="flex items-center gap-1.5 mr-2 bg-[#1f211f] border border-gray-800 rounded-lg px-2 py-1">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">OVR Cap</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={maxOvrCap}
+                  onChange={(e) => onMaxOvrCapChange(Number(e.target.value) || 99)}
+                  className="w-10 bg-transparent text-white text-xs font-bold focus:outline-none text-center"
+                />
+              </div>
               <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5">
                 <Settings className="w-3.5 h-3.5" /> Pool ({evosPoolCount})
               </button>
@@ -213,17 +279,30 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           
           <div className="flex flex-wrap gap-2">
             {allPaths.map((path) => (
-              <button
-                key={path.id}
-                onClick={() => onSelectPath(path.id)}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all border ${
-                  activePathId === path.id
-                    ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
-                    : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
-                }`}
-              >
-                {path.name}
-              </button>
+              <div key={path.id} className="relative flex items-center group">
+                <button
+                  onClick={() => onSelectPath(path.id)}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all border ${
+                    activePathId === path.id
+                      ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
+                      : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
+                  }`}
+                >
+                  {path.name}
+                </button>
+                {onDeletePath && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeletePath(path.id);
+                    }}
+                    className="absolute -top-1 -right-1 bg-red-900 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"
+                    title="Delete Path"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
 

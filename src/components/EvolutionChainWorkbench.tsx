@@ -46,6 +46,11 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                   <span className="font-extrabold text-fcGold text-base flex items-center gap-1.5">
                     {evo.name}
                     <span className="text-[10px] text-gray-400 font-normal">#{evo.id}</span>
+                    {evo.maxRepeatable && evo.maxRepeatable > 1 && (
+                      <span className="px-1.5 py-0.5 bg-fcGold/20 rounded text-[10px] text-fcGold border border-fcGold/40 font-bold ml-2">
+                        Repeatable: {evo.maxRepeatable}
+                      </span>
+                    )}
                   </span>
                   <a
                     href={evo.futbinLink}
@@ -104,11 +109,17 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                           <div className="flex flex-wrap gap-1.5">
                             {level.upgrades.map((upgrade, uIdx) => (
                               <span key={uIdx} className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                                (upgrade.includes('PlayStyle+') || upgrade.includes('Skill Moves') || upgrade.includes('Weak Foot'))
+                                (upgrade.includes('PlayStyle+'))
                                   ? 'bg-yellow-950/40 text-fcGold border-yellow-800/40'
+                                  : (upgrade.includes('Skill Moves') || upgrade.includes('Weak Foot'))
+                                  ? 'bg-orange-950/50 text-orange-500 border-orange-800/50'
+                                  : upgrade.includes('PlayStyle:')
+                                  ? 'bg-slate-700/40 text-slate-200 border-slate-500/50'
                                   : upgrade.includes('OVR')
                                   ? 'bg-blue-950/40 text-blue-400 border-blue-800/40'
-                                  : 'bg-gray-800/50 text-gray-300 border-gray-700/50'
+                                  : upgrade.includes('Face')
+                                  ? 'bg-gray-800/40 text-gray-500 border-gray-700/40'
+                                  : 'bg-green-950/40 text-fcGreen border-green-800/40'
                               }`}>
                                 {upgrade}
                               </span>
@@ -125,130 +136,6 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
         </div>
       </div>
 
-      {/* Evolution Experiment Chain Compare */}
-      <div className="bg-[#1f211f] p-6 rounded-2xl border border-gray-800">
-        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <GitCompare className="w-5 h-5 text-fcGold" />
-          EVO Order Experiment & Chain Validator
-        </h2>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* Chain A (Total Glory -> Elite Midfielder) */}
-          <div className="bg-[#161816] p-5 rounded-xl border border-green-900/60 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-fcGreen uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" /> Experiment Path A (Recommended)
-                </span>
-                {chainAResult.isValidChain ? (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-fcGreen bg-green-950/80 px-2 py-0.5 rounded border border-green-600">
-                    <CheckCircle className="w-3.5 h-3.5" /> 100% ELIGIBLE
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-950/80 px-2 py-0.5 rounded border border-red-600">
-                    <XCircle className="w-3.5 h-3.5" /> INVALID CHAIN
-                  </span>
-                )}
-              </div>
-
-              {/* Chain Steps Sequence */}
-              <div className="flex items-center gap-2 mb-4 bg-[#1f211f] p-3 rounded-lg border border-gray-800 text-xs font-bold">
-                <span className="bg-yellow-500/20 text-yellow-300 px-2.5 py-1 rounded border border-yellow-400/40">
-                  Total Glory (#1076)
-                </span>
-                <ArrowRight className="w-4 h-4 text-gray-500" />
-                <span className="bg-green-500/20 text-green-300 px-2.5 py-1 rounded border border-green-400/40">
-                  Elite Midfielder (#1159)
-                </span>
-              </div>
-
-              {/* Step Validations */}
-              <div className="space-y-2 text-xs">
-                {chainAResult.steps.map((step, idx) => (
-                  <div key={idx} className="p-2.5 rounded bg-[#1f211f] border border-gray-800 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white">Step {idx + 1}: {step.evoName}</span>
-                      <div className="text-[10px] text-gray-400">Result OVR: <span className="text-fcGold font-bold">{step.ovrAfter}</span></div>
-                    </div>
-                    {step.validation.eligible ? (
-                      <span className="text-fcGreen font-bold text-[10px] flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" /> Eligible
-                      </span>
-                    ) : (
-                      <span className="text-red-400 font-bold text-[10px]">
-                        {step.validation.reasons.join(', ')}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-gray-800 text-xs flex justify-between font-bold">
-              <span>Final Rating: <span className="text-fcGreen">{chainAResult.finalOvr} OVR</span></span>
-              <span>Gold PlayStyles+: <span className="text-fcGold">{chainAResult.finalPlayStyles.base.gold.length}</span></span>
-            </div>
-          </div>
-
-          {/* Chain B (Elite Midfielder -> Total Glory) */}
-          <div className="bg-[#161816] p-5 rounded-xl border border-red-900/60 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <XCircle className="w-4 h-4" /> Experiment Path B (Reversed Order)
-                </span>
-                {chainBResult.isValidChain ? (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-fcGreen bg-green-950/80 px-2 py-0.5 rounded border border-green-600">
-                    <CheckCircle className="w-3.5 h-3.5" /> ELIGIBLE
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-950/80 px-2 py-0.5 rounded border border-red-600">
-                    <XCircle className="w-3.5 h-3.5" /> INVALID REQUIREMENT
-                  </span>
-                )}
-              </div>
-
-              {/* Chain Steps Sequence */}
-              <div className="flex items-center gap-2 mb-4 bg-[#1f211f] p-3 rounded-lg border border-gray-800 text-xs font-bold">
-                <span className="bg-green-500/20 text-green-300 px-2.5 py-1 rounded border border-green-400/40">
-                  Elite Midfielder (#1159)
-                </span>
-                <ArrowRight className="w-4 h-4 text-gray-500" />
-                <span className="bg-yellow-500/20 text-yellow-300 px-2.5 py-1 rounded border border-yellow-400/40 opacity-60">
-                  Total Glory (#1076)
-                </span>
-              </div>
-
-              {/* Step Validations */}
-              <div className="space-y-2 text-xs">
-                {chainBResult.steps.map((step, idx) => (
-                  <div key={idx} className="p-2.5 rounded bg-[#1f211f] border border-gray-800 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-white">Step {idx + 1}: {step.evoName}</span>
-                      <div className="text-[10px] text-gray-400">Result OVR: <span className="text-fcGold font-bold">{step.ovrAfter}</span></div>
-                    </div>
-                    {step.validation.eligible ? (
-                      <span className="text-fcGreen font-bold text-[10px] flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" /> Eligible
-                      </span>
-                    ) : (
-                      <span className="text-red-400 font-bold text-[10px] max-w-[180px] text-right">
-                        ❌ {step.validation.reasons.join(', ')}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-gray-800 text-xs text-red-400 flex justify-between font-bold">
-              <span>Status: Blocked by Max 94 OVR limit</span>
-            </div>
-          </div>
-
-        </div>
-      </div>
 
     </div>
   );

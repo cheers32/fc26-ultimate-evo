@@ -27,7 +27,7 @@ export const playersDatabase: Record<string, PlayerData> = {
       limits: { gold: 4, silver: 99 },
       base: {
         gold: ['Intercept+'],
-        silver: ['Power Shot', 'Incisive Pass', 'Long Ball Pass', 'Tiki Taka', 'Press Proven', 'Relentless', 'Bruiser']
+        silver: ['Power Shot', 'Incisive Pass', 'Long Ball Pass', 'Tiki Taka', 'Press Proven', 'Relentless', 'Bruiser', 'Aerial Fortress']
       },
       ev: { gold: [], silver: [] }
     },
@@ -45,7 +45,7 @@ export const playersDatabase: Record<string, PlayerData> = {
           positioning: { label: 'Att. Position', base: 77, boost: 25, limit: 90, w: 0.05 },
           finishing: { label: 'Finishing', base: 75, boost: 25, limit: 90, w: 0.45 },
           shotPower: { label: 'Shot Power', base: 93, boost: 25, limit: 90, w: 0.20 },
-          longShots: { label: 'Long Shots', base: 95, boost: 25, limit: 90, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 90, boost: 25, limit: 90, w: 0.20 },
           volleys: { label: 'Volleys', base: 72, boost: 25, limit: 90, w: 0.05 },
           penalties: { label: 'Penalties', base: 63, boost: 25, limit: 90, w: 0.05 }
         }
@@ -85,8 +85,8 @@ export const playersDatabase: Record<string, PlayerData> = {
       phy: {
         label: 'Physical', baseFace: 86, evFace: 95,
         subs: {
-          jumping: { label: 'Jumping', base: 84, boost: 30, limit: 95, w: 0.05 },
-          stamina: { label: 'Stamina', base: 92, boost: 30, limit: 95, w: 0.25 },
+          jumping: { label: 'Jumping', base: 84, boost: 25, limit: 95, w: 0.05 },
+          stamina: { label: 'Stamina', base: 92, boost: 25, limit: 99, w: 0.25 },
           strength: { label: 'Strength', base: 84, boost: 30, limit: 95, w: 0.50 },
           aggression: { label: 'Aggression', base: 86, boost: 30, limit: 95, w: 0.20 }
         }

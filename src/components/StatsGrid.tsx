@@ -84,8 +84,12 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
             const allowedBoost = activeEvo.subStatBoosts[subKey].boost;
             const limit = activeEvo.subStatBoosts[subKey].limit;
             utilChip = calculateChip(activeBase, allowedBoost, limit, actualBoost, false);
+          } else if (activeEvo && activeEvo.faceBoosts?.[faceKey]) {
+            const allowedBoost = activeEvo.faceBoosts[faceKey].boost;
+            const limit = activeEvo.faceBoosts[faceKey].limit;
+            utilChip = calculateChip(activeBase, allowedBoost, limit, actualBoost, false);
           } else if (actualBoost > 0) {
-            utilChip = { text: `+${actualBoost}`, className: 'text-fcGreen border-fcGreen bg-green-950/40 border' };
+            utilChip = { text: `+${actualBoost}`, className: 'text-fcGreen border-fcGreen bg-green-950/40 border px-1.5' };
           }
 
           return (

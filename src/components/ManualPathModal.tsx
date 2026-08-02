@@ -38,7 +38,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   if (!isOpen) return null;
 
   const handleAdd = (id: string) => {
-    if (!selectedChain.includes(id)) {
+    const evo = availableEvolutions[id];
+    const count = selectedChain.filter(eid => eid === id).length;
+    const maxAllowed = evo?.maxRepeatable || 1;
+    
+    if (count < maxAllowed) {
       setSelectedChain([...selectedChain, id]);
     }
   };
@@ -65,7 +69,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     }
   };
 
-  const availableToSelect = evosPool.filter((id) => !selectedChain.includes(id));
+  const availableToSelect = evosPool.filter((id) => {
+    const evo = availableEvolutions[id];
+    const count = selectedChain.filter(eid => eid === id).length;
+    const maxAllowed = evo?.maxRepeatable || 1;
+    return count < maxAllowed;
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -182,7 +191,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     >
                       <div>
                         <h4 className="font-bold text-gray-200 text-sm group-hover:text-fcGreen transition-colors">{evo.name}</h4>
-                        <p className="text-[10px] text-gray-500 mt-0.5">Max OVR {evo.requirements.maxOvr}</p>
+                        <div className="flex gap-2 items-center mt-0.5">
+                          <p className="text-[10px] text-gray-500">Max OVR {evo.requirements.maxOvr}</p>
+                          {evo.maxRepeatable && evo.maxRepeatable > 1 && (
+                            <span className="px-1.5 py-0.5 bg-fcGold/20 rounded text-[9px] text-fcGold border border-fcGold/40 font-bold">
+                              Repeatable: {evo.maxRepeatable}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <Plus className="w-4 h-4 text-gray-500 group-hover:text-fcGreen" />
                     </div>

@@ -20,19 +20,7 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
   const names = Object.keys(chemStyles);
 
   return (
-    <div className="mt-10 border-t border-gray-800 pt-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-bold tracking-widest uppercase text-gray-400 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-fcGreen" />
-          Chemistry Styles (Hover to Preview, Click to Lock)
-        </h2>
-        {lockedChem && (
-          <span className="text-xs text-fcGreen font-bold px-2 py-0.5 rounded bg-green-950/60 border border-green-800/80">
-            Active: {lockedChem}
-          </span>
-        )}
-      </div>
-
+    <div className="mt-4 border-t border-gray-800 pt-3">
       {/* 5-Column Seamless Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-0 border-l border-t border-[#4b5563] rounded-lg overflow-hidden bg-[#1f2937] shadow-xl">
         {names.map((name) => {

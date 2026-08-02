@@ -95,7 +95,7 @@ export interface EvolutionDefinition {
     boost: number;
     limit: number;
   };
-  faceBoosts: Record<string, { boost: number; limit: number }>;
+  faceBoosts?: Record<string, { boost: number; limit: number }>;
   subStatBoosts: Record<string, { boost: number; limit: number }>;
   weakFootBoost?: number;
   skillMovesBoost?: number;
@@ -105,7 +105,12 @@ export interface EvolutionDefinition {
     gold: string[];
     silver: string[];
   };
+  playStylesLimit?: {
+    gold?: number;
+    silver?: number;
+  };
   levels?: EvolutionLevel[];
+  maxRepeatable?: number;
 }
 
 export interface ChainStepResult {
