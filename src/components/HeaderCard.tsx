@@ -15,6 +15,8 @@ interface HeaderCardProps {
   onSelectPath: (id: string) => void;
   onOpenEvoPool: () => void;
   onOpenManualPath: () => void;
+  originalIgs: number;
+  originalFaceSum: number;
   onAnalyze: () => void;
   evosPoolCount: number;
   evoPreview: boolean;
@@ -33,6 +35,8 @@ interface HeaderCardProps {
     diff: number;
   };
   activeEvo?: EvolutionDefinition | null;
+  selectedNodes: [number, number];
+  onNodeClick: (nodeIndex: number) => void;
 }
 
 export const HeaderCard: React.FC<HeaderCardProps> = ({
@@ -46,6 +50,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onSelectPath,
   onOpenEvoPool,
   onOpenManualPath,
+  originalIgs,
+  originalFaceSum,
   onAnalyze,
   evosPoolCount,
   evoPreview,
@@ -53,7 +59,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   accelerateType,
   igs,
   faceSum,
-  activeEvo
+  activeEvo,
+  selectedNodes,
+  onNodeClick
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -74,7 +82,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     : null;
 
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start border-b border-gray-800 pb-6 mb-8 gap-6">
+    <div className="flex flex-col gap-6 mb-8">
+      {/* Player Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-gray-800 pb-6">
       <div>
         <div className="flex items-center gap-4 mb-2 flex-wrap">
           <h1 className="text-4xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
@@ -112,96 +122,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               </span>
             )}
           </div>
-        </div>
-
-        {/* Path Selection & Action Buttons */}
-        <div className="flex flex-col gap-3 mt-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Beaker className="w-4 h-4 text-fcGreen" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Evolution Lab</h3>
-            </div>
-            
-            <div className="flex gap-1">
-              <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5">
-                <Settings className="w-3.5 h-3.5" /> Pool ({evosPoolCount})
-              </button>
-              <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Manual
-              </button>
-              <button onClick={onAnalyze} disabled={evosPoolCount === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${evosPoolCount > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
-                <Zap className="w-3.5 h-3.5" /> Analyze
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {allPaths.map((path) => (
-              <button
-                key={path.id}
-                onClick={() => onSelectPath(path.id)}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all border ${
-                  activePathId === path.id
-                    ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
-                    : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
-                }`}
-              >
-                {path.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border border-gray-800">
-            {activePath.chainIds.length === 0 ? (
-              <span className="text-[11px] text-gray-500 italic">No evolutions in this path.</span>
-            ) : (
-              <>
-                <Layers className="w-3.5 h-3.5 text-gray-500 mr-1" />
-                {activePath.chainIds.map((id, idx) => {
-                  const evo = availableEvolutions[id];
-                  if (!evo) return null;
-                  
-                  let stepStatsStr = null;
-                  const stepResult = activePath.steps?.[idx];
-                  if (stepResult) {
-                    let fSum = 0;
-                    let iSum = 0;
-                    Object.values(stepResult.statsAfter).forEach(f => {
-                      fSum += f.baseFace;
-                      Object.values(f.subs).forEach(s => { iSum += s.base; });
-                    });
-                    stepStatsStr = (
-                      <span className="text-gray-500 font-normal text-[9px] ml-1.5">
-                        (<span className="text-yellow-500/90 font-bold">{fSum}</span> | <span className="text-fcGreen/90 font-bold">{iSum}</span>)
-                      </span>
-                    );
-                  }
-
-                  return (
-                    <React.Fragment key={`${id}-${idx}`}>
-                      <span className="bg-[#2a2d2a] text-gray-300 border border-gray-600 px-2.5 py-1 rounded text-[10px] font-bold flex items-center">
-                        {evo.name}
-                        {stepStatsStr}
-                      </span>
-                      {idx < activePath.chainIds.length - 1 && (
-                        <span className="text-gray-600 text-[10px]">➜</span>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-
-                {builderLink && (
-                  <a
-                    href={builderLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-auto text-[10px] text-fcGreen hover:text-white flex items-center gap-1 bg-green-950/60 px-2 py-1 rounded border border-green-800/60 transition-colors"
-                  >
-                    Open in FUTBIN <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </>
-            )}
           </div>
         </div>
 
@@ -251,7 +171,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
         </div>
 
         <div className="flex flex-col">
-          <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">Total IGS</span>
+          <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">IGS</span>
           <div className="font-medium flex items-center gap-1 font-mono">
             <span className="text-gray-400">{igs.activeBase}</span>
             {previewOvr !== activeBaseOvr && (
@@ -269,6 +189,142 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           </div>
         </div>
       </div>
+
+    {/* Path Selection & Action Buttons */}
+    <div className="flex flex-col gap-3 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-4 shadow-md">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Beaker className="w-4 h-4 text-fcGreen" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Evolution Lab</h3>
+            </div>
+            
+            <div className="flex gap-1">
+              <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5">
+                <Settings className="w-3.5 h-3.5" /> Pool ({evosPoolCount})
+              </button>
+              <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Manual
+              </button>
+              <button onClick={onAnalyze} disabled={evosPoolCount === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${evosPoolCount > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
+                <Zap className="w-3.5 h-3.5" /> Analyze
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            {allPaths.map((path) => (
+              <button
+                key={path.id}
+                onClick={() => onSelectPath(path.id)}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all border ${
+                  activePathId === path.id
+                    ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
+                    : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
+                }`}
+              >
+                {path.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full pb-2 items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border border-gray-800">
+            {activePath.chainIds.length === 0 ? (
+              <span className="text-[11px] text-gray-500 italic">No evolutions in this path.</span>
+            ) : (
+              <>
+                <Layers className="w-3.5 h-3.5 text-gray-500 mr-1" />
+                
+                {/* Base Card Chip */}
+                <button
+                  onClick={() => onNodeClick(-1)}
+                  title="Original Base Card"
+                  className={`shrink-0 px-2.5 py-1 rounded text-[10px] font-bold flex items-center transition-all shadow ${
+                    selectedNodes.includes(-1)
+                      ? 'bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]'
+                      : 'bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  <span className={`mr-1.5 text-[11px] font-black ${
+                    selectedNodes.includes(-1) ? 'text-black/80' : 'text-white'
+                  }`}>
+                    {activeBaseOvr}
+                  </span>
+                  Base Card
+                  <span className="font-normal text-[9px] ml-1.5 opacity-90">
+                    (<span className={selectedNodes.includes(-1) ? 'text-black font-extrabold' : 'text-yellow-500/90 font-bold'}>{originalFaceSum}</span> | <span className={selectedNodes.includes(-1) ? 'text-green-950 font-extrabold' : 'text-fcGreen/90 font-bold'}>{originalIgs}</span>)
+                  </span>
+                </button>
+
+                {activePath.chainIds.length > 0 && (
+                  <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                )}
+
+                {activePath.chainIds.map((id, idx) => {
+                  const evo = availableEvolutions[id];
+                  if (!evo) return null;
+                  
+                  let stepStatsStr = null;
+                  const stepResult = activePath.steps?.[idx];
+                  if (stepResult) {
+                    let fSum = 0;
+                    let iSum = 0;
+                    Object.values(stepResult.statsAfter).forEach(f => {
+                      fSum += f.baseFace;
+                      Object.values(f.subs).forEach(s => { iSum += s.base; });
+                    });
+                    
+                    const isStepActive = selectedNodes.includes(idx);
+                    const fSumClass = isStepActive ? "text-black font-extrabold" : "text-yellow-500/90 font-bold";
+                    const iSumClass = isStepActive ? "text-green-950 font-extrabold" : "text-fcGreen/90 font-bold";
+                    
+                    stepStatsStr = (
+                      <span className="font-normal text-[9px] ml-1.5 opacity-90">
+                        (<span className={fSumClass}>{fSum}</span> | <span className={iSumClass}>{iSum}</span>)
+                      </span>
+                    );
+                  }
+
+                  const isStepActive = selectedNodes.includes(idx);
+                  const baseClass = isStepActive
+                    ? "bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]"
+                    : "bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200";
+
+                  return (
+                    <React.Fragment key={`${id}-${idx}`}>
+                      <button
+                        onClick={() => onNodeClick(idx)}
+                        title={`Preview Step ${idx + 1} (${evo.name}) stats`}
+                        className={`${baseClass} shrink-0 px-2.5 py-1 rounded text-[10px] font-bold flex items-center transition-all cursor-pointer shadow`}
+                      >
+                        {stepResult && (
+                          <span className={`mr-1.5 text-[11px] font-black ${isStepActive ? 'text-black/80' : 'text-white'}`}>
+                            {stepResult.ovrAfter}
+                          </span>
+                        )}
+                        {evo.name}
+                        {stepStatsStr}
+                      </button>
+                      {idx < activePath.chainIds.length - 1 && (
+                        <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+
+                {builderLink && (
+                  <a
+                    href={builderLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 ml-auto text-[10px] text-fcGreen hover:text-white flex items-center gap-1 bg-green-950/60 px-2 py-1 rounded border border-green-800/60 transition-colors"
+                  >
+                    Open in FUTBIN <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </>
+            )}
+          </div>
+        </div>
     </div>
   );
 };

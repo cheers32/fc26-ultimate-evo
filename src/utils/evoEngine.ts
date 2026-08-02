@@ -46,10 +46,10 @@ export function validateRequirement(
     reasons.push(`PlayStyles+ (${currentGoldCount}) exceeds Max Requirement of ${evo.requirements.maxPlayStylesPlus}`);
   }
 
-  // Check PlayStyles Count (Silver)
-  const currentSilverCount = currentPlayStyles.base.silver.length;
-  if (evo.requirements.maxPlayStyles !== undefined && currentSilverCount > evo.requirements.maxPlayStyles) {
-    reasons.push(`PlayStyles (${currentSilverCount}) exceeds Max Requirement of ${evo.requirements.maxPlayStyles}`);
+  // Check PlayStyles Count (Total: Gold + Silver)
+  const currentTotalPlayStyles = currentPlayStyles.base.gold.length + currentPlayStyles.base.silver.length;
+  if (evo.requirements.maxPlayStyles !== undefined && currentTotalPlayStyles > evo.requirements.maxPlayStyles) {
+    reasons.push(`PlayStyles (${currentTotalPlayStyles}) exceeds Max Requirement of ${evo.requirements.maxPlayStyles}`);
   }
 
   // Check Weak Foot
@@ -144,9 +144,12 @@ export function simulateEvoChain(
       if (!currentPlayStyles.base.gold.includes(ps)) {
         currentPlayStyles.base.gold.push(ps);
       }
+      // If upgraded to gold, remove from silver
+      currentPlayStyles.base.silver = currentPlayStyles.base.silver.filter(s => s !== ps);
     });
     evo.playStylesAdded.silver.forEach((ps) => {
-      if (!currentPlayStyles.base.silver.includes(ps)) {
+      // Only add to silver if they don't already have it as gold or silver
+      if (!currentPlayStyles.base.silver.includes(ps) && !currentPlayStyles.base.gold.includes(ps)) {
         currentPlayStyles.base.silver.push(ps);
       }
     });
@@ -259,7 +262,8 @@ export function analyzeEvolutions(
     name: `System Auto Path ${idx + 1}`,
     description: `Optimal chain spanning ${result.chainIds.length} EVOs. Reaches ${result.finalOvr} OVR.`,
     isRecommended: true,
-    chainIds: [...result.chainIds]
+    chainIds: [...result.chainIds],
+    steps: [...result.steps]
   }));
 }
 

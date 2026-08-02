@@ -77,109 +77,8 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
       {
         name: 'Level 3',
         upgrades: [
-          'Dribbling +1'
-        ]
-      }
-    ]
-  },
-
-  '1159': {
-    id: '1159',
-    name: 'Elite Midfielder',
-    futbinLink: 'https://www.futbin.com/26/evolutions/1159/elite-midfielder',
-    version: 'FC 26',
-    description: 'Transform your central midfielder into an elite dominant force with huge stat boosts & 3 PlayStyles+.',
-    cost: '100,000 Coins or 500 FC Points',
-    requirements: {
-      maxOvr: 94,
-      maxPace: 90,
-      maxDefending: 88,
-      maxPhysicality: 88,
-      maxPlayStylesPlus: 3,
-      maxPlayStyles: 10,
-      maxSkillMoves: 4,
-      positions: ['CDM'],
-      excludedPositions: ['CB']
-    },
-    ovrBoost: {
-      boost: 30,
-      limit: 97
-    },
-    faceBoosts: {
-      pac: { boost: 10, limit: 92 },
-      sho: { boost: 9, limit: 90 },
-      pas: { boost: 6, limit: 97 },
-      dri: { boost: 10, limit: 97 },
-      def: { boost: 9, limit: 96 },
-      phy: { boost: 9, limit: 95 }
-    },
-    subStatBoosts: {
-      acceleration: { boost: 10, limit: 92 },
-      sprintSpeed: { boost: 10, limit: 92 },
-      positioning: { boost: 9, limit: 99 },
-      finishing: { boost: 9, limit: 99 },
-      shotPower: { boost: 9, limit: 99 },
-      longShots: { boost: 9, limit: 99 },
-      volleys: { boost: 9, limit: 99 },
-      penalties: { boost: 9, limit: 99 },
-      vision: { boost: 6, limit: 97 },
-      crossing: { boost: 13, limit: 95 },
-      freekick: { boost: 25, limit: 96 },
-      shortPass: { boost: 6, limit: 98 },
-      longPass: { boost: 6, limit: 98 },
-      curve: { boost: 6, limit: 95 },
-      agility: { boost: 13, limit: 95 },
-      balance: { boost: 14, limit: 96 },
-      reactions: { boost: 2, limit: 99 },
-      ballControl: { boost: 10, limit: 97 },
-      dribbling: { boost: 10, limit: 97 },
-      composure: { boost: 2, limit: 99 },
-      interceptions: { boost: 11, limit: 97 },
-      headingAcc: { boost: 10, limit: 92 },
-      defAwareness: { boost: 9, limit: 97 },
-      standTackle: { boost: 9, limit: 96 },
-      slideTackle: { boost: 10, limit: 93 },
-      jumping: { boost: 9, limit: 99 },
-      stamina: { boost: 9, limit: 99 },
-      strength: { boost: 9, limit: 93 },
-      aggression: { boost: 9, limit: 99 }
-    },
-    playStylesAdded: {
-      gold: ['Pinged Pass+', 'Tiki Taka+', 'Anticipate+'],
-      silver: ['Technical', 'Quick Step']
-    },
-    skillMovesBoost: 1,
-    levels: [
-      {
-        name: 'Level 1',
-        upgrades: [
-          'Pace +5',
-          'Passing +3',
-          'Dribbling +5',
-          'Defending +5',
-          'PlayStyle: Technical'
-        ]
-      },
-      {
-        name: 'Level 2',
-        upgrades: [
-          'Shooting +5',
-          'Physical +5',
-          'PlayStyle: Tiki Taka+',
-          'PlayStyle: Quick Step'
-        ]
-      },
-      {
-        name: 'Level 3',
-        upgrades: [
-          'Pace +5',
-          'Passing +3',
-          'Dribbling +5',
-          'Shooting +4',
-          'Defending +4',
-          'Physical +4',
-          'PlayStyle: Pinged Pass+',
-          'PlayStyle: Anticipate+'
+          'Dribbling +1',
+          'Weak Foot +1 (5)'
         ]
       }
     ]
@@ -224,7 +123,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
     },
     playStylesAdded: {
       gold: [],
-      silver: ['Rapid', 'Incisive Pass', 'Finesse Shot', 'Low Driven Shot', 'Pinged Pass']
+      silver: ['Rapid', 'Pinged Pass']
     },
     levels: [
       {
@@ -257,7 +156,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
     description: 'Incremental boosts to stay eligible for future evolution chains.',
     cost: '20,000 Coins or 150 FC Points',
     requirements: {
-      maxOvr: 93,
+      maxOvr: 95,
       maxPlayStyles: 10,
       notRarity: 'World Tour Silver Superstar',
       excludedPositions: ['GK']
@@ -272,12 +171,18 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
       phy: { boost: 0, limit: 99 }
     },
     subStatBoosts: {
+      vision: { boost: 5, limit: 99 },
+      crossing: { boost: 5, limit: 99 },
+      fkAcc: { boost: 5, limit: 99 },
       shortPass: { boost: 5, limit: 99 },
       longPass: { boost: 5, limit: 99 },
-      vision: { boost: 5, limit: 99 },
-      dribbling: { boost: 5, limit: 99 },
+      curve: { boost: 5, limit: 99 },
+      agility: { boost: 5, limit: 99 },
+      balance: { boost: 5, limit: 99 },
+      reactions: { boost: 5, limit: 99 },
       ballControl: { boost: 5, limit: 99 },
-      agility: { boost: 5, limit: 99 }
+      dribbling: { boost: 5, limit: 99 },
+      composure: { boost: 5, limit: 99 }
     },
     playStylesAdded: {
       gold: [],
@@ -353,6 +258,101 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
         upgrades: ['Defending +6', 'PlayStyles: Aerial, Long Ball Pass']
       }
     ]
+  },
+  '2356': {
+    id: '2356',
+    name: 'Elite Midfielder',
+    futbinLink: 'https://www.futbin.com/26/evolutions/1159/elite-midfielder',
+    version: 'FC 26',
+    description: 'Transform your CDM into an elite dominant force with massive boosts across 5 levels.',
+    cost: 'Free / Objective',
+    requirements: {
+      maxOvr: 96,
+      maxPlayStyles: 10,
+      maxPlayStylesPlus: 4,
+      positions: ['CDM'],
+      excludedPositions: ['CB']
+    },
+    ovrBoost: { boost: 30, limit: 97 },
+    faceBoosts: {
+      pac: { boost: 30, limit: 92 },
+      sho: { boost: 25, limit: 90 },
+      pas: { boost: 30, limit: 98 },
+      dri: { boost: 30, limit: 97 },
+      def: { boost: 30, limit: 97 },
+      phy: { boost: 30, limit: 95 }
+    },
+    subStatBoosts: {
+      acceleration: { boost: 30, limit: 92 },
+      sprintSpeed: { boost: 30, limit: 92 },
+      positioning: { boost: 25, limit: 99 },
+      finishing: { boost: 25, limit: 99 },
+      shotPower: { boost: 25, limit: 99 },
+      longShots: { boost: 25, limit: 99 },
+      volleys: { boost: 25, limit: 99 },
+      vision: { boost: 30, limit: 97 },
+      crossing: { boost: 25, limit: 95 },
+      freekick: { boost: 25, limit: 96 },
+      shortPass: { boost: 30, limit: 98 },
+      longPass: { boost: 30, limit: 98 },
+      curve: { boost: 25, limit: 95 },
+      agility: { boost: 25, limit: 95 },
+      balance: { boost: 30, limit: 96 },
+      reactions: { boost: 25, limit: 96 },
+      ballControl: { boost: 30, limit: 97 },
+      dribbling: { boost: 30, limit: 97 },
+      composure: { boost: 30, limit: 98 },
+      interceptions: { boost: 30, limit: 97 },
+      headingAcc: { boost: 25, limit: 92 },
+      defAwareness: { boost: 30, limit: 97 },
+      standTackle: { boost: 30, limit: 96 },
+      slideTackle: { boost: 25, limit: 93 },
+      strength: { boost: 30, limit: 95 }
+    },
+    playStylesAdded: {
+      gold: ['Intercept+', 'Pinged Pass+', 'Tiki Taka+', 'Anticipate+'],
+      silver: ['Incisive Pass', 'Technical', 'Quick Step', 'Bruiser']
+    },
+    weakFootBoost: 4,
+    skillMovesBoost: 3,
+    levels: [
+      {
+        name: 'Level 1',
+        upgrades: [
+          'Standing Tackle +30 (96)', 'Reactions +25 (96)', 'Def. Awareness +30 (97)', 'Pace +30 (92)', 'OVR +10 (97)',
+          'PlayStyle+: Intercept (4)', 'PlayStyle+: Pinged Pass (4)'
+        ]
+      },
+      {
+        name: 'Level 2',
+        upgrades: [
+          'Short Pass +30 (98)', 'FK Acc. +25 (96)', 'Composure +30 (98)', 'Physicality +30 (95)', 'Crossing +25 (95)', 'OVR +10 (97)',
+          'PlayStyle+: Tiki Taka (4)'
+        ]
+      },
+      {
+        name: 'Level 3',
+        upgrades: [
+          'Slide Tackle +25 (93)', 'Shooting +25 (90)', 'Balance +30 (96)', 'Heading Acc. +25 (92)', 'Agility +25 (95)', 'OVR +10 (97)',
+          'Skill Moves +3 (4)', 'Weak Foot +4 (5)',
+          'PlayStyle+: Anticipate (4)'
+        ]
+      },
+      {
+        name: 'Level 4',
+        upgrades: [
+          'Interceptions +30 (97)', 'Long Pass +30 (98)',
+          'PlayStyle: Incisive Pass (7)', 'PlayStyle: Technical (7)'
+        ]
+      },
+      {
+        name: 'Level 5',
+        upgrades: [
+          'Dribbling +30 (97)', 'Vision +30 (97)', 'Curve +25 (95)', 'Ball Control +30 (97)',
+          'PlayStyle: Quick Step (7)', 'PlayStyle: Bruiser (7)'
+        ]
+      }
+    ]
   }
 };
 
@@ -362,14 +362,14 @@ export const defaultEvolutionPaths: EvolutionPath[] = [
     name: 'Total Glory ➜ Elite Midfielder (2-EVO Chain)',
     description: 'Recommended 2-step optimal chain. Maximizes non-capped stats before scaling to 97 OVR.',
     isRecommended: true,
-    chainIds: ['1076', '1159']
+    chainIds: ['1076', '2356']
   },
   {
     id: 'path-single-elite',
     name: 'Elite Midfielder Only (1-EVO)',
     description: 'Single-step evolution going directly to 97 OVR.',
     isRecommended: false,
-    chainIds: ['1159']
+    chainIds: ['2356']
   },
   {
     id: 'path-single-glory',

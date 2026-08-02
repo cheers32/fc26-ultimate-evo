@@ -209,7 +209,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
             Complete Path
           </button>
         </div>
-
       </div>
     </div>
   );

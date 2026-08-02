@@ -55,22 +55,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      {activeEvo && totalAllowedBoost > 0 && (
-        <div className={`p-3 rounded-lg border text-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${utilColor}`}>
-          <div className="flex flex-col">
-            <span className="font-bold opacity-80 text-[11px] uppercase tracking-wider">EVO Utilization Analysis</span>
-            <span className="font-black text-base">{activeEvo.name} Efficiency: {utilPercent.toFixed(1)}%</span>
-          </div>
-          <div className="flex flex-col sm:text-right">
-            <span className="font-semibold opacity-90">{utilVerdict}</span>
-            <span className="text-xs opacity-70">
-              Gained {totalActualBoost} / {totalAllowedBoost} possible sub-stats (Lost {totalAllowedBoost - totalActualBoost} to caps)
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-8" id="stats-grid">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4" id="stats-grid">
       {Object.keys(baseStats).map((faceKey) => {
         const baseFaceData = baseStats[faceKey];
         const previewFaceData = previewStats[faceKey];
@@ -104,7 +89,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           }
 
           return (
-            <div key={subKey} className="flex justify-between items-center text-[13px] text-fcTextDim my-[4px] hover:text-white transition-colors">
+            <div key={subKey} className="flex justify-between items-center text-[12px] text-fcTextDim my-[2px] hover:text-white transition-colors">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="truncate">{subDataBase.label}</span>
                 {utilChip && (
@@ -122,7 +107,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
                   {showEvo ? effectiveVal : '00'}
                 </span>
 
-                <span className={`font-normal text-[12px] ml-1.5 w-10 text-left tracking-tighter ${boost > 0 ? 'text-fcGreen font-bold' : 'text-transparent'}`}>
+                <span className={`font-normal text-[11px] ml-1.5 w-10 text-left tracking-tighter ${boost > 0 ? 'text-fcGreen font-bold' : 'text-transparent'}`}>
                   {boost > 0 ? `➜ +${boost}` : '➜ +0'}
                 </span>
 
@@ -145,27 +130,27 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
         return (
           <div
             key={faceKey}
-            className="bg-[#1f211f] p-4 rounded-xl border border-gray-800/90 hover:border-gray-700 transition-all shadow-md group"
+            className="bg-[#1f211f] p-3 rounded-lg border border-gray-800/90 hover:border-gray-700 transition-all shadow-md group"
           >
-            <h3 className="font-bold mb-1 text-lg text-white group-hover:text-fcGreen transition-colors flex items-center justify-between">
+            <h3 className="font-bold mb-0.5 text-base text-white group-hover:text-fcGreen transition-colors flex items-center justify-between">
               {baseFaceData.label}
             </h3>
 
-            <div className="text-[22px] font-black text-gray-200 mb-3 flex items-center font-mono">
+            <div className="text-[18px] font-black text-gray-200 mb-2 flex items-center font-mono">
               <span className="text-gray-500 w-7 text-right">{activeBaseFaceVal}</span>
               
-              <span className={`text-[15px] mx-1.5 font-normal tracking-tighter ${showEvoFace ? 'text-gray-500' : 'text-transparent'}`}>
+              <span className={`text-[13px] mx-1.5 font-normal tracking-tighter ${showEvoFace ? 'text-gray-500' : 'text-transparent'}`}>
                 ➜
               </span>
               <span className={`text-[#EBB626] w-7 text-right ${showEvoFace ? '' : 'text-transparent'}`}>
                 {showEvoFace ? effectiveFaceVal : '00'}
               </span>
 
-              <span className={`text-[15px] font-normal ml-2 w-10 text-left tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : 'text-transparent'}`}>
+              <span className={`text-[13px] font-normal ml-2 w-10 text-left tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : 'text-transparent'}`}>
                 {faceBoost > 0 ? `➜ +${faceBoost}` : '➜ +0'}
               </span>
 
-              <span className={`text-[22px] font-black w-8 text-right ml-1.5 ${faceBoost > 0 ? 'text-fcGreen drop-shadow-[0_0_6px_rgba(30,215,96,0.3)]' : 'text-transparent'}`}>
+              <span className={`text-[18px] font-black w-8 text-right ml-1.5 ${faceBoost > 0 ? 'text-fcGreen drop-shadow-[0_0_6px_rgba(30,215,96,0.3)]' : 'text-transparent'}`}>
                 {faceBoost > 0 ? newFaceVal : '00'}
               </span>
             </div>

@@ -24,10 +24,10 @@ export const playersDatabase: Record<string, PlayerData> = {
     },
     ovr: { base: 91, boost: 30, limit: 97 },
     playStyles: {
-      limits: { gold: 4, silver: 8 },
+      limits: { gold: 4, silver: 99 },
       base: {
         gold: ['Intercept+'],
-        silver: ['Power Shot', 'Incisive Pass', 'Long Ball Pass', 'Tiki Taka', 'Aerial Fortress', 'Press Proven', 'Relentless', 'Bruiser']
+        silver: ['Power Shot', 'Incisive Pass', 'Long Ball Pass', 'Tiki Taka', 'Press Proven', 'Relentless', 'Bruiser']
       },
       ev: { gold: [], silver: [] }
     },

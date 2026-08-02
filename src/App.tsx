@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { playersDatabase } from './data/playersData';
 import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
 import { EvolutionPath } from './types/player';
 import { HeaderCard } from './components/HeaderCard';
-import { EvolutionWorkbench } from './components/EvolutionWorkbench';
 import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
@@ -30,7 +29,7 @@ export default function App() {
   const [hoveredChem, setHoveredChem] = useState<string | null>(null);
   const [lockedChem, setLockedChem] = useState<string | null>(null);
   const [evoPreview, setEvoPreview] = useState(false);
-  const [selectedStep, setSelectedStep] = useState<'full' | number>('full');
+
   const [ovr, setOvr] = useState(initialOvrData);
   
   type PlayerEvoState = {
@@ -76,7 +75,6 @@ export default function App() {
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   const [isManualPathOpen, setIsManualPathOpen] = useState(false);
-
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
 
   const emptyPath: EvolutionPath = useMemo(() => ({
@@ -95,19 +93,36 @@ export default function App() {
     return allPaths.find(p => p.id === activePathId) || emptyPath;
   }, [allPaths, activePathId, emptyPath]);
 
-  const evoLocked = selectedStep !== 'full';
+  const evoLocked = evoPreview; // Derived state for components that need to know if we are in preview mode
 
   const activeChemName = hoveredChem || lockedChem;
   const activeChemBoosts = useMemo(() => {
     return activeChemName ? chemStyles[activeChemName] || {} : {};
   }, [activeChemName]);
 
-  const handleSelectStep = (step: 'full' | number) => {
-    setSelectedStep(step);
-    if (!evoPreview) {
-      setEvoPreview(true); // force preview on to see the transition
-    }
+  // Queue of the last two clicked nodes (indices -1 to length-1)
+  const [selectionQueue, setSelectionQueue] = useState<[number, number]>([-1, 0]);
+  
+  // Safe bounds for the queue
+  const activePathLength = activePath.chainIds.length;
+  const maxNode = activePathLength > 0 ? activePathLength - 1 : -1;
+  const safeNodes: [number, number] = [
+    Math.min(maxNode, Math.max(-1, selectionQueue[0])),
+    Math.min(maxNode, Math.max(-1, selectionQueue[1]))
+  ];
+
+  // Initialize selection when path changes or is first loaded
+  useEffect(() => {
+    setSelectionQueue([-1, maxNode]);
+  }, [activePathId, maxNode]);
+
+  const handleNodeClick = (nodeIndex: number) => {
+    setSelectionQueue([safeNodes[1], nodeIndex]);
+    if (!evoPreview) setEvoPreview(true);
   };
+
+  const baseNode = Math.min(safeNodes[0], safeNodes[1]);
+  const previewNode = Math.max(safeNodes[0], safeNodes[1]);
 
   const chainResult = useMemo(() => {
     return simulateEvoChain(activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
@@ -119,13 +134,17 @@ export default function App() {
     let aPlayStyles = JSON.parse(JSON.stringify(playStylesData));
     aPlayStyles.ev = { gold: [], silver: [] };
 
-    // Determine Base
-    if (selectedStep !== 'full' && selectedStep > 0) {
-      const baseIndex = selectedStep - 1;
-      if (chainResult.steps[baseIndex]) {
-        aBaseStats = chainResult.steps[baseIndex].statsAfter;
-        aBaseOvr = chainResult.steps[baseIndex].ovrAfter;
-        aPlayStyles.base = JSON.parse(JSON.stringify(chainResult.steps[baseIndex].playStylesAfter.base));
+    // 1. Determine Base
+    if (baseNode === -1) {
+      aBaseStats = statsData;
+      aBaseOvr = initialOvrData.base;
+      aPlayStyles.base = JSON.parse(JSON.stringify(playStylesData.base));
+    } else {
+      const bStep = chainResult.steps[baseNode];
+      if (bStep) {
+        aBaseStats = bStep.statsAfter;
+        aBaseOvr = bStep.ovrAfter;
+        aPlayStyles.base = JSON.parse(JSON.stringify(bStep.playStylesAfter.base));
       }
     }
 
@@ -133,40 +152,30 @@ export default function App() {
     let pOvr = aBaseOvr;
     let pPlayStyles = JSON.parse(JSON.stringify(aPlayStyles));
 
-    // Determine Preview
-    if (evoPreview) {
-      if (selectedStep === 'full') {
-        pStats = chainResult.finalStats;
-        pOvr = chainResult.finalOvr;
-        
-        pPlayStyles.base = JSON.parse(JSON.stringify(playStylesData.base));
-        
-        const allGoldAdded = new Set<string>();
-        const allSilverAdded = new Set<string>();
-        chainResult.steps.forEach(step => {
-           const evoDef = availableEvolutions[step.evoId];
-           if (evoDef) {
-             evoDef.playStylesAdded.gold.forEach(ps => allGoldAdded.add(ps));
-             evoDef.playStylesAdded.silver.forEach(ps => allSilverAdded.add(ps));
-           }
-        });
-        pPlayStyles.ev = {
-          gold: Array.from(allGoldAdded),
-          silver: Array.from(allSilverAdded)
-        };
+    // 2. Determine Preview
+    if (evoPreview && previewNode >= baseNode) {
+      if (previewNode === -1) {
+        pStats = statsData;
+        pOvr = initialOvrData.base;
       } else {
-        if (chainResult.steps[selectedStep]) {
-          pStats = chainResult.steps[selectedStep].statsAfter;
-          pOvr = chainResult.steps[selectedStep].ovrAfter;
-          
-          const evoDef = availableEvolutions[chainResult.steps[selectedStep].evoId];
+        const pStep = chainResult.steps[previewNode];
+        if (pStep) {
+          pStats = pStep.statsAfter;
+          pOvr = pStep.ovrAfter;
+        }
+        
+        const addedGold = new Set<string>();
+        const addedSilver = new Set<string>();
+        for (let i = baseNode + 1; i <= previewNode; i++) {
+          const step = chainResult.steps[i];
+          if (!step) continue;
+          const evoDef = availableEvolutions[step.evoId];
           if (evoDef) {
-            pPlayStyles.ev = {
-              gold: [...evoDef.playStylesAdded.gold],
-              silver: [...evoDef.playStylesAdded.silver]
-            };
+            evoDef.playStylesAdded.gold.forEach(ps => addedGold.add(ps));
+            evoDef.playStylesAdded.silver.forEach(ps => addedSilver.add(ps));
           }
         }
+        pPlayStyles.ev = { gold: Array.from(addedGold), silver: Array.from(addedSilver) };
       }
     }
 
@@ -178,7 +187,7 @@ export default function App() {
       activePlayStyles: aPlayStyles,
       previewPlayStyles: pPlayStyles
     };
-  }, [selectedStep, evoPreview, chainResult, statsData, initialOvrData, playStylesData]);
+  }, [baseNode, previewNode, evoPreview, chainResult, statsData, initialOvrData, playStylesData]);
 
   // Calculate IGS & Face Stats Summary
   const { igs, faceSum, accelerateType } = useMemo(() => {
@@ -252,11 +261,23 @@ export default function App() {
     };
   }, [activeChemBoosts, activeBaseStats, previewStats]);
 
+  const { originalIgs, originalFaceSum } = useMemo(() => {
+    let igs = 0;
+    let face = 0;
+    Object.values(statsData).forEach(faceData => {
+      face += faceData.baseFace;
+      Object.values(faceData.subs).forEach(s => {
+        igs += s.base;
+      });
+    });
+    return { originalIgs: igs, originalFaceSum: face };
+  }, [statsData]);
+
   const handleReset = () => {
     setHoveredChem(null);
     setLockedChem(null);
     setEvoPreview(false);
-    setSelectedStep('full');
+    setSelectionQueue([-1, -1]);
     setOvr(playersDatabase[selectedPlayerId].ovr);
     setActivePathId('empty-path');
     setEvosPool([]);
@@ -266,9 +287,39 @@ export default function App() {
 
   const currentOvrVal = previewOvr;
 
-  const activeEvo: EvolutionDefinition | null = selectedStep !== 'full' 
-    ? availableEvolutions[activePath.chainIds[selectedStep]]
-    : null;
+  const activeEvo: EvolutionDefinition | null = useMemo(() => {
+    if (previewNode < 0 || baseNode >= previewNode) return null;
+
+    if (previewNode - baseNode === 1) {
+      return availableEvolutions[activePath.chainIds[previewNode]];
+    }
+    
+    // For multi-step diffs, aggregate the limits and boosts!
+    const aggregatedBoosts: Record<string, { boost: number, limit: number }> = {};
+    for (let i = baseNode + 1; i <= previewNode; i++) {
+      const evoId = activePath.chainIds[i];
+      const evo = availableEvolutions[evoId];
+      if (evo) {
+         Object.keys(evo.subStatBoosts).forEach(subKey => {
+            if (!aggregatedBoosts[subKey]) {
+               aggregatedBoosts[subKey] = { boost: 0, limit: 0 };
+            }
+            aggregatedBoosts[subKey].boost += evo.subStatBoosts[subKey].boost;
+            aggregatedBoosts[subKey].limit = Math.max(aggregatedBoosts[subKey].limit, evo.subStatBoosts[subKey].limit);
+         });
+      }
+    }
+
+    if (Object.keys(aggregatedBoosts).length === 0) return null;
+
+    return {
+      id: 'aggregated',
+      name: 'Aggregated Path',
+      subStatBoosts: aggregatedBoosts,
+      playStylesAdded: { gold: [], silver: [] },
+      requirements: {}
+    } as unknown as EvolutionDefinition;
+  }, [baseNode, previewNode, activePath.chainIds, availableEvolutions]);
 
   return (
     <div className="min-h-screen bg-[#121212] py-6 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
@@ -345,7 +396,7 @@ export default function App() {
             setHoveredChem(null);
             setLockedChem(null);
             setEvoPreview(false);
-            setSelectedStep('full');
+            setSelectionQueue([-1, -1]);
             setOvr(playersDatabase[id].ovr);
           }}
         />
@@ -361,12 +412,13 @@ export default function App() {
           onSelectPath={setActivePathId}
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => setIsManualPathOpen(true)}
+          originalIgs={originalIgs}
+          originalFaceSum={originalFaceSum}
           onAnalyze={() => {
             const results = analyzeEvolutions(evosPool, 3, playerBio, initialOvrData, statsData, playStylesData);
             setGeneratedPaths(results);
             if (results.length > 0) {
               setActivePathId(results[0].id);
-              setSelectedStep('full');
               if (!evoPreview) setEvoPreview(true);
             }
           }}
@@ -377,27 +429,12 @@ export default function App() {
           igs={igs}
           faceSum={faceSum}
           activeEvo={activeEvo}
+          selectedNodes={safeNodes}
+          onNodeClick={handleNodeClick}
         />
 
         {activeTab === 'workbench' && (
           <>
-            {/* Evolution Workbench Controls */}
-            <EvolutionWorkbench
-              activePath={activePath}
-              onSelectPath={(path) => {
-                setActivePathId(path.id);
-                setSelectedStep('full');
-              }}
-              evoPreview={evoPreview}
-              selectedStep={selectedStep}
-              onTogglePreview={() => {
-                setEvoPreview(!evoPreview);
-              }}
-              onSelectStep={handleSelectStep}
-              ovr={ovr}
-              onUpdateOvr={setOvr}
-            />
-
             <StatsGrid
               baseStats={activeBaseStats}
               previewStats={previewStats}
@@ -468,14 +505,12 @@ export default function App() {
         </div>
 
       </div>
-
       <EvoPoolModal
         isOpen={isEvoPoolOpen}
         onClose={() => setIsEvoPoolOpen(false)}
         evosPool={evosPool}
         setEvosPool={setEvosPool}
       />
-
       <ManualPathModal
         isOpen={isManualPathOpen}
         onClose={() => setIsManualPathOpen(false)}
@@ -484,7 +519,6 @@ export default function App() {
           setManualPaths([...manualPaths, path]);
           setActivePathId(path.id);
           setIsManualPathOpen(false);
-          setSelectedStep('full');
           if (!evoPreview) setEvoPreview(true);
         }}
         baseBio={playerBio}

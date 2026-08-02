@@ -63,60 +63,29 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                   <div className="flex justify-between text-fcGreen font-bold border-b border-gray-800/60 pb-1 mb-1">
                     <span>Requirements</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                    {evo.requirements.maxOvr !== undefined && <div className="flex justify-between"><span className="text-gray-500">Max OVR:</span><span className="font-bold text-white">&lt;= {evo.requirements.maxOvr}</span></div>}
-                    {evo.requirements.maxPace !== undefined && <div className="flex justify-between"><span className="text-gray-500">Max Pace:</span><span className="font-bold text-white">&lt;= {evo.requirements.maxPace}</span></div>}
-                    {evo.requirements.maxDefending !== undefined && <div className="flex justify-between"><span className="text-gray-500">Max Def:</span><span className="font-bold text-white">&lt;= {evo.requirements.maxDefending}</span></div>}
-                    {evo.requirements.maxPhysicality !== undefined && <div className="flex justify-between"><span className="text-gray-500">Max Phy:</span><span className="font-bold text-white">&lt;= {evo.requirements.maxPhysicality}</span></div>}
+                  <div className="flex flex-wrap gap-x-3 gap-y-0 text-white">
+                    {evo.requirements.maxOvr !== undefined && <div className="flex gap-1 text-blue-400"><span>Max OVR:</span><span className="font-bold">{evo.requirements.maxOvr}</span></div>}
+                    {evo.requirements.maxPace !== undefined && <div className="flex gap-1"><span>Max Pace:</span><span className="font-bold">{evo.requirements.maxPace}</span></div>}
+                    {evo.requirements.maxDefending !== undefined && <div className="flex gap-1"><span>Max Def:</span><span className="font-bold">{evo.requirements.maxDefending}</span></div>}
+                    {evo.requirements.maxPhysicality !== undefined && <div className="flex gap-1"><span>Max Phy:</span><span className="font-bold">{evo.requirements.maxPhysicality}</span></div>}
                     
-                    {evo.requirements.maxPlayStylesPlus !== undefined && <div className="flex justify-between"><span className="text-fcGold opacity-70">Max PS+:</span><span className="font-bold text-fcGold">&lt;= {evo.requirements.maxPlayStylesPlus}</span></div>}
-                    {evo.requirements.maxPlayStyles !== undefined && <div className="flex justify-between"><span className="text-gray-400">Max PS:</span><span className="font-bold text-gray-300">&lt;= {evo.requirements.maxPlayStyles}</span></div>}
+                    {evo.requirements.maxPlayStylesPlus !== undefined && <div className="flex gap-1"><span>Max PS+:</span><span className="font-bold">{evo.requirements.maxPlayStylesPlus}</span></div>}
+                    {evo.requirements.maxPlayStyles !== undefined && <div className="flex gap-1"><span>Max PS:</span><span className="font-bold">{evo.requirements.maxPlayStyles}</span></div>}
                     
-                    {evo.requirements.maxWeakFoot !== undefined && <div className="flex justify-between"><span className="text-gray-500">Max WF:</span><span className="font-bold text-white">&lt;= {evo.requirements.maxWeakFoot}★</span></div>}
-                    {evo.requirements.maxSkillMoves !== undefined && <div className="flex justify-between"><span className="text-gray-500">Max SM:</span><span className="font-bold text-white">&lt;= {evo.requirements.maxSkillMoves}★</span></div>}
+                    {evo.requirements.maxWeakFoot !== undefined && <div className="flex gap-1"><span>Max WF:</span><span className="font-bold">{evo.requirements.maxWeakFoot}★</span></div>}
+                    {evo.requirements.maxSkillMoves !== undefined && <div className="flex gap-1"><span>Max SM:</span><span className="font-bold">{evo.requirements.maxSkillMoves}★</span></div>}
                   </div>
                   
-                  {(evo.requirements.positions || evo.requirements.rarity || evo.requirements.notRarity) && (
-                    <div className="pt-1 mt-1 border-t border-gray-800/60 space-y-1">
-                      {evo.requirements.positions && <div className="flex justify-between"><span className="text-gray-500">Positions:</span><span className="font-bold text-white">{evo.requirements.positions.join(', ')}</span></div>}
-                      {evo.requirements.rarity && <div className="flex justify-between"><span className="text-gray-500">Rarity:</span><span className="font-bold text-[#EBB626]">{evo.requirements.rarity}</span></div>}
-                      {evo.requirements.notRarity && <div className="flex justify-between"><span className="text-gray-500">Not Rarity:</span><span className="font-bold text-red-400">{evo.requirements.notRarity}</span></div>}
+                  {(evo.requirements.positions || evo.requirements.excludedPositions || evo.requirements.rarity || evo.requirements.notRarity) && (
+                    <div className="pt-0.5 mt-0.5 border-t border-gray-800/60 flex flex-wrap gap-x-3 gap-y-0 text-white">
+                      {evo.requirements.positions && <div className="flex gap-1"><span>Positions:</span><span className="font-bold">{evo.requirements.positions.join(', ')}</span></div>}
+                      {evo.requirements.excludedPositions && <div className="flex gap-1"><span>Excluded:</span><span className="font-bold">{evo.requirements.excludedPositions.join(', ')}</span></div>}
+                      {evo.requirements.rarity && <div className="flex gap-1"><span>Rarity:</span><span className="font-bold">{evo.requirements.rarity}</span></div>}
+                      {evo.requirements.notRarity && <div className="flex gap-1"><span>Not Rarity:</span><span className="font-bold">{evo.requirements.notRarity}</span></div>}
                     </div>
                   )}
 
-                  {/* Upgrades Section */}
-                  <div className="flex justify-between text-fcGreen font-bold border-b border-gray-800/60 pb-1 mt-3 pt-2 mb-1">
-                    <span>Upgrades</span>
-                  </div>
 
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-gray-400 font-bold">OVR Rating Boost:</span>
-                    <span className="font-black text-fcGreen text-[12px] bg-green-950/40 px-1.5 rounded border border-green-800/50">
-                      +{evo.ovrBoost.boost} <span className="text-[10px] text-gray-500 ml-0.5">(Max {evo.ovrBoost.limit})</span>
-                    </span>
-                  </div>
-                  
-                  {evo.playStylesAdded.gold.length > 0 && (
-                    <div className="flex justify-between items-start mt-1">
-                      <span className="text-gray-500 whitespace-nowrap mr-2">PS+ Added:</span>
-                      <span className="font-bold text-fcGold text-right">{evo.playStylesAdded.gold.join(', ')}</span>
-                    </div>
-                  )}
-                  {evo.playStylesAdded.silver.length > 0 && (
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-500 whitespace-nowrap mr-2">PS Added:</span>
-                      <span className="font-bold text-gray-300 text-right">{evo.playStylesAdded.silver.join(', ')}</span>
-                    </div>
-                  )}
-                  
-                  {(evo.weakFootBoost || evo.skillMovesBoost || evo.positionsAdded || evo.rarityChange) && (
-                    <div className="grid grid-cols-2 gap-x-2 pt-1">
-                      {evo.weakFootBoost && <div className="flex justify-between"><span className="text-gray-500">WF Boost:</span><span className="font-bold text-fcGreen">+{evo.weakFootBoost}★</span></div>}
-                      {evo.skillMovesBoost && <div className="flex justify-between"><span className="text-gray-500">SM Boost:</span><span className="font-bold text-fcGreen">+{evo.skillMovesBoost}★</span></div>}
-                      {evo.positionsAdded && <div className="flex justify-between col-span-2"><span className="text-gray-500">Pos Added:</span><span className="font-bold text-fcGreen">{evo.positionsAdded.join(', ')}</span></div>}
-                      {evo.rarityChange && <div className="flex justify-between col-span-2"><span className="text-gray-500">New Rarity:</span><span className="font-bold text-[#EBB626]">{evo.rarityChange}</span></div>}
-                    </div>
-                  )}
                 </div>
 
                 {/* EVO Levels Breakdown */}
@@ -135,8 +104,10 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                           <div className="flex flex-wrap gap-1.5">
                             {level.upgrades.map((upgrade, uIdx) => (
                               <span key={uIdx} className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                                upgrade.includes('PlayStyle')
+                                (upgrade.includes('PlayStyle+') || upgrade.includes('Skill Moves') || upgrade.includes('Weak Foot'))
                                   ? 'bg-yellow-950/40 text-fcGold border-yellow-800/40'
+                                  : upgrade.includes('OVR')
+                                  ? 'bg-blue-950/40 text-blue-400 border-blue-800/40'
                                   : 'bg-gray-800/50 text-gray-300 border-gray-700/50'
                               }`}>
                                 {upgrade}
