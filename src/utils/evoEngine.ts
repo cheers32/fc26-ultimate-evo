@@ -1,0 +1,265 @@
+import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult } from '../types/player';
+import { availableEvolutions } from '../data/evolutionsData';
+
+export interface FullChainResult {
+  chainIds: string[];
+  isValidChain: boolean;
+  steps: ChainStepResult[];
+  finalOvr: number;
+  finalStats: StatsData;
+  finalPlayStyles: PlayStylesData;
+  finalBio: PlayerBio;
+}
+
+export function validateRequirement(
+  evo: EvolutionDefinition,
+  currentOvr: number,
+  currentStats: StatsData,
+  currentPlayStyles: PlayStylesData,
+  bio: PlayerBio
+): ChainValidation {
+  const reasons: string[] = [];
+
+  // Check Max OVR
+  if (currentOvr > evo.requirements.maxOvr) {
+    reasons.push(`OVR ${currentOvr} exceeds Max Requirement of ${evo.requirements.maxOvr}`);
+  }
+
+  // Check Max Pace
+  if (evo.requirements.maxPace && currentStats.pac.baseFace > evo.requirements.maxPace) {
+    reasons.push(`Pace ${currentStats.pac.baseFace} exceeds Max Requirement of ${evo.requirements.maxPace}`);
+  }
+
+  // Check Max Defending
+  if (evo.requirements.maxDefending && currentStats.def.baseFace > evo.requirements.maxDefending) {
+    reasons.push(`Defending ${currentStats.def.baseFace} exceeds Max Requirement of ${evo.requirements.maxDefending}`);
+  }
+
+  // Check Max Physicality
+  if (evo.requirements.maxPhysicality && currentStats.phy.baseFace > evo.requirements.maxPhysicality) {
+    reasons.push(`Physicality ${currentStats.phy.baseFace} exceeds Max Requirement of ${evo.requirements.maxPhysicality}`);
+  }
+
+  // Check PlayStyles+ Count
+  const currentGoldCount = currentPlayStyles.base.gold.length;
+  if (evo.requirements.maxPlayStylesPlus !== undefined && currentGoldCount > evo.requirements.maxPlayStylesPlus) {
+    reasons.push(`PlayStyles+ (${currentGoldCount}) exceeds Max Requirement of ${evo.requirements.maxPlayStylesPlus}`);
+  }
+
+  // Check PlayStyles Count (Silver)
+  const currentSilverCount = currentPlayStyles.base.silver.length;
+  if (evo.requirements.maxPlayStyles !== undefined && currentSilverCount > evo.requirements.maxPlayStyles) {
+    reasons.push(`PlayStyles (${currentSilverCount}) exceeds Max Requirement of ${evo.requirements.maxPlayStyles}`);
+  }
+
+  // Check Weak Foot
+  if (evo.requirements.maxWeakFoot !== undefined && bio.weakFoot > evo.requirements.maxWeakFoot) {
+    reasons.push(`Weak Foot (${bio.weakFoot}) exceeds Max Requirement of ${evo.requirements.maxWeakFoot}`);
+  }
+
+  // Check Skill Moves
+  if (evo.requirements.maxSkillMoves !== undefined && bio.skillMoves > evo.requirements.maxSkillMoves) {
+    reasons.push(`Skill Moves (${bio.skillMoves}) exceeds Max Requirement of ${evo.requirements.maxSkillMoves}`);
+  }
+
+  // Check Rarity
+  if (evo.requirements.rarity && bio.rarity !== evo.requirements.rarity) {
+    reasons.push(`Rarity (${bio.rarity}) does not match Required Rarity (${evo.requirements.rarity})`);
+  }
+  if (evo.requirements.notRarity && bio.rarity === evo.requirements.notRarity) {
+    reasons.push(`Rarity (${bio.rarity}) matches Excluded Rarity (${evo.requirements.notRarity})`);
+  }
+
+  // Check Positions
+  const playerPositions = bio.primaryPositions.split(',').map(p => p.trim());
+  if (evo.requirements.positions && evo.requirements.positions.length > 0) {
+    const hasRequired = playerPositions.some(p => evo.requirements.positions!.includes(p));
+    if (!hasRequired) {
+      reasons.push(`None of player positions (${playerPositions.join(', ')}) are in Required Positions (${evo.requirements.positions.join(', ')})`);
+    }
+  }
+  if (evo.requirements.excludedPositions && evo.requirements.excludedPositions.length > 0) {
+    const hasExcluded = playerPositions.some(p => evo.requirements.excludedPositions!.includes(p));
+    if (hasExcluded) {
+      reasons.push(`Player has an Excluded Position (${evo.requirements.excludedPositions.join(', ')})`);
+    }
+  }
+
+  return {
+    eligible: reasons.length === 0,
+    reasons
+  };
+}
+
+export function simulateEvoChain(
+  chainIds: string[],
+  baseBio: PlayerBio,
+  baseOvr: OvrData,
+  baseStats: StatsData,
+  basePlayStyles: PlayStylesData
+): FullChainResult {
+  let currentOvr = baseOvr.base;
+  let currentStats: StatsData = JSON.parse(JSON.stringify(baseStats));
+  let currentPlayStyles: PlayStylesData = JSON.parse(JSON.stringify(basePlayStyles));
+  let currentBio: PlayerBio = JSON.parse(JSON.stringify(baseBio));
+
+  const steps: ChainStepResult[] = [];
+  let overallValid = true;
+
+  for (const evoId of chainIds) {
+    const evo = availableEvolutions[evoId];
+    if (!evo) continue;
+
+    // Validate eligibility
+    const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
+    if (!validation.eligible) {
+      overallValid = false;
+    }
+
+    // Apply OVR Boost
+    currentOvr = Math.max(currentOvr, Math.min(currentOvr + evo.ovrBoost.boost, evo.ovrBoost.limit));
+
+    // Apply Face & Sub Stat Boosts
+    Object.keys(currentStats).forEach((faceKey) => {
+      const faceData = currentStats[faceKey];
+      const faceBoostObj = evo.faceBoosts[faceKey];
+      if (faceBoostObj) {
+        const newEvFace = Math.max(faceData.baseFace, Math.min(faceData.baseFace + faceBoostObj.boost, faceBoostObj.limit));
+        faceData.baseFace = newEvFace;
+        faceData.evFace = newEvFace;
+      }
+
+      Object.keys(faceData.subs).forEach((subKey) => {
+        const subData = faceData.subs[subKey];
+        const subBoostObj = evo.subStatBoosts[subKey];
+        if (subBoostObj) {
+          const newEv = Math.max(subData.base, Math.min(subData.base + subBoostObj.boost, subBoostObj.limit));
+          subData.base = newEv; // Chain progression converts result to base for next step
+        }
+      });
+    });
+
+    // Apply PlayStyles
+    evo.playStylesAdded.gold.forEach((ps) => {
+      if (!currentPlayStyles.base.gold.includes(ps)) {
+        currentPlayStyles.base.gold.push(ps);
+      }
+    });
+    evo.playStylesAdded.silver.forEach((ps) => {
+      if (!currentPlayStyles.base.silver.includes(ps)) {
+        currentPlayStyles.base.silver.push(ps);
+      }
+    });
+
+    // Apply Bio mutations
+    if (evo.weakFootBoost) {
+      currentBio.weakFoot = Math.min(5, currentBio.weakFoot + evo.weakFootBoost);
+    }
+    if (evo.skillMovesBoost) {
+      currentBio.skillMoves = Math.min(5, currentBio.skillMoves + evo.skillMovesBoost);
+    }
+    if (evo.rarityChange) {
+      currentBio.rarity = evo.rarityChange;
+    }
+    if (evo.positionsAdded && evo.positionsAdded.length > 0) {
+      const currentPos = currentBio.primaryPositions.split(',').map(p => p.trim());
+      evo.positionsAdded.forEach(p => {
+        if (!currentPos.includes(p)) currentPos.push(p);
+      });
+      currentBio.primaryPositions = currentPos.join(', ');
+    }
+
+    steps.push({
+      evoId,
+      evoName: evo.name,
+      futbinLink: evo.futbinLink,
+      validation,
+      ovrAfter: currentOvr,
+      statsAfter: JSON.parse(JSON.stringify(currentStats)),
+      playStylesAfter: JSON.parse(JSON.stringify(currentPlayStyles)),
+      bioAfter: JSON.parse(JSON.stringify(currentBio))
+    });
+  }
+
+  return {
+    chainIds: [...chainIds],
+    isValidChain: overallValid,
+    steps,
+    finalOvr: currentOvr,
+    finalStats: currentStats,
+    finalPlayStyles: currentPlayStyles,
+    finalBio: currentBio
+  };
+}
+
+export function analyzeEvolutions(
+  poolIds: string[],
+  maxDepth: number,
+  baseBio: PlayerBio,
+  baseOvr: OvrData,
+  baseStats: StatsData,
+  basePlayStyles: PlayStylesData
+): EvolutionPath[] {
+  const validPaths: FullChainResult[] = [];
+  
+  function dfs(currentChainIds: string[]) {
+    let currentResult: FullChainResult | null = null;
+    
+    if (currentChainIds.length > 0) {
+      currentResult = simulateEvoChain(currentChainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+      if (currentResult.isValidChain) {
+        validPaths.push(currentResult);
+      } else {
+        return; // Stop branching if invalid
+      }
+    }
+    
+    if (currentChainIds.length >= maxDepth) return;
+    
+    for (const evoId of poolIds) {
+      if (currentChainIds.includes(evoId)) continue;
+      
+      const evo = availableEvolutions[evoId];
+      if (!evo) continue;
+      
+      let latestOvr = baseOvr.base;
+      let latestBio = baseBio;
+      let latestStats = baseStats;
+      let latestPS = basePlayStyles;
+      
+      if (currentResult) {
+        latestOvr = currentResult.finalOvr;
+        latestBio = currentResult.finalBio;
+        latestStats = currentResult.finalStats;
+        latestPS = currentResult.finalPlayStyles;
+      }
+      
+      const validation = validateRequirement(evo, latestOvr, latestStats, latestPS, latestBio);
+      
+      if (validation.eligible) {
+        currentChainIds.push(evoId);
+        dfs(currentChainIds);
+        currentChainIds.pop();
+      }
+    }
+  }
+  
+  dfs([]);
+  
+  validPaths.sort((a, b) => {
+    if (b.finalOvr !== a.finalOvr) return b.finalOvr - a.finalOvr;
+    const sumA = Object.values(a.finalStats).reduce((acc, f) => acc + f.baseFace, 0);
+    const sumB = Object.values(b.finalStats).reduce((acc, f) => acc + f.baseFace, 0);
+    return sumB - sumA;
+  });
+  
+  const topPaths = validPaths.slice(0, 3);
+  return topPaths.map((result, idx) => ({
+    id: `auto-path-${Date.now()}-${idx}`,
+    name: `System Auto Path ${idx + 1}`,
+    description: `Optimal chain spanning ${result.chainIds.length} EVOs. Reaches ${result.finalOvr} OVR.`,
+    isRecommended: true,
+    chainIds: [...result.chainIds]
+  }));
+}
+

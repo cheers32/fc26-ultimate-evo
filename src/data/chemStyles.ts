@@ -1,0 +1,23 @@
+import { ChemStylesData } from '../types/player';
+
+export const chemStyles: ChemStylesData = {
+  Sniper: { positioning: 3, finishing: 6, volleys: 3, penalties: 3, jumping: 3, strength: 6, aggression: 3 },
+  Finisher: { positioning: 6, finishing: 6, shotPower: 3, volleys: 3, agility: 6, balance: 3, dribbling: 6 },
+  Deadeye: { positioning: 6, finishing: 6, shotPower: 3, vision: 6, crossing: 3, freekick: 3, shortPass: 6, curve: 3 },
+  Marksman: { positioning: 3, finishing: 6, shotPower: 3, longShots: 6, agility: 3, reactions: 3, ballControl: 6, dribbling: 6, jumping: 3, strength: 6, aggression: 3 },
+  Hawk: { acceleration: 3, sprintSpeed: 3, positioning: 3, finishing: 3, shotPower: 6, longShots: 6, penalties: 3, jumping: 6, strength: 3, aggression: 6 },
+  Artist: { vision: 6, crossing: 6, longPass: 6, curve: 3, agility: 3, balance: 3, reactions: 3, dribbling: 6 },
+  Architect: { vision: 6, crossing: 6, freekick: 3, shortPass: 6, longPass: 3, jumping: 3, strength: 9, aggression: 3 },
+  Powerhouse: { vision: 6, crossing: 3, shortPass: 6, longPass: 3, curve: 3, interceptions: 6, defAwareness: 3, standTackle: 6 },
+  Maestro: { positioning: 3, shotPower: 6, longShots: 6, volleys: 3, vision: 3, freekick: 6, shortPass: 6, longPass: 3, reactions: 3, dribbling: 6 },
+  Engine: { acceleration: 3, sprintSpeed: 3, vision: 3, crossing: 6, freekick: 3, shortPass: 6, longPass: 3, curve: 3, agility: 3, balance: 6, dribbling: 6 },
+  Sentinel: { interceptions: 3, headingAcc: 6, defAwareness: 6, standTackle: 6, slideTackle: 3, jumping: 6, strength: 6, aggression: 6 },
+  Guardian: { balance: 3, ballControl: 6, dribbling: 6, composure: 3, interceptions: 3, headingAcc: 3, defAwareness: 6, standTackle: 6, slideTackle: 3 },
+  Gladiator: { positioning: 6, finishing: 6, shotPower: 3, interceptions: 3, headingAcc: 3, defAwareness: 3, standTackle: 6, slideTackle: 6 },
+  Backbone: { vision: 6, crossing: 3, shortPass: 6, longPass: 3, curve: 3, interceptions: 3, headingAcc: 3, defAwareness: 3, standTackle: 6, slideTackle: 6, jumping: 3, strength: 6, aggression: 3 },
+  Anchor: { acceleration: 3, sprintSpeed: 3, interceptions: 3, headingAcc: 3, defAwareness: 3, standTackle: 6, slideTackle: 6, jumping: 6, strength: 6, aggression: 3 },
+  Hunter: { acceleration: 6, sprintSpeed: 6, positioning: 3, finishing: 6, shotPower: 3, volleys: 6, penalties: 3 },
+  Catalyst: { acceleration: 6, sprintSpeed: 6, vision: 3, crossing: 6, freekick: 3, shortPass: 6, curve: 3 },
+  Shadow: { acceleration: 6, sprintSpeed: 6, interceptions: 6, headingAcc: 3, defAwareness: 3, standTackle: 6, slideTackle: 6 },
+  Basic: { sprintSpeed: 3, positioning: 3, shotPower: 3, volleys: 3, penalties: 3, vision: 3, shortPass: 3, longPass: 3, curve: 3, agility: 3, ballControl: 3, dribbling: 3, standTackle: 3, slideTackle: 3, jumping: 3, strength: 3 }
+};
