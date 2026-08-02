@@ -37,7 +37,7 @@ export const PlayerCarousel: React.FC<PlayerCarouselProps> = ({
       </button>
 
       {isExpanded && (
-        <div className="w-full flex overflow-x-auto py-4 px-2 gap-4 snap-x hide-scrollbar bg-black/20">
+        <div className="w-full flex overflow-x-auto py-4 px-2 gap-4 snap-x bg-black/20 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-track]:bg-black/40 [&::-webkit-scrollbar-thumb]:rounded-full pb-3">
       {Object.values(players).map((player) => {
         const isSelected = player.id === selectedPlayerId;
         return (

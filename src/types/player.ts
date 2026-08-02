@@ -43,6 +43,7 @@ export interface PlayerBio {
   primaryPositions: string;
   height: string;
   footAge: string;
+  bodyType?: string;
   weakFoot: number;
   skillMoves: number;
   rarity: string;

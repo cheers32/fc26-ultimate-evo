@@ -161,6 +161,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
             <div className="flex items-center gap-3 text-gray-400 font-medium pl-3 border-l border-gray-700/60">
               <span className="flex items-center gap-1">📏 {bio.height}</span>
               <span className="flex items-center gap-1">👟 {bio.footAge}</span>
+              {bio.bodyType && <span className="flex items-center gap-1">🧍 {bio.bodyType}</span>}
             </div>
           </div>
         </div>
