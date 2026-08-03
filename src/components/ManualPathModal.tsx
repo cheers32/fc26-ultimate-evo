@@ -29,6 +29,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [pathName, setPathName] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Populate the builder with the path being edited (or reset for a fresh path) whenever the modal opens
   useEffect(() => {
@@ -39,6 +40,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       } else {
         setSelectedChain([]);
         setPathName('');
+        setSearchQuery('');
       }
     }
   }, [isOpen, editingPath]);
@@ -245,8 +247,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
           {/* Right Side: Available Pool */}
           <div className="md:w-1/2 flex flex-col bg-[#1A1C1A]">
-            <div className="p-4 border-b border-gray-800 bg-[#1f211f]/50">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Available in Pool</h3>
+            <div className="p-4 border-b border-gray-800 bg-[#1f211f]/50 flex justify-between items-center gap-3">
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Available in Pool</h3>
+              <div className="relative flex-1 max-w-[200px]">
+                <input 
+                  type="text"
+                  placeholder="Search EVOs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#121212] border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen focus:outline-none transition-colors"
+                />
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 gap-2 content-start">
@@ -255,7 +266,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   Your EVO pool is empty.
                 </div>
               ) : (
-                poolWithStatus.map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs }) => {
+                poolWithStatus
+                  .filter(({ evo }) => !searchQuery || evo?.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs }) => {
                   if (!evo) return null;
                   
                   const canAdd = !limitReached && isEligible;
