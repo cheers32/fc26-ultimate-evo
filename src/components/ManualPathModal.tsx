@@ -4,6 +4,23 @@ import { availableEvolutions } from '../data/evolutionsData';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
 import { simulateEvoChain, validateRequirement } from '../utils/evoEngine';
 
+const StatDisplay = ({ label, after, before }: { label: string, after: number, before?: number }) => {
+  const diff = before !== undefined ? after - before : 0;
+  const isUp = diff > 0;
+  const isDown = diff < 0;
+  
+  return (
+    <span className="inline-flex items-baseline gap-0.5">
+      <span>{label}</span>
+      <span className={`ml-0.5 ${isUp ? 'text-fcGreen' : isDown ? 'text-red-400' : 'text-gray-300'}`}>
+        {after}
+      </span>
+      {isUp && <span className="text-fcGreen font-bold text-[9px]">(+{diff})</span>}
+      {isDown && <span className="text-red-400 font-bold text-[9px]">({diff})</span>}
+    </span>
+  );
+};
+
 interface ManualPathModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -210,12 +227,19 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 <div className="mt-1 flex flex-col gap-1">
                                   <p className="text-[10px] text-gray-400">OVR After: <span className="text-yellow-400 font-bold">{stepRes.ovrAfter}</span></p>
                                   <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
-                                    <span>PAC <span className="text-gray-300">{stepRes.statsAfter.pac.evFace}</span></span>
-                                    <span>SHO <span className="text-gray-300">{stepRes.statsAfter.sho.evFace}</span></span>
-                                    <span>PAS <span className="text-gray-300">{stepRes.statsAfter.pas.evFace}</span></span>
-                                    <span>DRI <span className="text-gray-300">{stepRes.statsAfter.dri.evFace}</span></span>
-                                    <span>DEF <span className="text-gray-300">{stepRes.statsAfter.def.evFace}</span></span>
-                                    <span>PHY <span className="text-gray-300">{stepRes.statsAfter.phy.evFace}</span></span>
+                                    {(() => {
+                                      const beforeStats = index === 0 ? baseStats : validationResult.result?.steps[index - 1].statsAfter;
+                                      return (
+                                        <>
+                                          <StatDisplay label="PAC" after={stepRes.statsAfter.pac.evFace} before={beforeStats?.pac.evFace} />
+                                          <StatDisplay label="SHO" after={stepRes.statsAfter.sho.evFace} before={beforeStats?.sho.evFace} />
+                                          <StatDisplay label="PAS" after={stepRes.statsAfter.pas.evFace} before={beforeStats?.pas.evFace} />
+                                          <StatDisplay label="DRI" after={stepRes.statsAfter.dri.evFace} before={beforeStats?.dri.evFace} />
+                                          <StatDisplay label="DEF" after={stepRes.statsAfter.def.evFace} before={beforeStats?.def.evFace} />
+                                          <StatDisplay label="PHY" after={stepRes.statsAfter.phy.evFace} before={beforeStats?.phy.evFace} />
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               )}
@@ -251,12 +275,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       <span className="font-mono">Final OVR: {validationResult.result?.finalOvr}</span>
                       {validationResult.result && (
                         <div className="flex gap-2 text-[10px] text-fcGreen/80 font-mono">
-                          <span>PAC {validationResult.result.finalStats.pac.evFace}</span>
-                          <span>SHO {validationResult.result.finalStats.sho.evFace}</span>
-                          <span>PAS {validationResult.result.finalStats.pas.evFace}</span>
-                          <span>DRI {validationResult.result.finalStats.dri.evFace}</span>
-                          <span>DEF {validationResult.result.finalStats.def.evFace}</span>
-                          <span>PHY {validationResult.result.finalStats.phy.evFace}</span>
+                          <StatDisplay label="PAC" after={validationResult.result.finalStats.pac.evFace} before={baseStats.pac.evFace} />
+                          <StatDisplay label="SHO" after={validationResult.result.finalStats.sho.evFace} before={baseStats.sho.evFace} />
+                          <StatDisplay label="PAS" after={validationResult.result.finalStats.pas.evFace} before={baseStats.pas.evFace} />
+                          <StatDisplay label="DRI" after={validationResult.result.finalStats.dri.evFace} before={baseStats.dri.evFace} />
+                          <StatDisplay label="DEF" after={validationResult.result.finalStats.def.evFace} before={baseStats.def.evFace} />
+                          <StatDisplay label="PHY" after={validationResult.result.finalStats.phy.evFace} before={baseStats.phy.evFace} />
                         </div>
                       )}
                     </div>
@@ -331,12 +355,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           </div>
                           {canAdd && expectedStats && (
                             <div className="flex gap-2 text-[9px] text-gray-500 font-mono mt-1.5 pt-1.5 border-t border-gray-800/50">
-                              <span>PAC <span className="text-gray-300">{expectedStats.pac.evFace}</span></span>
-                              <span>SHO <span className="text-gray-300">{expectedStats.sho.evFace}</span></span>
-                              <span>PAS <span className="text-gray-300">{expectedStats.pas.evFace}</span></span>
-                              <span>DRI <span className="text-gray-300">{expectedStats.dri.evFace}</span></span>
-                              <span>DEF <span className="text-gray-300">{expectedStats.def.evFace}</span></span>
-                              <span>PHY <span className="text-gray-300">{expectedStats.phy.evFace}</span></span>
+                              <StatDisplay label="PAC" after={expectedStats.pac.evFace} before={currentStats.pac.evFace} />
+                              <StatDisplay label="SHO" after={expectedStats.sho.evFace} before={currentStats.sho.evFace} />
+                              <StatDisplay label="PAS" after={expectedStats.pas.evFace} before={currentStats.pas.evFace} />
+                              <StatDisplay label="DRI" after={expectedStats.dri.evFace} before={currentStats.dri.evFace} />
+                              <StatDisplay label="DEF" after={expectedStats.def.evFace} before={currentStats.def.evFace} />
+                              <StatDisplay label="PHY" after={expectedStats.phy.evFace} before={currentStats.phy.evFace} />
                             </div>
                           )}
                         </div>
