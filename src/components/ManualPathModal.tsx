@@ -204,7 +204,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             <div>
                               <h4 className="font-bold text-white text-sm">{evo?.name || id}</h4>
                               {stepRes && (
-                                <p className="text-[10px] text-gray-400 mt-0.5">OVR After: <span className="text-yellow-400 font-bold">{stepRes.ovrAfter}</span></p>
+                                <div className="mt-1 flex flex-col gap-1">
+                                  <p className="text-[10px] text-gray-400">OVR After: <span className="text-yellow-400 font-bold">{stepRes.ovrAfter}</span></p>
+                                  <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
+                                    <span>PAC <span className="text-gray-300">{stepRes.statsAfter.pace.value}</span></span>
+                                    <span>SHO <span className="text-gray-300">{stepRes.statsAfter.shooting.value}</span></span>
+                                    <span>PAS <span className="text-gray-300">{stepRes.statsAfter.passing.value}</span></span>
+                                    <span>DRI <span className="text-gray-300">{stepRes.statsAfter.dribbling.value}</span></span>
+                                    <span>DEF <span className="text-gray-300">{stepRes.statsAfter.defending.value}</span></span>
+                                    <span>PHY <span className="text-gray-300">{stepRes.statsAfter.physical.value}</span></span>
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -232,9 +242,21 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
             {selectedChain.length > 0 && (
               <div className={`p-4 border-t border-gray-800 ${validationResult.isValid ? 'bg-green-950/20' : 'bg-red-950/20'}`}>
                 {validationResult.isValid ? (
-                  <div className="text-fcGreen text-sm font-semibold flex justify-between items-center">
+                  <div className="text-fcGreen text-sm font-semibold flex justify-between items-center w-full">
                     <span>Valid Chain!</span>
-                    <span className="font-mono">Final OVR: {validationResult.result?.finalOvr}</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="font-mono">Final OVR: {validationResult.result?.finalOvr}</span>
+                      {validationResult.result && (
+                        <div className="flex gap-2 text-[10px] text-fcGreen/80 font-mono">
+                          <span>PAC {validationResult.result.finalStats.pace.value}</span>
+                          <span>SHO {validationResult.result.finalStats.shooting.value}</span>
+                          <span>PAS {validationResult.result.finalStats.passing.value}</span>
+                          <span>DRI {validationResult.result.finalStats.dribbling.value}</span>
+                          <span>DEF {validationResult.result.finalStats.defending.value}</span>
+                          <span>PHY {validationResult.result.finalStats.physical.value}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-red-400 text-sm font-semibold">
