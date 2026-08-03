@@ -1,4 +1,4 @@
-import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult } from '../types/player';
+import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
 
 export interface FullChainResult {
@@ -46,10 +46,10 @@ export function validateRequirement(
     reasons.push(`PlayStyles+ (${currentGoldCount}) exceeds Max Requirement of ${evo.requirements.maxPlayStylesPlus}`);
   }
 
-  // Check PlayStyles Count (Total: Gold + Silver)
-  const currentTotalPlayStyles = currentPlayStyles.base.gold.length + currentPlayStyles.base.silver.length;
-  if (evo.requirements.maxPlayStyles !== undefined && currentTotalPlayStyles > evo.requirements.maxPlayStyles) {
-    reasons.push(`PlayStyles (${currentTotalPlayStyles}) exceeds Max Requirement of ${evo.requirements.maxPlayStyles}`);
+  // Check PlayStyles Count (Silver only)
+  const currentSilverCount = currentPlayStyles.base.silver.length;
+  if (evo.requirements.maxPlayStyles !== undefined && currentSilverCount > evo.requirements.maxPlayStyles) {
+    reasons.push(`PlayStyles (${currentSilverCount}) exceeds Max Requirement of ${evo.requirements.maxPlayStyles}`);
   }
 
   // Check Total Positions Count
@@ -279,7 +279,7 @@ export function analyzeEvolutions(
   baseOvr: OvrData,
   baseStats: StatsData,
   basePlayStyles: PlayStylesData,
-  maxOvrCap: number = 99
+  filters?: EvoFilters
 ): EvolutionPath[] {
   const validPaths: FullChainResult[] = [];
   
@@ -288,10 +288,70 @@ export function analyzeEvolutions(
     
     if (currentChainIds.length > 0) {
       currentResult = simulateEvoChain(currentChainIds, baseBio, baseOvr, baseStats, basePlayStyles);
-      if (currentResult.isValidChain && currentResult.finalOvr <= maxOvrCap) {
+      if (!currentResult.isValidChain) {
+        return; // Stop branching if invalid
+      }
+
+      const maxOvrAllowed = filters?.ovr?.max ?? 99;
+      if (currentResult.finalOvr > maxOvrAllowed) {
+        return; // Prune branch: OVR only increases, so we can't recover
+      }
+
+      let passesFilters = true;
+      if (filters) {
+        if (filters.ovr?.min !== undefined && currentResult.finalOvr < filters.ovr.min) passesFilters = false;
+
+        const finalPS = currentResult.finalPlayStyles;
+        const psPlusCount = Math.min(finalPS.base.gold.length + finalPS.ev.gold.length, finalPS.limits.gold);
+        const psCount = Math.min(finalPS.base.silver.length + finalPS.ev.silver.length, finalPS.limits.silver);
+
+        if (filters.psPlus) {
+          if (filters.psPlus.min !== undefined && psPlusCount < filters.psPlus.min) passesFilters = false;
+          if (filters.psPlus.max !== undefined && psPlusCount > filters.psPlus.max) {
+             passesFilters = false;
+             return; // Prune branch: PS+ only increases
+          }
+        }
+        
+        if (filters.ps) {
+          if (filters.ps.min !== undefined && psCount < filters.ps.min) passesFilters = false;
+          if (filters.ps.max !== undefined && psCount > filters.ps.max) {
+             passesFilters = false;
+             return; // Prune branch: PS only increases
+          }
+        }
+
+        const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
+        for (const stat of statsToCheck) {
+          if (filters[stat]) {
+            const faceVal = currentResult.finalStats[stat]?.baseFace || 0;
+            if (filters[stat]!.min !== undefined && faceVal < filters[stat]!.min!) passesFilters = false;
+            
+            if (filters[stat]!.max !== undefined && faceVal > filters[stat]!.max!) {
+              passesFilters = false;
+              // We can also aggressively prune here if we assume stats only go up
+              return; // Prune branch
+            }
+
+            // Check sub-stats if defined
+            if (filters[stat]!.subs) {
+              const subsConfig = filters[stat]!.subs!;
+              const actualSubs = currentResult.finalStats[stat]?.subs || {};
+              for (const subKey in subsConfig) {
+                const subVal = actualSubs[subKey]?.base || 0;
+                if (subsConfig[subKey].min !== undefined && subVal < subsConfig[subKey].min!) passesFilters = false;
+                if (subsConfig[subKey].max !== undefined && subVal > subsConfig[subKey].max!) {
+                  passesFilters = false;
+                  return; // Prune branch for sub-stat
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (passesFilters) {
         validPaths.push(currentResult);
-      } else {
-        return; // Stop branching if invalid or exceeds OVR cap
       }
     }
     
@@ -345,7 +405,7 @@ export function analyzeEvolutions(
     
     return {
       id: `auto-path-${Date.now()}-${idx}`,
-      name: `Auto Gen (${result.chainIds.length} Evos) | OVR: ${result.finalOvr} | Base Stats: ${faceSum} | IGS: ${igs}`,
+      name: `Auto ${result.finalOvr}/${result.chainIds.length}/${igs}`,
       description: `Optimal chain spanning ${result.chainIds.length} EVOs. Reaches ${result.finalOvr} OVR.`,
       isRecommended: true,
       chainIds: [...result.chainIds],

@@ -2,12 +2,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { playersDatabase } from './data/playersData';
 import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
-import { EvolutionPath } from './types/player';
+import { PlayerData, StatsData, PlayStylesData, EvolutionPath, EvoFilters } from './types/player';
 import { HeaderCard } from './components/HeaderCard';
 import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
-import { FcCardPreview } from './components/FcCardPreview';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { calculateAccelerateType } from './utils/statUtils';
 import { simulateEvoChain, analyzeEvolutions } from './utils/evoEngine';
@@ -15,7 +14,7 @@ import { EvolutionDefinition } from './types/player';
 import { PlayerCarousel } from './components/PlayerCarousel';
 import { EvoPoolModal } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
-import { Trophy, RefreshCw, LayoutGrid, CreditCard, Layers, Zap } from 'lucide-react';
+import { Trophy, RefreshCw, LayoutGrid, Layers, Zap } from 'lucide-react';
 
 export default function App() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('rodri-91');
@@ -37,7 +36,7 @@ export default function App() {
     evosPool: string[];
     generatedPaths: EvolutionPath[];
     manualPaths: EvolutionPath[];
-    maxOvrCap: number;
+    evoFilters: EvoFilters;
   };
 
   const [playerStates, setPlayerStates] = useState<Record<string, PlayerEvoState>>({});
@@ -47,7 +46,7 @@ export default function App() {
     evosPool: [],
     generatedPaths: [],
     manualPaths: [],
-    maxOvrCap: 99
+    evoFilters: { ovr: { max: 99 } }
   };
 
   const updateState = (updates: Partial<PlayerEvoState>) => {
@@ -57,7 +56,7 @@ export default function App() {
         evosPool: [],
         generatedPaths: [],
         manualPaths: [],
-        maxOvrCap: 99
+        evoFilters: { ovr: { max: 99 } }
       };
       
       const newState = { ...current, ...updates };
@@ -99,13 +98,13 @@ export default function App() {
   const evosPool = currentState.evosPool;
   const generatedPaths = currentState.generatedPaths;
   const manualPaths = currentState.manualPaths;
-  const maxOvrCap = currentState.maxOvrCap ?? 99;
+  const evoFilters = currentState.evoFilters;
 
   const setActivePathId = (val: string | ((prev: string) => string)) => updateState({ activePathId: typeof val === 'function' ? val(currentState.activePathId) : val });
   const setEvosPool = (val: string[] | ((prev: string[]) => string[])) => updateState({ evosPool: typeof val === 'function' ? val(currentState.evosPool) : val });
   const setGeneratedPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ generatedPaths: typeof val === 'function' ? val(currentState.generatedPaths) : val });
   const setManualPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ manualPaths: typeof val === 'function' ? val(currentState.manualPaths) : val });
-  const setMaxOvrCap = (val: number) => updateState({ maxOvrCap: val });
+  const setEvoFilters = (val: EvoFilters | ((prev: EvoFilters) => EvoFilters)) => updateState({ evoFilters: typeof val === 'function' ? val(currentState.evoFilters) : val });
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   const [isManualPathOpen, setIsManualPathOpen] = useState(false);
@@ -408,10 +407,10 @@ export default function App() {
           onOpenManualPath={() => { setEditingPath(null); setIsManualPathOpen(true); }}
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
-          maxOvrCap={maxOvrCap}
-          onMaxOvrCapChange={setMaxOvrCap}
+          evoFilters={evoFilters}
+          onEvoFiltersChange={setEvoFilters}
           onAnalyze={() => {
-            const results = analyzeEvolutions(evosPool, 3, playerBio, initialOvrData, statsData, playStylesData, maxOvrCap);
+            const results = analyzeEvolutions(evosPool, 3, playerBio, initialOvrData, statsData, playStylesData, evoFilters);
             setGeneratedPaths(results);
             if (results.length > 0) {
               setActivePathId(results[0].id);
@@ -432,95 +431,88 @@ export default function App() {
           onEditPath={(path) => { setEditingPath(path); setIsManualPathOpen(true); }}
         />
 
-        {/* Tab Navigation */}
-        <div className="flex bg-[#1A1C1A] p-1.5 rounded-xl border border-gray-800/80 shadow-md mb-4 mt-2 mx-auto max-w-fit text-sm">
-          <button
-            onClick={() => setActiveTab('workbench')}
-            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'workbench'
-                ? 'bg-[#1ED760] text-black shadow'
-                : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-            Stats Workbench
-          </button>
-          <button
-            onClick={() => setActiveTab('evos')}
-            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'evos'
-                ? 'bg-[#1ED760] text-black shadow'
-                : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            EVO Chain Lab
-          </button>
-          <button
-            onClick={() => setActiveTab('card')}
-            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'card'
-                ? 'bg-[#1ED760] text-black shadow'
-                : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
-            }`}
-          >
-            <CreditCard className="w-4 h-4" />
-            Visual FC Card
-          </button>
+        {/* Top Control Bar: Chemistry Stats + Tabs */}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 text-[14px] bg-[#1a1c1a] p-3 rounded-xl border border-gray-800 shadow-md mb-4 mt-2">
+          {/* Stats Info */}
+          <div className="flex flex-wrap gap-x-8 lg:gap-x-12">
+            <div className="flex flex-col min-w-[100px] lg:min-w-[130px]">
+              <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1">
+                <Zap className="w-3 h-3 text-fcGreen" />
+                AcceleRATE
+              </span>
+              <span className={`font-bold text-lg transition-colors ${accelerateType === 'Lengthy' ? 'text-fcGreen drop-shadow-[0_0_8px_rgba(30,215,96,0.4)]' : 'text-white'}`}>
+                {accelerateType}
+              </span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">Face Stats</span>
+              <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
+                <span className="text-gray-300">{faceSum.activeBase}</span>
+                {previewOvr !== activeBaseOvr && (
+                  <>
+                    <span className="text-gray-600 text-sm">➜</span>
+                    <span className="text-[#EBB626] font-bold">{faceSum.effective}</span>
+                  </>
+                )}
+                {faceSum.diff > 0 && (
+                  <>
+                    <span className="text-fcGreen text-sm">➜</span>
+                    <span className="text-fcGreen font-bold">{faceSum.chem} <span className="text-sm">(+{faceSum.diff})</span></span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">IGS (In-Game Stats)</span>
+              <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
+                <span className="text-gray-300">{igs.activeBase}</span>
+                {previewOvr !== activeBaseOvr && (
+                  <>
+                    <span className="text-gray-600 text-sm">➜</span>
+                    <span className="text-[#EBB626] font-bold">{igs.effective}</span>
+                  </>
+                )}
+                {igs.diff > 0 && (
+                  <>
+                    <span className="text-fcGreen text-sm">➜</span>
+                    <span className="text-fcGreen font-bold">{igs.chem} <span className="text-sm">(+{igs.diff})</span></span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800/80 text-sm ml-auto mt-2 lg:mt-0">
+            <button
+              onClick={() => setActiveTab('workbench')}
+              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
+                activeTab === 'workbench'
+                  ? 'bg-[#1ED760] text-black shadow'
+                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Stats Workbench
+            </button>
+            <button
+              onClick={() => setActiveTab('evos')}
+              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
+                activeTab === 'evos'
+                  ? 'bg-[#1ED760] text-black shadow'
+                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              EVO Chain Lab
+            </button>
+          </div>
         </div>
 
         {activeTab === 'workbench' && (
           <>
-            {/* Chemistry Related Stats */}
-            <div className="flex flex-wrap gap-x-12 gap-y-3 text-[14px] bg-[#1a1c1a] p-3 rounded-xl border border-gray-800 shadow-md mb-4 mt-0">
-              <div className="flex flex-col min-w-[130px]">
-                <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-fcGreen" />
-                  AcceleRATE
-                </span>
-                <span className={`font-bold text-lg transition-colors ${accelerateType === 'Lengthy' ? 'text-fcGreen drop-shadow-[0_0_8px_rgba(30,215,96,0.4)]' : 'text-white'}`}>
-                  {accelerateType}
-                </span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">Face Stats</span>
-                <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
-                  <span className="text-gray-300">{faceSum.activeBase}</span>
-                  {previewOvr !== activeBaseOvr && (
-                    <>
-                      <span className="text-gray-600 text-sm">➜</span>
-                      <span className="text-[#EBB626] font-bold">{faceSum.effective}</span>
-                    </>
-                  )}
-                  {faceSum.diff > 0 && (
-                    <>
-                      <span className="text-fcGreen text-sm">➜</span>
-                      <span className="text-fcGreen font-bold">{faceSum.chem} <span className="text-sm">(+{faceSum.diff})</span></span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col ml-4 md:ml-8">
-                <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">IGS (In-Game Stats)</span>
-                <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
-                  <span className="text-gray-300">{igs.activeBase}</span>
-                  {previewOvr !== activeBaseOvr && (
-                    <>
-                      <span className="text-gray-600 text-sm">➜</span>
-                      <span className="text-[#EBB626] font-bold">{igs.effective}</span>
-                    </>
-                  )}
-                  {igs.diff > 0 && (
-                    <>
-                      <span className="text-fcGreen text-sm">➜</span>
-                      <span className="text-fcGreen font-bold">{igs.chem} <span className="text-sm">(+{igs.diff})</span></span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
 
             <StatsGrid
               baseStats={activeBaseStats}
@@ -556,32 +548,6 @@ export default function App() {
             stats={statsData}
             playStyles={playStylesData}
           />
-        )}
-
-        {activeTab === 'card' && (
-          /* Visual FC Card View */
-          <div className="py-8 bg-[#121212]/60 rounded-2xl border border-gray-800 my-4 flex flex-col items-center">
-            <FcCardPreview
-              bio={playerBio}
-              ovrVal={currentOvrVal}
-              activePath={activePath}
-              stats={previewStats}
-              activeChemBoosts={activeChemBoosts}
-              activeChemName={activeChemName}
-              evoLocked={evoLocked}
-              evoPreview={evoPreview}
-            />
-
-            <div className="mt-6 text-center text-xs text-gray-400 max-w-md">
-              <p className="font-semibold text-white mb-1">Visual Card Summary</p>
-              <p>
-                Showing {playerBio.name} with OVR {currentOvrVal},{' '}
-                EVO Chain: {activePath.name},{' '}
-                {activeChemName ? `Chemistry Style: ${activeChemName}` : 'No Chemistry Style active'},{' '}
-                AccelerATE: {accelerateType}.
-              </p>
-            </div>
-          </div>
         )}
 
         <div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">

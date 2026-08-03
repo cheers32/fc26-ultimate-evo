@@ -139,3 +139,20 @@ export interface ChainValidation {
   eligible: boolean;
   reasons: string[];
 }
+
+export interface StatFilter { 
+  min?: number; 
+  max?: number; 
+  subs?: Record<string, { min?: number; max?: number }>; 
+}
+export interface EvoFilters {
+  ovr?: StatFilter;
+  pac?: StatFilter;
+  sho?: StatFilter;
+  pas?: StatFilter;
+  dri?: StatFilter;
+  def?: StatFilter;
+  phy?: StatFilter;
+  psPlus?: StatFilter;
+  ps?: StatFilter;
+}

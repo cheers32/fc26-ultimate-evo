@@ -1,8 +1,8 @@
 import React from 'react';
-import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition } from '../types/player';
+import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters } from '../types/player';
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil } from 'lucide-react';
+import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil, Settings2, Minus } from 'lucide-react';
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -18,8 +18,8 @@ interface HeaderCardProps {
   onOpenManualPath: () => void;
   originalIgs: number;
   originalFaceSum: number;
-  maxOvrCap: number;
-  onMaxOvrCapChange: (val: number) => void;
+  evoFilters: EvoFilters;
+  onEvoFiltersChange: (val: EvoFilters) => void;
   onAnalyze: () => void;
   evosPoolCount: number;
   evoPreview: boolean;
@@ -59,8 +59,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenManualPath,
   originalIgs,
   originalFaceSum,
-  maxOvrCap,
-  onMaxOvrCapChange,
+  evoFilters,
+  onEvoFiltersChange,
   onAnalyze,
   evosPoolCount,
   evoPreview,
@@ -78,6 +78,25 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
   const isEvo = isLockedOrEvo;
+
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [expandedStats, setExpandedStats] = React.useState<Set<string>>(new Set());
+
+  const toggleExpand = (stat: string) => {
+    const next = new Set(expandedStats);
+    if (next.has(stat)) next.delete(stat);
+    else next.add(stat);
+    setExpandedStats(next);
+  };
+
+  const statSubs: Record<string, {key: string, label: string}[]> = {
+    pac: [{key: 'acceleration', label: 'Accel'}, {key: 'sprintSpeed', label: 'Sprint'}],
+    sho: [{key: 'positioning', label: 'Pos'}, {key: 'finishing', label: 'Finish'}, {key: 'shotPower', label: 'Power'}, {key: 'longShots', label: 'Long'}, {key: 'volleys', label: 'Volley'}, {key: 'penalties', label: 'Pen'}],
+    pas: [{key: 'vision', label: 'Vision'}, {key: 'crossing', label: 'Cross'}, {key: 'freekick', label: 'FK Acc'}, {key: 'shortPass', label: 'Short'}, {key: 'longPass', label: 'Long'}, {key: 'curve', label: 'Curve'}],
+    dri: [{key: 'agility', label: 'Agility'}, {key: 'balance', label: 'Balance'}, {key: 'reactions', label: 'React'}, {key: 'ballControl', label: 'Control'}, {key: 'dribbling', label: 'Dribble'}, {key: 'composure', label: 'Composure'}],
+    def: [{key: 'interceptions', label: 'Intercept'}, {key: 'headingAcc', label: 'Heading'}, {key: 'defAwareness', label: 'Def Aware'}, {key: 'standTackle', label: 'Stand T.'}, {key: 'slideTackle', label: 'Slide T.'}],
+    phy: [{key: 'jumping', label: 'Jumping'}, {key: 'stamina', label: 'Stamina'}, {key: 'strength', label: 'Strength'}, {key: 'aggression', label: 'Aggress'}]
+  };
   
   // Gold PlayStyles stats
   const goldBase = playStyles.base.gold.length;
@@ -274,25 +293,125 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Evolution Lab</h3>
             </div>
             
-            <div className="flex gap-1 items-center">
-              <div className="flex items-center gap-1.5 mr-2 bg-[#1f211f] border border-gray-800 rounded-lg px-2 py-1">
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">OVR Cap</span>
-                <input
-                  type="number"
-                  min="1"
-                  max="99"
-                  value={maxOvrCap}
-                  onChange={(e) => onMaxOvrCapChange(Number(e.target.value) || 99)}
-                  className="w-10 bg-transparent text-white text-xs font-bold focus:outline-none text-center"
-                />
-              </div>
-              <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5">
+            <div className="flex gap-1 items-center relative">
+              <button onClick={() => setShowFilters(!showFilters)} className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1.5 transition-colors ${showFilters ? 'bg-fcGreen text-black font-bold border-fcGreen' : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'}`}>
+                <Settings2 className="w-3.5 h-3.5" /> Filters
+              </button>
+              
+              {showFilters && (
+                <div className="absolute top-full right-0 mt-2 w-72 bg-[#1A1C1A] border border-gray-700 rounded-xl shadow-2xl z-50 p-4">
+                  <div className="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
+                    <h4 className="text-sm font-bold text-white uppercase">Advanced Filters</h4>
+                    <button onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+                  </div>
+                  
+                  <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy', 'psPlus', 'ps'].map(stat => {
+                      const safeFilters = evoFilters || {};
+                      const statFilter = (safeFilters as any)[stat] || {};
+                      const label = stat === 'psPlus' ? 'PS+' : stat === 'ps' ? 'PS' : stat.toUpperCase();
+                      const hasSubs = !!statSubs[stat];
+                      const isExpanded = expandedStats.has(stat);
+                      return (
+                        <div key={stat} className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-1 w-14">
+                              <span className="text-gray-400 font-bold">{label}</span>
+                              {hasSubs && (
+                                <button onClick={() => toggleExpand(stat)} className="text-gray-500 hover:text-white transition-colors">
+                                  {isExpanded ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                                </button>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                placeholder="Min"
+                                value={statFilter.min || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value ? Number(e.target.value) : undefined;
+                                  onEvoFiltersChange({ ...safeFilters, [stat]: { ...statFilter, min: val } });
+                                }}
+                                className="w-14 bg-[#121212] border border-gray-700 rounded px-2 py-1 text-white text-center focus:border-fcGreen outline-none"
+                              />
+                              <span className="text-gray-600">-</span>
+                              <input
+                                type="number"
+                                placeholder="Max"
+                                value={statFilter.max || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value ? Number(e.target.value) : undefined;
+                                  onEvoFiltersChange({ ...safeFilters, [stat]: { ...statFilter, max: val } });
+                                }}
+                                className="w-14 bg-[#121212] border border-gray-700 rounded px-2 py-1 text-white text-center focus:border-fcGreen outline-none"
+                              />
+                            </div>
+                          </div>
+                          
+                          {hasSubs && isExpanded && (
+                            <div className="flex flex-col gap-2 pl-3 border-l-2 border-gray-800 ml-2 mt-1">
+                              {statSubs[stat].map(sub => {
+                                const subFilter = statFilter.subs?.[sub.key] || {};
+                                return (
+                                  <div key={sub.key} className="flex items-center justify-between gap-3 text-xs">
+                                    <span className="text-gray-500 font-medium truncate w-14" title={sub.label}>{sub.label}</span>
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="number"
+                                        placeholder="Min"
+                                        value={subFilter.min || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? Number(e.target.value) : undefined;
+                                          onEvoFiltersChange({
+                                            ...safeFilters, 
+                                            [stat]: { 
+                                              ...statFilter, 
+                                              subs: { ...statFilter.subs, [sub.key]: { ...subFilter, min: val } } 
+                                            }
+                                          });
+                                        }}
+                                        className="w-14 bg-[#1a1c1a] border border-gray-800 rounded px-2 py-1 text-gray-300 text-center focus:border-fcGreen outline-none text-[10px]"
+                                      />
+                                      <span className="text-gray-700">-</span>
+                                      <input
+                                        type="number"
+                                        placeholder="Max"
+                                        value={subFilter.max || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? Number(e.target.value) : undefined;
+                                          onEvoFiltersChange({
+                                            ...safeFilters, 
+                                            [stat]: { 
+                                              ...statFilter, 
+                                              subs: { ...statFilter.subs, [sub.key]: { ...subFilter, max: val } } 
+                                            }
+                                          });
+                                        }}
+                                        className="w-14 bg-[#1a1c1a] border border-gray-800 rounded px-2 py-1 text-gray-300 text-center focus:border-fcGreen outline-none text-[10px]"
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-800 flex justify-end">
+                    <button onClick={() => onEvoFiltersChange({})} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold">Clear All</button>
+                  </div>
+                </div>
+              )}
+
+              <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5 ml-2">
                 <Settings className="w-3.5 h-3.5" /> Pool ({evosPoolCount})
               </button>
               <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" /> Manual
               </button>
-              <button onClick={onAnalyze} disabled={evosPoolCount === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${evosPoolCount > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
+              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={evosPoolCount === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${evosPoolCount > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
                 <Zap className="w-3.5 h-3.5" /> Analyze
               </button>
             </div>

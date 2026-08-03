@@ -70,7 +70,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
   const handleSave = () => {
     if (selectedChain.length > 0 && validationResult.isValid) {
-      const pName = pathName.trim() || `Manual Path (${selectedChain.length} EVOs)`;
+      const result = validationResult.result;
+      const igs = result ? Object.values(result.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0) : 0;
+      const defaultName = result ? `Custom ${result.finalOvr}/${selectedChain.length}/${igs}` : `Custom Path`;
+      const pName = pathName.trim() || defaultName;
       onSave({
         id: editingPath ? editingPath.id : `manual-path-${Date.now()}`,
         name: pName,
