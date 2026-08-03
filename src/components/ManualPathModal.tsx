@@ -275,7 +275,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           <h4 className={`font-bold text-sm transition-colors ${canAdd ? 'text-gray-200 group-hover:text-fcGreen' : 'text-gray-500'}`}>{evo.name}</h4>
                           <div className="flex gap-2 items-center mt-0.5">
                             <p className="text-[10px] text-gray-500 font-medium">Req OVR: ≤{evo.requirements.maxOvr}</p>
-                            {canAdd && expectedOvr > 0 && (
+                            {canAdd && expectedOvr > currentOvr && (
                               <span className="px-1.5 py-0.5 bg-green-950/40 rounded text-[9px] text-green-400 border border-green-800/40 font-bold">
                                 → {expectedOvr} OVR
                               </span>
