@@ -67,6 +67,7 @@ export interface PlayerData {
 export interface EvolutionRequirement {
   maxOvr: number;
   maxPace?: number;
+  maxShooting?: number;
   maxDefending?: number;
   maxPhysicality?: number;
   maxWeakFoot?: number;

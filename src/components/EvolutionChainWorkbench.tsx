@@ -81,6 +81,7 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                   <div className="flex flex-wrap gap-x-3 gap-y-0 text-white">
                     {evo.requirements.maxOvr !== undefined && <div className="flex gap-1 text-blue-400"><span>Max OVR:</span><span className="font-bold">{evo.requirements.maxOvr}</span></div>}
                     {evo.requirements.maxPace !== undefined && <div className="flex gap-1"><span>Max Pace:</span><span className="font-bold">{evo.requirements.maxPace}</span></div>}
+                    {evo.requirements.maxShooting !== undefined && <div className="flex gap-1"><span>Max Sho:</span><span className="font-bold">{evo.requirements.maxShooting}</span></div>}
                     {evo.requirements.maxDefending !== undefined && <div className="flex gap-1"><span>Max Def:</span><span className="font-bold">{evo.requirements.maxDefending}</span></div>}
                     {evo.requirements.maxPhysicality !== undefined && <div className="flex gap-1"><span>Max Phy:</span><span className="font-bold">{evo.requirements.maxPhysicality}</span></div>}
                     

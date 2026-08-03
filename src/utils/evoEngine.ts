@@ -41,6 +41,11 @@ export function validateRequirement(
     reasons.push(`Pace ${currentStats.pac.baseFace} exceeds Max Requirement of ${evo.requirements.maxPace}`);
   }
 
+  // Check Max Shooting
+  if (evo.requirements.maxShooting && currentStats.sho.baseFace > evo.requirements.maxShooting) {
+    reasons.push(`Shooting ${currentStats.sho.baseFace} exceeds Max Requirement of ${evo.requirements.maxShooting}`);
+  }
+
   // Check Max Defending
   if (evo.requirements.maxDefending && currentStats.def.baseFace > evo.requirements.maxDefending) {
     reasons.push(`Defending ${currentStats.def.baseFace} exceeds Max Requirement of ${evo.requirements.maxDefending}`);

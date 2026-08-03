@@ -31,13 +31,55 @@ import { futtiesBlueprintI1183 } from './evolutions/futtiesBlueprintI1183';
 import { futtiesBlueprintII1194 } from './evolutions/futtiesBlueprintII1194';
 import { strikeForceIsBack1155 } from './evolutions/strikeForceIsBack1155';
 import { noWayThrough1156 } from './evolutions/noWayThrough1156';
+import { theFlyingDutchman1085 } from './evolutions/theFlyingDutchman1085';
+import { theLittleBoyFromRosario1060 } from './evolutions/theLittleBoyFromRosario1060';
+import { deadballMastery1061 } from './evolutions/deadballMastery1061';
+import { elBandido1062 } from './evolutions/elBandido1062';
+import { noEntry1083 } from './evolutions/noEntry1083';
+import { theFinalPass1084 } from './evolutions/theFinalPass1084';
+import { oCapitao1059 } from './evolutions/oCapitao1059';
+import { doItLikeYaya1030 } from './evolutions/doItLikeYaya1030';
+import { theEgyptianKing1029 } from './evolutions/theEgyptianKing1029';
+import { leopardsRoar1032 } from './evolutions/leopardsRoar1032';
+import { iDoAbsolutes1034 } from './evolutions/iDoAbsolutes1034';
+import { hiddenGem1011 } from './evolutions/hiddenGem1011';
+import { theKiwiWall1012 } from './evolutions/theKiwiWall1012';
+import { oxygenTank1016 } from './evolutions/oxygenTank1016';
+import { goldenSpirit1017 } from './evolutions/goldenSpirit1017';
+import { continentalCannon1018 } from './evolutions/continentalCannon1018';
+import { streetSoccer988 } from './evolutions/streetSoccer988';
+import { goldStandard979 } from './evolutions/goldStandard979';
+import { starChaser989 } from './evolutions/starChaser989';
+import { chasingTheSpotlight984 } from './evolutions/chasingTheSpotlight984';
+import { elKaiser987 } from './evolutions/elKaiser987';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
+  '979': goldStandard979,
   '983': relentlessRise983,
+  '984': chasingTheSpotlight984,
+  '987': elKaiser987,
+  '988': streetSoccer988,
+  '989': starChaser989,
+  '1011': hiddenGem1011,
+  '1012': theKiwiWall1012,
   '1014': tinyTim1014,
+  '1016': oxygenTank1016,
+  '1017': goldenSpirit1017,
+  '1018': continentalCannon1018,
+  '1029': theEgyptianKing1029,
+  '1030': doItLikeYaya1030,
+  '1032': leopardsRoar1032,
+  '1034': iDoAbsolutes1034,
+  '1059': oCapitao1059,
+  '1060': theLittleBoyFromRosario1060,
+  '1061': deadballMastery1061,
+  '1062': elBandido1062,
   '1080': highlandDelivery1080,
   '1081': furiaCeca1081,
   '1082': thePowercube1082,
+  '1083': noEntry1083,
+  '1084': theFinalPass1084,
+  '1085': theFlyingDutchman1085,
   '1110': immovableObject1110,
   '1111': unstoppableForce1111,
   '1112': nationalPrideStarPart1_1112,
