@@ -128,12 +128,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     };
   });
 
-  // Sort: Eligible first, then ineligible, then limit reached.
+  // Sort: Eligible first, then ineligible, then limit reached. Within same status, sort by maxOvr ascending.
   poolWithStatus.sort((a, b) => {
     if (a.limitReached && !b.limitReached) return 1;
     if (!a.limitReached && b.limitReached) return -1;
     if (a.isEligible && !b.isEligible) return -1;
     if (!a.isEligible && b.isEligible) return 1;
+    
+    // Sort by Max OVR ascending
+    const aMaxOvr = a.evo?.requirements.maxOvr || 99;
+    const bMaxOvr = b.evo?.requirements.maxOvr || 99;
+    if (aMaxOvr !== bMaxOvr) return aMaxOvr - bMaxOvr;
+
     return 0;
   });
 
