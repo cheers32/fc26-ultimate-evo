@@ -28,9 +28,20 @@ export const PlayerCarousel: React.FC<PlayerCarouselProps> = ({
             Player Selection 
           </span>
           {!isExpanded && selectedPlayer && (
-            <span className="text-xs text-gray-500 bg-[#1a1c1a] px-2 py-1 rounded-md border border-gray-800">
-              Current: {selectedPlayer.bio.name} ({selectedPlayer.ovr.base})
-            </span>
+            <div className="flex items-center gap-2 text-xs text-gray-300 bg-[#1a1c1a] pl-1 pr-2 py-1 rounded-md border border-gray-800 ml-2">
+              <div className="w-6 h-6 shrink-0 rounded-full overflow-hidden border border-gray-600 bg-[#121212] flex items-center justify-center">
+                <img
+                  src={selectedPlayer.avatarUrl}
+                  alt={selectedPlayer.bio.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://futhead.cursecdn.com/static/img/24/players/p_placeholder.png';
+                  }}
+                />
+              </div>
+              <span className="font-bold">{selectedPlayer.bio.name}</span>
+              <span className="text-gray-500">({selectedPlayer.ovr.base})</span>
+            </div>
           )}
         </div>
         {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}

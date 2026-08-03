@@ -372,7 +372,7 @@ export const playersDatabase: Record<string, PlayerData> = {
   },
   'rabiot-92': {
     id: 'rabiot-92',
-    futbinLink: 'https://www.futbin.com/26/player/123/adrien-rabiot',
+    futbinLink: 'https://www.futbin.com/26/player/24633/adrien-rabiot',
     avatarUrl: '/images/rabiot.png',
     bio: {
       name: 'Adrien Rabiot',
@@ -466,7 +466,7 @@ export const playersDatabase: Record<string, PlayerData> = {
   },
   'maldini-89': {
     id: 'maldini-89',
-    futbinLink: 'https://www.futbin.com/26/player/13/paolo-maldini',
+    futbinLink: 'https://www.futbin.com/26/player/24556/maldini',
     avatarUrl: '/images/maldini.png',
     bio: {
       name: 'Paolo Maldini',

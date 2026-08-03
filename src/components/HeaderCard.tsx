@@ -7,6 +7,7 @@ import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X } from 'lucide-rea
 interface HeaderCardProps {
   bio: PlayerBio;
   futbinLink?: string;
+  avatarUrl?: string;
   activeBaseOvr: number;
   previewOvr: number;
   activePath: EvolutionPath;
@@ -46,6 +47,7 @@ interface HeaderCardProps {
 export const HeaderCard: React.FC<HeaderCardProps> = ({
   bio,
   futbinLink,
+  avatarUrl,
   activeBaseOvr,
   previewOvr,
   activePath,
@@ -115,10 +117,25 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   return (
     <div className="flex flex-col gap-4 mb-4">
       {/* Player Header Section (Ultra Compressed) */}
-      <div className="flex flex-col gap-2 bg-[#1f211f]/60 p-2.5 rounded-xl border border-gray-800/80 backdrop-blur-sm">
+      <div className="flex gap-4 bg-[#1f211f]/60 p-3 rounded-xl border border-gray-800/80 backdrop-blur-sm items-center">
         
-        {/* Row 1: Name, OVR, and Basic Bio */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-800/60 pb-2">
+        {/* Large Avatar */}
+        {avatarUrl && (
+          <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full overflow-hidden border-2 border-gray-600 bg-[#121212] flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+            <img
+              src={avatarUrl}
+              alt={bio.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://futhead.cursecdn.com/static/img/24/players/p_placeholder.png';
+              }}
+            />
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 flex-grow min-w-0">
+          {/* Row 1: Name, OVR, and Basic Bio */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-800/60 pb-2">
           {/* Name & FUTBIN */}
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
@@ -245,6 +262,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           </div>
         </div>
       </div>
+    </div>
 
     {/* Path Selection & Action Buttons */}
     <div className="flex flex-col gap-2 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-3 shadow-md">

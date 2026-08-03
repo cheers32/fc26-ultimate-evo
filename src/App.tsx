@@ -379,68 +379,6 @@ export default function App() {
     <div className="min-h-screen bg-[#121212] py-4 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
       <div className="bg-[#1A1C1A] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-6xl border border-gray-800/80">
         
-        {/* Top Navbar / Header Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-800/80 pb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fcGreen to-emerald-700 flex items-center justify-center font-black text-black shadow-md">
-              FC
-            </div>
-            <span className="font-extrabold tracking-wide text-lg text-white uppercase">
-              EA FC 26 Stats Calculator
-            </span>
-          </div>
-
-          {/* Tab Navigation & Reset */}
-          <div className="flex items-center gap-3">
-            <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800 text-xs">
-              <button
-                onClick={() => setActiveTab('workbench')}
-                className={`px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition-all ${
-                  activeTab === 'workbench'
-                    ? 'bg-[#1ED760] text-black font-bold shadow'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                Stats Workbench
-              </button>
-
-              <button
-                onClick={() => setActiveTab('evos')}
-                className={`px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition-all ${
-                  activeTab === 'evos'
-                    ? 'bg-[#1ED760] text-black font-bold shadow'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                EVO Chain Lab
-              </button>
-
-              <button
-                onClick={() => setActiveTab('card')}
-                className={`px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition-all ${
-                  activeTab === 'card'
-                    ? 'bg-[#1ED760] text-black font-bold shadow'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                Visual FC Card
-              </button>
-            </div>
-
-            <button
-              onClick={handleReset}
-              className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5 bg-[#2A2D2A]/80 hover:bg-[#374151] px-3 py-1.5 rounded-md transition-colors border border-gray-700/60"
-              title="Reset all selections"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Reset
-            </button>
-          </div>
-        </div>
-
         {/* Player Selector Strip */}
         <PlayerCarousel
           players={playersDatabase}
@@ -458,6 +396,7 @@ export default function App() {
         <HeaderCard
           bio={playerBio}
           futbinLink={currentPlayer.futbinLink}
+          avatarUrl={currentPlayer.avatarUrl}
           activeBaseOvr={activeBaseOvr}
           previewOvr={previewOvr}
           activePath={activePath}
@@ -490,6 +429,43 @@ export default function App() {
           playStyles={previewPlayStyles}
           onDeletePath={handleDeletePath}
         />
+
+        {/* Tab Navigation */}
+        <div className="flex bg-[#1A1C1A] p-1.5 rounded-xl border border-gray-800/80 shadow-md mb-4 mt-2 mx-auto max-w-fit text-sm">
+          <button
+            onClick={() => setActiveTab('workbench')}
+            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+              activeTab === 'workbench'
+                ? 'bg-[#1ED760] text-black shadow'
+                : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Stats Workbench
+          </button>
+          <button
+            onClick={() => setActiveTab('evos')}
+            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+              activeTab === 'evos'
+                ? 'bg-[#1ED760] text-black shadow'
+                : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            EVO Chain Lab
+          </button>
+          <button
+            onClick={() => setActiveTab('card')}
+            className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+              activeTab === 'card'
+                ? 'bg-[#1ED760] text-black shadow'
+                : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            Visual FC Card
+          </button>
+        </div>
 
         {activeTab === 'workbench' && (
           <>
