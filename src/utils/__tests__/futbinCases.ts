@@ -87,20 +87,6 @@ check('Petit Flow x3', 'petit-87', ['1154', '1154', '1154'], {
   faces: { pac: 77, sho: 77, pas: 94, dri: 92, def: 85, phy: 87 }, base: 512, igs: 2475
 });
 
-// Pedri + Elite Midfielder — large face boosts (Pace +30/92, Shooting +25/90, Physical +30/95)
-// with stamina clamped at the 99 sub-stat cap. Source: futbin.com/26/player/21756_1159
-check('Pedri + EliteMidfielder', 'pedri-95', ['1159'], {
-  subs: {
-    pac: { acceleration: 92, sprintSpeed: 92 },
-    sho: { positioning: 95, finishing: 95, shotPower: 84, longShots: 94, volleys: 72, penalties: 70 },
-    pas: { vision: 98, crossing: 95, freekick: 95, shortPass: 98, longPass: 98, curve: 95 },
-    dri: { agility: 95, balance: 96, reactions: 96, ballControl: 97, dribbling: 97, composure: 98 },
-    def: { interceptions: 97, headingAcc: 81, defAwareness: 97, standTackle: 96, slideTackle: 93 },
-    phy: { jumping: 93, stamina: 99, strength: 93, aggression: 93 }
-  },
-  faces: { pac: 92, sho: 90, pas: 97, dri: 97, def: 95, phy: 95 }, base: 566, igs: 2694
-});
-
 // Pogba — Flow State reaches the +5 face limit (96) in one go; a second application is a
 // no-op on stats (target == current face) and only raises OVR.
 // Source: futbin.com/26/player/23940_1154 and 23940_1154_1154

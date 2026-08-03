@@ -53,21 +53,21 @@ export const eliteMidfielder1159: EvolutionDefinition = {
     {
       name: 'Level 1',
       upgrades: [
-        'Stand Tackle +30 (96)', 'Reactions +25 (96)', 'Def. Aware +30 (97)', 'Pace +30 (92)', 'OVR +10 (97)',
+        'Stand Tackle +30 (96)', 'Reactions +25 (96)', 'Def. Aware +30 (97)', 'Pace Face +30 (92)', 'OVR +10 (97)',
         'PlayStyle+: Intercept (4)', 'PlayStyle+: Pinged Pass (4)'
       ]
     },
     {
       name: 'Level 2',
       upgrades: [
-        'Short Pass +30 (98)', 'FK Acc. +25 (96)', 'Composure +30 (98)', 'Physical +30 (95)', 'Crossing +25 (95)', 'OVR +10 (97)',
+        'Short Pass +30 (98)', 'FK Acc. +25 (96)', 'Composure +30 (98)', 'Physical Face +30 (95)', 'Crossing +25 (95)', 'OVR +10 (97)',
         'PlayStyle+: Tiki Taka (4)'
       ]
     },
     {
       name: 'Level 3',
       upgrades: [
-        'Slide Tackle +25 (93)', 'Shooting +25 (90)', 'Balance +30 (96)', 'Heading Acc. +25 (92)', 'Agility +25 (95)', 'OVR +10 (97)',
+        'Slide Tackle +25 (93)', 'Shooting Face +25 (90)', 'Balance +30 (96)', 'Heading Acc. +25 (92)', 'Agility +25 (95)', 'OVR +10 (97)',
         'PlayStyle+: Anticipate (4)'
       ]
     },

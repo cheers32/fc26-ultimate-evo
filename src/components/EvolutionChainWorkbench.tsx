@@ -51,6 +51,16 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                         Repeatable: {evo.maxRepeatable}
                       </span>
                     )}
+                    {evo.trainingTime && (
+                      <span className="px-1.5 py-0.5 bg-blue-950/40 rounded text-[10px] text-blue-400 border border-blue-800/40 font-bold ml-2">
+                        Training: {evo.trainingTime}
+                      </span>
+                    )}
+                    {evo.rarityChange && (
+                      <span className="px-1.5 py-0.5 bg-purple-950/40 rounded text-[10px] text-purple-400 border border-purple-800/40 font-bold ml-2">
+                        Rarity → {evo.rarityChange}
+                      </span>
+                    )}
                   </span>
                   <a
                     href={evo.futbinLink}

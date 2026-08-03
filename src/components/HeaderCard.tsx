@@ -304,7 +304,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     <h4 className="text-sm font-bold text-white uppercase">Advanced Filters</h4>
                     <button onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
                   </div>
-                  
+
+                  <label className="flex items-start gap-2 mb-3 pb-3 border-b border-gray-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(evoFilters || {}).requireCustomizableRarity !== false}
+                      onChange={(e) => onEvoFiltersChange({ ...(evoFilters || {}), requireCustomizableRarity: e.target.checked })}
+                      className="mt-0.5 w-3.5 h-3.5 accent-purple-500"
+                    />
+                    <span className="text-[11px] text-gray-300 leading-snug">
+                      Only use a rarity that can add its own PlayStyles <span className="text-purple-400 font-bold">(Glory Hunters / FUT Birthday / FUTTIES / National Pride)</span> — including if it already is one
+                    </span>
+                  </label>
+
                   <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                     {['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy', 'psPlus', 'ps'].map(stat => {
                       const safeFilters = evoFilters || {};

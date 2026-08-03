@@ -1,6 +1,17 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
 
+// Rarities this FC 26 cycle that let the player pick their own PlayStyles after evolving
+// (Glory Hunters, FUT Birthday, FUTTIES, National Pride). Matched by substring so variants
+// like "Futties Evo" or "Glory Hunter" (singular) still match.
+const CUSTOMIZABLE_PLAYSTYLE_RARITY_KEYWORDS = ['glory hunter', 'fut birthday', 'futties', 'national pride'];
+
+export function hasCustomizablePlaystyleRarity(rarity: string | undefined): boolean {
+  if (!rarity) return false;
+  const r = rarity.toLowerCase();
+  return CUSTOMIZABLE_PLAYSTYLE_RARITY_KEYWORDS.some(k => r.includes(k));
+}
+
 export interface FullChainResult {
   chainIds: string[];
   isValidChain: boolean;
@@ -319,6 +330,12 @@ export function analyzeEvolutions(
              passesFilters = false;
              return; // Prune branch: PS only increases
           }
+        }
+
+        // Not a prune: a later evo in the chain might still add a qualifying rarityChange,
+        // so branches that don't yet qualify must keep being explored.
+        if (filters.requireCustomizableRarity !== false && !hasCustomizablePlaystyleRarity(currentResult.finalBio.rarity)) {
+          passesFilters = false;
         }
 
         const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;

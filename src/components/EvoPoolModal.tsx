@@ -101,6 +101,16 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
                         Repeatable: {evo.maxRepeatable}
                       </span>
                     )}
+                    {evo.trainingTime && (
+                      <span className="px-2 py-1 bg-blue-950/40 rounded text-blue-400 border border-blue-800/40 font-bold">
+                        Training: {evo.trainingTime}
+                      </span>
+                    )}
+                    {evo.rarityChange && (
+                      <span className="px-2 py-1 bg-purple-950/40 rounded text-purple-400 border border-purple-800/40 font-bold">
+                        Rarity → {evo.rarityChange}
+                      </span>
+                    )}
                   </div>
                 </div>
               );

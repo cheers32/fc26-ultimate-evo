@@ -46,7 +46,7 @@ export default function App() {
     evosPool: [],
     generatedPaths: [],
     manualPaths: [],
-    evoFilters: { ovr: { max: 99 } }
+    evoFilters: { ovr: { max: 99 }, requireCustomizableRarity: true }
   };
 
   const updateState = (updates: Partial<PlayerEvoState>) => {
@@ -56,7 +56,7 @@ export default function App() {
         evosPool: [],
         generatedPaths: [],
         manualPaths: [],
-        evoFilters: { ovr: { max: 99 } }
+        evoFilters: { ovr: { max: 99 }, requireCustomizableRarity: true }
       };
       
       const newState = { ...current, ...updates };

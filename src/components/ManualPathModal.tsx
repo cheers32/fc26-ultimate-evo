@@ -218,6 +218,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               Repeatable: {evo.maxRepeatable}
                             </span>
                           )}
+                          {evo.trainingTime && (
+                            <span className="px-1.5 py-0.5 bg-blue-950/40 rounded text-[9px] text-blue-400 border border-blue-800/40 font-bold">
+                              Training: {evo.trainingTime}
+                            </span>
+                          )}
+                          {evo.rarityChange && (
+                            <span className="px-1.5 py-0.5 bg-purple-950/40 rounded text-[9px] text-purple-400 border border-purple-800/40 font-bold">
+                              Rarity → {evo.rarityChange}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <Plus className="w-4 h-4 text-gray-500 group-hover:text-fcGreen" />

@@ -50,7 +50,7 @@ export const tinyTim1014: EvolutionDefinition = {
       "boost": 35,
       "limit": 95
     },
-    "headingAccuracy": {
+    "headingAcc": {
       "boost": 40,
       "limit": 99
     },
@@ -70,7 +70,7 @@ export const tinyTim1014: EvolutionDefinition = {
       "boost": 35,
       "limit": 95
     },
-    "shortPassing": {
+    "shortPass": {
       "boost": 30,
       "limit": 93
     },
