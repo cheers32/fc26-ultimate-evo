@@ -68,8 +68,8 @@ export const playersDatabase: Record<string, PlayerData> = {
           balance: { label: 'Balance', base: 80, boost: 30, limit: 96, w: 0.05 },
           reactions: { label: 'Reactions', base: 94, boost: 25, limit: 96, w: 0.03 },
           ballControl: { label: 'Ball Control', base: 91, boost: 30, limit: 97, w: 0.33 },
-          dribbling: { label: 'Dribbling', base: 85, boost: 30, limit: 97, w: 0.48 },
-          composure: { label: 'Composure', base: 94, boost: 30, limit: 98, w: 0.02 }
+          dribbling: { label: 'Dribbling', base: 85, boost: 30, limit: 97, w: 0.45 },
+          composure: { label: 'Composure', base: 94, boost: 30, limit: 98, w: 0.05 }
         }
       },
       def: {
@@ -159,8 +159,8 @@ export const playersDatabase: Record<string, PlayerData> = {
           balance: { label: 'Balance', base: 74, boost: 30, limit: 99, w: 0.05 },
           reactions: { label: 'Reactions', base: 85, boost: 25, limit: 99, w: 0.03 },
           ballControl: { label: 'Ball Control', base: 87, boost: 30, limit: 99, w: 0.33 },
-          dribbling: { label: 'Dribbling', base: 80, boost: 30, limit: 99, w: 0.48 },
-          composure: { label: 'Composure', base: 94, boost: 30, limit: 99, w: 0.02 }
+          dribbling: { label: 'Dribbling', base: 80, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 94, boost: 30, limit: 99, w: 0.05 }
         }
       },
       def: {
@@ -252,8 +252,8 @@ export const playersDatabase: Record<string, PlayerData> = {
           balance: { label: 'Balance', base: 88, boost: 30, limit: 99, w: 0.05 },
           reactions: { label: 'Reactions', base: 87, boost: 25, limit: 99, w: 0.03 },
           ballControl: { label: 'Ball Control', base: 92, boost: 30, limit: 99, w: 0.33 },
-          dribbling: { label: 'Dribbling', base: 93, boost: 30, limit: 99, w: 0.48 },
-          composure: { label: 'Composure', base: 91, boost: 30, limit: 99, w: 0.02 }
+          dribbling: { label: 'Dribbling', base: 93, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 91, boost: 30, limit: 99, w: 0.05 }
         }
       },
       def: {
@@ -345,8 +345,8 @@ export const playersDatabase: Record<string, PlayerData> = {
           balance: { label: 'Balance', base: 71, boost: 30, limit: 99, w: 0.05 },
           reactions: { label: 'Reactions', base: 82, boost: 25, limit: 99, w: 0.03 },
           ballControl: { label: 'Ball Control', base: 84, boost: 30, limit: 99, w: 0.33 },
-          dribbling: { label: 'Dribbling', base: 70, boost: 30, limit: 99, w: 0.48 },
-          composure: { label: 'Composure', base: 85, boost: 30, limit: 99, w: 0.02 }
+          dribbling: { label: 'Dribbling', base: 70, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 85, boost: 30, limit: 99, w: 0.05 }
         }
       },
       def: {
@@ -439,8 +439,8 @@ export const playersDatabase: Record<string, PlayerData> = {
           balance: { label: 'Balance', base: 87, boost: 30, limit: 99, w: 0.05 },
           reactions: { label: 'Reactions', base: 95, boost: 25, limit: 99, w: 0.03 },
           ballControl: { label: 'Ball Control', base: 94, boost: 30, limit: 99, w: 0.33 },
-          dribbling: { label: 'Dribbling', base: 91, boost: 30, limit: 99, w: 0.48 },
-          composure: { label: 'Composure', base: 96, boost: 30, limit: 99, w: 0.02 }
+          dribbling: { label: 'Dribbling', base: 91, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 96, boost: 30, limit: 99, w: 0.05 }
         }
       },
       def: {
@@ -531,8 +531,8 @@ export const playersDatabase: Record<string, PlayerData> = {
           balance: { label: 'Balance', base: 78, boost: 30, limit: 99, w: 0.05 },
           reactions: { label: 'Reactions', base: 90, boost: 25, limit: 99, w: 0.03 },
           ballControl: { label: 'Ball Control', base: 80, boost: 30, limit: 99, w: 0.33 },
-          dribbling: { label: 'Dribbling', base: 72, boost: 30, limit: 99, w: 0.48 },
-          composure: { label: 'Composure', base: 90, boost: 30, limit: 99, w: 0.02 }
+          dribbling: { label: 'Dribbling', base: 72, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 90, boost: 30, limit: 99, w: 0.05 }
         }
       },
       def: {

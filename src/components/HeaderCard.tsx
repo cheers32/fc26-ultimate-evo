@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition } from '../types/player';
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X } from 'lucide-react';
+import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil } from 'lucide-react';
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -42,6 +42,7 @@ interface HeaderCardProps {
   onNodeClick: (nodeIndex: number) => void;
   playStyles: import('../types/player').PlayStylesData;
   onDeletePath?: (pathId: string) => void;
+  onEditPath?: (path: EvolutionPath) => void;
 }
 
 export const HeaderCard: React.FC<HeaderCardProps> = ({
@@ -71,7 +72,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   selectedNodes,
   onNodeClick,
   playStyles,
-  onDeletePath
+  onDeletePath,
+  onEditPath
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -309,17 +311,33 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 >
                   {path.name}
                 </button>
-                {onDeletePath && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeletePath(path.id);
-                    }}
-                    className="absolute -top-1 -right-1 bg-red-900 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"
-                    title="Delete Path"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
+                {(onEditPath || onDeletePath) && (
+                  <div className="absolute -top-1 -right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {onEditPath && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditPath(path);
+                        }}
+                        className="bg-gray-700 text-white rounded-full p-0.5 hover:bg-fcGreen hover:text-black shadow-sm"
+                        title="Edit Path"
+                      >
+                        <Pencil className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                    {onDeletePath && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeletePath(path.id);
+                        }}
+                        className="bg-red-900 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
+                        title="Delete Path"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             ))}

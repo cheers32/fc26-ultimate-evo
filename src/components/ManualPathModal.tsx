@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
@@ -13,6 +13,7 @@ interface ManualPathModalProps {
   baseOvr: OvrData;
   baseStats: StatsData;
   basePlayStyles: PlayStylesData;
+  editingPath?: EvolutionPath | null;
 }
 
 export const ManualPathModal: React.FC<ManualPathModalProps> = ({
@@ -23,10 +24,24 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   baseBio,
   baseOvr,
   baseStats,
-  basePlayStyles
+  basePlayStyles,
+  editingPath
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [pathName, setPathName] = useState<string>('');
+
+  // Populate the builder with the path being edited (or reset for a fresh path) whenever the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (editingPath) {
+        setSelectedChain([...editingPath.chainIds]);
+        setPathName(editingPath.name);
+      } else {
+        setSelectedChain([]);
+        setPathName('');
+      }
+    }
+  }, [isOpen, editingPath]);
 
   // Live simulation to check if the current chain is valid
   const validationResult = useMemo(() => {
@@ -57,10 +72,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (selectedChain.length > 0 && validationResult.isValid) {
       const pName = pathName.trim() || `Manual Path (${selectedChain.length} EVOs)`;
       onSave({
-        id: `manual-path-${Date.now()}`,
+        id: editingPath ? editingPath.id : `manual-path-${Date.now()}`,
         name: pName,
-        description: 'User created manual evolution path.',
-        isRecommended: false,
+        description: editingPath ? editingPath.description : 'User created manual evolution path.',
+        isRecommended: editingPath?.isRecommended ?? false,
         chainIds: [...selectedChain],
         steps: validationResult.result?.steps
       });
@@ -82,8 +97,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
         
         <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-[#1f211f]">
           <div>
-            <h2 className="text-xl font-bold text-white tracking-wide">Create Manual Path</h2>
-            <p className="text-xs text-gray-400 mt-1">Build your own chain from the EVOs Pool.</p>
+            <h2 className="text-xl font-bold text-white tracking-wide">{editingPath ? 'Edit Path' : 'Create Manual Path'}</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              {editingPath ? `Editing "${editingPath.name}". Add or remove EVOs below.` : 'Build your own chain from the EVOs Pool.'}
+            </p>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors">
             <X className="w-5 h-5" />
@@ -222,7 +239,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Complete Path
+            {editingPath ? 'Save Changes' : 'Complete Path'}
           </button>
         </div>
       </div>

@@ -109,6 +109,7 @@ export default function App() {
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   const [isManualPathOpen, setIsManualPathOpen] = useState(false);
+  const [editingPath, setEditingPath] = useState<EvolutionPath | null>(null);
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
 
   const emptyPath: EvolutionPath = useMemo(() => ({
@@ -404,7 +405,7 @@ export default function App() {
           activePathId={activePathId}
           onSelectPath={setActivePathId}
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
-          onOpenManualPath={() => setIsManualPathOpen(true)}
+          onOpenManualPath={() => { setEditingPath(null); setIsManualPathOpen(true); }}
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           maxOvrCap={maxOvrCap}
@@ -428,6 +429,7 @@ export default function App() {
           onNodeClick={handleNodeClick}
           playStyles={previewPlayStyles}
           onDeletePath={handleDeletePath}
+          onEditPath={(path) => { setEditingPath(path); setIsManualPathOpen(true); }}
         />
 
         {/* Tab Navigation */}
@@ -598,12 +600,25 @@ export default function App() {
       />
       <ManualPathModal
         isOpen={isManualPathOpen}
-        onClose={() => setIsManualPathOpen(false)}
+        onClose={() => { setIsManualPathOpen(false); setEditingPath(null); }}
         evosPool={evosPool}
+        editingPath={editingPath}
         onSave={(path) => {
-          setManualPaths([...manualPaths, path]);
+          const isManual = manualPaths.some(p => p.id === path.id);
+          if (isManual) {
+            setManualPaths(manualPaths.map(p => p.id === path.id ? path : p));
+          } else {
+            // Editing a path that came from Analyze (or creating a brand new one) makes it
+            // user-owned: it must leave generatedPaths so the next Analyze run (which replaces
+            // generatedPaths wholesale) can't silently discard the edit.
+            updateState({
+              generatedPaths: generatedPaths.filter(p => p.id !== path.id),
+              manualPaths: [...manualPaths, path]
+            });
+          }
           setActivePathId(path.id);
           setIsManualPathOpen(false);
+          setEditingPath(null);
           if (!evoPreview) setEvoPreview(true);
         }}
         baseBio={playerBio}

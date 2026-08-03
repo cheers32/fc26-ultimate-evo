@@ -127,47 +127,46 @@ export function simulateEvoChain(
       const hasHardcodedSubs = Object.keys(faceData.subs).some(subKey => evo.subStatBoosts?.[subKey]);
 
       if (faceBoostObj && !hasHardcodedSubs) {
-        // EA Dynamic Prorating Distribution Algorithm
+        // EA Prorating Distribution Algorithm
         const targetFace = Math.min(faceData.baseFace + faceBoostObj.boost, faceBoostObj.limit);
-        const faceDiff = targetFace - faceData.baseFace;
         const subStatCap = 99; // Sub-stats are not bounded by Face stat cap, only by 99
 
-        if (faceDiff > 0) {
-          // EA uses the actual diff for the ratio if the face stat is capped
-          const ratio = faceDiff / faceData.baseFace;
+        if (targetFace > faceData.baseFace) {
+          const scale = targetFace / faceData.baseFace;
 
-          // Track the rounding loss tie-breaker
-          const tieBreaker: Record<string, number> = {};
-
-          // 1. Proportional growth (bounded at subStatCap)
+          // 1. Scale every sub-stat proportionally, clamped at the sub-stat cap.
           Object.keys(faceData.subs).forEach(subKey => {
             const subData = faceData.subs[subKey];
-            const exactBoost = subData.base * ratio;
-            const appliedBoost = Math.round(exactBoost);
-            
-            subData.base = Math.min(subData.base + appliedBoost, subStatCap);
-            // Tie-breaker is the amount of exact boost that was lost due to rounding
-            tieBreaker[subKey] = exactBoost - appliedBoost;
+            subData.base = Math.min(Math.round(subData.base * scale), subStatCap);
           });
 
-          // 2. Compensation loop (redistribute lost points due to cap or rounding errors)
-          const calculateFace = () => {
+          const weightedFace = () => {
             let sum = 0;
             Object.values(faceData.subs).forEach((s: any) => { sum += s.base * s.w; });
             return sum;
           };
 
-          // EA adds points one-by-one to the stat that lost the most from rounding
-          while (Math.round(calculateFace() + 1e-6) < targetFace) {
-            const uncappedKeys = Object.keys(faceData.subs).filter(k => faceData.subs[k].base < subStatCap);
-            if (uncappedKeys.length === 0) break; // Hard limit reached
-            
-            uncappedKeys.sort((a, b) => tieBreaker[b] - tieBreaker[a]);
-            const targetKey = uncappedKeys[0];
-            
-            faceData.subs[targetKey].base = Math.min(faceData.subs[targetKey].base + 1, subStatCap);
-            // Decrease tie-breaker so it doesn't hoard all points
-            tieBreaker[targetKey] -= 1;
+          // 2. Rounding down, and sub-stats clamped at the cap, can leave the weighted
+          // face short of the target. EA tops it up by walking the sub-stats in ascending
+          // order of value (order fixed up front), handing out one point at a time and
+          // re-checking after every single point — so the cheapest stats absorb the
+          // shortfall first and the walk stops the moment the target is met.
+          if (Math.round(weightedFace()) < targetFace) {
+            const order = Object.keys(faceData.subs).sort(
+              (a, b) => faceData.subs[a].base - faceData.subs[b].base
+            );
+
+            let progressed = true;
+            outer: while (Math.round(weightedFace()) < targetFace && progressed) {
+              progressed = false;
+              for (const subKey of order) {
+                const subData = faceData.subs[subKey];
+                if (subData.base >= subStatCap) continue;
+                subData.base += 1;
+                progressed = true;
+                if (Math.round(weightedFace()) >= targetFace) break outer;
+              }
+            }
           }
         }
       } else {
