@@ -73,6 +73,7 @@ export interface EvolutionRequirement {
   maxSkillMoves?: number;
   maxPlayStylesPlus?: number;
   maxPlayStyles?: number;
+  maxTotalPositions?: number;
   positions?: string[];
   excludedPositions?: string[];
   rarity?: string;

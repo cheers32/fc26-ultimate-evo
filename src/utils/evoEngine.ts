@@ -52,6 +52,12 @@ export function validateRequirement(
     reasons.push(`PlayStyles (${currentTotalPlayStyles}) exceeds Max Requirement of ${evo.requirements.maxPlayStyles}`);
   }
 
+  // Check Total Positions Count
+  const currentPositionCount = bio.primaryPositions.split(',').map(p => p.trim()).filter(Boolean).length;
+  if (evo.requirements.maxTotalPositions !== undefined && currentPositionCount > evo.requirements.maxTotalPositions) {
+    reasons.push(`Total Positions (${currentPositionCount}) exceeds Max Requirement of ${evo.requirements.maxTotalPositions}`);
+  }
+
   // Check Weak Foot
   if (evo.requirements.maxWeakFoot !== undefined && bio.weakFoot > evo.requirements.maxWeakFoot) {
     reasons.push(`Weak Foot (${bio.weakFoot}) exceeds Max Requirement of ${evo.requirements.maxWeakFoot}`);

@@ -6,10 +6,11 @@ export const flowState1154: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1154/flow-state',
   version: 'FC 26',
   description: 'Boosts passing and dribbling to help players move smoothly on the ball, link play with confidence, and create space in tight areas.',
-  cost: 'Free / Objective',
+  cost: 'Free',
   requirements: {
     maxOvr: 95,
-    maxPlayStyles: 10
+    maxPlayStyles: 10,
+    excludedPositions: ['GK']
   },
   maxRepeatable: 4,
   ovrBoost: { boost: 1, limit: 96 },

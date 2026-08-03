@@ -555,5 +555,99 @@ export const playersDatabase: Record<string, PlayerData> = {
         }
       }
     }
+  },
+  'pedri-95': {
+    id: 'pedri-95',
+    futbinLink: 'https://www.futbin.com/26/player/21756/pedro-gonzalez-lopez',
+    avatarUrl: '/images/pedri.png',
+    bio: {
+      name: 'Pedri',
+      club: 'FC Barcelona',
+      nation: 'Spain',
+      league: 'LALIGA EA SPORTS',
+      title: 'TOTY',
+      primaryPositions: 'CM, CDM, CAM',
+      height: `174cm | 5'9"`,
+      footAge: 'Right | 23 yrs',
+      bodyType: 'Avg & Lean',
+      weakFoot: 4,
+      skillMoves: 4,
+      rarity: 'TOTY',
+      roles: {
+        cm: ['Holding+', 'Deep-Lying Playmaker++', 'Playmaker++'],
+        cdm: ['Holding+', 'Centre Half+', 'Deep-Lying Playmaker++'],
+        cam: ['Playmaker++']
+      }
+    },
+    ovr: { base: 95, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Technical+', 'Incisive Pass+', 'Tiki Taka+'],
+        silver: ['Finesse Shot', 'Long Ball Pass', 'First Touch', 'Press Proven', 'Relentless']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 90, evFace: 90,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 90, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 90, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 90, evFace: 90,
+        subs: {
+          positioning: { label: 'Att. Position', base: 95, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 95, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 84, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 94, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 72, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 70, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 93, evFace: 93,
+        subs: {
+          vision: { label: 'Vision', base: 98, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 83, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 70, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 98, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 96, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 86, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 96, evFace: 96,
+        subs: {
+          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 96, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 92, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 96, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 96, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 95, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 87, evFace: 87,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 96, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 56, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 83, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 93, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 90, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 87, evFace: 87,
+        subs: {
+          jumping: { label: 'Jumping', base: 84, boost: 30, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 93, boost: 30, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 85, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 84, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
   }
 };

@@ -76,6 +76,7 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                     
                     {evo.requirements.maxPlayStylesPlus !== undefined && <div className="flex gap-1"><span>Max PS+:</span><span className="font-bold">{evo.requirements.maxPlayStylesPlus}</span></div>}
                     {evo.requirements.maxPlayStyles !== undefined && <div className="flex gap-1"><span>Max PS:</span><span className="font-bold">{evo.requirements.maxPlayStyles}</span></div>}
+                    {evo.requirements.maxTotalPositions !== undefined && <div className="flex gap-1"><span>Max Positions:</span><span className="font-bold">{evo.requirements.maxTotalPositions}</span></div>}
                     
                     {evo.requirements.maxWeakFoot !== undefined && <div className="flex gap-1"><span>Max WF:</span><span className="font-bold">{evo.requirements.maxWeakFoot}★</span></div>}
                     {evo.requirements.maxSkillMoves !== undefined && <div className="flex gap-1"><span>Max SM:</span><span className="font-bold">{evo.requirements.maxSkillMoves}★</span></div>}

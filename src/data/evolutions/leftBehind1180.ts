@@ -6,9 +6,10 @@ export const leftBehind1180: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1180/left-behind',
   version: 'FC 26',
   description: 'The best left backs always had midfielder written all over them. Evolve your player and make the move into central midfield',
-  cost: 'Unknown',
+  cost: '250 FC Points / 50,000 Coins',
   requirements: {
     maxOvr: 96,
+    maxTotalPositions: 5,
     maxPlayStyles: 10,
     maxPlayStylesPlus: 4,
     positions: ['LB']

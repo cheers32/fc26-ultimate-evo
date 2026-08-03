@@ -6,7 +6,7 @@ export const eliteMidfielder1159: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1159/elite-midfielder',
   version: 'FC 26',
   description: 'Transform your CDM into an elite dominant force with massive boosts across 5 levels.',
-  cost: 'Free / Objective',
+  cost: '100 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,
     maxPlayStyles: 10,
@@ -53,14 +53,14 @@ export const eliteMidfielder1159: EvolutionDefinition = {
     {
       name: 'Level 1',
       upgrades: [
-        'Standing Tackle +30 (96)', 'Reactions +25 (96)', 'Def. Awareness +30 (97)', 'Pace +30 (92)', 'OVR +10 (97)',
+        'Stand Tackle +30 (96)', 'Reactions +25 (96)', 'Def. Aware +30 (97)', 'Pace +30 (92)', 'OVR +10 (97)',
         'PlayStyle+: Intercept (4)', 'PlayStyle+: Pinged Pass (4)'
       ]
     },
     {
       name: 'Level 2',
       upgrades: [
-        'Short Pass +30 (98)', 'FK Acc. +25 (96)', 'Composure +30 (98)', 'Physicality +30 (95)', 'Crossing +25 (95)', 'OVR +10 (97)',
+        'Short Pass +30 (98)', 'FK Acc. +25 (96)', 'Composure +30 (98)', 'Physical +30 (95)', 'Crossing +25 (95)', 'OVR +10 (97)',
         'PlayStyle+: Tiki Taka (4)'
       ]
     },
@@ -68,7 +68,6 @@ export const eliteMidfielder1159: EvolutionDefinition = {
       name: 'Level 3',
       upgrades: [
         'Slide Tackle +25 (93)', 'Shooting +25 (90)', 'Balance +30 (96)', 'Heading Acc. +25 (92)', 'Agility +25 (95)', 'OVR +10 (97)',
-        'Skill Moves +3 (4)', 'Weak Foot +4 (5)',
         'PlayStyle+: Anticipate (4)'
       ]
     },
@@ -76,6 +75,7 @@ export const eliteMidfielder1159: EvolutionDefinition = {
       name: 'Level 4',
       upgrades: [
         'Interceptions +30 (97)', 'Long Pass +30 (98)',
+        'Weak Foot +4 (5)', 'Skill Moves +3 (4)',
         'PlayStyle: Incisive Pass (7)', 'PlayStyle: Technical (7)'
       ]
     },
