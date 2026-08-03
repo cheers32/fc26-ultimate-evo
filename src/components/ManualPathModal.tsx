@@ -135,10 +135,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (a.isEligible && !b.isEligible) return -1;
     if (!a.isEligible && b.isEligible) return 1;
     
-    // Sort by Max OVR ascending
+    // 1. Sort by Req Max OVR ascending
     const aMaxOvr = a.evo?.requirements.maxOvr || 99;
     const bMaxOvr = b.evo?.requirements.maxOvr || 99;
     if (aMaxOvr !== bMaxOvr) return aMaxOvr - bMaxOvr;
+
+    // 2. If req OVR is the same, sort by expected OVR ascending
+    if (a.expectedOvr !== b.expectedOvr) return a.expectedOvr - b.expectedOvr;
+
+    // 3. If expected OVR is the same, sort by expected IGS ascending
+    if (a.expectedIgs !== b.expectedIgs) return a.expectedIgs - b.expectedIgs;
 
     return 0;
   });

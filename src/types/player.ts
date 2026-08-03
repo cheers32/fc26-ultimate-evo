@@ -159,4 +159,5 @@ export interface EvoFilters {
   ps?: StatFilter;
   // Defaults to true (opt-out, not opt-in) — see hasCustomizablePlaystyleRarity in evoEngine.ts
   requireCustomizableRarity?: boolean;
+  requiredEvos?: string[];
 }

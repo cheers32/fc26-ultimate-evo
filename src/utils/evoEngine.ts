@@ -370,6 +370,13 @@ export function analyzeEvolutions(
             }
           }
         }
+
+        if (filters.requiredEvos && filters.requiredEvos.length > 0) {
+          const hasAllRequired = filters.requiredEvos.every(evoId => currentChainIds.includes(evoId));
+          if (!hasAllRequired) {
+            passesFilters = false;
+          }
+        }
       }
 
       if (passesFilters) {

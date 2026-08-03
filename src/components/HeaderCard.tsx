@@ -21,7 +21,7 @@ interface HeaderCardProps {
   evoFilters: EvoFilters;
   onEvoFiltersChange: (val: EvoFilters) => void;
   onAnalyze: () => void;
-  evosPoolCount: number;
+  evosPool: string[];
   evoPreview: boolean;
   evoLocked: boolean;
   accelerateType: string;
@@ -62,7 +62,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   evoFilters,
   onEvoFiltersChange,
   onAnalyze,
-  evosPoolCount,
+  evosPool,
   evoPreview,
   evoLocked,
   accelerateType,
@@ -411,6 +411,42 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       );
                     })}
                   </div>
+                  </div>
+                  
+                  {/* Required EVOs Section */}
+                  {evosPool && evosPool.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-800">
+                      <h4 className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-2">Required EVOs</h4>
+                      <div className="max-h-32 overflow-y-auto space-y-1 pr-2">
+                        {evosPool.map(evoId => {
+                          const evoDef = availableEvolutions[evoId];
+                          if (!evoDef) return null;
+                          const isRequired = evoFilters?.requiredEvos?.includes(evoId);
+                          return (
+                            <label key={evoId} className="flex items-center gap-2 text-xs text-gray-300 hover:text-white cursor-pointer bg-[#1a1c1a] p-1.5 rounded border border-gray-800 hover:border-gray-600 transition-colors">
+                              <input 
+                                type="checkbox"
+                                className="accent-fcGreen"
+                                checked={!!isRequired}
+                                onChange={(e) => {
+                                  const currentRequired = evoFilters?.requiredEvos || [];
+                                  let nextRequired: string[];
+                                  if (e.target.checked) {
+                                    nextRequired = [...currentRequired, evoId];
+                                  } else {
+                                    nextRequired = currentRequired.filter(id => id !== evoId);
+                                  }
+                                  onEvoFiltersChange({ ...evoFilters, requiredEvos: nextRequired });
+                                }}
+                              />
+                              <span className="truncate">{evoDef.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-4 pt-3 border-t border-gray-800 flex justify-end">
                     <button onClick={() => onEvoFiltersChange({})} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold">Clear All</button>
                   </div>
@@ -418,12 +454,12 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               )}
 
               <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5 ml-2">
-                <Settings className="w-3.5 h-3.5" /> Pool ({evosPoolCount})
+                <Settings className="w-3.5 h-3.5" /> Pool ({evosPool?.length || 0})
               </button>
               <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" /> Manual
               </button>
-              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={evosPoolCount === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${evosPoolCount > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
+              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${(evosPool?.length || 0) > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
                 <Zap className="w-3.5 h-3.5" /> Analyze
               </button>
             </div>

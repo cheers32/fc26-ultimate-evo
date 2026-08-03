@@ -417,7 +417,7 @@ export default function App() {
               if (!evoPreview) setEvoPreview(true);
             }
           }}
-          evosPoolCount={evosPool.length}
+          evosPool={evosPool}
           evoPreview={evoPreview}
           evoLocked={evoLocked}
           accelerateType={accelerateType}
