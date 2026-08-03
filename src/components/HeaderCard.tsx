@@ -417,7 +417,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     <div className="mt-4 pt-4 border-t border-gray-800">
                       <h4 className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-2">Required EVOs</h4>
                       <div className="max-h-32 overflow-y-auto space-y-1 pr-2">
-                        {evosPool.map(evoId => {
+                        {[...evosPool].sort((a, b) => {
+                          const nameA = availableEvolutions[a]?.name || '';
+                          const nameB = availableEvolutions[b]?.name || '';
+                          return nameA.localeCompare(nameB);
+                        }).map(evoId => {
                           const evoDef = availableEvolutions[evoId];
                           if (!evoDef) return null;
                           const isRequired = evoFilters?.requiredEvos?.includes(evoId);
