@@ -411,7 +411,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       );
                     })}
                   </div>
-                  </div>
                   
                   {/* Required EVOs Section */}
                   {evosPool && evosPool.length > 0 && (
