@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { X, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
-import { simulateEvoChain } from '../utils/evoEngine';
+import { simulateEvoChain, validateRequirement } from '../utils/evoEngine';
 
 interface ManualPathModalProps {
   isOpen: boolean;
@@ -87,11 +87,54 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     }
   };
 
-  const availableToSelect = evosPool.filter((id) => {
+  const currentOvr = validationResult.result ? validationResult.result.finalOvr : baseOvr.base;
+  const currentStats = validationResult.result ? validationResult.result.finalStats : baseStats;
+  const currentPlayStyles = validationResult.result ? validationResult.result.finalPlayStyles : basePlayStyles;
+  const currentBio = validationResult.result ? validationResult.result.finalBio : baseBio;
+
+  const poolWithStatus = evosPool.map((id) => {
     const evo = availableEvolutions[id];
     const count = selectedChain.filter(eid => eid === id).length;
     const maxAllowed = evo?.maxRepeatable || 1;
-    return count < maxAllowed;
+    const limitReached = count >= maxAllowed;
+
+    let isEligible = false;
+    let reasons: string[] = [];
+    let expectedOvr = 0;
+    let expectedIgs = 0;
+
+    if (evo && !limitReached) {
+      const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
+      isEligible = validation.eligible;
+      reasons = validation.reasons;
+
+      if (isEligible) {
+        const testRes = simulateEvoChain([...selectedChain, id], baseBio, baseOvr, baseStats, basePlayStyles);
+        if (testRes.isValidChain) {
+          expectedOvr = testRes.finalOvr;
+          expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
+        }
+      }
+    }
+
+    return {
+      id,
+      evo,
+      limitReached,
+      isEligible,
+      reasons,
+      expectedOvr,
+      expectedIgs
+    };
+  });
+
+  // Sort: Eligible first, then ineligible, then limit reached.
+  poolWithStatus.sort((a, b) => {
+    if (a.limitReached && !b.limitReached) return 1;
+    if (!a.limitReached && b.limitReached) return -1;
+    if (a.isEligible && !b.isEligible) return -1;
+    if (!a.isEligible && b.isEligible) return 1;
+    return 0;
   });
 
   return (
@@ -195,42 +238,62 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 gap-2 content-start">
-              {availableToSelect.length === 0 ? (
+              {poolWithStatus.length === 0 ? (
                 <div className="text-center py-6 text-gray-600 text-sm">
-                  {evosPool.length === 0 ? 'Your EVO pool is empty.' : 'All pool EVOs used.'}
+                  Your EVO pool is empty.
                 </div>
               ) : (
-                availableToSelect.map((id) => {
-                  const evo = availableEvolutions[id];
+                poolWithStatus.map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs }) => {
                   if (!evo) return null;
+                  
+                  const canAdd = !limitReached && isEligible;
+                  
                   return (
                     <div 
                       key={id}
-                      onClick={() => handleAdd(id)}
-                      className="p-3 bg-[#121212] border border-gray-800 hover:border-fcGreen/50 rounded-xl cursor-pointer transition-all flex justify-between items-center group"
+                      onClick={() => { if (canAdd) handleAdd(id); }}
+                      className={`p-3 rounded-xl transition-all flex flex-col ${
+                        canAdd 
+                          ? 'bg-[#121212] border border-gray-800 hover:border-fcGreen/50 cursor-pointer group' 
+                          : 'bg-[#121212]/50 border border-gray-800/30 opacity-60 cursor-not-allowed'
+                      }`}
                     >
-                      <div>
-                        <h4 className="font-bold text-gray-200 text-sm group-hover:text-fcGreen transition-colors">{evo.name}</h4>
-                        <div className="flex gap-2 items-center mt-0.5">
-                          <p className="text-[10px] text-gray-500">Max OVR {evo.requirements.maxOvr}</p>
-                          {evo.maxRepeatable && evo.maxRepeatable > 1 && (
-                            <span className="px-1.5 py-0.5 bg-fcGold/20 rounded text-[9px] text-fcGold border border-fcGold/40 font-bold">
-                              Repeatable: {evo.maxRepeatable}
-                            </span>
-                          )}
-                          {evo.trainingTime && (
-                            <span className="px-1.5 py-0.5 bg-blue-950/40 rounded text-[9px] text-blue-400 border border-blue-800/40 font-bold">
-                              Training: {evo.trainingTime}
-                            </span>
-                          )}
-                          {evo.rarityChange && (
-                            <span className="px-1.5 py-0.5 bg-purple-950/40 rounded text-[9px] text-purple-400 border border-purple-800/40 font-bold">
-                              Rarity → {evo.rarityChange}
-                            </span>
-                          )}
+                      <div className="flex justify-between items-center w-full">
+                        <div>
+                          <h4 className={`font-bold text-sm transition-colors ${canAdd ? 'text-gray-200 group-hover:text-fcGreen' : 'text-gray-500'}`}>{evo.name}</h4>
+                          <div className="flex gap-2 items-center mt-0.5">
+                            <p className="text-[10px] text-gray-500 font-medium">Req OVR: ≤{evo.requirements.maxOvr}</p>
+                            {canAdd && expectedOvr > 0 && (
+                              <span className="px-1.5 py-0.5 bg-green-950/40 rounded text-[9px] text-green-400 border border-green-800/40 font-bold">
+                                → {expectedOvr} OVR
+                              </span>
+                            )}
+                            {canAdd && expectedIgs > 0 && (
+                              <span className="px-1.5 py-0.5 bg-blue-950/40 rounded text-[9px] text-blue-400 border border-blue-800/40 font-bold">
+                                → {expectedIgs} IGS
+                              </span>
+                            )}
+                            {evo.maxRepeatable && evo.maxRepeatable > 1 && (
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] border font-bold ${canAdd ? 'bg-fcGold/20 text-fcGold border-fcGold/40' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
+                                Repeatable: {evo.maxRepeatable}
+                              </span>
+                            )}
+                          </div>
                         </div>
+                        {canAdd ? (
+                          <Plus className="w-4 h-4 text-gray-500 group-hover:text-fcGreen" />
+                        ) : limitReached ? (
+                          <span className="text-[10px] text-gray-500">Limit</span>
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-red-500/50" />
+                        )}
                       </div>
-                      <Plus className="w-4 h-4 text-gray-500 group-hover:text-fcGreen" />
+                      
+                      {!canAdd && !limitReached && reasons.length > 0 && (
+                        <div className="mt-2 text-[10px] text-red-400/80 bg-red-950/20 p-1.5 rounded">
+                          {reasons[0]} {reasons.length > 1 && `(+${reasons.length - 1} more)`}
+                        </div>
+                      )}
                     </div>
                   );
                 })
