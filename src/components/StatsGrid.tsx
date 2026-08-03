@@ -15,6 +15,13 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   activeChemBoosts,
   activeEvo
 }) => {
+  const getStatColorClass = (val: number) => {
+    if (val >= 95) return 'text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.4)] font-black';
+    if (val >= 90) return 'text-fcGreen font-bold';
+    if (val >= 80) return 'text-lime-400 font-semibold';
+    if (val >= 70) return 'text-yellow-500 font-semibold';
+    return 'text-red-500 opacity-90';
+  };
   
   // Calculate Utilization stats if a specific EVO is selected
   let totalAllowedBoost = 0;
@@ -104,10 +111,10 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
               </div>
 
               <div className="flex items-center justify-end font-mono">
-                <span className="text-gray-500 w-5 text-right font-semibold">{activeBase}</span>
+                <span className={`w-5 text-right ${getStatColorClass(activeBase)}`}>{activeBase}</span>
                 
                 <span className={`text-[10px] mx-1 ${showEvo ? 'text-gray-500' : 'text-transparent'}`}>➜</span>
-                <span className={`font-bold w-5 text-right ${showEvo ? 'text-[#EBB626]' : 'text-transparent'}`}>
+                <span className={`w-5 text-right ${showEvo ? getStatColorClass(effectiveVal) : 'text-transparent'}`}>
                   {showEvo ? effectiveVal : '00'}
                 </span>
 
@@ -115,7 +122,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
                   {boost > 0 ? `➜ +${boost}` : '➜ +0'}
                 </span>
 
-                <span className={`font-bold w-5 text-right ${boost > 0 ? 'text-fcGreen' : 'text-transparent'}`}>
+                <span className={`w-5 text-right ${boost > 0 ? getStatColorClass(finalVal) : 'text-transparent'}`}>
                   {boost > 0 ? finalVal : '00'}
                 </span>
               </div>
@@ -140,13 +147,13 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
               {baseFaceData.label}
             </h3>
 
-            <div className="text-[18px] font-black text-gray-200 mb-2 flex items-center font-mono">
-              <span className="text-gray-500 w-7 text-right">{activeBaseFaceVal}</span>
+            <div className="text-[18px] text-gray-200 mb-2 flex items-center font-mono">
+              <span className={`w-7 text-right ${getStatColorClass(activeBaseFaceVal)}`}>{activeBaseFaceVal}</span>
               
               <span className={`text-[13px] mx-1.5 font-normal tracking-tighter ${showEvoFace ? 'text-gray-500' : 'text-transparent'}`}>
                 ➜
               </span>
-              <span className={`text-[#EBB626] w-7 text-right ${showEvoFace ? '' : 'text-transparent'}`}>
+              <span className={`w-7 text-right ${showEvoFace ? getStatColorClass(effectiveFaceVal) : 'text-transparent'}`}>
                 {showEvoFace ? effectiveFaceVal : '00'}
               </span>
 
@@ -154,7 +161,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
                 {faceBoost > 0 ? `➜ +${faceBoost}` : '➜ +0'}
               </span>
 
-              <span className={`text-[18px] font-black w-8 text-right ml-1.5 ${faceBoost > 0 ? 'text-fcGreen drop-shadow-[0_0_6px_rgba(30,215,96,0.3)]' : 'text-transparent'}`}>
+              <span className={`w-8 text-right ml-1.5 ${faceBoost > 0 ? getStatColorClass(newFaceVal) : 'text-transparent'}`}>
                 {faceBoost > 0 ? newFaceVal : '00'}
               </span>
             </div>

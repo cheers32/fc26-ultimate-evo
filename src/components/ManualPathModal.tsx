@@ -1,23 +1,73 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Plus, Trash2, AlertTriangle, Eye } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
 import { simulateEvoChain, validateRequirement } from '../utils/evoEngine';
 
+const getEvoRecommendation = (
+  positions: string, 
+  currentStats: StatsData, 
+  expectedStats: StatsData, 
+  currentPlayStyles: PlayStylesData, 
+  expectedPlayStyles: PlayStylesData
+): { isRecommended: boolean, reasons: string[] } => {
+  if (!currentStats || !expectedStats) return { isRecommended: false, reasons: [] };
+
+  const isAttacker = /ST|CF|RW|LW/.test(positions);
+  const isMidfielder = /CM|CAM|CDM|RM|LM/.test(positions);
+  const isDefender = /CB|RB|LB|RWB|LWB/.test(positions);
+  
+  const pacDiff = expectedStats.pac.evFace - currentStats.pac.evFace;
+  const shoDiff = expectedStats.sho.evFace - currentStats.sho.evFace;
+  const pasDiff = expectedStats.pas.evFace - currentStats.pas.evFace;
+  const driDiff = expectedStats.dri.evFace - currentStats.dri.evFace;
+  const defDiff = expectedStats.def.evFace - currentStats.def.evFace;
+  const phyDiff = expectedStats.phy.evFace - currentStats.phy.evFace;
+  
+  const totalStatsAdded = pacDiff + shoDiff + pasDiff + driDiff + defDiff + phyDiff;
+  
+  const beforeGold = new Set([...currentPlayStyles.base.gold, ...currentPlayStyles.ev.gold]);
+  const afterGold = new Set([...expectedPlayStyles.base.gold, ...expectedPlayStyles.ev.gold]);
+  const newGoldCount = [...afterGold].filter(x => !beforeGold.has(x)).length;
+
+  let reasons: string[] = [];
+
+  if (newGoldCount > 0) reasons.push(`Adds PlayStyle+`);
+  if (totalStatsAdded >= 15) reasons.push(`Massive Stats (+${totalStatsAdded})`);
+  
+  // Position-based heuristics
+  if (isAttacker) {
+    if (pacDiff >= 5) reasons.push(`+${pacDiff} PAC (Attacker)`);
+    if (shoDiff >= 5) reasons.push(`+${shoDiff} SHO (Attacker)`);
+  }
+  if (isMidfielder) {
+    if (pasDiff >= 5) reasons.push(`+${pasDiff} PAS (Midfielder)`);
+    if (driDiff >= 5) reasons.push(`+${driDiff} DRI (Midfielder)`);
+    if (pacDiff >= 4 && defDiff >= 4) reasons.push(`Box-to-box boost`);
+  }
+  if (isDefender) {
+    if (defDiff >= 5) reasons.push(`+${defDiff} DEF (Defender)`);
+    if (phyDiff >= 5) reasons.push(`+${phyDiff} PHY (Defender)`);
+    if (pacDiff >= 4) reasons.push(`+${pacDiff} PAC (Defender)`);
+  }
+  
+  return {
+    isRecommended: reasons.length > 0,
+    reasons
+  };
+}
+
 const StatDisplay = ({ label, after, before }: { label: string, after: number, before?: number }) => {
   const diff = before !== undefined ? after - before : 0;
   const isUp = diff > 0;
-  const isDown = diff < 0;
+  const isElite = isUp && after >= 95;
   
   return (
-    <span className="inline-flex items-baseline gap-0.5">
-      <span>{label}</span>
-      <span className={`ml-0.5 ${isUp ? 'text-fcGreen' : isDown ? 'text-red-400' : 'text-gray-300'}`}>
-        {after}
-      </span>
-      {isUp && <span className="text-fcGreen font-bold text-[9px]">(+{diff})</span>}
-      {isDown && <span className="text-red-400 font-bold text-[9px]">({diff})</span>}
-    </span>
+    <div className="flex gap-1 items-center">
+      <span className="text-gray-600 font-bold">{label}</span>
+      <span className={`font-bold ${isElite ? 'text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]' : isUp ? 'text-fcGreen' : 'text-gray-600'}`}>{after}</span>
+      {isUp && <span className={`text-[8px] ${isElite ? 'text-cyan-300' : 'text-fcGreen'}`}>+{diff}</span>}
+    </div>
   );
 };
 
@@ -79,6 +129,7 @@ interface ManualPathModalProps {
   baseStats: StatsData;
   basePlayStyles: PlayStylesData;
   editingPath?: EvolutionPath | null;
+  onViewEvo?: (evoId: string) => void;
 }
 
 export const ManualPathModal: React.FC<ManualPathModalProps> = ({
@@ -90,7 +141,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   baseOvr,
   baseStats,
   basePlayStyles,
-  editingPath
+  editingPath,
+  onViewEvo
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [pathName, setPathName] = useState<string>('');
@@ -171,6 +223,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let expectedIgs = 0;
     let expectedStats = null;
     let expectedPlayStyles = null;
+    let isRecommended = false;
+    let recReasons: string[] = [];
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -184,6 +238,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedStats = testRes.finalStats;
           expectedPlayStyles = testRes.finalPlayStyles;
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
+          
+          const rec = getEvoRecommendation(currentBio.primaryPositions, currentStats, expectedStats, currentPlayStyles, expectedPlayStyles);
+          isRecommended = rec.isRecommended;
+          recReasons = rec.reasons;
         }
       }
     }
@@ -197,7 +255,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       expectedOvr,
       expectedIgs,
       expectedStats,
-      expectedPlayStyles
+      expectedPlayStyles,
+      isRecommended,
+      recReasons
     };
   });
 
@@ -223,50 +283,69 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[#1A1C1A] border border-gray-700 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
-        <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-[#1f211f]">
-          <div>
-            <h2 className="text-xl font-bold text-white tracking-wide">{editingPath ? 'Edit Path' : 'Create Manual Path'}</h2>
-            <p className="text-xs text-gray-400 mt-1">
-              {editingPath ? `Editing "${editingPath.name}". Add or remove EVOs below.` : 'Build your own chain from the EVOs Pool.'}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          {/* Left Side: Current Chain */}
-          <div className="md:w-1/2 flex flex-col border-r border-gray-800 bg-[#121212]">
-            <div className="p-4 border-b border-gray-800 bg-[#1f211f]/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 md:p-4">
+      <div className="bg-[#1A1C1A] border border-gray-700 w-full max-w-[98vw] lg:max-w-7xl rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[95vh] max-h-[98vh]">
+        <div className="flex-1 overflow-y-auto flex flex-col bg-[#1A1C1A]">
+          {/* Top Section: Current Chain */}
+          <div className="flex flex-col border-b border-gray-800 bg-[#121212] shrink-0 relative">
+            <button onClick={onClose} className="absolute top-2 right-2 p-1 text-gray-500 hover:text-white rounded-full hover:bg-gray-800 transition-colors z-10">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="p-3 pr-12 border-b border-gray-800 bg-[#1f211f]/50 flex flex-wrap gap-4 justify-between items-center">
               <input 
                 type="text" 
                 placeholder="Name your path (optional)..."
                 value={pathName}
                 onChange={(e) => setPathName(e.target.value)}
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-fcGreen transition-colors"
+                className="w-[300px] bg-[#121212] border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-fcGreen transition-colors"
               />
+            
+              {/* Validation Summary Inline */}
+              {selectedChain.length > 0 && (
+                <div className={`px-4 py-2 rounded-lg border flex-1 max-w-[800px] ${validationResult.isValid ? 'bg-green-950/20 border-green-900/50' : 'bg-red-950/20 border-red-900/50'}`}>
+                  {validationResult.isValid ? (
+                    <div className="flex flex-wrap justify-between items-center gap-4 w-full">
+                      <div className="flex items-center gap-3">
+                        <span className="text-fcGreen text-sm font-semibold">Valid Chain!</span>
+                        <span className="font-mono text-gray-300 text-xs">Final OVR: <span className="text-yellow-400 text-sm font-bold">{validationResult.result?.finalOvr}</span></span>
+                      </div>
+                      {validationResult.result && (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <div className="flex gap-2 text-[10px] text-fcGreen/80 font-mono mt-0.5">
+                            <StatDisplay label="PAC" after={validationResult.result.finalStats.pac.evFace} before={baseStats.pac.evFace} />
+                            <StatDisplay label="SHO" after={validationResult.result.finalStats.sho.evFace} before={baseStats.sho.evFace} />
+                            <StatDisplay label="PAS" after={validationResult.result.finalStats.pas.evFace} before={baseStats.pas.evFace} />
+                            <StatDisplay label="DRI" after={validationResult.result.finalStats.dri.evFace} before={baseStats.dri.evFace} />
+                            <StatDisplay label="DEF" after={validationResult.result.finalStats.def.evFace} before={baseStats.def.evFace} />
+                            <StatDisplay label="PHY" after={validationResult.result.finalStats.phy.evFace} before={baseStats.phy.evFace} />
+                          </div>
+                          <FinalPlayStylesDisplay playStyles={validationResult.result.finalPlayStyles} />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-red-400 text-sm font-semibold">
+                      Invalid Chain. Fix errors to save.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4">
-              <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Evolution Sequence</h3>
-              
+            <div className="p-3 overflow-x-auto whitespace-nowrap bg-[#161816]">
               {selectedChain.length === 0 ? (
-                <div className="text-center py-10 text-gray-600 text-sm border-2 border-dashed border-gray-800 rounded-xl">
+                <div className="text-center py-6 text-gray-600 text-sm border-2 border-dashed border-gray-800 rounded-xl">
                   Select EVOs from the pool to start building.
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className="flex gap-3 items-stretch min-w-max">
                   {selectedChain.map((id, index) => {
                     const evo = availableEvolutions[id];
                     const stepRes = validationResult.result?.steps[index];
                     const isValid = stepRes?.validation.eligible;
                     
                     return (
-                      <div key={`${id}-${index}`} className={`relative p-3 rounded-xl border ${isValid ? 'bg-[#1f211f] border-gray-700' : 'bg-red-950/20 border-red-900/50'}`}>
+                      <div key={`${id}-${index}`} className={`relative p-3 rounded-xl border w-[280px] shrink-0 whitespace-normal ${isValid ? 'bg-[#1f211f] border-gray-700' : 'bg-red-950/20 border-red-900/50'}`}>
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
                             <span className="w-6 h-6 rounded-full bg-gray-800 text-xs font-bold flex items-center justify-center text-gray-400">
@@ -283,7 +362,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                       const beforePlayStyles = index === 0 ? basePlayStyles : validationResult.result?.steps[index - 1].playStylesAfter;
                                       return (
                                         <>
-                                          <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
+                                          <div className="flex gap-2 text-[9px] text-gray-500 font-mono flex-wrap mt-0.5">
                                             <StatDisplay label="PAC" after={stepRes.statsAfter.pac.evFace} before={beforeStats?.pac.evFace} />
                                             <StatDisplay label="SHO" after={stepRes.statsAfter.sho.evFace} before={beforeStats?.sho.evFace} />
                                             <StatDisplay label="PAS" after={stepRes.statsAfter.pas.evFace} before={beforeStats?.pas.evFace} />
@@ -319,44 +398,13 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               )}
             </div>
-            
-            {/* Validation Summary */}
-            {selectedChain.length > 0 && (
-              <div className={`p-4 border-t border-gray-800 ${validationResult.isValid ? 'bg-green-950/20' : 'bg-red-950/20'}`}>
-                {validationResult.isValid ? (
-                  <div className="text-fcGreen text-sm font-semibold flex justify-between items-center w-full">
-                    <span>Valid Chain!</span>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="font-mono">Final OVR: {validationResult.result?.finalOvr}</span>
-                      {validationResult.result && (
-                        <>
-                          <div className="flex gap-2 text-[10px] text-fcGreen/80 font-mono mt-0.5">
-                            <StatDisplay label="PAC" after={validationResult.result.finalStats.pac.evFace} before={baseStats.pac.evFace} />
-                            <StatDisplay label="SHO" after={validationResult.result.finalStats.sho.evFace} before={baseStats.sho.evFace} />
-                            <StatDisplay label="PAS" after={validationResult.result.finalStats.pas.evFace} before={baseStats.pas.evFace} />
-                            <StatDisplay label="DRI" after={validationResult.result.finalStats.dri.evFace} before={baseStats.dri.evFace} />
-                            <StatDisplay label="DEF" after={validationResult.result.finalStats.def.evFace} before={baseStats.def.evFace} />
-                            <StatDisplay label="PHY" after={validationResult.result.finalStats.phy.evFace} before={baseStats.phy.evFace} />
-                          </div>
-                          <FinalPlayStylesDisplay playStyles={validationResult.result.finalPlayStyles} />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-red-400 text-sm font-semibold">
-                    Invalid Chain. Fix errors to save.
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Right Side: Available Pool */}
-          <div className="md:w-1/2 flex flex-col bg-[#1A1C1A]">
-            <div className="p-4 border-b border-gray-800 bg-[#1f211f]/50 flex justify-between items-center gap-3">
+          {/* Bottom Side: Available Pool */}
+          <div className="flex flex-col shrink-0">
+            <div className="sticky top-0 z-20 p-3 border-b border-gray-800 bg-[#1f211f]/95 backdrop-blur flex flex-wrap justify-between items-center gap-3">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Available in Pool</h3>
-              <div className="relative flex-1 max-w-[200px]">
+              <div className="relative max-w-[300px] w-full">
                 <input 
                   type="text"
                   placeholder="Search EVOs..."
@@ -367,7 +415,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 gap-2 content-start">
+            <div className="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {poolWithStatus.length === 0 ? (
                 <div className="text-center py-6 text-gray-600 text-sm">
                   Your EVO pool is empty.
@@ -375,33 +423,57 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               ) : (
                 poolWithStatus
                   .filter(({ evo }) => !searchQuery || evo?.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs, expectedStats, expectedPlayStyles }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs, expectedStats, expectedPlayStyles, isRecommended, recReasons }) => {
                   if (!evo) return null;
                   
                   const canAdd = !limitReached && isEligible;
+                  const isRec = canAdd && isRecommended;
                   
                   return (
                     <div 
                       key={id}
                       onClick={() => { if (canAdd) handleAdd(id); }}
-                      className={`p-3 rounded-xl transition-all flex flex-col ${
+                      className={`p-3 rounded-xl transition-all flex flex-col relative overflow-hidden ${
                         canAdd 
-                          ? 'bg-[#121212] border border-gray-800 hover:border-fcGreen/50 cursor-pointer group' 
+                          ? isRec 
+                            ? 'bg-gradient-to-br from-[#1a2e1a] to-[#121212] border border-fcGreen/50 hover:border-fcGreen cursor-pointer group shadow-[0_0_15px_rgba(212,248,62,0.1)]'
+                            : 'bg-[#121212] border border-gray-800 hover:border-fcGreen/50 cursor-pointer group' 
                           : 'bg-[#121212]/50 border border-gray-800/30 opacity-60 cursor-not-allowed'
                       }`}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <div>
-                          <h4 className={`font-bold text-sm transition-colors ${canAdd ? 'text-gray-200 group-hover:text-fcGreen' : 'text-gray-500'}`}>{evo.name}</h4>
-                          <div className="flex gap-2 items-center mt-0.5">
+                      {isRec && (
+                         <div className="absolute top-0 right-0 px-2 py-0.5 bg-fcGreen text-black text-[9px] font-bold rounded-bl-lg">
+                           RECOMMENDED
+                         </div>
+                      )}
+                      <div className="flex justify-between items-start w-full">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className={`font-bold text-sm transition-colors ${canAdd ? 'text-gray-200 group-hover:text-fcGreen' : 'text-gray-500'}`}>{evo.name}</h4>
+                            {onViewEvo && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onViewEvo(id); }}
+                                className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                          {isRec && recReasons && recReasons.length > 0 && (
+                            <p className="text-[9px] text-fcGreen/80 italic mt-0.5 leading-tight opacity-90">
+                              {recReasons.join(' • ')}
+                            </p>
+                          )}
+                          <div className="flex gap-2 flex-wrap items-center mt-0.5">
                             <p className="text-[10px] text-gray-500 font-medium">Req OVR: ≤{evo.requirements.maxOvr}</p>
                             {canAdd && expectedOvr > currentOvr && (
-                              <span className="px-1.5 py-0.5 bg-green-950/40 rounded text-[9px] text-green-400 border border-green-800/40 font-bold">
+                              <span className="px-1.5 py-0.5 bg-green-950/40 rounded text-[9px] text-green-400 border border-green-800/40 font-bold whitespace-nowrap">
                                 → {expectedOvr} OVR
                               </span>
                             )}
                             {canAdd && expectedIgs > 0 && (
-                              <span className="px-1.5 py-0.5 bg-blue-950/40 rounded text-[9px] text-blue-400 border border-blue-800/40 font-bold">
+                              <span className="px-1.5 py-0.5 bg-blue-950/40 rounded text-[9px] text-blue-400 border border-blue-800/40 font-bold whitespace-nowrap">
                                 → {expectedIgs} IGS
                               </span>
                             )}
@@ -413,7 +485,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           </div>
                           {canAdd && expectedStats && expectedPlayStyles && (
                             <div className="mt-1.5 pt-1.5 border-t border-gray-800/50">
-                              <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
+                              <div className="flex gap-2 flex-wrap text-[9px] text-gray-500 font-mono mt-0.5">
                                 <StatDisplay label="PAC" after={expectedStats.pac.evFace} before={currentStats.pac.evFace} />
                                 <StatDisplay label="SHO" after={expectedStats.sho.evFace} before={currentStats.sho.evFace} />
                                 <StatDisplay label="PAS" after={expectedStats.pas.evFace} before={currentStats.pas.evFace} />
@@ -447,16 +519,19 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-800 bg-[#1f211f] flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2 rounded-lg text-sm font-semibold text-gray-300 bg-[#2A2D2A] hover:bg-[#374151] transition-colors border border-gray-700">
+        <div className="px-4 py-2 border-t border-gray-800 bg-[#1f211f] flex justify-end gap-3 shrink-0">
+          <button 
+            onClick={onClose}
+            className="px-4 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+          >
             Cancel
           </button>
           <button 
-            onClick={handleSave} 
+            onClick={handleSave}
             disabled={selectedChain.length === 0 || !validationResult.isValid}
-            className={`px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition-all ${
+            className={`px-5 py-1.5 rounded-md text-xs font-bold transition-all ${
               selectedChain.length > 0 && validationResult.isValid 
-                ? 'bg-[#1ED760] text-black hover:bg-[#1db954]' 
+                ? 'bg-fcGreen text-black hover:bg-[#a8eb12] shadow-[0_0_10px_rgba(212,248,62,0.2)]' 
                 : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
           >

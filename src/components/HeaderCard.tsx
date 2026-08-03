@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters } from '../types/player';
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil, Settings2, Minus } from 'lucide-react';
+import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil, Settings2, Minus, Star, Eye } from 'lucide-react';
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -43,6 +43,8 @@ interface HeaderCardProps {
   playStyles: import('../types/player').PlayStylesData;
   onDeletePath?: (pathId: string) => void;
   onEditPath?: (path: EvolutionPath) => void;
+  onToggleFavoritePath?: (path: EvolutionPath) => void;
+  onViewEvo?: (evoId: string) => void;
 }
 
 export const HeaderCard: React.FC<HeaderCardProps> = ({
@@ -73,7 +75,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onNodeClick,
   playStyles,
   onDeletePath,
-  onEditPath
+  onEditPath,
+  onToggleFavoritePath,
+  onViewEvo
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -305,18 +309,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     <button onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
                   </div>
 
-                  <label className="flex items-start gap-2 mb-3 pb-3 border-b border-gray-800 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={(evoFilters || {}).requireCustomizableRarity !== false}
-                      onChange={(e) => onEvoFiltersChange({ ...(evoFilters || {}), requireCustomizableRarity: e.target.checked })}
-                      className="mt-0.5 w-3.5 h-3.5 accent-purple-500"
-                    />
-                    <span className="text-[11px] text-gray-300 leading-snug">
-                      Only use a rarity that can add its own PlayStyles <span className="text-purple-400 font-bold">(Glory Hunters / FUT Birthday / FUTTIES / National Pride)</span> — including if it already is one
-                    </span>
-                  </label>
-
                   <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                     {['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy', 'psPlus', 'ps'].map(stat => {
                       const safeFilters = evoFilters || {};
@@ -473,16 +465,29 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               <div key={path.id} className="relative flex items-center group">
                 <button
                   onClick={() => onSelectPath(path.id)}
-                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all border ${
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all border flex items-center gap-1.5 ${
                     activePathId === path.id
                       ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
                       : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
                   }`}
                 >
+                  {path.isFavorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />}
                   {path.name}
                 </button>
-                {(onEditPath || onDeletePath) && (
+                {(onEditPath || onDeletePath || onToggleFavoritePath) && (
                   <div className="absolute -top-1 -right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {onToggleFavoritePath && !path.isFavorite && path.id.startsWith('auto') && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleFavoritePath(path);
+                        }}
+                        className="bg-yellow-900/90 text-yellow-400 rounded-full p-0.5 hover:bg-yellow-500 hover:text-black shadow-sm"
+                        title="Save to Favorites (Keep permanently)"
+                      >
+                        <Star className="w-2.5 h-2.5" />
+                      </button>
+                    )}
                     {onEditPath && (
                       <button
                         onClick={(e) => {
@@ -530,14 +535,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       : 'bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200'
                   }`}
                 >
-                  <span className={`mr-1.5 text-[11px] font-black ${
-                    selectedNodes.includes(-1) ? 'text-black/80' : 'text-white'
-                  }`}>
-                    {activeBaseOvr}
-                  </span>
                   Base Card
-                  <span className="font-normal text-[9px] ml-1.5 opacity-90">
-                    (<span className={selectedNodes.includes(-1) ? 'text-black font-extrabold' : 'text-yellow-500/90 font-bold'}>{originalFaceSum}</span> | <span className={selectedNodes.includes(-1) ? 'text-green-950 font-extrabold' : 'text-fcGreen/90 font-bold'}>{originalIgs}</span>)
+                  <span className={`font-normal text-[9.5px] ml-1.5 opacity-90 tracking-wide font-mono ${selectedNodes.includes(-1) ? 'text-black font-bold' : 'text-gray-300'}`}>
+                    ({activeBaseOvr}/{playStyles.base.gold.length + playStyles.ev.gold.length})
                   </span>
                 </button>
 
@@ -552,20 +552,16 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   let stepStatsStr = null;
                   const stepResult = activePath.steps?.[idx];
                   if (stepResult) {
-                    let fSum = 0;
-                    let iSum = 0;
-                    Object.values(stepResult.statsAfter).forEach(f => {
-                      fSum += f.baseFace;
-                      Object.values(f.subs).forEach(s => { iSum += s.base; });
-                    });
+                    const reqOvr = evo.requirements.maxOvr || 99;
+                    const reqPsPlus = evo.requirements.maxPlayStylesPlus ?? 99;
+                    const reqPsPlusStr = reqPsPlus === 99 ? '∞' : reqPsPlus;
+                    const addedPsPlus = evo.playStylesAdded?.gold?.length || 0;
                     
                     const isStepActive = selectedNodes.includes(idx);
-                    const fSumClass = isStepActive ? "text-black font-extrabold" : "text-yellow-500/90 font-bold";
-                    const iSumClass = isStepActive ? "text-green-950 font-extrabold" : "text-fcGreen/90 font-bold";
                     
                     stepStatsStr = (
-                      <span className="font-normal text-[9px] ml-1.5 opacity-90">
-                        (<span className={fSumClass}>{fSum}</span> | <span className={iSumClass}>{iSum}</span>)
+                      <span className={`font-normal text-[9.5px] ml-1.5 opacity-90 tracking-wide font-mono ${isStepActive ? 'text-black font-bold' : 'text-gray-300'}`}>
+                        ({stepResult.ovrAfter}/{reqOvr}/{reqPsPlusStr}/{addedPsPlus})
                       </span>
                     );
                   }
@@ -577,19 +573,25 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
                   return (
                     <React.Fragment key={`${id}-${idx}`}>
-                      <button
-                        onClick={() => onNodeClick(idx)}
-                        title={`Preview Step ${idx + 1} (${evo.name}) stats`}
-                        className={`${baseClass} shrink-0 px-2.5 py-1 rounded text-[10px] font-bold flex items-center transition-all cursor-pointer shadow`}
-                      >
-                        {stepResult && (
-                          <span className={`mr-1.5 text-[11px] font-black ${isStepActive ? 'text-black/80' : 'text-white'}`}>
-                            {stepResult.ovrAfter}
-                          </span>
+                      <div className="flex items-center gap-0.5 group/node shrink-0 relative">
+                        <button
+                          onClick={() => onNodeClick(idx)}
+                          title={`Preview Step ${idx + 1} (${evo.name}) stats`}
+                          className={`${baseClass} px-2.5 py-1 rounded text-[10.5px] font-bold flex items-center transition-all cursor-pointer shadow`}
+                        >
+                          {evo.name}
+                          {stepStatsStr}
+                        </button>
+                        {onViewEvo && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); onViewEvo(id); }}
+                            className="absolute -top-1.5 -right-1.5 p-0.5 bg-blue-900/90 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
+                            title="View Evolution Details"
+                          >
+                            <Eye className="w-2.5 h-2.5" />
+                          </button>
                         )}
-                        {evo.name}
-                        {stepStatsStr}
-                      </button>
+                      </div>
                       {idx < activePath.chainIds.length - 1 && (
                         <span className="text-gray-600 text-[10px] shrink-0">➜</span>
                       )}

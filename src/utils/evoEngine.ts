@@ -1,17 +1,6 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
 
-// Rarities this FC 26 cycle that let the player pick their own PlayStyles after evolving
-// (Glory Hunters, FUT Birthday, FUTTIES, National Pride). Matched by substring so variants
-// like "Futties Evo" or "Glory Hunter" (singular) still match.
-const CUSTOMIZABLE_PLAYSTYLE_RARITY_KEYWORDS = ['glory hunter', 'fut birthday', 'futties', 'national pride'];
-
-export function hasCustomizablePlaystyleRarity(rarity: string | undefined): boolean {
-  if (!rarity) return false;
-  const r = rarity.toLowerCase();
-  return CUSTOMIZABLE_PLAYSTYLE_RARITY_KEYWORDS.some(k => r.includes(k));
-}
-
 export interface FullChainResult {
   chainIds: string[];
   isValidChain: boolean;
@@ -337,12 +326,6 @@ export function analyzeEvolutions(
           }
         }
 
-        // Not a prune: a later evo in the chain might still add a qualifying rarityChange,
-        // so branches that don't yet qualify must keep being explored.
-        if (filters.requireCustomizableRarity !== false && !hasCustomizablePlaystyleRarity(currentResult.finalBio.rarity)) {
-          passesFilters = false;
-        }
-
         const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
         for (const stat of statsToCheck) {
           if (filters[stat]) {
@@ -427,14 +410,13 @@ export function analyzeEvolutions(
     return igsB - igsA; // Sort by IGS descending
   });
   
-  const topPaths = validPaths.slice(0, 3);
+  const topPaths = validPaths.slice(0, 5);
   return topPaths.map((result, idx) => {
     const igs = Object.values(result.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
-    const faceSum = Object.values(result.finalStats).reduce((acc, f) => acc + f.baseFace, 0);
     
     return {
       id: `auto-path-${Date.now()}-${idx}`,
-      name: `Auto ${result.finalOvr}/${result.chainIds.length}/${igs}`,
+      name: `${result.finalOvr}/${result.chainIds.length}/${igs}`,
       description: `Optimal chain spanning ${result.chainIds.length} EVOs. Reaches ${result.finalOvr} OVR.`,
       isRecommended: true,
       chainIds: [...result.chainIds],

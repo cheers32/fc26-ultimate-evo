@@ -133,6 +133,7 @@ export interface EvolutionPath {
   name: string;
   description: string;
   isRecommended?: boolean;
+  isFavorite?: boolean;
   chainIds: string[]; // List of EVO IDs in order e.g. ['1076', '1159']
   steps?: ChainStepResult[];
 }
@@ -157,7 +158,5 @@ export interface EvoFilters {
   phy?: StatFilter;
   psPlus?: StatFilter;
   ps?: StatFilter;
-  // Defaults to true (opt-out, not opt-in) — see hasCustomizablePlaystyleRarity in evoEngine.ts
-  requireCustomizableRarity?: boolean;
   requiredEvos?: string[];
 }

@@ -14,6 +14,7 @@ import { EvolutionDefinition } from './types/player';
 import { PlayerCarousel } from './components/PlayerCarousel';
 import { EvoPoolModal } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
+import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { Trophy, RefreshCw, LayoutGrid, Layers, Zap } from 'lucide-react';
 
 export default function App() {
@@ -46,7 +47,7 @@ export default function App() {
     evosPool: [],
     generatedPaths: [],
     manualPaths: [],
-    evoFilters: { ovr: { max: 99 }, requireCustomizableRarity: true }
+    evoFilters: { ovr: { max: 99 } }
   };
 
   const updateState = (updates: Partial<PlayerEvoState>) => {
@@ -56,7 +57,7 @@ export default function App() {
         evosPool: [],
         generatedPaths: [],
         manualPaths: [],
-        evoFilters: { ovr: { max: 99 }, requireCustomizableRarity: true }
+        evoFilters: { ovr: { max: 99 } }
       };
       
       const newState = { ...current, ...updates };
@@ -108,6 +109,7 @@ export default function App() {
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   const [isManualPathOpen, setIsManualPathOpen] = useState(false);
+  const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [editingPath, setEditingPath] = useState<EvolutionPath | null>(null);
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
 
@@ -410,7 +412,7 @@ export default function App() {
           evoFilters={evoFilters}
           onEvoFiltersChange={setEvoFilters}
           onAnalyze={() => {
-            const results = analyzeEvolutions(evosPool, 3, playerBio, initialOvrData, statsData, playStylesData, evoFilters);
+            const results = analyzeEvolutions(evosPool, 5, playerBio, initialOvrData, statsData, playStylesData, evoFilters);
             setGeneratedPaths(results);
             if (results.length > 0) {
               setActivePathId(results[0].id);
@@ -429,6 +431,25 @@ export default function App() {
           playStyles={previewPlayStyles}
           onDeletePath={handleDeletePath}
           onEditPath={(path) => { setEditingPath(path); setIsManualPathOpen(true); }}
+          onToggleFavoritePath={(path) => {
+            const isManual = manualPaths.some(p => p.id === path.id);
+            if (isManual) {
+              // If it's already a manual path, "unfavoriting" it means deleting it or ignoring.
+              // We can just ignore, or maybe we want to allow removing from favorites.
+              // To keep it simple, if it's already manual, we can just delete it from manual (but maybe they edited it).
+              // Let's just handle moving from generated -> manual.
+            } else {
+              // Move from generated to manual to "favorite" it
+              updateState({
+                generatedPaths: generatedPaths.filter(p => p.id !== path.id),
+                manualPaths: [...manualPaths, { ...path, isFavorite: true }]
+              });
+              if (activePathId === path.id) {
+                // re-select it with the new name if needed, but the ID stays the same, so it will just re-render from manualPaths.
+              }
+            }
+          }}
+          onViewEvo={(id) => setViewingEvoId(id)}
         />
 
         {/* Top Control Bar: Chemistry Stats + Tabs */}
@@ -591,6 +612,11 @@ export default function App() {
         baseOvr={initialOvrData}
         baseStats={statsData}
         basePlayStyles={playStylesData}
+        onViewEvo={(id) => setViewingEvoId(id)}
+      />
+      <EvoDetailsModal 
+        evoId={viewingEvoId} 
+        onClose={() => setViewingEvoId(null)} 
       />
     </div>
   );
