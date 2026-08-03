@@ -89,6 +89,16 @@ export const PlayerCarousel: React.FC<PlayerCarouselProps> = ({
               <p className="text-xs text-fcTextDim truncate">
                 {player.bio.primaryPositions.split(',')[0]} &bull; {player.bio.club}
               </p>
+              
+              {/* Display Rebase History */}
+              {player.rebasedFromEvos && player.rebasedFromEvos.length > 0 && (
+                <div className="mt-2 text-[9px] text-purple-300/80 leading-tight">
+                  <div className="font-bold text-purple-400 mb-0.5 uppercase tracking-wider">Rebased</div>
+                  {player.rebasedFromEvos.map((evo, i) => (
+                    <div key={i} className="truncate">{evo}</div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );

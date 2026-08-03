@@ -11,6 +11,22 @@ export interface FullChainResult {
   finalBio: PlayerBio;
 }
 
+/**
+ * Splitting `primaryPositions` is pure string churn, and validateRequirement runs millions
+ * of times during a path search over a handful of distinct position strings — so parse each
+ * one once. The returned arrays are read-only for callers.
+ */
+const positionsCache = new Map<string, { all: string[]; nonEmptyCount: number }>();
+function parsePositions(primaryPositions: string) {
+  let parsed = positionsCache.get(primaryPositions);
+  if (!parsed) {
+    const all = primaryPositions.split(',').map(p => p.trim());
+    parsed = { all, nonEmptyCount: all.filter(Boolean).length };
+    positionsCache.set(primaryPositions, parsed);
+  }
+  return parsed;
+}
+
 export function validateRequirement(
   evo: EvolutionDefinition,
   currentOvr: number,
@@ -58,7 +74,7 @@ export function validateRequirement(
   }
 
   // Check Total Positions Count
-  const currentPositionCount = bio.primaryPositions.split(',').map(p => p.trim()).filter(Boolean).length;
+  const currentPositionCount = parsePositions(bio.primaryPositions).nonEmptyCount;
   if (evo.requirements.maxTotalPositions !== undefined && currentPositionCount > evo.requirements.maxTotalPositions) {
     reasons.push(`Total Positions (${currentPositionCount}) exceeds Max Requirement of ${evo.requirements.maxTotalPositions}`);
   }
@@ -82,7 +98,7 @@ export function validateRequirement(
   }
 
   // Check Positions
-  const playerPositions = bio.primaryPositions.split(',').map(p => p.trim());
+  const playerPositions = parsePositions(bio.primaryPositions).all;
   if (evo.requirements.positions && evo.requirements.positions.length > 0) {
     const hasRequired = playerPositions.some(p => evo.requirements.positions!.includes(p));
     if (!hasRequired) {
@@ -102,33 +118,62 @@ export function validateRequirement(
   };
 }
 
-export function simulateEvoChain(
-  chainIds: string[],
-  baseBio: PlayerBio,
-  baseOvr: OvrData,
-  baseStats: StatsData,
-  basePlayStyles: PlayStylesData
-): FullChainResult {
-  let currentOvr = baseOvr.base;
-  let currentStats: StatsData = JSON.parse(JSON.stringify(baseStats));
-  let currentPlayStyles: PlayStylesData = JSON.parse(JSON.stringify(basePlayStyles));
-  let currentBio: PlayerBio = JSON.parse(JSON.stringify(baseBio));
+export interface ChainState {
+  ovr: number;
+  stats: StatsData;
+  playStyles: PlayStylesData;
+  bio: PlayerBio;
+}
 
-  const steps: ChainStepResult[] = [];
-  let overallValid = true;
-
-  for (const evoId of chainIds) {
-    const evo = availableEvolutions[evoId];
-    if (!evo) continue;
-
-    // Validate eligibility
-    const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
-    if (!validation.eligible) {
-      overallValid = false;
+// Hand-rolled clones: JSON.parse(JSON.stringify(...)) is roughly an order of magnitude
+// slower, and this runs hundreds of thousands of times during analyzeEvolutions' search.
+function cloneStats(stats: StatsData): StatsData {
+  const out: StatsData = {};
+  for (const faceKey in stats) {
+    const f = stats[faceKey];
+    const subs: typeof f.subs = {};
+    for (const subKey in f.subs) {
+      const s = f.subs[subKey];
+      subs[subKey] = { label: s.label, base: s.base, boost: s.boost, limit: s.limit, w: s.w };
     }
+    out[faceKey] = { label: f.label, baseFace: f.baseFace, evFace: f.evFace, subs };
+  }
+  return out;
+}
 
-    // Apply OVR Boost
-    currentOvr = Math.max(currentOvr, Math.min(currentOvr + evo.ovrBoost.boost, evo.ovrBoost.limit));
+function clonePlayStyles(ps: PlayStylesData): PlayStylesData {
+  return {
+    limits: { gold: ps.limits.gold, silver: ps.limits.silver },
+    base: { gold: [...ps.base.gold], silver: [...ps.base.silver] },
+    ev: { gold: [...ps.ev.gold], silver: [...ps.ev.silver] }
+  };
+}
+
+// `roles` is never mutated while applying an evolution, so it can stay shared.
+function cloneBio(bio: PlayerBio): PlayerBio {
+  return { ...bio };
+}
+
+/**
+ * Applies a single evolution to a copy of `state`.
+ *
+ * Split out of simulateEvoChain so the path search can advance one evo per tree node
+ * instead of replaying the whole chain from the base card at every node, and without
+ * paying for the per-step snapshots that only the UI needs.
+ */
+export function applyEvo(
+  state: ChainState,
+  evo: EvolutionDefinition
+): { state: ChainState; validation: ChainValidation } {
+  // Validate eligibility
+  const validation = validateRequirement(evo, state.ovr, state.stats, state.playStyles, state.bio);
+
+  const currentStats = cloneStats(state.stats);
+  const currentPlayStyles = clonePlayStyles(state.playStyles);
+  const currentBio = cloneBio(state.bio);
+
+  // Apply OVR Boost
+  const currentOvr = Math.max(state.ovr, Math.min(state.ovr + evo.ovrBoost.boost, evo.ovrBoost.limit));
 
     // Apply Face & Sub Stat Boosts
     Object.keys(currentStats).forEach((faceKey) => {
@@ -254,15 +299,53 @@ export function simulateEvoChain(
       currentBio.primaryPositions = currentPos.join(', ');
     }
 
+  return {
+    state: {
+      ovr: currentOvr,
+      stats: currentStats,
+      playStyles: currentPlayStyles,
+      bio: currentBio
+    },
+    validation
+  };
+}
+
+export function simulateEvoChain(
+  chainIds: string[],
+  baseBio: PlayerBio,
+  baseOvr: OvrData,
+  baseStats: StatsData,
+  basePlayStyles: PlayStylesData
+): FullChainResult {
+  let state: ChainState = {
+    ovr: baseOvr.base,
+    stats: cloneStats(baseStats),
+    playStyles: clonePlayStyles(basePlayStyles),
+    bio: cloneBio(baseBio)
+  };
+
+  const steps: ChainStepResult[] = [];
+  let overallValid = true;
+
+  for (const evoId of chainIds) {
+    const evo = availableEvolutions[evoId];
+    if (!evo) continue;
+
+    const applied = applyEvo(state, evo);
+    if (!applied.validation.eligible) {
+      overallValid = false;
+    }
+    state = applied.state;
+
     steps.push({
       evoId,
       evoName: evo.name,
       futbinLink: evo.futbinLink,
-      validation,
-      ovrAfter: currentOvr,
-      statsAfter: JSON.parse(JSON.stringify(currentStats)),
-      playStylesAfter: JSON.parse(JSON.stringify(currentPlayStyles)),
-      bioAfter: JSON.parse(JSON.stringify(currentBio))
+      validation: applied.validation,
+      ovrAfter: state.ovr,
+      statsAfter: cloneStats(state.stats),
+      playStylesAfter: clonePlayStyles(state.playStyles),
+      bioAfter: cloneBio(state.bio)
     });
   }
 
@@ -270,10 +353,10 @@ export function simulateEvoChain(
     chainIds: [...chainIds],
     isValidChain: overallValid,
     steps,
-    finalOvr: currentOvr,
-    finalStats: currentStats,
-    finalPlayStyles: currentPlayStyles,
-    finalBio: currentBio
+    finalOvr: state.ovr,
+    finalStats: state.stats,
+    finalPlayStyles: state.playStyles,
+    finalBio: state.bio
   };
 }
 
@@ -286,27 +369,29 @@ export function analyzeEvolutions(
   basePlayStyles: PlayStylesData,
   filters?: EvoFilters
 ): EvolutionPath[] {
-  const validPaths: FullChainResult[] = [];
-  
-  function dfs(currentChainIds: string[]) {
-    let currentResult: FullChainResult | null = null;
-    
-    if (currentChainIds.length > 0) {
-      currentResult = simulateEvoChain(currentChainIds, baseBio, baseOvr, baseStats, basePlayStyles);
-      if (!currentResult.isValidChain) {
-        return; // Stop branching if invalid
-      }
+  // Only the primitives needed for ranking are kept per candidate. Holding the whole
+  // ChainState for every hit would pin hundreds of thousands of stat objects in memory.
+  type Candidate = { chainIds: string[]; ovr: number; igs: number };
+  const validPaths: Candidate[] = [];
 
+  const igsOf = (stats: StatsData) =>
+    Object.values(stats).reduce(
+      (acc, f) => acc + Object.values(f.subs).reduce((sum, s) => sum + s.base, 0),
+      0
+    );
+
+  function dfs(currentChainIds: string[], state: ChainState) {
+    if (currentChainIds.length > 0) {
       const maxOvrAllowed = filters?.ovr?.max ?? 99;
-      if (currentResult.finalOvr > maxOvrAllowed) {
+      if (state.ovr > maxOvrAllowed) {
         return; // Prune branch: OVR only increases, so we can't recover
       }
 
       let passesFilters = true;
       if (filters) {
-        if (filters.ovr?.min !== undefined && currentResult.finalOvr < filters.ovr.min) passesFilters = false;
+        if (filters.ovr?.min !== undefined && state.ovr < filters.ovr.min) passesFilters = false;
 
-        const finalPS = currentResult.finalPlayStyles;
+        const finalPS = state.playStyles;
         const psPlusCount = Math.min(finalPS.base.gold.length + finalPS.ev.gold.length, finalPS.limits.gold);
         const psCount = Math.min(finalPS.base.silver.length + finalPS.ev.silver.length, finalPS.limits.silver);
 
@@ -329,7 +414,7 @@ export function analyzeEvolutions(
         const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
         for (const stat of statsToCheck) {
           if (filters[stat]) {
-            const faceVal = currentResult.finalStats[stat]?.baseFace || 0;
+            const faceVal = state.stats[stat]?.baseFace || 0;
             if (filters[stat]!.min !== undefined && faceVal < filters[stat]!.min!) passesFilters = false;
             
             if (filters[stat]!.max !== undefined && faceVal > filters[stat]!.max!) {
@@ -341,7 +426,7 @@ export function analyzeEvolutions(
             // Check sub-stats if defined
             if (filters[stat]!.subs) {
               const subsConfig = filters[stat]!.subs!;
-              const actualSubs = currentResult.finalStats[stat]?.subs || {};
+              const actualSubs = state.stats[stat]?.subs || {};
               for (const subKey in subsConfig) {
                 const subVal = actualSubs[subKey]?.base || 0;
                 if (subsConfig[subKey].min !== undefined && subVal < subsConfig[subKey].min!) passesFilters = false;
@@ -363,64 +448,61 @@ export function analyzeEvolutions(
       }
 
       if (passesFilters) {
-        validPaths.push(currentResult);
+        validPaths.push({
+          chainIds: [...currentChainIds],
+          ovr: state.ovr,
+          igs: igsOf(state.stats)
+        });
       }
     }
-    
+
     if (currentChainIds.length >= maxDepth) return;
-    
+
     for (const evoId of poolIds) {
       const evo = availableEvolutions[evoId];
       if (!evo) continue;
 
-      const count = currentChainIds.filter(id => id === evoId).length;
+      // Counted in a loop rather than with .filter().length — this runs once per pool
+      // entry per node, so the throwaway arrays add up to millions of allocations.
+      let count = 0;
+      for (let i = 0; i < currentChainIds.length; i++) {
+        if (currentChainIds[i] === evoId) count++;
+      }
       const maxAllowed = evo.maxRepeatable || 1;
-      
+
       if (count >= maxAllowed) continue;
-      
-      let latestOvr = baseOvr.base;
-      let latestBio = baseBio;
-      let latestStats = baseStats;
-      let latestPS = basePlayStyles;
-      
-      if (currentResult) {
-        latestOvr = currentResult.finalOvr;
-        latestBio = currentResult.finalBio;
-        latestStats = currentResult.finalStats;
-        latestPS = currentResult.finalPlayStyles;
-      }
-      
-      const validation = validateRequirement(evo, latestOvr, latestStats, latestPS, latestBio);
-      
-      if (validation.eligible) {
-        currentChainIds.push(evoId);
-        dfs(currentChainIds);
-        currentChainIds.pop();
-      }
+
+      // Cheap gate first — validateRequirement does no cloning, applyEvo does.
+      if (!validateRequirement(evo, state.ovr, state.stats, state.playStyles, state.bio).eligible) continue;
+
+      currentChainIds.push(evoId);
+      dfs(currentChainIds, applyEvo(state, evo).state);
+      currentChainIds.pop();
     }
   }
-  
-  dfs([]);
-  
-  validPaths.sort((a, b) => {
-    // Calculate IGS for a
-    const igsA = Object.values(a.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
-    // Calculate IGS for b
-    const igsB = Object.values(b.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
-    return igsB - igsA; // Sort by IGS descending
+
+  dfs([], {
+    ovr: baseOvr.base,
+    stats: cloneStats(baseStats),
+    playStyles: clonePlayStyles(basePlayStyles),
+    bio: cloneBio(baseBio)
   });
-  
+
+  validPaths.sort((a, b) => b.igs - a.igs); // Sort by IGS descending
+
   const topPaths = validPaths.slice(0, 5);
-  return topPaths.map((result, idx) => {
-    const igs = Object.values(result.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
-    
+  // Per-step snapshots are only needed for the handful of chains we actually return,
+  // so they are built here rather than for every node visited during the search.
+  return topPaths.map((cand, idx) => {
+    const full = simulateEvoChain(cand.chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+
     return {
       id: `auto-path-${Date.now()}-${idx}`,
-      name: `${result.finalOvr}/${result.chainIds.length}/${igs}`,
-      description: `Optimal chain spanning ${result.chainIds.length} EVOs. Reaches ${result.finalOvr} OVR.`,
+      name: `${cand.ovr}/${cand.chainIds.length}/${cand.igs}`,
+      description: `Optimal chain spanning ${cand.chainIds.length} EVOs. Reaches ${cand.ovr} OVR.`,
       isRecommended: true,
-      chainIds: [...result.chainIds],
-      steps: [...result.steps]
+      chainIds: [...cand.chainIds],
+      steps: full.steps
     };
   });
 }

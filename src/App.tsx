@@ -18,9 +18,19 @@ import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { Trophy, RefreshCw, LayoutGrid, Layers, Zap } from 'lucide-react';
 
 export default function App() {
+  const [customPlayers, setCustomPlayers] = useState<Record<string, PlayerData>>(() => {
+    try {
+      const saved = localStorage.getItem('futEvo_custom_players');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return {};
+  });
+
+  const allPlayersData = useMemo(() => ({ ...playersDatabase, ...customPlayers }), [customPlayers]);
+
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('rodri-91');
   
-  const currentPlayer = useMemo(() => playersDatabase[selectedPlayerId] || playersDatabase['rodri-91'], [selectedPlayerId]);
+  const currentPlayer = useMemo(() => allPlayersData[selectedPlayerId] || allPlayersData['rodri-91'], [selectedPlayerId, allPlayersData]);
   const playerBio = currentPlayer.bio;
   const initialOvrData = currentPlayer.ovr;
   const playStylesData = currentPlayer.playStyles;
@@ -383,7 +393,7 @@ export default function App() {
         
         {/* Player Selector Strip */}
         <PlayerCarousel
-          players={playersDatabase}
+          players={allPlayersData}
           selectedPlayerId={selectedPlayerId}
           onSelectPlayer={(id) => {
             setSelectedPlayerId(id);
@@ -450,6 +460,25 @@ export default function App() {
             }
           }}
           onViewEvo={(id) => setViewingEvoId(id)}
+          onRebase={(path) => {
+            const stepResult = path.steps?.[path.steps.length - 1];
+            if (!stepResult) return;
+            const newId = `${selectedPlayerId}-rebased-${Date.now()}`;
+            const newPlayer: PlayerData = {
+              ...currentPlayer,
+              id: newId,
+              bio: stepResult.bioAfter,
+              ovr: { base: stepResult.ovrAfter, boost: 30, limit: 99 },
+              stats: stepResult.statsAfter,
+              playStyles: stepResult.playStylesAfter,
+              parentId: selectedPlayerId,
+              rebasedFromEvos: [...(currentPlayer.rebasedFromEvos || []), ...path.chainIds.map(id => availableEvolutions[id]?.name || id)]
+            };
+            const updatedCustom = { ...customPlayers, [newId]: newPlayer };
+            setCustomPlayers(updatedCustom);
+            localStorage.setItem('futEvo_custom_players', JSON.stringify(updatedCustom));
+            setSelectedPlayerId(newId);
+          }}
         />
 
         {/* Top Control Bar: Chemistry Stats + Tabs */}

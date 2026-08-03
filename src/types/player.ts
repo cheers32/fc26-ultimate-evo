@@ -61,6 +61,8 @@ export interface PlayerData {
   ovr: OvrData;
   playStyles: PlayStylesData;
   stats: StatsData;
+  parentId?: string;
+  rebasedFromEvos?: string[];
 }
 
 // Evolution Data Schemas for FC 26

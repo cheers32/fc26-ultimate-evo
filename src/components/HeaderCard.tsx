@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters } from '../types/player';
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil, Settings2, Minus, Star, Eye } from 'lucide-react';
+import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil, Settings2, Minus, Star, Eye, RefreshCw } from 'lucide-react';
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -45,6 +45,7 @@ interface HeaderCardProps {
   onEditPath?: (path: EvolutionPath) => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
   onViewEvo?: (evoId: string) => void;
+  onRebase?: (path: EvolutionPath) => void;
 }
 
 export const HeaderCard: React.FC<HeaderCardProps> = ({
@@ -77,7 +78,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onDeletePath,
   onEditPath,
   onToggleFavoritePath,
-  onViewEvo
+  onViewEvo,
+  onRebase
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -589,6 +591,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             title="View Evolution Details"
                           >
                             <Eye className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                        {onRebase && idx === activePath.chainIds.length - 1 && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); onRebase(activePath); }}
+                            className="absolute -bottom-1.5 -right-1.5 p-0.5 bg-purple-900/90 text-purple-400 hover:bg-purple-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
+                            title="Rebase from here"
+                          >
+                            <RefreshCw className="w-2.5 h-2.5" />
                           </button>
                         )}
                       </div>
