@@ -104,6 +104,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let reasons: string[] = [];
     let expectedOvr = 0;
     let expectedIgs = 0;
+    let expectedStats = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -114,6 +115,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
         const testRes = simulateEvoChain([...selectedChain, id], baseBio, baseOvr, baseStats, basePlayStyles);
         if (testRes.isValidChain) {
           expectedOvr = testRes.finalOvr;
+          expectedStats = testRes.finalStats;
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
         }
       }
@@ -126,7 +128,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       isEligible,
       reasons,
       expectedOvr,
-      expectedIgs
+      expectedIgs,
+      expectedStats
     };
   });
 
@@ -290,7 +293,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               ) : (
                 poolWithStatus
                   .filter(({ evo }) => !searchQuery || evo?.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs, expectedStats }) => {
                   if (!evo) return null;
                   
                   const canAdd = !limitReached && isEligible;
@@ -326,6 +329,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               </span>
                             )}
                           </div>
+                          {canAdd && expectedStats && (
+                            <div className="flex gap-2 text-[9px] text-gray-500 font-mono mt-1.5 pt-1.5 border-t border-gray-800/50">
+                              <span>PAC <span className="text-gray-300">{expectedStats.pace.evFace}</span></span>
+                              <span>SHO <span className="text-gray-300">{expectedStats.shooting.evFace}</span></span>
+                              <span>PAS <span className="text-gray-300">{expectedStats.passing.evFace}</span></span>
+                              <span>DRI <span className="text-gray-300">{expectedStats.dribbling.evFace}</span></span>
+                              <span>DEF <span className="text-gray-300">{expectedStats.defending.evFace}</span></span>
+                              <span>PHY <span className="text-gray-300">{expectedStats.physical.evFace}</span></span>
+                            </div>
+                          )}
                         </div>
                         {canAdd ? (
                           <Plus className="w-4 h-4 text-gray-500 group-hover:text-fcGreen" />
