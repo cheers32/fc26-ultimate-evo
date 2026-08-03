@@ -210,12 +210,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 <div className="mt-1 flex flex-col gap-1">
                                   <p className="text-[10px] text-gray-400">OVR After: <span className="text-yellow-400 font-bold">{stepRes.ovrAfter}</span></p>
                                   <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
-                                    <span>PAC <span className="text-gray-300">{stepRes.statsAfter.pace.evFace}</span></span>
-                                    <span>SHO <span className="text-gray-300">{stepRes.statsAfter.shooting.evFace}</span></span>
-                                    <span>PAS <span className="text-gray-300">{stepRes.statsAfter.passing.evFace}</span></span>
-                                    <span>DRI <span className="text-gray-300">{stepRes.statsAfter.dribbling.evFace}</span></span>
-                                    <span>DEF <span className="text-gray-300">{stepRes.statsAfter.defending.evFace}</span></span>
-                                    <span>PHY <span className="text-gray-300">{stepRes.statsAfter.physical.evFace}</span></span>
+                                    <span>PAC <span className="text-gray-300">{stepRes.statsAfter.pac.evFace}</span></span>
+                                    <span>SHO <span className="text-gray-300">{stepRes.statsAfter.sho.evFace}</span></span>
+                                    <span>PAS <span className="text-gray-300">{stepRes.statsAfter.pas.evFace}</span></span>
+                                    <span>DRI <span className="text-gray-300">{stepRes.statsAfter.dri.evFace}</span></span>
+                                    <span>DEF <span className="text-gray-300">{stepRes.statsAfter.def.evFace}</span></span>
+                                    <span>PHY <span className="text-gray-300">{stepRes.statsAfter.phy.evFace}</span></span>
                                   </div>
                                 </div>
                               )}
@@ -251,12 +251,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       <span className="font-mono">Final OVR: {validationResult.result?.finalOvr}</span>
                       {validationResult.result && (
                         <div className="flex gap-2 text-[10px] text-fcGreen/80 font-mono">
-                          <span>PAC {validationResult.result.finalStats.pace.evFace}</span>
-                          <span>SHO {validationResult.result.finalStats.shooting.evFace}</span>
-                          <span>PAS {validationResult.result.finalStats.passing.evFace}</span>
-                          <span>DRI {validationResult.result.finalStats.dribbling.evFace}</span>
-                          <span>DEF {validationResult.result.finalStats.defending.evFace}</span>
-                          <span>PHY {validationResult.result.finalStats.physical.evFace}</span>
+                          <span>PAC {validationResult.result.finalStats.pac.evFace}</span>
+                          <span>SHO {validationResult.result.finalStats.sho.evFace}</span>
+                          <span>PAS {validationResult.result.finalStats.pas.evFace}</span>
+                          <span>DRI {validationResult.result.finalStats.dri.evFace}</span>
+                          <span>DEF {validationResult.result.finalStats.def.evFace}</span>
+                          <span>PHY {validationResult.result.finalStats.phy.evFace}</span>
                         </div>
                       )}
                     </div>
@@ -331,12 +331,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           </div>
                           {canAdd && expectedStats && (
                             <div className="flex gap-2 text-[9px] text-gray-500 font-mono mt-1.5 pt-1.5 border-t border-gray-800/50">
-                              <span>PAC <span className="text-gray-300">{expectedStats.pace.evFace}</span></span>
-                              <span>SHO <span className="text-gray-300">{expectedStats.shooting.evFace}</span></span>
-                              <span>PAS <span className="text-gray-300">{expectedStats.passing.evFace}</span></span>
-                              <span>DRI <span className="text-gray-300">{expectedStats.dribbling.evFace}</span></span>
-                              <span>DEF <span className="text-gray-300">{expectedStats.defending.evFace}</span></span>
-                              <span>PHY <span className="text-gray-300">{expectedStats.physical.evFace}</span></span>
+                              <span>PAC <span className="text-gray-300">{expectedStats.pac.evFace}</span></span>
+                              <span>SHO <span className="text-gray-300">{expectedStats.sho.evFace}</span></span>
+                              <span>PAS <span className="text-gray-300">{expectedStats.pas.evFace}</span></span>
+                              <span>DRI <span className="text-gray-300">{expectedStats.dri.evFace}</span></span>
+                              <span>DEF <span className="text-gray-300">{expectedStats.def.evFace}</span></span>
+                              <span>PHY <span className="text-gray-300">{expectedStats.phy.evFace}</span></span>
                             </div>
                           )}
                         </div>
