@@ -162,3 +162,38 @@ export interface EvoFilters {
   ps?: StatFilter;
   requiredEvos?: string[];
 }
+
+export interface PlayerEvoState {
+  activePathId: string;
+  evosPool: string[];
+  generatedPaths: EvolutionPath[];
+  manualPaths: EvolutionPath[];
+  evoFilters: EvoFilters;
+  // Index into the active path's chainIds that is treated as the starting point for new
+  // auto/manual builds. -1 means the raw card. Steps up to and including it are locked in
+  // as a prefix; any earlier step can be made the base again by selecting it.
+  baseIndex?: number;
+}
+
+export interface SquadMember {
+  // Unique per entry, not per player — the same player can be stored several times
+  // in one squad under different evolution paths.
+  id: string;
+  playerId: string;
+  playerState: PlayerEvoState;
+  // The evolved player as it looked when added — the squad shows this, not the raw card.
+  snapshot: {
+    name: string;
+    pathName: string;
+    chainIds: string[];
+    baseOvr: number;
+    evoOvr: number;
+  };
+}
+
+export interface Squad {
+  id: string;
+  name: string;
+  members: SquadMember[];
+  createdAt: number;
+}

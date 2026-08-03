@@ -2,20 +2,24 @@ import React, { useState } from 'react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { simulateEvoChain } from '../utils/evoEngine';
 import { PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
-import { ExternalLink, CheckCircle, XCircle, ArrowRight, GitCompare, Sparkles, Layers } from 'lucide-react';
+import { ExternalLink, CheckCircle, XCircle, ArrowRight, GitCompare, Sparkles, Layers, Ban } from 'lucide-react';
 
 interface EvolutionChainWorkbenchProps {
   bio: PlayerBio;
   ovr: OvrData;
   stats: StatsData;
   playStyles: PlayStylesData;
+  disabledEvos?: string[];
+  onToggleDisabled?: (evoId: string) => void;
 }
 
 export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = ({
   bio,
   ovr,
   stats,
-  playStyles
+  playStyles,
+  disabledEvos = [],
+  onToggleDisabled
 }) => {
   const [selectedChainA, setSelectedChainA] = useState<string[]>(['1076', '1159']);
   const [selectedChainB, setSelectedChainB] = useState<string[]>(['1159', '1076']);
@@ -33,17 +37,30 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
             <Layers className="w-5 h-5 text-fcGreen" />
             Registered EA FC 26 Evolutions
           </h2>
-          <span className="text-xs text-gray-400 bg-black/40 px-2.5 py-1 rounded border border-gray-700">
-            {Object.keys(availableEvolutions).length} Evolutions Stored
-          </span>
+          <div className="flex items-center gap-2">
+            {disabledEvos.length > 0 && (
+              <span className="text-xs text-red-400 bg-red-950/30 px-2.5 py-1 rounded border border-red-900/50 flex items-center gap-1.5">
+                <Ban className="w-3 h-3" /> {disabledEvos.length} Disabled
+              </span>
+            )}
+            <span className="text-xs text-gray-400 bg-black/40 px-2.5 py-1 rounded border border-gray-700">
+              {Object.keys(availableEvolutions).length} Evolutions Stored
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.values(availableEvolutions).map((evo) => (
-            <div key={evo.id} className="bg-[#161816] p-4 rounded-xl border border-gray-800 hover:border-gray-700 transition-all flex flex-col justify-between">
+          {Object.values(availableEvolutions).map((evo) => {
+            const disabled = disabledEvos.includes(evo.id);
+            return (
+            <div key={evo.id} className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
+              disabled
+                ? 'bg-[#141614] border-red-900/40 opacity-50'
+                : 'bg-[#161816] border-gray-800 hover:border-gray-700'
+            }`}>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-extrabold text-fcGold text-base flex items-center gap-1.5">
+                  <span className={`font-extrabold text-base flex items-center gap-1.5 ${disabled ? 'text-gray-500 line-through' : 'text-fcGold'}`}>
                     {evo.name}
                     <span className="text-[10px] text-gray-400 font-normal">#{evo.id}</span>
                     {evo.maxRepeatable && evo.maxRepeatable > 1 && (
@@ -62,14 +79,31 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                       </span>
                     )}
                   </span>
-                  <a
-                    href={evo.futbinLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-fcGreen hover:underline flex items-center gap-1 bg-green-950/60 px-2 py-0.5 rounded border border-green-800/60"
-                  >
-                    FUTBIN <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {onToggleDisabled && (
+                      <button
+                        onClick={() => onToggleDisabled(evo.id)}
+                        title={disabled
+                          ? 'Re-enable — Analyze and the EVOs pool can use it again'
+                          : 'Disable globally — excluded from Analyze and not selectable in the EVOs pool'}
+                        className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded border transition-colors ${
+                          disabled
+                            ? 'text-red-400 bg-red-950/60 border-red-800/60 hover:bg-red-900/60'
+                            : 'text-gray-400 bg-black/40 border-gray-700 hover:text-red-400 hover:border-red-800/60'
+                        }`}
+                      >
+                        <Ban className="w-3 h-3" /> {disabled ? 'Disabled' : 'Disable'}
+                      </button>
+                    )}
+                    <a
+                      href={evo.futbinLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-fcGreen hover:underline flex items-center gap-1 bg-green-950/60 px-2 py-0.5 rounded border border-green-800/60"
+                    >
+                      FUTBIN <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
                 <p className="text-xs text-gray-400 mb-3">{evo.description}</p>
                 
@@ -144,7 +178,8 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

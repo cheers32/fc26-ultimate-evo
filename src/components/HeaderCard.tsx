@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters } from '../types/player';
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Zap, Beaker, Settings, Plus, Layers, X, Pencil, Settings2, Minus, Star, Eye, RefreshCw } from 'lucide-react';
+import { ExternalLink, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch } from 'lucide-react';
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -16,6 +16,7 @@ interface HeaderCardProps {
   onSelectPath: (id: string) => void;
   onOpenEvoPool: () => void;
   onOpenManualPath: () => void;
+  onBranchFromBase?: () => void;
   originalIgs: number;
   originalFaceSum: number;
   evoFilters: EvoFilters;
@@ -42,10 +43,12 @@ interface HeaderCardProps {
   onNodeClick: (nodeIndex: number) => void;
   playStyles: import('../types/player').PlayStylesData;
   onDeletePath?: (pathId: string) => void;
-  onEditPath?: (path: EvolutionPath) => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
   onViewEvo?: (evoId: string) => void;
-  onRebase?: (path: EvolutionPath) => void;
+  // Index of the step new builds start from (-1 = raw card), and a setter for picking one.
+  baseIndex?: number;
+  onSetBase?: (index: number) => void;
+  onRemoveNode?: (index: number) => void;
 }
 
 export const HeaderCard: React.FC<HeaderCardProps> = ({
@@ -60,6 +63,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onSelectPath,
   onOpenEvoPool,
   onOpenManualPath,
+  onBranchFromBase,
   originalIgs,
   originalFaceSum,
   evoFilters,
@@ -76,10 +80,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onNodeClick,
   playStyles,
   onDeletePath,
-  onEditPath,
   onToggleFavoritePath,
   onViewEvo,
-  onRebase
+  baseIndex = -1,
+  onSetBase,
+  onRemoveNode
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -293,12 +298,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
     {/* Path Selection & Action Buttons */}
     <div className="flex flex-col gap-2 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-3 shadow-md">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Beaker className="w-4 h-4 text-fcGreen" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Evolution Lab</h3>
-            </div>
-            
+          <div className="flex flex-wrap items-center justify-end gap-4">
             <div className="flex gap-1 items-center relative">
               <button onClick={() => setShowFilters(!showFilters)} className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1.5 transition-colors ${showFilters ? 'bg-fcGreen text-black font-bold border-fcGreen' : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'}`}>
                 <Settings2 className="w-3.5 h-3.5" /> Filters
@@ -454,8 +454,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <Settings className="w-3.5 h-3.5" /> Pool ({evosPool?.length || 0})
               </button>
               <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Manual
+                <Plus className="w-3.5 h-3.5" /> Add EVO
               </button>
+              {onBranchFromBase && (
+                <button
+                  onClick={onBranchFromBase}
+                  title="Start a new path from the base, leaving this one untouched"
+                  className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-purple-800/60 rounded-lg text-purple-300 text-xs flex items-center gap-1.5"
+                >
+                  <GitBranch className="w-3.5 h-3.5" /> Branch
+                </button>
+              )}
               <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${(evosPool?.length || 0) > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
                 <Zap className="w-3.5 h-3.5" /> Analyze
               </button>
@@ -476,7 +485,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   {path.isFavorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />}
                   {path.name}
                 </button>
-                {(onEditPath || onDeletePath || onToggleFavoritePath) && (
+                {(onDeletePath || onToggleFavoritePath) && (
                   <div className="absolute -top-1 -right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     {onToggleFavoritePath && !path.isFavorite && path.id.startsWith('auto') && (
                       <button
@@ -488,18 +497,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         title="Save to Favorites (Keep permanently)"
                       >
                         <Star className="w-2.5 h-2.5" />
-                      </button>
-                    )}
-                    {onEditPath && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditPath(path);
-                        }}
-                        className="bg-gray-700 text-white rounded-full p-0.5 hover:bg-fcGreen hover:text-black shadow-sm"
-                        title="Edit Path"
-                      >
-                        <Pencil className="w-2.5 h-2.5" />
                       </button>
                     )}
                     {onDeletePath && (
@@ -521,30 +518,51 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           </div>
 
           <div className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full pb-2 items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border border-gray-800">
-            {activePath.chainIds.length === 0 ? (
-              <span className="text-[11px] text-gray-500 italic">No evolutions in this path.</span>
-            ) : (
+            {(
               <>
                 <Layers className="w-3.5 h-3.5 text-gray-500 mr-1" />
-                
-                {/* Base Card Chip */}
-                <button
-                  onClick={() => onNodeClick(-1)}
-                  title="Original Base Card"
-                  className={`shrink-0 px-2.5 py-1 rounded text-[10px] font-bold flex items-center transition-all shadow ${
-                    selectedNodes.includes(-1)
-                      ? 'bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]'
-                      : 'bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  Base Card
-                  <span className={`font-normal text-[9.5px] ml-1.5 opacity-90 tracking-wide font-mono ${selectedNodes.includes(-1) ? 'text-black font-bold' : 'text-gray-300'}`}>
-                    ({activeBaseOvr}/{playStyles.base.gold.length + playStyles.ev.gold.length})
-                  </span>
-                </button>
 
-                {activePath.chainIds.length > 0 && (
+                {/* Base Card Chip — always present, so an empty path still anchors on the raw card */}
+                <div className={`flex items-center gap-0.5 group/node shrink-0 relative ${
+                  baseIndex === -1 ? 'ring-1 ring-purple-500/60 rounded' : ''
+                }`}>
+                  <button
+                    onClick={() => onNodeClick(-1)}
+                    title="Original Base Card"
+                    className={`shrink-0 px-2.5 py-1 rounded text-[10px] font-bold flex items-center transition-all shadow ${
+                      selectedNodes.includes(-1)
+                        ? 'bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]'
+                        : 'bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    Base Card
+                    <span className={`font-normal text-[9.5px] ml-1.5 opacity-90 tracking-wide font-mono ${selectedNodes.includes(-1) ? 'text-black font-bold' : 'text-gray-300'}`}>
+                      ({activeBaseOvr}/{playStyles.base.gold.length + playStyles.ev.gold.length})
+                    </span>
+                  </button>
+                  {onSetBase && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onSetBase(-1); }}
+                      className={`absolute -bottom-1.5 -right-1.5 p-0.5 rounded-full transition-opacity z-10 shadow-sm ${
+                        baseIndex === -1
+                          ? 'bg-purple-600 text-white opacity-100'
+                          : 'bg-purple-900/90 text-purple-400 hover:bg-purple-600 hover:text-white opacity-0 group-hover/node:opacity-100'
+                      }`}
+                      title={baseIndex === -1
+                        ? 'New builds start from the raw card'
+                        : 'Build from the raw card again'}
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+
+                {activePath.chainIds.length > 0 ? (
                   <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                ) : (
+                  <span className="text-[11px] text-gray-600 italic ml-2 shrink-0">
+                    No EVOs yet — use Add EVO to build from here.
+                  </span>
                 )}
 
                 {activePath.chainIds.map((id, idx) => {
@@ -572,10 +590,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   const baseClass = isStepActive
                     ? "bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]"
                     : "bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200";
+                  // Everything up to the chosen base is locked in as the starting point.
+                  const isBase = idx === baseIndex;
+                  const inBasePrefix = idx <= baseIndex;
 
                   return (
                     <React.Fragment key={`${id}-${idx}`}>
-                      <div className="flex items-center gap-0.5 group/node shrink-0 relative">
+                      <div className={`flex items-center gap-0.5 group/node shrink-0 relative ${
+                        inBasePrefix ? 'ring-1 ring-purple-500/60 rounded' : ''
+                      }`}>
                         <button
                           onClick={() => onNodeClick(idx)}
                           title={`Preview Step ${idx + 1} (${evo.name}) stats`}
@@ -585,7 +608,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           {stepStatsStr}
                         </button>
                         {onViewEvo && (
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); onViewEvo(id); }}
                             className="absolute -top-1.5 -right-1.5 p-0.5 bg-blue-900/90 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
                             title="View Evolution Details"
@@ -593,11 +616,26 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             <Eye className="w-2.5 h-2.5" />
                           </button>
                         )}
-                        {onRebase && idx === activePath.chainIds.length - 1 && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); onRebase(activePath); }}
-                            className="absolute -bottom-1.5 -right-1.5 p-0.5 bg-purple-900/90 text-purple-400 hover:bg-purple-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
-                            title="Rebase from here"
+                        {onRemoveNode && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onRemoveNode(idx); }}
+                            className="absolute -top-1.5 -left-1.5 p-0.5 bg-red-900/90 text-red-400 hover:bg-red-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
+                            title={`Remove ${evo.name} from this path`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                        {onSetBase && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onSetBase(idx); }}
+                            className={`absolute -bottom-1.5 -right-1.5 p-0.5 rounded-full transition-opacity z-10 shadow-sm ${
+                              isBase
+                                ? 'bg-purple-600 text-white opacity-100'
+                                : 'bg-purple-900/90 text-purple-400 hover:bg-purple-600 hover:text-white opacity-0 group-hover/node:opacity-100'
+                            }`}
+                            title={isBase
+                              ? 'This is the base for new builds — click to clear it'
+                              : 'Set as base for new auto/manual builds'}
                           >
                             <RefreshCw className="w-2.5 h-2.5" />
                           </button>

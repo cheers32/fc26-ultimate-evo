@@ -367,7 +367,10 @@ export function analyzeEvolutions(
   baseOvr: OvrData,
   baseStats: StatsData,
   basePlayStyles: PlayStylesData,
-  filters?: EvoFilters
+  filters?: EvoFilters,
+  // Evos already locked in ahead of the search. The DFS starts seeded with these so repeat
+  // limits and eligibility account for them, and returned chains stay applicable to the raw card.
+  prefixChainIds: string[] = []
 ): EvolutionPath[] {
   // Only the primitives needed for ranking are kept per candidate. Holding the whole
   // ChainState for every hit would pin hundreds of thousands of stat objects in memory.
@@ -381,7 +384,7 @@ export function analyzeEvolutions(
     );
 
   function dfs(currentChainIds: string[], state: ChainState) {
-    if (currentChainIds.length > 0) {
+    if (currentChainIds.length > prefixChainIds.length) {
       const maxOvrAllowed = filters?.ovr?.max ?? 99;
       if (state.ovr > maxOvrAllowed) {
         return; // Prune branch: OVR only increases, so we can't recover
@@ -456,7 +459,7 @@ export function analyzeEvolutions(
       }
     }
 
-    if (currentChainIds.length >= maxDepth) return;
+    if (currentChainIds.length >= prefixChainIds.length + maxDepth) return;
 
     for (const evoId of poolIds) {
       const evo = availableEvolutions[evoId];
@@ -481,12 +484,19 @@ export function analyzeEvolutions(
     }
   }
 
-  dfs([], {
+  let seedState: ChainState = {
     ovr: baseOvr.base,
     stats: cloneStats(baseStats),
     playStyles: clonePlayStyles(basePlayStyles),
     bio: cloneBio(baseBio)
-  });
+  };
+  for (const evoId of prefixChainIds) {
+    const evo = availableEvolutions[evoId];
+    if (!evo) continue;
+    seedState = applyEvo(seedState, evo).state;
+  }
+
+  dfs([...prefixChainIds], seedState);
 
   validPaths.sort((a, b) => b.igs - a.igs); // Sort by IGS descending
 

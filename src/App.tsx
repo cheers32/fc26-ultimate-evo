@@ -15,16 +15,110 @@ import { PlayerCarousel } from './components/PlayerCarousel';
 import { EvoPoolModal } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
+import { SquadPanel } from './components/SquadPanel';
 import { Trophy, RefreshCw, LayoutGrid, Layers, Zap } from 'lucide-react';
+import { Squad, SquadMember, PlayerEvoState } from './types/player';
+
+const DEFAULT_PATH_ID = 'default-path';
 
 export default function App() {
-  const [customPlayers, setCustomPlayers] = useState<Record<string, PlayerData>>(() => {
+  // Read-only now that base selection replaced rebasing; previously rebased cards still load.
+  const [customPlayers] = useState<Record<string, PlayerData>>(() => {
     try {
       const saved = localStorage.getItem('futEvo_custom_players');
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return {};
   });
+
+  // Evolutions the user never wants used. Global rather than per-player, so it lives in
+  // localStorage alongside custom players instead of in the per-player save files.
+  const [disabledEvos, setDisabledEvos] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('futEvo_disabled_evos');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [];
+  });
+
+  const toggleEvoDisabled = (evoId: string) => {
+    const next = disabledEvos.includes(evoId)
+      ? disabledEvos.filter(id => id !== evoId)
+      : [...disabledEvos, evoId];
+    setDisabledEvos(next);
+    localStorage.setItem('futEvo_disabled_evos', JSON.stringify(next));
+  };
+
+  // Squad management
+  const [squads, setSquads] = useState<Squad[]>(() => {
+    try {
+      const saved = localStorage.getItem('futEvo_squads');
+      if (saved) {
+        // Members predating per-entry ids need one before they can be removed individually.
+        return (JSON.parse(saved) as Squad[]).map(squad => ({
+          ...squad,
+          members: squad.members.map((m, i) => m.id ? m : { ...m, id: `${m.playerId}-${i}` })
+        }));
+      }
+    } catch(e) {}
+    return [];
+  });
+
+  const saveSquads = (newSquads: Squad[]) => {
+    setSquads(newSquads);
+    localStorage.setItem('futEvo_squads', JSON.stringify(newSquads));
+  };
+
+  const createSquad = (name: string) => {
+    const newSquad: Squad = {
+      id: Date.now().toString(),
+      name,
+      members: [],
+      createdAt: Date.now()
+    };
+    saveSquads([...squads, newSquad]);
+  };
+
+  const deleteSquad = (squadId: string) => {
+    saveSquads(squads.filter(s => s.id !== squadId));
+  };
+
+  const addPlayerToSquad = (squadId: string, playerId: string, playerState: PlayerEvoState, snapshot: SquadMember['snapshot']) => {
+    const updatedSquads = squads.map(squad => {
+      if (squad.id === squadId) {
+        // A player may appear several times under different paths, so entries are keyed
+        // by player + chain. Re-adding the same chain refreshes it instead of duplicating.
+        const chainKey = snapshot.chainIds.join('>');
+        const existingIndex = squad.members.findIndex(
+          m => m.playerId === playerId && m.snapshot.chainIds.join('>') === chainKey
+        );
+        if (existingIndex >= 0) {
+          const newMembers = [...squad.members];
+          newMembers[existingIndex] = { ...newMembers[existingIndex], playerState, snapshot };
+          return { ...squad, members: newMembers };
+        }
+        const member: SquadMember = {
+          id: `${playerId}-${Date.now()}`,
+          playerId,
+          playerState,
+          snapshot
+        };
+        return { ...squad, members: [...squad.members, member] };
+      }
+      return squad;
+    });
+    saveSquads(updatedSquads);
+  };
+
+  const removeSquadMember = (squadId: string, memberId: string) => {
+    const updatedSquads = squads.map(squad => {
+      if (squad.id === squadId) {
+        return { ...squad, members: squad.members.filter(m => m.id !== memberId) };
+      }
+      return squad;
+    });
+    saveSquads(updatedSquads);
+  };
 
   const allPlayersData = useMemo(() => ({ ...playersDatabase, ...customPlayers }), [customPlayers]);
 
@@ -41,19 +135,11 @@ export default function App() {
   const [evoPreview, setEvoPreview] = useState(false);
 
   const [ovr, setOvr] = useState(initialOvrData);
-  
-  type PlayerEvoState = {
-    activePathId: string;
-    evosPool: string[];
-    generatedPaths: EvolutionPath[];
-    manualPaths: EvolutionPath[];
-    evoFilters: EvoFilters;
-  };
 
   const [playerStates, setPlayerStates] = useState<Record<string, PlayerEvoState>>({});
 
   const currentState = playerStates[selectedPlayerId] || {
-    activePathId: 'empty-path',
+    activePathId: DEFAULT_PATH_ID,
     evosPool: [],
     generatedPaths: [],
     manualPaths: [],
@@ -63,7 +149,7 @@ export default function App() {
   const updateState = (updates: Partial<PlayerEvoState>) => {
     setPlayerStates(prev => {
       const current = prev[selectedPlayerId] || {
-        activePathId: 'empty-path',
+        activePathId: DEFAULT_PATH_ID,
         evosPool: [],
         generatedPaths: [],
         manualPaths: [],
@@ -86,8 +172,33 @@ export default function App() {
     });
   };
 
+  // Set when opening a squad member, so the effect below restores that snapshot
+  // instead of the player's own save.
+  const [pendingRestore, setPendingRestore] = useState<{ playerId: string; state: PlayerEvoState } | null>(null);
+
+  const openSquadMember = (member: SquadMember) => {
+    setPendingRestore({ playerId: member.playerId, state: member.playerState });
+    setSelectedPlayerId(member.playerId);
+    setEvoPreview(true);
+    setActiveTab('workbench');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Load persistence data when player changes
   useEffect(() => {
+    if (pendingRestore && pendingRestore.playerId === selectedPlayerId) {
+      const { state } = pendingRestore;
+      setPlayerStates(prev => ({ ...prev, [selectedPlayerId]: state }));
+      setPendingRestore(null);
+      // Make the restored snapshot the player's live save too.
+      fetch(`/api/saves/${selectedPlayerId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      }).catch(e => console.error('Failed to save restored squad state:', e));
+      return;
+    }
+
     let active = true;
     fetch(`/api/saves/${selectedPlayerId}`)
       .then(res => res.json())
@@ -103,10 +214,16 @@ export default function App() {
       .catch(e => console.error('No save found or error loading:', e));
 
     return () => { active = false; };
-  }, [selectedPlayerId]);
+  }, [selectedPlayerId, pendingRestore]);
 
   const activePathId = currentState.activePathId;
   const evosPool = currentState.evosPool;
+  // Disabling filters at point of use rather than rewriting every player's saved pool,
+  // so re-enabling an evo restores it wherever it was already selected.
+  const effectiveEvosPool = useMemo(
+    () => evosPool.filter(id => !disabledEvos.includes(id)),
+    [evosPool, disabledEvos]
+  );
   const generatedPaths = currentState.generatedPaths;
   const manualPaths = currentState.manualPaths;
   const evoFilters = currentState.evoFilters;
@@ -116,28 +233,34 @@ export default function App() {
   const setGeneratedPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ generatedPaths: typeof val === 'function' ? val(currentState.generatedPaths) : val });
   const setManualPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ manualPaths: typeof val === 'function' ? val(currentState.manualPaths) : val });
   const setEvoFilters = (val: EvoFilters | ((prev: EvoFilters) => EvoFilters)) => updateState({ evoFilters: typeof val === 'function' ? val(currentState.evoFilters) : val });
+  const baseIndex = currentState.baseIndex ?? -1;
+  const setBaseIndex = (val: number) => updateState({ baseIndex: val });
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   const [isManualPathOpen, setIsManualPathOpen] = useState(false);
+  // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
+  const [pickerMode, setPickerMode] = useState<'append' | 'branch'>('append');
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
-  const [editingPath, setEditingPath] = useState<EvolutionPath | null>(null);
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
 
-  const emptyPath: EvolutionPath = useMemo(() => ({
-    id: 'empty-path',
-    name: 'No Path',
-    description: 'No evolution path selected.',
+  // Every player starts on an empty "Default" path, so the card shows the raw base until
+  // an evo is added. It only reaches manualPaths once something is appended to it.
+  const defaultPath: EvolutionPath = useMemo(() => ({
+    id: DEFAULT_PATH_ID,
+    name: 'Default',
+    description: 'Starting point — shows the base card until you add an EVO.',
     isRecommended: false,
     chainIds: []
   }), []);
 
   const allPaths = useMemo(() => {
-    return [...generatedPaths, ...manualPaths];
-  }, [generatedPaths, manualPaths]);
+    const saved = [...generatedPaths, ...manualPaths];
+    return saved.some(p => p.id === DEFAULT_PATH_ID) ? saved : [defaultPath, ...saved];
+  }, [generatedPaths, manualPaths, defaultPath]);
 
   const activePath = useMemo(() => {
-    return allPaths.find(p => p.id === activePathId) || emptyPath;
-  }, [allPaths, activePathId, emptyPath]);
+    return allPaths.find(p => p.id === activePathId) || defaultPath;
+  }, [allPaths, activePathId, defaultPath]);
 
   const evoLocked = evoPreview; // Derived state for components that need to know if we are in preview mode
 
@@ -149,7 +272,7 @@ export default function App() {
   const handleDeletePath = (pathId: string) => {
     let newActivePathId = currentState.activePathId;
     if (newActivePathId === pathId) {
-      newActivePathId = 'empty-path';
+      newActivePathId = DEFAULT_PATH_ID;
     }
     const newGenerated = currentState.generatedPaths.filter(p => p.id !== pathId);
     const newManual = currentState.manualPaths.filter(p => p.id !== pathId);
@@ -158,6 +281,34 @@ export default function App() {
       activePathId: newActivePathId,
       generatedPaths: newGenerated,
       manualPaths: newManual
+    });
+  };
+
+  // Drop one evo from the active path. Later steps may stop being eligible without it; the
+  // chain simulation surfaces that rather than us silently trimming them.
+  const handleRemoveNode = (index: number) => {
+    const path = allPaths.find(p => p.id === currentState.activePathId);
+    if (!path || index < 0 || index >= path.chainIds.length) return;
+
+    const newChainIds = path.chainIds.filter((_, i) => i !== index);
+    const steps = simulateEvoChain(newChainIds, playerBio, initialOvrData, statsData, playStylesData).steps;
+    const updated: EvolutionPath = { ...path, chainIds: newChainIds, steps };
+
+    // Removing a step shifts everything after it, so the base has to follow.
+    const currentBase = currentState.baseIndex ?? -1;
+    const nextBase = index <= currentBase ? currentBase - 1 : currentBase;
+
+    // Editing an Analyze result makes it user-owned, matching the manual-path save behaviour:
+    // otherwise the next Analyze run would silently discard the edit.
+    const wasGenerated = currentState.generatedPaths.some(p => p.id === path.id);
+    updateState({
+      baseIndex: nextBase,
+      generatedPaths: wasGenerated
+        ? currentState.generatedPaths.filter(p => p.id !== path.id)
+        : currentState.generatedPaths,
+      manualPaths: wasGenerated
+        ? [...currentState.manualPaths, updated]
+        : currentState.manualPaths.map(p => (p.id === path.id ? updated : p))
     });
   };
 
@@ -188,6 +339,26 @@ export default function App() {
   const chainResult = useMemo(() => {
     return simulateEvoChain(activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
   }, [activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData]);
+
+  // The chosen base clamps to the active path, so switching to a shorter path can't leave
+  // a stale index pointing past its end.
+  const safeBaseIndex = Math.min(baseIndex, activePath.chainIds.length - 1);
+  const basePrefix = useMemo(
+    () => activePath.chainIds.slice(0, safeBaseIndex + 1),
+    [activePath.chainIds, safeBaseIndex]
+  );
+
+  // The player as the active path leaves them — this is what gets stored in a squad.
+  const currentSnapshot = useMemo<SquadMember['snapshot']>(() => {
+    const lastStep = chainResult.steps[chainResult.steps.length - 1];
+    return {
+      name: playerBio.name,
+      pathName: activePath.name,
+      chainIds: activePath.chainIds,
+      baseOvr: initialOvrData.base,
+      evoOvr: lastStep ? lastStep.ovrAfter : initialOvrData.base
+    };
+  }, [chainResult, playerBio.name, activePath.name, activePath.chainIds, initialOvrData.base]);
 
   const { activeBaseStats, previewStats, activeBaseOvr, previewOvr, activePlayStyles, previewPlayStyles } = useMemo(() => {
     let aBaseStats = statsData;
@@ -337,7 +508,7 @@ export default function App() {
     setEvoPreview(false);
     setSelectionQueue([-1, -1]);
     setOvr(playersDatabase[selectedPlayerId].ovr);
-    setActivePathId('empty-path');
+    setActivePathId(DEFAULT_PATH_ID);
     setEvosPool([]);
     setGeneratedPaths([]);
     setManualPaths([]);
@@ -416,20 +587,21 @@ export default function App() {
           activePathId={activePathId}
           onSelectPath={setActivePathId}
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
-          onOpenManualPath={() => { setEditingPath(null); setIsManualPathOpen(true); }}
+          onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
+          onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
           onEvoFiltersChange={setEvoFilters}
           onAnalyze={() => {
-            const results = analyzeEvolutions(evosPool, 5, playerBio, initialOvrData, statsData, playStylesData, evoFilters);
+            const results = analyzeEvolutions(effectiveEvosPool, 5, playerBio, initialOvrData, statsData, playStylesData, evoFilters, basePrefix);
             setGeneratedPaths(results);
             if (results.length > 0) {
               setActivePathId(results[0].id);
               if (!evoPreview) setEvoPreview(true);
             }
           }}
-          evosPool={evosPool}
+          evosPool={effectiveEvosPool}
           evoPreview={evoPreview}
           evoLocked={evoLocked}
           accelerateType={accelerateType}
@@ -440,7 +612,6 @@ export default function App() {
           onNodeClick={handleNodeClick}
           playStyles={previewPlayStyles}
           onDeletePath={handleDeletePath}
-          onEditPath={(path) => { setEditingPath(path); setIsManualPathOpen(true); }}
           onToggleFavoritePath={(path) => {
             const isManual = manualPaths.some(p => p.id === path.id);
             if (isManual) {
@@ -460,25 +631,9 @@ export default function App() {
             }
           }}
           onViewEvo={(id) => setViewingEvoId(id)}
-          onRebase={(path) => {
-            const stepResult = path.steps?.[path.steps.length - 1];
-            if (!stepResult) return;
-            const newId = `${selectedPlayerId}-rebased-${Date.now()}`;
-            const newPlayer: PlayerData = {
-              ...currentPlayer,
-              id: newId,
-              bio: stepResult.bioAfter,
-              ovr: { base: stepResult.ovrAfter, boost: 30, limit: 99 },
-              stats: stepResult.statsAfter,
-              playStyles: stepResult.playStylesAfter,
-              parentId: selectedPlayerId,
-              rebasedFromEvos: [...(currentPlayer.rebasedFromEvos || []), ...path.chainIds.map(id => availableEvolutions[id]?.name || id)]
-            };
-            const updatedCustom = { ...customPlayers, [newId]: newPlayer };
-            setCustomPlayers(updatedCustom);
-            localStorage.setItem('futEvo_custom_players', JSON.stringify(updatedCustom));
-            setSelectedPlayerId(newId);
-          }}
+          baseIndex={safeBaseIndex}
+          onSetBase={(idx) => setBaseIndex(idx === safeBaseIndex ? -1 : idx)}
+          onRemoveNode={handleRemoveNode}
         />
 
         {/* Top Control Bar: Chemistry Stats + Tabs */}
@@ -597,8 +752,24 @@ export default function App() {
             ovr={initialOvrData}
             stats={statsData}
             playStyles={playStylesData}
+            disabledEvos={disabledEvos}
+            onToggleDisabled={toggleEvoDisabled}
           />
         )}
+
+        <div className="my-6">
+          <SquadPanel
+            squads={squads}
+            onCreateSquad={createSquad}
+            onDeleteSquad={deleteSquad}
+            onAddPlayerToSquad={addPlayerToSquad}
+            onRemoveMember={removeSquadMember}
+            onOpenMember={openSquadMember}
+            currentPlayerState={currentState}
+            currentPlayerId={selectedPlayerId}
+            currentSnapshot={currentSnapshot}
+          />
+        </div>
 
         <div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">
           <span>EA FC 26 Player Stats & Evolution Preview Calculator</span>
@@ -613,12 +784,16 @@ export default function App() {
         onClose={() => setIsEvoPoolOpen(false)}
         evosPool={evosPool}
         setEvosPool={setEvosPool}
+        disabledEvos={disabledEvos}
       />
       <ManualPathModal
         isOpen={isManualPathOpen}
-        onClose={() => { setIsManualPathOpen(false); setEditingPath(null); }}
+        onClose={() => setIsManualPathOpen(false)}
         evosPool={evosPool}
-        editingPath={editingPath}
+        // Append grows the active path in place (so it keeps its id and name); branch leaves
+        // it alone and starts a fresh path from the base prefix.
+        editingPath={pickerMode === 'append' ? activePath : null}
+        lockedPrefix={pickerMode === 'branch' ? basePrefix : []}
         onSave={(path) => {
           const isManual = manualPaths.some(p => p.id === path.id);
           if (isManual) {
@@ -634,7 +809,6 @@ export default function App() {
           }
           setActivePathId(path.id);
           setIsManualPathOpen(false);
-          setEditingPath(null);
           if (!evoPreview) setEvoPreview(true);
         }}
         baseBio={playerBio}
