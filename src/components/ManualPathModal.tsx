@@ -21,6 +21,54 @@ const StatDisplay = ({ label, after, before }: { label: string, after: number, b
   );
 };
 
+const PlayStyleDiffDisplay = ({ before, after }: { before?: PlayStylesData, after: PlayStylesData }) => {
+  if (!before) return null;
+  const beforeGold = new Set([...before.base.gold, ...before.ev.gold]);
+  const afterGold = new Set([...after.base.gold, ...after.ev.gold]);
+  const beforeSilver = new Set([...before.base.silver, ...before.ev.silver]);
+  const afterSilver = new Set([...after.base.silver, ...after.ev.silver]);
+  
+  const newGold = [...afterGold].filter(x => !beforeGold.has(x));
+  const newSilver = [...afterSilver].filter(x => !beforeSilver.has(x));
+  
+  if (newGold.length === 0 && newSilver.length === 0) return null;
+  
+  return (
+    <div className="flex gap-1 flex-wrap mt-1.5">
+      {newGold.map(ps => (
+        <span key={`g-${ps}`} className="px-1 py-0.5 bg-fcGold/20 rounded text-[8px] text-fcGold border border-fcGold/40 font-bold">
+          +{ps}
+        </span>
+      ))}
+      {newSilver.map(ps => (
+        <span key={`s-${ps}`} className="px-1 py-0.5 bg-gray-700/50 rounded text-[8px] text-gray-300 border border-gray-600/50">
+          +{ps}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+const FinalPlayStylesDisplay = ({ playStyles }: { playStyles: PlayStylesData }) => {
+  const gold = [...playStyles.base.gold, ...playStyles.ev.gold];
+  const silver = [...playStyles.base.silver, ...playStyles.ev.silver];
+  if (gold.length === 0 && silver.length === 0) return null;
+  return (
+    <div className="flex gap-1 flex-wrap justify-end mt-2">
+      {gold.map(ps => (
+        <span key={`fg-${ps}`} className="px-1 py-0.5 bg-fcGold/20 rounded text-[8px] text-fcGold border border-fcGold/40 font-bold">
+          {ps}
+        </span>
+      ))}
+      {silver.map(ps => (
+        <span key={`fs-${ps}`} className="px-1 py-0.5 bg-gray-700/50 rounded text-[8px] text-gray-300 border border-gray-600/50">
+          {ps}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 interface ManualPathModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -122,6 +170,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let expectedOvr = 0;
     let expectedIgs = 0;
     let expectedStats = null;
+    let expectedPlayStyles = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -133,6 +182,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
         if (testRes.isValidChain) {
           expectedOvr = testRes.finalOvr;
           expectedStats = testRes.finalStats;
+          expectedPlayStyles = testRes.finalPlayStyles;
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
         }
       }
@@ -146,7 +196,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       reasons,
       expectedOvr,
       expectedIgs,
-      expectedStats
+      expectedStats,
+      expectedPlayStyles
     };
   });
 
@@ -229,14 +280,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                   <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
                                     {(() => {
                                       const beforeStats = index === 0 ? baseStats : validationResult.result?.steps[index - 1].statsAfter;
+                                      const beforePlayStyles = index === 0 ? basePlayStyles : validationResult.result?.steps[index - 1].playStylesAfter;
                                       return (
                                         <>
-                                          <StatDisplay label="PAC" after={stepRes.statsAfter.pac.evFace} before={beforeStats?.pac.evFace} />
-                                          <StatDisplay label="SHO" after={stepRes.statsAfter.sho.evFace} before={beforeStats?.sho.evFace} />
-                                          <StatDisplay label="PAS" after={stepRes.statsAfter.pas.evFace} before={beforeStats?.pas.evFace} />
-                                          <StatDisplay label="DRI" after={stepRes.statsAfter.dri.evFace} before={beforeStats?.dri.evFace} />
-                                          <StatDisplay label="DEF" after={stepRes.statsAfter.def.evFace} before={beforeStats?.def.evFace} />
-                                          <StatDisplay label="PHY" after={stepRes.statsAfter.phy.evFace} before={beforeStats?.phy.evFace} />
+                                          <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
+                                            <StatDisplay label="PAC" after={stepRes.statsAfter.pac.evFace} before={beforeStats?.pac.evFace} />
+                                            <StatDisplay label="SHO" after={stepRes.statsAfter.sho.evFace} before={beforeStats?.sho.evFace} />
+                                            <StatDisplay label="PAS" after={stepRes.statsAfter.pas.evFace} before={beforeStats?.pas.evFace} />
+                                            <StatDisplay label="DRI" after={stepRes.statsAfter.dri.evFace} before={beforeStats?.dri.evFace} />
+                                            <StatDisplay label="DEF" after={stepRes.statsAfter.def.evFace} before={beforeStats?.def.evFace} />
+                                            <StatDisplay label="PHY" after={stepRes.statsAfter.phy.evFace} before={beforeStats?.phy.evFace} />
+                                          </div>
+                                          <PlayStyleDiffDisplay before={beforePlayStyles} after={stepRes.playStylesAfter} />
                                         </>
                                       );
                                     })()}
@@ -274,14 +329,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     <div className="flex flex-col items-end gap-1">
                       <span className="font-mono">Final OVR: {validationResult.result?.finalOvr}</span>
                       {validationResult.result && (
-                        <div className="flex gap-2 text-[10px] text-fcGreen/80 font-mono">
-                          <StatDisplay label="PAC" after={validationResult.result.finalStats.pac.evFace} before={baseStats.pac.evFace} />
-                          <StatDisplay label="SHO" after={validationResult.result.finalStats.sho.evFace} before={baseStats.sho.evFace} />
-                          <StatDisplay label="PAS" after={validationResult.result.finalStats.pas.evFace} before={baseStats.pas.evFace} />
-                          <StatDisplay label="DRI" after={validationResult.result.finalStats.dri.evFace} before={baseStats.dri.evFace} />
-                          <StatDisplay label="DEF" after={validationResult.result.finalStats.def.evFace} before={baseStats.def.evFace} />
-                          <StatDisplay label="PHY" after={validationResult.result.finalStats.phy.evFace} before={baseStats.phy.evFace} />
-                        </div>
+                        <>
+                          <div className="flex gap-2 text-[10px] text-fcGreen/80 font-mono mt-0.5">
+                            <StatDisplay label="PAC" after={validationResult.result.finalStats.pac.evFace} before={baseStats.pac.evFace} />
+                            <StatDisplay label="SHO" after={validationResult.result.finalStats.sho.evFace} before={baseStats.sho.evFace} />
+                            <StatDisplay label="PAS" after={validationResult.result.finalStats.pas.evFace} before={baseStats.pas.evFace} />
+                            <StatDisplay label="DRI" after={validationResult.result.finalStats.dri.evFace} before={baseStats.dri.evFace} />
+                            <StatDisplay label="DEF" after={validationResult.result.finalStats.def.evFace} before={baseStats.def.evFace} />
+                            <StatDisplay label="PHY" after={validationResult.result.finalStats.phy.evFace} before={baseStats.phy.evFace} />
+                          </div>
+                          <FinalPlayStylesDisplay playStyles={validationResult.result.finalPlayStyles} />
+                        </>
                       )}
                     </div>
                   </div>
@@ -317,7 +375,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               ) : (
                 poolWithStatus
                   .filter(({ evo }) => !searchQuery || evo?.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs, expectedStats }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs, expectedStats, expectedPlayStyles }) => {
                   if (!evo) return null;
                   
                   const canAdd = !limitReached && isEligible;
@@ -353,14 +411,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               </span>
                             )}
                           </div>
-                          {canAdd && expectedStats && (
-                            <div className="flex gap-2 text-[9px] text-gray-500 font-mono mt-1.5 pt-1.5 border-t border-gray-800/50">
-                              <StatDisplay label="PAC" after={expectedStats.pac.evFace} before={currentStats.pac.evFace} />
-                              <StatDisplay label="SHO" after={expectedStats.sho.evFace} before={currentStats.sho.evFace} />
-                              <StatDisplay label="PAS" after={expectedStats.pas.evFace} before={currentStats.pas.evFace} />
-                              <StatDisplay label="DRI" after={expectedStats.dri.evFace} before={currentStats.dri.evFace} />
-                              <StatDisplay label="DEF" after={expectedStats.def.evFace} before={currentStats.def.evFace} />
-                              <StatDisplay label="PHY" after={expectedStats.phy.evFace} before={currentStats.phy.evFace} />
+                          {canAdd && expectedStats && expectedPlayStyles && (
+                            <div className="mt-1.5 pt-1.5 border-t border-gray-800/50">
+                              <div className="flex gap-2 text-[9px] text-gray-500 font-mono">
+                                <StatDisplay label="PAC" after={expectedStats.pac.evFace} before={currentStats.pac.evFace} />
+                                <StatDisplay label="SHO" after={expectedStats.sho.evFace} before={currentStats.sho.evFace} />
+                                <StatDisplay label="PAS" after={expectedStats.pas.evFace} before={currentStats.pas.evFace} />
+                                <StatDisplay label="DRI" after={expectedStats.dri.evFace} before={currentStats.dri.evFace} />
+                                <StatDisplay label="DEF" after={expectedStats.def.evFace} before={currentStats.def.evFace} />
+                                <StatDisplay label="PHY" after={expectedStats.phy.evFace} before={currentStats.phy.evFace} />
+                              </div>
+                              <PlayStyleDiffDisplay before={currentPlayStyles} after={expectedPlayStyles} />
                             </div>
                           )}
                         </div>
