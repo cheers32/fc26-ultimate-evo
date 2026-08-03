@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 
@@ -15,6 +15,8 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   evosPool,
   setEvosPool
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
   if (!isOpen) return null;
 
   const toggleEvo = (id: string) => {
@@ -50,11 +52,18 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-[#121212]">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
             <span className="text-sm font-semibold text-gray-300">
               {evosPool.length} / {Object.keys(availableEvolutions).length} Selected
             </span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center flex-1 sm:flex-none justify-end">
+              <input 
+                type="text"
+                placeholder="Search EVOs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full sm:w-48 bg-[#1a1c1a] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen outline-none transition-colors"
+              />
               <button onClick={handleSelectAll} className="text-xs px-3 py-1.5 bg-[#2A2D2A] hover:bg-[#374151] border border-gray-700 rounded text-gray-300 hover:text-white transition-colors">
                 Select All
               </button>
@@ -65,7 +74,9 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {Object.values(availableEvolutions).map((evo) => {
+            {Object.values(availableEvolutions)
+              .filter(evo => !searchQuery || evo.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((evo) => {
               const isSelected = evosPool.includes(evo.id);
               return (
                 <div
