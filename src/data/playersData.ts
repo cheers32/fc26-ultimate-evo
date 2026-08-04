@@ -17,6 +17,7 @@ export const playersDatabase: Record<string, PlayerData> = {
       weakFoot: 4,
       skillMoves: 3,
       rarity: 'Thunderstruck',
+      bodyType: 'Tall & Normal',
       roles: {
         cdm: ['Holding++', 'Centre Half++', 'Deep-Lying Playmaker++', 'Wide Half++', 'Box Crasher++'],
         cm: ['Box-to-Box++', 'Holding++', 'Deep-Lying Playmaker++', 'Playmaker++', 'Half Winger++']

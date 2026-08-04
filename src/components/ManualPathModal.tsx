@@ -120,7 +120,6 @@ interface ManualPathModalProps {
   baseStats: StatsData;
   basePlayStyles: PlayStylesData;
   editingPath?: EvolutionPath | null;
-  onViewEvo?: (evoId: string) => void;
   // Steps locked in by the chosen base. New paths start seeded with these and can't drop them.
   lockedPrefix?: string[];
 }
@@ -135,7 +134,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   baseStats,
   basePlayStyles,
   editingPath,
-  onViewEvo,
   lockedPrefix = []
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
@@ -261,8 +259,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (a.isEligible && !b.isEligible) return -1;
     if (!a.isEligible && b.isEligible) return 1;
     
-    // 1. Sort by expected OVR descending (highest target OVR first)
-    if (a.expectedOvr !== b.expectedOvr) return b.expectedOvr - a.expectedOvr;
+    // 1. Sort by expected OVR ascending (lowest target OVR first)
+    if (a.expectedOvr !== b.expectedOvr) return a.expectedOvr - b.expectedOvr;
 
     // 2. If target OVR is the same, sort by Req Max OVR ascending (most restrictive first)
     const aMaxOvr = a.evo?.requirements.maxOvr || 99;
@@ -317,7 +315,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     <div 
                       key={id}
                       className={`relative group bg-[#161816] border rounded-xl p-3 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''}`}
-                      onClick={() => { if (onViewEvo) onViewEvo(id); }}
+                      onClick={() => setLocalViewingEvo(id)}
                     >
                       {isRec && (
                          <div className="absolute top-0 right-0 px-2 py-0.5 bg-fcGreen text-black text-[9px] font-bold rounded-bl-lg">
@@ -328,19 +326,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className={`font-bold text-sm transition-colors ${canAdd ? 'text-gray-200 group-hover:text-blue-400' : 'text-gray-500'}`}>{evo.name}</h4>
-                            {onViewEvo && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onViewEvo(id); }}
-                                className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors ml-auto mr-1"
-                                title="View Details"
-                              >
-                                <Eye className="w-3 h-3" />
-                              </button>
-                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setLocalViewingEvo(id); }}
+                              className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors ml-auto mr-1"
+                              title="View Details"
+                            >
+                              <Eye className="w-3 h-3" />
+                            </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleAdd(id); }}
                               disabled={!canAdd}
-                              className={`p-1 rounded-full transition-colors ${canAdd ? 'bg-green-900/40 text-green-400 hover:bg-green-600 hover:text-white' : 'bg-gray-800 text-gray-600 cursor-not-allowed'} ${onViewEvo ? '' : 'ml-auto'}`}
+                              className={`p-1 rounded-full transition-colors ${canAdd ? 'bg-green-900/40 text-green-400 hover:bg-green-600 hover:text-white' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}`}
                               title={canAdd ? "Add Evo" : "Ineligible"}
                             >
                               <Plus className="w-5 h-5" />
@@ -413,6 +409,19 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
         </div>
 
       </div>
+
+      <EvoDetailsModal
+        evoId={localViewingEvo}
+        onClose={() => setLocalViewingEvo(null)}
+        onAddEvo={(() => {
+          const viewed = poolWithStatus.find(p => p.id === localViewingEvo);
+          if (!viewed || viewed.limitReached || !viewed.isEligible) return undefined;
+          return (id: string) => {
+            handleAdd(id);
+            setLocalViewingEvo(null);
+          };
+        })()}
+      />
     </div>
   );
 };

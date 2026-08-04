@@ -3,6 +3,7 @@ import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters } fr
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ExternalLink, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2 } from 'lucide-react';
+import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -96,7 +97,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
-  const isEvo = isLockedOrEvo;
 
   const [showFilters, setShowFilters] = React.useState(false);
   const [expandedStats, setExpandedStats] = React.useState<Set<string>>(new Set());
@@ -117,27 +117,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     phy: [{key: 'jumping', label: 'Jumping'}, {key: 'stamina', label: 'Stamina'}, {key: 'strength', label: 'Strength'}, {key: 'aggression', label: 'Aggress'}]
   };
   
-  // Gold PlayStyles stats
-  const goldBase = playStyles.base.gold.length;
-  const goldLimit = playStyles.limits.gold;
-  const goldEvTotal = playStyles.ev.gold.length;
-  let goldAdded = 0;
-  if (isEvo) {
-    const availGold = Math.max(0, goldLimit - goldBase);
-    goldAdded = Math.min(availGold, goldEvTotal);
-  }
-  const goldCurrent = goldBase + goldAdded;
-
-  // Silver PlayStyles stats
-  const silverBase = playStyles.base.silver.length;
-  const silverLimit = playStyles.limits.silver;
-  const silverEvTotal = playStyles.ev.silver.length;
-  let silverAdded = 0;
-  if (isEvo) {
-    const availSilver = Math.max(0, silverLimit - silverBase);
-    silverAdded = Math.min(availSilver, silverEvTotal);
-  }
-  const silverCurrent = silverBase + silverAdded;
   
   const actualOvrBoost = previewOvr - activeBaseOvr;
   let ovrChip = null;
@@ -155,29 +134,26 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     : null;
 
   return (
-    <div className="flex flex-col gap-4 mb-4">
+    <div className="flex flex-col gap-2 mb-4">
       {/* Player Header Section (Ultra Compressed) */}
-      <div className="flex gap-4 bg-[#1f211f]/60 p-3 rounded-xl border border-gray-800/80 backdrop-blur-sm items-center">
-        
-        {/* Large Avatar */}
-        {avatarUrl && (
-          <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full overflow-hidden border-2 border-gray-600 bg-[#121212] flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-            <img
-              src={avatarUrl}
-              alt={bio.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://futhead.cursecdn.com/static/img/24/players/p_placeholder.png';
-              }}
-            />
-          </div>
-        )}
-
-        <div className="flex flex-col gap-2 flex-grow min-w-0">
-          {/* Row 1: Name, OVR, and Basic Bio */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-800/60 pb-2">
-          {/* Name & FUTBIN */}
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 bg-[#1f211f]/60 p-3 rounded-xl border border-gray-800/80 backdrop-blur-sm items-start">
+        <div className="flex flex-col gap-1 w-full min-w-0">
+          {/* Row 1: Avatar, Name, OVR, and Basic Bio */}
+          <div className="flex items-center gap-x-4 gap-y-1 border-b border-gray-800/60 pb-1 overflow-x-auto">
+          {/* Avatar, Name & FUTBIN */}
+          <div className="flex items-center gap-2 shrink-0">
+            {avatarUrl && (
+              <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-gray-600 bg-[#121212] flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                <img
+                  src={avatarUrl}
+                  alt={bio.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://futhead.cursecdn.com/static/img/24/players/p_placeholder.png';
+                  }}
+                />
+              </div>
+            )}
             <h1 className="text-2xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
               {bio.name}
             </h1>
@@ -191,7 +167,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>
-          
+
           {/* Main OVR Rating Badge */}
           <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-2 py-0.5 rounded font-bold text-base shadow-sm border border-yellow-300 flex items-center gap-1.5 whitespace-nowrap">
             <span className="text-black/60 text-[10px] font-semibold tracking-wider">OVR</span>
@@ -210,22 +186,98 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           </div>
 
           {/* Compressed Bio */}
-          <div className="flex flex-wrap items-center gap-3 text-[#1db954] font-bold text-xs ml-auto">
-            <span className="flex items-center gap-1"><span className="text-sm leading-none">🇪🇸</span> {bio.nation}</span>
-            <span className="flex items-center gap-1"><span className="text-sm leading-none">⚽</span> {bio.league}</span>
-            <span className="flex items-center gap-1"><span className="text-sm leading-none">🛡️</span> {bio.club}</span>
-            <span className="flex items-center gap-1"><span className="text-sm leading-none">🌟</span> <span className="text-yellow-400">{bio.rarity}</span></span>
-            <div className="flex items-center gap-3 text-gray-400 font-medium pl-3 border-l border-gray-700/60">
-              <span className="flex items-center gap-1">📏 {bio.height}</span>
-              <span className="flex items-center gap-1">👟 {bio.footAge}</span>
-              {bio.bodyType && <span className="flex items-center gap-1">🧍 {bio.bodyType}</span>}
+          <div className="flex items-center gap-2 text-gray-300 font-medium text-xs ml-auto whitespace-nowrap shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="text-gray-300 font-bold">{bio.primaryPositions}</span>
+              <span className="flex items-center gap-1.5 pl-3 border-l border-gray-700/60">
+                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">SM</span>
+                {bio.skillMoves}
+              </span>
+              <span className="flex items-center gap-1.5 pl-3 border-l border-gray-700/60">
+                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">WF</span>
+                {bio.weakFoot}
+              </span>
+            </div>
+            <span className="text-gray-600 pl-1">|</span>
+            <span>{bio.nation}</span>
+            <span className="text-gray-600">|</span>
+            <span>{bio.league}</span>
+            <span className="text-gray-600">|</span>
+            <span>{bio.club}</span>
+            <span className="text-gray-600">|</span>
+            <span>{bio.rarity}</span>
+            <div className="flex items-center gap-2 text-gray-400 pl-3 border-l border-gray-700/60">
+              <span>{bio.height}</span>
+              <span className="text-gray-600">|</span>
+              <span>{bio.footAge}</span>
+              {bio.bodyType && (
+                <>
+                  <span className="text-gray-600">|</span>
+                  <span>{bio.bodyType}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Row 1.5: Accelerate / Face Stats / IGS + PlayStyles + Positions */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 pt-1 border-t border-gray-800/60">
+          <div className="flex flex-wrap gap-x-6">
+            <div className="flex flex-col min-w-[80px]">
+              <span className="text-gray-500 font-semibold text-[10px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                <Zap className="w-3 h-3 text-fcGreen" />
+                AcceleRATE
+              </span>
+              <span className={`font-bold text-xs transition-colors ${accelerateType === 'Lengthy' ? 'text-fcGreen drop-shadow-[0_0_8px_rgba(30,215,96,0.4)]' : 'text-white'}`}>
+                {accelerateType}
+              </span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-gray-500 font-semibold text-[10px] uppercase tracking-wider mb-0.5">Face Stats</span>
+              <div className="font-medium flex items-center gap-1.5 font-mono text-xs">
+                <span className="text-gray-300">{faceSum.activeBase}</span>
+                {previewOvr !== activeBaseOvr && (
+                  <>
+                    <span className="text-gray-600 text-sm">➜</span>
+                    <span className="text-[#EBB626] font-bold">{faceSum.effective}</span>
+                  </>
+                )}
+                {faceSum.diff > 0 && (
+                  <>
+                    <span className="text-fcGreen text-sm">➜</span>
+                    <span className="text-fcGreen font-bold">{faceSum.chem} <span className="text-sm">(+{faceSum.diff})</span></span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-gray-500 font-semibold text-[10px] uppercase tracking-wider mb-0.5">IGS (In-Game Stats)</span>
+              <div className="font-medium flex items-center gap-1.5 font-mono text-xs">
+                <span className="text-gray-300">{igs.activeBase}</span>
+                {previewOvr !== activeBaseOvr && (
+                  <>
+                    <span className="text-gray-600 text-sm">➜</span>
+                    <span className="text-[#EBB626] font-bold">{igs.effective}</span>
+                  </>
+                )}
+                {igs.diff > 0 && (
+                  <>
+                    <span className="text-fcGreen text-sm">➜</span>
+                    <span className="text-fcGreen font-bold">{igs.chem} <span className="text-sm">(+{igs.diff})</span></span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <PlayerSubInfo bio={bio} playStyles={playStyles} isEvo={activePath.chainIds.length > 0} />
+        </div>
+
         {/* Row 2: Action Buttons */}
-        <div className="flex items-start justify-end gap-x-5 gap-y-2 mt-2 w-full">
-<div className="flex flex-wrap items-center justify-end gap-4">
+        <div className="flex items-start gap-x-5 gap-y-2 mt-3 w-full">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex gap-1 items-center relative">
               <button onClick={() => setShowFilters(!showFilters)} className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1.5 transition-colors ${showFilters ? 'bg-fcGreen text-black font-bold border-fcGreen' : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'}`}>
                 <Settings2 className="w-3.5 h-3.5" /> Filters
@@ -406,93 +458,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               )}
             </div>
           </div>
-          
-          
-
-
-        {/* Row 2: PlayStyles (Left), Positions & Skills (Right) */}
-        <div className="flex items-start justify-between gap-x-5 gap-y-2">
-          {/* PlayStyles */}
-          {(playStyles.base.gold.length > 0 || playStyles.ev.gold.length > 0 || playStyles.base.silver.length > 0 || playStyles.ev.silver.length > 0) && (
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Gold PlayStyles */}
-              {(playStyles.base.gold.length > 0 || playStyles.ev.gold.length > 0) && (
-                <div className="flex flex-wrap items-center gap-1">
-                  <span className="px-1 py-0.5 rounded text-[9px] font-bold bg-yellow-900/40 text-yellow-500 border border-yellow-700/50 mr-0.5">
-                    {goldCurrent}
-                  </span>
-                  {playStyles.base.gold.map((ps) => (
-                    <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-yellow-900/40 text-yellow-500 border-yellow-700/50">{ps}</span>
-                  ))}
-                  {isEvo && (
-                    <>
-                      {playStyles.ev.gold.slice(0, goldAdded).map((ps) => (
-                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-yellow-900/40 text-yellow-500 border-yellow-700/50 flex items-center gap-1 shadow-[0_0_8px_rgba(234,179,8,0.2)]">
-                          {ps} <span className="text-[7px] font-black bg-green-900/60 text-green-400 px-0.5 rounded">NEW</span>
-                        </span>
-                      ))}
-                      {playStyles.ev.gold.slice(goldAdded).map((ps) => (
-                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-[#1f2937] text-gray-500 border-red-900/50 opacity-60 flex items-center gap-1">
-                          <span className="line-through decoration-red-500 decoration-2">{ps}</span> <span className="text-[7px] font-black text-red-400">LIMIT</span>
-                        </span>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Silver PlayStyles */}
-              {(playStyles.base.silver.length > 0 || playStyles.ev.silver.length > 0) && (
-                <div className="flex flex-wrap items-center gap-1">
-                  <span className="px-1 py-0.5 rounded text-[9px] font-bold bg-gray-800 text-gray-300 border border-gray-600 mr-0.5">
-                    {silverCurrent}
-                  </span>
-                  {playStyles.base.silver.map((ps) => (
-                    <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-gray-800 text-gray-300 border-gray-600">{ps}</span>
-                  ))}
-                  {isEvo && (
-                    <>
-                      {playStyles.ev.silver.slice(0, silverAdded).map((ps) => (
-                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-gray-800 text-gray-300 border-gray-600 flex items-center gap-1 shadow-[0_0_8px_rgba(255,255,255,0.1)]">
-                          {ps} <span className="text-[7px] font-black bg-green-900/60 text-green-400 px-0.5 rounded">NEW</span>
-                        </span>
-                      ))}
-                      {playStyles.ev.silver.slice(silverAdded).map((ps) => (
-                        <span key={ps} className="text-[10px] px-1.5 py-0.5 rounded border font-bold bg-[#1f2937] text-gray-500 border-red-900/50 opacity-60 flex items-center gap-1">
-                          <span className="line-through decoration-red-500 decoration-2">{ps}</span> <span className="text-[7px] font-black text-red-400">LIMIT</span>
-                        </span>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-4 ml-auto shrink-0 mt-0.5">
-            {/* Positions */}
-            <div className="flex items-center gap-1.5 text-gray-300 font-bold text-xs">
-              <span className="text-sm leading-none">🎯</span> {bio.primaryPositions}
-            </div>
-            
-            {/* Skills & Weak Foot */}
-            <div className="flex items-center gap-4 text-xs font-medium text-white border-l border-gray-700/60 pl-4">
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">SM</span>
-                <span>{bio.skillMoves} <span className="text-yellow-400">★</span></span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">WF</span>
-                <span>{bio.weakFoot} <span className="text-yellow-400">★</span></span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
 
     {/* Path Selection & Action Buttons */}
     <div className="flex flex-col gap-2 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-3 shadow-md">
+
+          
           <div className="flex flex-wrap gap-2">
             {allPaths.map((path) => (
               <div key={path.id} className="relative flex items-center group">
@@ -506,20 +479,46 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
                   }`}
                 >
-                  <RefreshCw className={`w-3 h-3 shrink-0 ${comparePathId === path.id ? 'text-purple-400' : 'text-gray-500/50 group-hover:text-purple-400/80 transition-colors'}`} />
-                  {path.isFavorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />}
                   {path.name}
                 </button>
-                {(onDeletePath || onToggleFavoritePath) && (
-                  <div className="absolute -top-1 -right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {onToggleFavoritePath && !path.isFavorite && path.id.startsWith('auto') && (
+                {onSetComparePathId && activePathId !== path.id && (
+                  <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSetComparePathId(comparePathId === path.id ? null : path.id);
+                      }}
+                      className={`rounded-full p-0.5 shadow-sm ${comparePathId === path.id ? 'bg-purple-600 text-white' : 'bg-purple-900 text-purple-400 hover:bg-purple-600 hover:text-white'}`}
+                      title={comparePathId === path.id ? "Stop Comparing" : "Compare with active path"}
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                )}
+                {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
+                  <div className="absolute -top-3 -left-1.5 z-10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavoritePath(path);
+                      }}
+                      className="rounded-full p-0.5 shadow-sm bg-yellow-500 text-black hover:bg-yellow-400"
+                      title="Unstar (allow deletion)"
+                    >
+                      <Star className="w-2.5 h-2.5 fill-black" />
+                    </button>
+                  </div>
+                )}
+                {(onDeletePath || onToggleFavoritePath) && path.chainIds.length > 0 && !path.isFavorite && (
+                  <div className="absolute -top-1.5 -left-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    {onToggleFavoritePath && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onToggleFavoritePath(path);
                         }}
-                        className="bg-yellow-900/90 text-yellow-400 rounded-full p-0.5 hover:bg-yellow-500 hover:text-black shadow-sm"
-                        title="Save to Favorites (Keep permanently)"
+                        className="rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-500 hover:bg-yellow-500 hover:text-black"
+                        title="Star (keep permanently)"
                       >
                         <Star className="w-2.5 h-2.5" />
                       </button>
@@ -542,21 +541,18 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
             ))}
           </div>
 
-        {/* Expanded Paths steps */}
-        <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-800/80">
-          {expandedPathIds.map(pathId => {
-            const renderPath = allPaths.find(p => p.id === pathId);
-            if (!renderPath) return null;
-            const isCompareTarget = comparePathId === pathId;
-            
-            return (
-              <div key={pathId} className={`flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full pb-2 items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border ${isCompareTarget ? 'border-purple-800' : 'border-gray-800'} relative`}>
-                <Layers className={`w-3.5 h-3.5 mr-1 ${isCompareTarget ? 'text-purple-500' : 'text-gray-500'}`} />
-                {isCompareTarget && <div className="absolute top-0 right-0 bg-purple-900/60 text-purple-300 text-[9px] px-1.5 py-0.5 rounded-bl-lg font-bold">COMPARE TARGET</div>}
+          <div className="flex flex-col gap-2">
+            {expandedPathIds.map(renderPathId => {
+              const renderPath = allPaths.find(p => p.id === renderPathId);
+              if (!renderPath) return null;
+              
+              return (
+                <div key={renderPathId} className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full pb-2 items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border border-gray-800">
+                  <Layers className="w-3.5 h-3.5 text-gray-500 mr-1 shrink-0" />
 
                 {/* Base Card Chip — always present, so an empty path still anchors on the raw card */}
                 <div className={`flex items-center gap-0.5 group/node shrink-0 relative ${
-                  baseIndex === -1 ? 'ring-1 ring-purple-500/60 rounded' : ''
+                  renderPath.id === activePathId && baseIndex === -1 ? 'ring-1 ring-purple-500/60 rounded' : ''
                 }`}>
                   <button
                     onClick={() => onNodeClick(-1)}
@@ -574,13 +570,13 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   </button>
                   {onSetBase && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); onSetBase(activePath.id, -1); }}
+                      onClick={(e) => { e.stopPropagation(); onSetBase(renderPath.id, -1); }}
                       className={`absolute -bottom-1.5 -right-1.5 p-0.5 rounded-full transition-opacity z-10 shadow-sm ${
-                        baseIndex === -1
+                        renderPath.id === activePathId && baseIndex === -1
                           ? 'bg-purple-600 text-white opacity-100'
                           : 'bg-purple-900/90 text-purple-400 hover:bg-purple-600 hover:text-white opacity-0 group-hover/node:opacity-100'
                       }`}
-                      title={baseIndex === -1
+                      title={renderPath.id === activePathId && baseIndex === -1
                         ? 'New builds start from the raw card'
                         : 'Build from the raw card again'}
                     >
@@ -623,8 +619,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     ? "bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]"
                     : "bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200";
                   // Everything up to the chosen base is locked in as the starting point.
-                  const isBase = idx === baseIndex;
-                  const inBasePrefix = idx <= baseIndex;
+                  const isBase = renderPath.id === activePathId && idx === baseIndex;
+                  const inBasePrefix = renderPath.id === activePathId && idx <= baseIndex;
 
                   return (
                     <React.Fragment key={`${id}-${idx}`}>
@@ -680,9 +676,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   );
                 })}
 
-                {builderLink && (
+                {futbinPlayerId && renderPath.chainIds.length > 0 && (
                   <a
-                    href={builderLink}
+                    href={`https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${renderPath.chainIds.join('_')}?includeExpired=false`}
                     target="_blank"
                     rel="noreferrer"
                     className="shrink-0 ml-auto text-[10px] text-fcGreen hover:text-white flex items-center gap-1 bg-green-950/60 px-2 py-1 rounded border border-green-800/60 transition-colors"
@@ -690,12 +686,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     Open in FUTBIN <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
         </div>
-    </div>
-    </div>
     </div>
   );
 };

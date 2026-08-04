@@ -8,7 +8,7 @@ interface PlayerSubInfoProps {
   isEvo: boolean;
 }
 
-export const PlayerSubInfo: React.FC<PlayerSubInfoProps> = ({ bio, playStyles, isEvo }) => {
+export const PlayerSubInfo: React.FC<PlayerSubInfoProps> = ({ playStyles, isEvo }) => {
   // Gold PlayStyles stats
   const goldBase = playStyles.base.gold.length;
   const goldLimit = playStyles.limits.gold;
@@ -32,7 +32,7 @@ export const PlayerSubInfo: React.FC<PlayerSubInfoProps> = ({ bio, playStyles, i
   const silverCurrent = silverBase + silverAdded;
 
   return (
-    <div className="flex flex-wrap items-center gap-4 ml-auto lg:mt-0 mt-2">
+    <div className="flex flex-wrap items-center gap-4 lg:mt-0 mt-2">
       {/* PlayStyles */}
       {(playStyles.base.gold.length > 0 || playStyles.ev.gold.length > 0 || playStyles.base.silver.length > 0 || playStyles.ev.silver.length > 0) && (
         <div className="flex flex-wrap items-center gap-2">
@@ -93,24 +93,6 @@ export const PlayerSubInfo: React.FC<PlayerSubInfoProps> = ({ bio, playStyles, i
           )}
         </div>
       )}
-
-      {/* Positions & Skills & Weak Foot */}
-      <div className="flex items-center gap-4 text-xs font-medium text-white border-l border-gray-700/60 pl-4">
-        {/* Positions */}
-        <div className="flex items-center gap-1.5 text-gray-300 font-bold">
-          <span className="text-sm leading-none">🎯</span> {bio.primaryPositions}
-        </div>
-        
-        {/* Skills & Weak Foot */}
-        <div className="flex items-center gap-1.5 border-l border-gray-700/60 pl-4">
-          <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">SM</span>
-          <span>{bio.skillMoves} <span className="text-yellow-400">★</span></span>
-        </div>
-        <div className="flex items-center gap-1.5 border-l border-gray-700/60 pl-4">
-          <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">WF</span>
-          <span>{bio.weakFoot} <span className="text-yellow-400">★</span></span>
-        </div>
-      </div>
     </div>
   );
 };

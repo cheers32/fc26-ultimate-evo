@@ -4,7 +4,6 @@ import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
 import { PlayerData, StatsData, PlayStylesData, EvolutionPath, EvoFilters } from './types/player';
 import { HeaderCard } from './components/HeaderCard';
-import { PlayerSubInfo } from './components/PlayerSubInfo';
 import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
@@ -17,7 +16,7 @@ import { EvoPoolModal } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { SquadPanel } from './components/SquadPanel';
-import { Trophy, RefreshCw, LayoutGrid, Layers, Zap } from 'lucide-react';
+import { Trophy, RefreshCw, LayoutGrid, Layers } from 'lucide-react';
 import { Squad, SquadMember, PlayerEvoState } from './types/player';
 
 const DEFAULT_PATH_ID = 'default-path';
@@ -139,23 +138,28 @@ export default function App() {
 
   const [playerStates, setPlayerStates] = useState<Record<string, PlayerEvoState>>({});
 
-  const currentState = playerStates[selectedPlayerId] || {
+  const currentState = {
     activePathId: DEFAULT_PATH_ID,
     expandedPathIds: [DEFAULT_PATH_ID],
+    comparePathId: null,
     evosPool: [],
     generatedPaths: [],
     manualPaths: [],
-    evoFilters: { ovr: { max: 99 } }
+    evoFilters: { ovr: { max: 99 } },
+    ...(playerStates[selectedPlayerId] as Partial<PlayerEvoState> || {})
   };
 
   const updateState = (updates: Partial<PlayerEvoState>) => {
     setPlayerStates(prev => {
-      const current = prev[selectedPlayerId] || {
+      const current = {
         activePathId: DEFAULT_PATH_ID,
+        expandedPathIds: [DEFAULT_PATH_ID],
+        comparePathId: null,
         evosPool: [],
         generatedPaths: [],
         manualPaths: [],
-        evoFilters: { ovr: { max: 99 } }
+        evoFilters: { ovr: { max: 99 } },
+        ...(prev[selectedPlayerId] as Partial<PlayerEvoState> || {})
       };
       
       const newState = { ...current, ...updates };
@@ -230,7 +234,13 @@ export default function App() {
   const manualPaths = currentState.manualPaths;
   const evoFilters = currentState.evoFilters;
 
-  const setActivePathId = (val: string | ((prev: string) => string)) => updateState({ activePathId: typeof val === 'function' ? val(currentState.activePathId) : val });
+  const setActivePathId = (val: string | ((prev: string) => string)) => {
+    const nextId = typeof val === 'function' ? val(currentState.activePathId) : val;
+    updateState({ 
+      activePathId: nextId,
+      expandedPathIds: currentState.expandedPathIds.includes(nextId) ? currentState.expandedPathIds : [...currentState.expandedPathIds, nextId]
+    });
+  };
   const setEvosPool = (val: string[] | ((prev: string[]) => string[])) => updateState({ evosPool: typeof val === 'function' ? val(currentState.evosPool) : val });
   const setGeneratedPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ generatedPaths: typeof val === 'function' ? val(currentState.generatedPaths) : val });
   const setManualPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ manualPaths: typeof val === 'function' ? val(currentState.manualPaths) : val });
@@ -255,10 +265,21 @@ export default function App() {
     chainIds: []
   }), []);
 
+  // Provide stable sorted paths
   const allPaths = useMemo(() => {
-    const saved = [...generatedPaths, ...manualPaths];
+    const saved = [...currentState.generatedPaths, ...currentState.manualPaths].sort((a, b) => {
+      // First sort by target ovr
+      const aOvr = a.steps?.[a.steps.length - 1]?.ovrAfter || 0;
+      const bOvr = b.steps?.[b.steps.length - 1]?.ovrAfter || 0;
+      if (bOvr !== aOvr) return bOvr - aOvr;
+      
+      // If equal, sort by max req ovr of the first evo
+      const aReq = availableEvolutions[a.chainIds[0]]?.requirements?.maxOvr || 0;
+      const bReq = availableEvolutions[b.chainIds[0]]?.requirements?.maxOvr || 0;
+      return bReq - aReq;
+    });
     return saved.some(p => p.id === DEFAULT_PATH_ID) ? saved : [defaultPath, ...saved];
-  }, [generatedPaths, manualPaths, defaultPath]);
+  }, [currentState.generatedPaths, currentState.manualPaths, defaultPath]);
 
   const activePath = useMemo(() => {
     return allPaths.find(p => p.id === activePathId) || defaultPath;
@@ -272,17 +293,23 @@ export default function App() {
   }, [activeChemName]);
 
   const handleDeletePath = (pathId: string) => {
-    let newActivePathId = currentState.activePathId;
-    if (newActivePathId === pathId) {
-      newActivePathId = DEFAULT_PATH_ID;
+    const path = allPaths.find(p => p.id === pathId);
+    if (path?.isFavorite) return;
+    if (activePathId === pathId) {
+      updateState({ activePathId: DEFAULT_PATH_ID });
     }
-    const newGenerated = currentState.generatedPaths.filter(p => p.id !== pathId);
-    const newManual = currentState.manualPaths.filter(p => p.id !== pathId);
-
     updateState({
-      activePathId: newActivePathId,
-      generatedPaths: newGenerated,
-      manualPaths: newManual
+      manualPaths: manualPaths.filter(p => p.id !== pathId),
+      generatedPaths: generatedPaths.filter(p => p.id !== pathId)
+    });
+  };
+
+  const handleClearPaths = () => {
+    updateState({
+      generatedPaths: generatedPaths.filter(p => p.isFavorite),
+      manualPaths: manualPaths.filter(p => p.isFavorite),
+      activePathId: DEFAULT_PATH_ID,
+      expandedPathIds: [DEFAULT_PATH_ID]
     });
   };
 
@@ -295,16 +322,17 @@ export default function App() {
 
     const newChainIds = [...path.chainIds];
     newChainIds.splice(index, 1);
+    const steps = simulateEvoChain(newChainIds, playerBio, initialOvrData, statsData, playStylesData).steps;
     
     // Auto paths become manual paths when edited
-    const newPath = {
-      ...path,
-      id: path.id.startsWith('auto') ? `custom-${Date.now()}` : path.id,
-      name: path.id.startsWith('auto') ? `${path.name} (Edited)` : path.name,
-      chainIds: newChainIds
+    const wasGenerated = currentState.generatedPaths.some(p => p.id === path.id);
+    const updated: EvolutionPath = { 
+      ...path, 
+      id: wasGenerated ? `custom-${Date.now()}` : path.id,
+      name: wasGenerated ? `${path.name} (Edited)` : path.name,
+      chainIds: newChainIds, 
+      steps 
     };
-    const steps = simulateEvoChain(newChainIds, playerBio, initialOvrData, statsData, playStylesData).steps;
-    const updated: EvolutionPath = { ...newPath, steps };
 
     // Removing a step shifts everything after it, so the base has to follow.
     const currentBase = currentState.baseIndex ?? -1;
@@ -312,7 +340,6 @@ export default function App() {
 
     // Editing an Analyze result makes it user-owned, matching the manual-path save behaviour:
     // otherwise the next Analyze run would silently discard the edit.
-    const wasGenerated = currentState.generatedPaths.some(p => p.id === path.id);
     updateState({
       baseIndex: nextBase,
       generatedPaths: wasGenerated
@@ -337,7 +364,7 @@ export default function App() {
 
   // Initialize selection when path changes or is first loaded
   useEffect(() => {
-    setSelectionQueue([-1, maxNode]);
+    setSelectionQueue([maxNode, maxNode]);
   }, [activePathId, maxNode]);
 
   const handleNodeClick = (nodeIndex: number) => {
@@ -352,9 +379,18 @@ export default function App() {
     return simulateEvoChain(activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
   }, [activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData]);
 
+  const comparePath = useMemo(() => {
+    return allPaths.find(p => p.id === currentState.comparePathId);
+  }, [allPaths, currentState.comparePathId]);
+
+  const compareChainResult = useMemo(() => {
+    if (!comparePath) return null;
+    return simulateEvoChain(comparePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
+  }, [comparePath, playerBio, initialOvrData, statsData, playStylesData]);
+
   // The chosen base clamps to the active path, so switching to a shorter path can't leave
   // a stale index pointing past its end.
-  const safeBaseIndex = Math.min(baseIndex, activePath.chainIds.length - 1);
+  const safeBaseIndex = Math.min(currentState.baseIndex ?? -1, activePath.chainIds.length - 1);
   const basePrefix = useMemo(
     () => activePath.chainIds.slice(0, safeBaseIndex + 1),
     [activePath.chainIds, safeBaseIndex]
@@ -367,6 +403,8 @@ export default function App() {
       name: playerBio.name,
       pathName: activePath.name,
       chainIds: activePath.chainIds,
+      generatedPaths: currentState.generatedPaths,
+      manualPaths: currentState.manualPaths,
       baseOvr: initialOvrData.base,
       evoOvr: lastStep ? lastStep.ovrAfter : initialOvrData.base
     };
@@ -397,7 +435,40 @@ export default function App() {
     let pPlayStyles = JSON.parse(JSON.stringify(aPlayStyles));
 
     // 2. Determine Preview
-    if (evoPreview && previewNode >= baseNode) {
+    if (compareChainResult) {
+      // Comparison Mode: Base is comparePath (full), Preview is activePath (full) — the diff
+      // reads as "the other path → your active path" rather than the reverse.
+      const baseFinalStep = compareChainResult.steps[compareChainResult.steps.length - 1];
+      const previewFinalStep = chainResult.steps[chainResult.steps.length - 1];
+      
+      if (baseFinalStep) {
+        aBaseStats = baseFinalStep.statsAfter;
+        aBaseOvr = baseFinalStep.ovrAfter;
+        aPlayStyles.base = JSON.parse(JSON.stringify(baseFinalStep.playStylesAfter.base));
+      } else {
+        aBaseStats = statsData;
+        aBaseOvr = initialOvrData.base;
+        aPlayStyles.base = JSON.parse(JSON.stringify(playStylesData.base));
+      }
+      
+      if (previewFinalStep) {
+        pStats = previewFinalStep.statsAfter;
+        pOvr = previewFinalStep.ovrAfter;
+        
+        const beforeGold = aPlayStyles.base.gold;
+        const beforeSilver = aPlayStyles.base.silver;
+        const afterGold = previewFinalStep.playStylesAfter.base.gold;
+        const afterSilver = previewFinalStep.playStylesAfter.base.silver;
+        
+        const addedGold = afterGold.filter(ps => !beforeGold.includes(ps));
+        const addedSilver = afterSilver.filter(ps => !beforeSilver.includes(ps));
+        
+        pPlayStyles.ev = { gold: addedGold, silver: addedSilver };
+      } else {
+        pStats = statsData;
+        pOvr = initialOvrData.base;
+      }
+    } else if (evoPreview && previewNode >= baseNode) {
       if (previewNode === -1) {
         pStats = statsData;
         pOvr = initialOvrData.base;
@@ -428,7 +499,7 @@ export default function App() {
       activePlayStyles: aPlayStyles,
       previewPlayStyles: pPlayStyles
     };
-  }, [baseNode, previewNode, evoPreview, chainResult, statsData, initialOvrData, playStylesData]);
+  }, [baseNode, previewNode, evoPreview, chainResult, compareChainResult, statsData, initialOvrData, playStylesData]);
 
   // Calculate IGS & Face Stats Summary
   const { igs, faceSum, accelerateType } = useMemo(() => {
@@ -597,7 +668,12 @@ export default function App() {
           activePath={activePath}
           allPaths={allPaths}
           activePathId={activePathId}
-          onSelectPath={setActivePathId}
+          expandedPathIds={[activePathId]}
+          comparePathId={currentState.comparePathId}
+          onSetComparePathId={(id) => updateState({ comparePathId: id })}
+          onSelectPath={(id) => {
+            updateState({ activePathId: id });
+          }}
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
@@ -625,23 +701,23 @@ export default function App() {
           playStyles={previewPlayStyles}
           onDeletePath={handleDeletePath}
           onToggleFavoritePath={(path) => {
+            if (path.chainIds.length === 0) return;
             const isManual = manualPaths.some(p => p.id === path.id);
             if (isManual) {
-              // If it's already a manual path, "unfavoriting" it means deleting it or ignoring.
-              // We can just ignore, or maybe we want to allow removing from favorites.
-              // To keep it simple, if it's already manual, we can just delete it from manual (but maybe they edited it).
-              // Let's just handle moving from generated -> manual.
+              // Already manual: just flip the flag in place.
+              updateState({
+                manualPaths: manualPaths.map(p => p.id === path.id ? { ...p, isFavorite: !p.isFavorite } : p)
+              });
             } else {
-              // Move from generated to manual to "favorite" it
+              // Starring a generated path promotes it to manual so the next Analyze run
+              // (which replaces generatedPaths wholesale) can't silently discard it.
               updateState({
                 generatedPaths: generatedPaths.filter(p => p.id !== path.id),
                 manualPaths: [...manualPaths, { ...path, isFavorite: true }]
               });
-              if (activePathId === path.id) {
-                // re-select it with the new name if needed, but the ID stays the same, so it will just re-render from manualPaths.
-              }
             }
           }}
+          onClearPaths={handleClearPaths}
           onViewEvo={(id) => setViewingEvoId(id)}
           baseIndex={safeBaseIndex}
           onSetBase={(pathId, idx) => {
@@ -653,62 +729,6 @@ export default function App() {
           onRemoveNode={handleRemoveNode}
         />
 
-        {/* Top Control Bar: Chemistry Stats + Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 text-[14px] bg-[#1a1c1a] p-3 rounded-xl border border-gray-800 shadow-md mb-4 mt-2">
-          {/* Stats Info */}
-          <div className="flex flex-wrap gap-x-8 lg:gap-x-12">
-            <div className="flex flex-col min-w-[100px] lg:min-w-[130px]">
-              <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-fcGreen" />
-                AcceleRATE
-              </span>
-              <span className={`font-bold text-lg transition-colors ${accelerateType === 'Lengthy' ? 'text-fcGreen drop-shadow-[0_0_8px_rgba(30,215,96,0.4)]' : 'text-white'}`}>
-                {accelerateType}
-              </span>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">Face Stats</span>
-              <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
-                <span className="text-gray-300">{faceSum.activeBase}</span>
-                {previewOvr !== activeBaseOvr && (
-                  <>
-                    <span className="text-gray-600 text-sm">➜</span>
-                    <span className="text-[#EBB626] font-bold">{faceSum.effective}</span>
-                  </>
-                )}
-                {faceSum.diff > 0 && (
-                  <>
-                    <span className="text-fcGreen text-sm">➜</span>
-                    <span className="text-fcGreen font-bold">{faceSum.chem} <span className="text-sm">(+{faceSum.diff})</span></span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider mb-1">IGS (In-Game Stats)</span>
-              <div className="font-medium flex items-center gap-1.5 font-mono text-lg">
-                <span className="text-gray-300">{igs.activeBase}</span>
-                {previewOvr !== activeBaseOvr && (
-                  <>
-                    <span className="text-gray-600 text-sm">➜</span>
-                    <span className="text-[#EBB626] font-bold">{igs.effective}</span>
-                  </>
-                )}
-                {igs.diff > 0 && (
-                  <>
-                    <span className="text-fcGreen text-sm">➜</span>
-                    <span className="text-fcGreen font-bold">{igs.chem} <span className="text-sm">(+{igs.diff})</span></span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <PlayerSubInfo bio={playerBio} playStyles={previewPlayStyles} isEvo={activePath.chainIds.length > 0} />
-        </div>
-
         {activeTab === 'workbench' && (
           <>
 
@@ -717,17 +737,17 @@ export default function App() {
               previewStats={previewStats}
               activeChemBoosts={activeChemBoosts}
               activeEvo={activeEvo}
-            />
-
-            {/* Chemistry Styles Selector */}
-            <ChemistryGrid
-              chemStyles={chemStyles}
-              hoveredChem={hoveredChem}
-              lockedChem={lockedChem}
-              onHoverChem={setHoveredChem}
-              onLockChem={(name) => {
-                setLockedChem(lockedChem === name ? null : name);
-              }}
+              aside={
+                <ChemistryGrid
+                  chemStyles={chemStyles}
+                  hoveredChem={hoveredChem}
+                  lockedChem={lockedChem}
+                  onHoverChem={setHoveredChem}
+                  onLockChem={(name) => {
+                    setLockedChem(lockedChem === name ? null : name);
+                  }}
+                />
+              }
             />
 
             <PlayStylesSection
@@ -750,23 +770,9 @@ export default function App() {
           />
         )}
 
-        <div className="my-6">
-          <SquadPanel
-            squads={squads}
-            onCreateSquad={createSquad}
-            onDeleteSquad={deleteSquad}
-            onAddPlayerToSquad={addPlayerToSquad}
-            onRemoveMember={removeSquadMember}
-            onOpenMember={openSquadMember}
-            currentPlayerState={currentState}
-            currentPlayerId={selectedPlayerId}
-            currentSnapshot={currentSnapshot}
-          />
-        </div>
-
-        <div className="flex justify-center mb-4">
-{/* Tab Navigation */}
-          <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800/80 text-sm ml-auto mt-2 lg:mt-0">
+        <div className="flex justify-center mt-6 mb-2">
+          {/* Tab Navigation */}
+          <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800/80 text-sm">
             <button
               onClick={() => setActiveTab('workbench')}
               className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
@@ -790,8 +796,23 @@ export default function App() {
               EVO Chain Lab
             </button>
           </div>
-</div>
-<div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">
+        </div>
+
+        <div className="my-6">
+          <SquadPanel
+            squads={squads}
+            onCreateSquad={createSquad}
+            onDeleteSquad={deleteSquad}
+            onAddPlayerToSquad={addPlayerToSquad}
+            onRemoveMember={removeSquadMember}
+            onOpenMember={openSquadMember}
+            currentPlayerState={currentState}
+            currentPlayerId={selectedPlayerId}
+            currentSnapshot={currentSnapshot}
+          />
+        </div>
+
+        <div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">
           <span>EA FC 26 Player Stats & Evolution Preview Calculator</span>
           <span className="flex items-center gap-1 text-fcGreen font-medium">
             <Trophy className="w-3.5 h-3.5" /> Built for Ultimate Team Enthusiasts
@@ -835,7 +856,6 @@ export default function App() {
         baseOvr={initialOvrData}
         baseStats={statsData}
         basePlayStyles={playStylesData}
-        onViewEvo={(id) => setViewingEvoId(id)}
       />
       <EvoDetailsModal 
         evoId={viewingEvoId} 

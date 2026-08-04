@@ -20,9 +20,9 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
   const names = Object.keys(chemStyles);
 
   return (
-    <div className="mt-4 border-t border-gray-800 pt-3">
-      {/* 5-Column Seamless Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-0 border-l border-t border-[#4b5563] rounded-lg overflow-hidden bg-[#1f2937] shadow-xl">
+    <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full">
+      {/* Seamless Grid */}
+      <div className="grid grid-cols-3 lg:grid-cols-2 gap-0 border-l border-t border-[#4b5563] rounded-lg overflow-hidden bg-[#1f2937] shadow-xl">
         {names.map((name) => {
           const isLocked = name === lockedChem;
           const isHovered = name === hoveredChem;
@@ -48,10 +48,6 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
             </button>
           );
         })}
-
-        {/* Filler cells to complete 5x4 grid */}
-        <div className="border-r border-b border-[#4b5563] bg-[#1a202c]/50 hidden md:block" />
-        <div className="border-r border-b border-[#4b5563] bg-[#1a202c]/50 hidden md:block" />
       </div>
     </div>
   );
