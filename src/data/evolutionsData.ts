@@ -52,17 +52,53 @@ import { goldStandard979 } from './evolutions/goldStandard979';
 import { starChaser989 } from './evolutions/starChaser989';
 import { chasingTheSpotlight984 } from './evolutions/chasingTheSpotlight984';
 import { elKaiser987 } from './evolutions/elKaiser987';
+import { theMainEvent974 } from './evolutions/theMainEvent974';
+import { memosLegacy986 } from './evolutions/memosLegacy986';
+import { passEh990 } from './evolutions/passEh990';
+import { phdInDribbling1015 } from './evolutions/phdInDribbling1015';
+import { totalGlory1076 } from './evolutions/totalGlory1076';
+import { thePerfect10_1120 } from './evolutions/thePerfect10_1120';
+import { touchlineTitan1121 } from './evolutions/touchlineTitan1121';
+import { youShallNotPass1178 } from './evolutions/youShallNotPass1178';
+import { pinkHeritage1179 } from './evolutions/pinkHeritage1179';
+import { speedDemon1185 } from './evolutions/speedDemon1185';
+import { autoDefender1186 } from './evolutions/autoDefender1186';
+import { mrUndroppable1187 } from './evolutions/mrUndroppable1187';
+import { cbShift1188 } from './evolutions/cbShift1188';
+import { bruiseControl1189 } from './evolutions/bruiseControl1189';
+import { futties1192 } from './evolutions/futties1192';
+import { lwShift1193 } from './evolutions/lwShift1193';
+import { theCreativeSpark1196 } from './evolutions/theCreativeSpark1196';
+import { letMeCook1197 } from './evolutions/letMeCook1197';
+import { laMasiaSpark1118 } from './evolutions/laMasiaSpark1118';
+import { stillGotIt1119 } from './evolutions/stillGotIt1119';
+import { ironSentinel1126 } from './evolutions/ironSentinel1126';
+import { fromMissToIce1129 } from './evolutions/fromMissToIce1129';
+import { heartOfTheSquad1130 } from './evolutions/heartOfTheSquad1130';
+import { youthfulValor1132 } from './evolutions/youthfulValor1132';
+import { primeProspect1134 } from './evolutions/primeProspect1134';
+import { theHumbleViking1135 } from './evolutions/theHumbleViking1135';
+import { summerSpark1136 } from './evolutions/summerSpark1136';
+import { primeMarksman1144 } from './evolutions/primeMarksman1144';
+import { perfectLinkUp1145 } from './evolutions/perfectLinkUp1145';
+import { shutdown1146 } from './evolutions/shutdown1146';
+import { rapidResilience1147 } from './evolutions/rapidResilience1147';
+import { mrNonchalant1149 } from './evolutions/mrNonchalant1149';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
+  '974': theMainEvent974,
   '979': goldStandard979,
   '983': relentlessRise983,
   '984': chasingTheSpotlight984,
+  '986': memosLegacy986,
   '987': elKaiser987,
   '988': streetSoccer988,
   '989': starChaser989,
+  '990': passEh990,
   '1011': hiddenGem1011,
   '1012': theKiwiWall1012,
   '1014': tinyTim1014,
+  '1015': phdInDribbling1015,
   '1016': oxygenTank1016,
   '1017': goldenSpirit1017,
   '1018': continentalCannon1018,
@@ -74,6 +110,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1060': theLittleBoyFromRosario1060,
   '1061': deadballMastery1061,
   '1062': elBandido1062,
+  '1076': totalGlory1076,
   '1080': highlandDelivery1080,
   '1081': furiaCeca1081,
   '1082': thePowercube1082,
@@ -84,6 +121,22 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1111': unstoppableForce1111,
   '1112': nationalPrideStarPart1_1112,
   '1114': nationalPrideStarPart2_1114,
+  '1118': laMasiaSpark1118,
+  '1119': stillGotIt1119,
+  '1120': thePerfect10_1120,
+  '1121': touchlineTitan1121,
+  '1126': ironSentinel1126,
+  '1129': fromMissToIce1129,
+  '1130': heartOfTheSquad1130,
+  '1132': youthfulValor1132,
+  '1134': primeProspect1134,
+  '1135': theHumbleViking1135,
+  '1136': summerSpark1136,
+  '1144': primeMarksman1144,
+  '1145': perfectLinkUp1145,
+  '1146': shutdown1146,
+  '1147': rapidResilience1147,
+  '1149': mrNonchalant1149,
   '1151': futtiesCountdown1151,
   '1152': theMetronome1152,
   '1153': routeOne1153,
@@ -98,15 +151,26 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1164': auraFarming1164,
   '1176': nationalPride1176,
   '1177': culturedCommander1177,
+  '1178': youShallNotPass1178,
+  '1179': pinkHeritage1179,
   '1180': leftBehind1180,
   '1181': flairFactory1181,
   '1182': floorRaiser1182,
   '1183': futtiesBlueprintI1183,
   '1184': windUpMerchant1184,
+  '1185': speedDemon1185,
+  '1186': autoDefender1186,
+  '1187': mrUndroppable1187,
+  '1188': cbShift1188,
+  '1189': bruiseControl1189,
   '1190': dazzlingDribbler1190,
   '1191': signedAndDelivered1191,
+  '1192': futties1192,
+  '1193': lwShift1193,
   '1194': futtiesBlueprintII1194,
-  '1195': thePerfectBreak1195
+  '1195': thePerfectBreak1195,
+  '1196': theCreativeSpark1196,
+  '1197': letMeCook1197
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [

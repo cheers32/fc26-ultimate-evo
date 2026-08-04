@@ -34,11 +34,30 @@ export default function App() {
   // Evolutions the user never wants used. Global rather than per-player, so it lives in
   // localStorage alongside custom players instead of in the per-player save files.
   const [disabledEvos, setDisabledEvos] = useState<string[]>(() => {
+    let current: string[] = [];
     try {
       const saved = localStorage.getItem('futEvo_disabled_evos');
-      if (saved) return JSON.parse(saved);
+      if (saved) current = JSON.parse(saved);
     } catch(e) {}
-    return [];
+
+    // Evos that ship switched off are folded in once each, tracked separately, so a later
+    // re-enable in the UI isn't undone on the next load.
+    let seeded: string[] = [];
+    try {
+      const saved = localStorage.getItem('futEvo_seeded_disabled');
+      if (saved) seeded = JSON.parse(saved);
+    } catch(e) {}
+
+    const pending = Object.values(availableEvolutions)
+      .filter(evo => evo.defaultDisabled && !seeded.includes(evo.id))
+      .map(evo => evo.id);
+
+    if (pending.length === 0) return current;
+
+    const next = [...new Set([...current, ...pending])];
+    localStorage.setItem('futEvo_disabled_evos', JSON.stringify(next));
+    localStorage.setItem('futEvo_seeded_disabled', JSON.stringify([...seeded, ...pending]));
+    return next;
   });
 
   const toggleEvoDisabled = (evoId: string) => {
@@ -750,12 +769,7 @@ export default function App() {
               }
             />
 
-            <PlayStylesSection
-              playStyles={previewPlayStyles}
-              roles={playerBio.roles}
-              evoPreview={evoPreview}
-              evoLocked={evoLocked}
-            />
+            <PlayStylesSection roles={playerBio.roles} />
           </>
         )}
 

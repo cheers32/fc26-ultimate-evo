@@ -839,7 +839,7 @@ export const playersDatabase: Record<string, PlayerData> = {
   'griezmann-87': {
     id: 'griezmann-87',
     futbinLink: 'https://www.futbin.com/26/player/20343/antoine-griezmann',
-    avatarUrl: '/images/griezmann.png',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p50526413.png?fm=png&ixlib=java-2.1.0&verzion=2&w=485&s=e54fed2900b718240a97e816626f9b60',
     bio: {
       name: 'Antoine Griezmann',
       club: 'Atlético de Madrid',
@@ -1110,6 +1110,746 @@ export const playersDatabase: Record<string, PlayerData> = {
           stamina: { label: 'Stamina', base: 85, boost: 30, limit: 99, w: 0.25 },
           strength: { label: 'Strength', base: 79, boost: 30, limit: 99, w: 0.50 },
           aggression: { label: 'Aggression', base: 63, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'cafu-91': {
+    id: 'cafu-91',
+    futbinLink: 'https://www.futbin.com/26/player/18714/cafu',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/5003.png?fm=png&ixlib=java-2.1.0&verzion=3&w=324&s=060c8c246fe58cc3e8dbabbfa510af4e',
+    bio: {
+      name: 'Cafu',
+      club: 'EA FC ICONS',
+      nation: 'Brazil',
+      league: 'Icons',
+      title: 'Icon',
+      primaryPositions: 'RB',
+      height: `176cm | 5'9"`,
+      footAge: 'Right | 56 yrs',
+      weakFoot: 3,
+      skillMoves: 4,
+      rarity: 'Icon',
+      roles: {
+        rb: ['Attacking Wingback+', 'Wingback++']
+      }
+    },
+    ovr: { base: 91, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Relentless+'],
+        silver: ['Gamechanger', 'Inventive', 'Jockey']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 90, evFace: 90,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 91, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 90, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 56, evFace: 56,
+        subs: {
+          positioning: { label: 'Att. Position', base: 71, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 44, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 65, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 64, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 60, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 71, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 83, evFace: 83,
+        subs: {
+          vision: { label: 'Vision', base: 82, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 91, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 61, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 87, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 71, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 75, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 85, evFace: 85,
+        subs: {
+          agility: { label: 'Agility', base: 75, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 79, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 89, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 87, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 86, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 87, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 88, evFace: 88,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 90, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 78, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 88, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 90, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 84, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 83, evFace: 83,
+        subs: {
+          jumping: { label: 'Jumping', base: 80, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 92, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 83, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 74, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'socrates-89': {
+    id: 'socrates-89',
+    futbinLink: 'https://www.futbin.com/26/player/18755/vieira-de-oliveira',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/190046.png?fm=png&ixlib=java-2.1.0&verzion=3&w=324&s=cffdf269c2923be9d00283017cc920d8',
+    bio: {
+      name: 'Sócrates',
+      club: 'EA FC ICONS',
+      nation: 'Brazil',
+      league: 'Icons',
+      title: 'Icon',
+      primaryPositions: 'CAM',
+      height: `192cm | 6'4"`,
+      footAge: 'Right | 72 yrs',
+      weakFoot: 5,
+      skillMoves: 4,
+      rarity: 'Icon',
+      roles: {
+        cam: ['Playmaker++']
+      }
+    },
+    ovr: { base: 89, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Incisive Pass+'],
+        silver: ['Low Driven Shot', 'Long Ball Pass', 'Inventive', 'Technical']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 82, evFace: 82,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 83, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 81, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 88, evFace: 88,
+        subs: {
+          positioning: { label: 'Att. Position', base: 85, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 85, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 90, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 91, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 89, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 87, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 89, evFace: 89,
+        subs: {
+          vision: { label: 'Vision', base: 92, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 87, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 87, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 88, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 89, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 87, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 88, evFace: 88,
+        subs: {
+          agility: { label: 'Agility', base: 82, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 58, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 84, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 90, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 95, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 43, evFace: 43,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 32, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 86, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 28, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 51, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 46, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 82, evFace: 82,
+        subs: {
+          jumping: { label: 'Jumping', base: 68, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 90, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 82, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 75, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'gordon-87': {
+    id: 'gordon-87',
+    futbinLink: 'https://www.futbin.com/26/player/24112/anthony-gordon',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p84129044.png?fm=png&ixlib=java-2.1.0&verzion=1&w=485&s=2a80116509ec5d9ac77e7773c8b4b1d7',
+    bio: {
+      name: 'Gordon',
+      club: 'Newcastle Utd',
+      nation: 'England',
+      league: 'Premier League',
+      title: 'Team of the Week',
+      primaryPositions: 'ST, LM, RW, LW',
+      height: `183cm | 6'0"`,
+      footAge: 'Right | 25 yrs',
+      weakFoot: 4,
+      skillMoves: 4,
+      rarity: 'Team of the Week',
+      bodyType: 'Avg & Lean',
+      roles: {
+        st: ['False 9+', 'Target Forward+', 'Advanced Forward++', 'Poacher++'],
+        lm: ['Wide Midfielder+', 'Inside Forward+', 'Winger++'],
+        rw: ['Winger+', 'Wide Playmaker+', 'Inside Forward++'],
+        lw: ['Winger+', 'Wide Playmaker+', 'Inside Forward++']
+      }
+    },
+    ovr: { base: 87, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Low Driven Shot+'],
+        silver: ['Whipped Pass', 'Technical', 'Rapid', 'First Touch', 'Quick Step']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 94, evFace: 94,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 92, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 95, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 85, evFace: 85,
+        subs: {
+          positioning: { label: 'Att. Position', base: 88, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 87, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 84, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 82, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 80, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 75, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 83, evFace: 83,
+        subs: {
+          vision: { label: 'Vision', base: 86, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 86, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 79, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 84, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 70, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 87, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 88, evFace: 88,
+        subs: {
+          agility: { label: 'Agility', base: 82, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 80, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 88, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 90, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 86, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 54, evFace: 54,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 43, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 64, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 53, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 61, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 52, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 75, evFace: 75,
+        subs: {
+          jumping: { label: 'Jumping', base: 79, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 90, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 65, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 79, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'gullit-95': {
+    id: 'gullit-95',
+    futbinLink: 'https://www.futbin.com/26/player/24440/gullit',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p84100180.png?fm=png&ixlib=java-2.1.0&verzion=2&w=485&s=80449a22f21fbef0b1bb90c8c7ebd40f',
+    bio: {
+      name: 'Gullit',
+      club: 'EA FC ICONS',
+      nation: 'Netherlands',
+      league: 'Icons',
+      title: 'Trophy Titans Icon',
+      primaryPositions: 'CAM, CM, ST',
+      height: `191cm | 6'3"`,
+      footAge: 'Right | 63 yrs',
+      weakFoot: 5,
+      skillMoves: 4,
+      rarity: 'Trophy Titans Icon',
+      roles: {
+        cam: ['Half Winger+', 'Playmaker++', 'Shadow Striker++', 'Classic 10++'],
+        cm: ['Deep-Lying Playmaker+', 'Half Winger+', 'Box-to-Box++', 'Playmaker++'],
+        st: ['Target Forward+', 'Advanced Forward++']
+      }
+    },
+    ovr: { base: 95, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Low Driven Shot+', 'Press Proven+', 'Pinged Pass+'],
+        silver: ['Finesse Shot', 'Power Shot', 'Incisive Pass', 'Inventive', 'Technical', 'Rapid', 'Enforcer']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 92, evFace: 92,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 91, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 93, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 95, evFace: 95,
+        subs: {
+          positioning: { label: 'Att. Position', base: 95, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 96, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 96, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 94, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 91, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 90, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 95, evFace: 95,
+        subs: {
+          vision: { label: 'Vision', base: 94, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 92, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 94, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 96, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 96, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 94, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 92, evFace: 92,
+        subs: {
+          agility: { label: 'Agility', base: 91, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 93, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 96, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 91, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 92, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 89, evFace: 89,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 85, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 96, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 90, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 90, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 86, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 94, evFace: 94,
+        subs: {
+          jumping: { label: 'Jumping', base: 94, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 96, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 94, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 91, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'theo-95': {
+    id: 'theo-95',
+    futbinLink: 'https://www.futbin.com/26/player/26070/theo-hernandez',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p84118736.png?fm=png&ixlib=java-2.1.0&verzion=1&w=485&s=98b302ae0cf9b9508a568d3465797cb7',
+    bio: {
+      name: 'Hernández',
+      club: 'Al Hilal',
+      nation: 'France',
+      league: 'ROSHN Saudi League',
+      title: 'Glory Hunters',
+      primaryPositions: 'LB, LM',
+      height: `184cm | 6'0"`,
+      footAge: 'Left | 28 yrs',
+      weakFoot: 4,
+      skillMoves: 4,
+      rarity: 'Glory Hunters',
+      roles: {
+        lb: ['Fullback++', 'Falseback++', 'Wingback++', 'Attacking Wingback++', 'Inverted Wingback++'],
+        lm: ['Winger++', 'Wide Midfielder++', 'Wide Playmaker++', 'Inside Forward++']
+      }
+    },
+    ovr: { base: 95, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: [],
+        silver: []
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 96, evFace: 96,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 96, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 96, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 90, evFace: 90,
+        subs: {
+          positioning: { label: 'Att. Position', base: 95, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 84, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 98, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 91, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 95, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 90, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 90, evFace: 90,
+        subs: {
+          vision: { label: 'Vision', base: 87, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 96, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 85, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 93, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 83, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 91, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 94, evFace: 94,
+        subs: {
+          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 92, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 94, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 95, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 94, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 92, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 93, evFace: 93,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 91, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 90, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 90, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 98, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 90, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 93, evFace: 93,
+        subs: {
+          jumping: { label: 'Jumping', base: 97, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 96, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 92, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 92, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'chiellini-92': {
+    id: 'chiellini-92',
+    futbinLink: 'https://www.futbin.com/26/player/25950/giorgio-chiellini',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p84025036.png?fm=png&ixlib=java-2.1.0&verzion=1&w=485&s=94fce9dda1fa40015ea8b0f97bbde801',
+    bio: {
+      name: 'Chiellini',
+      club: 'EA FC ICONS',
+      nation: 'Italy',
+      league: 'Icons',
+      title: 'Greats of the Game Icon',
+      primaryPositions: 'CB',
+      height: `187cm | 6'2"`,
+      footAge: 'Left | 41 yrs',
+      weakFoot: 4,
+      skillMoves: 3,
+      rarity: 'Greats of the Game Icon',
+      roles: {
+        cb: ['Defender++', 'Stopper++', 'Ball-Playing Defender++', 'Wide Back++']
+      }
+    },
+    ovr: { base: 92, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Intercept+', 'Bruiser+', 'Block+'],
+        silver: ['Incisive Pass', 'Long Ball Pass', 'Jockey', 'Anticipate', 'Slide Tackle', 'Aerial Fortress', 'Quick Step', 'Long Throw']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 88, evFace: 88,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 88, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 88, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 62, evFace: 62,
+        subs: {
+          positioning: { label: 'Att. Position', base: 57, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 57, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 83, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 58, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 56, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 59, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 76, evFace: 76,
+        subs: {
+          vision: { label: 'Vision', base: 70, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 75, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 67, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 81, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 80, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 70, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 81, evFace: 81,
+        subs: {
+          agility: { label: 'Agility', base: 80, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 80, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 80, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 80, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 88, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 96, evFace: 96,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 95, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 94, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 97, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 96, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 94, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 95, evFace: 95,
+        subs: {
+          jumping: { label: 'Jumping', base: 93, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 94, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 95, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 96, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'enzo-93': {
+    id: 'enzo-93',
+    futbinLink: 'https://www.futbin.com/26/player/24751/enzo-fernandez',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p67355954.png?fm=png&ixlib=java-2.1.0&verzion=1&w=485&s=6c62f3960b8a330695786517a3735d00',
+    bio: {
+      name: 'Fernández',
+      club: 'Chelsea',
+      nation: 'Argentina',
+      league: 'Premier League',
+      title: 'Team of the Season',
+      primaryPositions: 'CM, CDM, CAM',
+      height: `178cm | 5'10"`,
+      footAge: 'Right | 25 yrs',
+      weakFoot: 5,
+      skillMoves: 4,
+      rarity: 'Team of the Season',
+      bodyType: 'Avg & Normal',
+      roles: {
+        cm: ['Box-to-Box++', 'Holding++', 'Deep-Lying Playmaker++', 'Playmaker++', 'Half Winger++'],
+        cdm: ['Centre Half+', 'Wide Half+', 'Box Crasher+', 'Holding++', 'Deep-Lying Playmaker++'],
+        cam: ['Classic 10+', 'Playmaker++', 'Shadow Striker++', 'Half Winger++']
+      }
+    },
+    ovr: { base: 93, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Technical+', 'Incisive Pass+', 'Pinged Pass+'],
+        silver: ['Finesse Shot', 'Long Ball Pass', 'Tiki Taka', 'Intercept', 'First Touch', 'Press Proven', 'Relentless']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 90, evFace: 90,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 90, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 90, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 88, evFace: 88,
+        subs: {
+          positioning: { label: 'Att. Position', base: 89, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 86, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 94, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 86, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 87, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 83, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 95, evFace: 95,
+        subs: {
+          vision: { label: 'Vision', base: 96, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 90, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 86, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 97, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 97, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 94, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 94, evFace: 94,
+        subs: {
+          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 94, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 97, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 95, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 93, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 93, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 85, evFace: 85,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 86, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 83, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 84, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 87, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 84, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 87, evFace: 87,
+        subs: {
+          jumping: { label: 'Jumping', base: 84, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 96, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 80, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 94, boost: 30, limit: 99, w: 0.20 }
+        }
+      }
+    }
+  },
+  'yamal-90': {
+    id: 'yamal-90',
+    futbinLink: 'https://www.futbin.com/26/player/20413/lamine-yamal-nasraoui-ebana',
+    avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p50609291.png?fm=png&ixlib=java-2.1.0&verzion=1&w=485&s=24e0c94793c6f29f0fe5ba247eae22e8',
+    bio: {
+      name: 'Lamine Yamal',
+      club: 'FC Barcelona',
+      nation: 'Spain',
+      league: 'LALIGA EA SPORTS',
+      title: 'UCL Primetime',
+      primaryPositions: 'RM, RW',
+      height: `180cm | 5'11"`,
+      footAge: 'Left | 19 yrs',
+      weakFoot: 3,
+      skillMoves: 5,
+      rarity: 'UCL Primetime',
+      bodyType: 'Avg & Lean',
+      roles: {
+        rm: ['Winger+', 'Wide Playmaker+', 'Inside Forward++'],
+        rw: ['Wide Playmaker+', 'Winger++', 'Inside Forward++']
+      }
+    },
+    ovr: { base: 90, boost: 30, limit: 99 },
+    playStyles: {
+      limits: { gold: 4, silver: 8 },
+      base: {
+        gold: ['Finesse Shot+'],
+        silver: ['Gamechanger', 'Incisive Pass', 'Pinged Pass', 'Tiki Taka', 'Inventive', 'Technical', 'First Touch', 'Trickster', 'Press Proven', 'Quick Step']
+      },
+      ev: { gold: [], silver: [] }
+    },
+    stats: {
+      pac: {
+        label: 'Pace', baseFace: 89, evFace: 89,
+        subs: {
+          acceleration: { label: 'Acceleration', base: 92, boost: 30, limit: 99, w: 0.45 },
+          sprintSpeed: { label: 'Sprint Speed', base: 87, boost: 30, limit: 99, w: 0.55 }
+        }
+      },
+      sho: {
+        label: 'Shooting', baseFace: 86, evFace: 86,
+        subs: {
+          positioning: { label: 'Att. Position', base: 93, boost: 25, limit: 99, w: 0.05 },
+          finishing: { label: 'Finishing', base: 87, boost: 25, limit: 99, w: 0.45 },
+          shotPower: { label: 'Shot Power', base: 87, boost: 25, limit: 99, w: 0.20 },
+          longShots: { label: 'Long Shots', base: 86, boost: 25, limit: 99, w: 0.20 },
+          volleys: { label: 'Volleys', base: 71, boost: 25, limit: 99, w: 0.05 },
+          penalties: { label: 'Penalties', base: 74, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      pas: {
+        label: 'Passing', baseFace: 87, evFace: 87,
+        subs: {
+          vision: { label: 'Vision', base: 89, boost: 30, limit: 99, w: 0.20 },
+          crossing: { label: 'Crossing', base: 90, boost: 25, limit: 99, w: 0.20 },
+          freekick: { label: 'FK Acc.', base: 66, boost: 25, limit: 99, w: 0.05 },
+          shortPass: { label: 'Short Pass', base: 89, boost: 30, limit: 99, w: 0.35 },
+          longPass: { label: 'Long Pass', base: 85, boost: 30, limit: 99, w: 0.15 },
+          curve: { label: 'Curve', base: 88, boost: 25, limit: 99, w: 0.05 }
+        }
+      },
+      dri: {
+        label: 'Dribbling', baseFace: 93, evFace: 93,
+        subs: {
+          agility: { label: 'Agility', base: 96, boost: 25, limit: 99, w: 0.09 },
+          balance: { label: 'Balance', base: 84, boost: 30, limit: 99, w: 0.05 },
+          reactions: { label: 'Reactions', base: 91, boost: 25, limit: 99, w: 0.03 },
+          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.33 },
+          dribbling: { label: 'Dribbling', base: 95, boost: 30, limit: 99, w: 0.45 },
+          composure: { label: 'Composure', base: 87, boost: 30, limit: 99, w: 0.05 }
+        }
+      },
+      def: {
+        label: 'Defending', baseFace: 24, evFace: 24,
+        subs: {
+          interceptions: { label: 'Interceptions', base: 19, boost: 30, limit: 99, w: 0.20 },
+          headingAcc: { label: 'Heading Acc.', base: 34, boost: 25, limit: 99, w: 0.10 },
+          defAwareness: { label: 'Def. Aware', base: 24, boost: 30, limit: 99, w: 0.30 },
+          standTackle: { label: 'Stand Tackle', base: 21, boost: 30, limit: 99, w: 0.30 },
+          slideTackle: { label: 'Slide Tackle', base: 29, boost: 25, limit: 99, w: 0.10 }
+        }
+      },
+      phy: {
+        label: 'Physical', baseFace: 54, evFace: 54,
+        subs: {
+          jumping: { label: 'Jumping', base: 59, boost: 25, limit: 99, w: 0.05 },
+          stamina: { label: 'Stamina', base: 74, boost: 25, limit: 99, w: 0.25 },
+          strength: { label: 'Strength', base: 46, boost: 30, limit: 99, w: 0.50 },
+          aggression: { label: 'Aggression', base: 46, boost: 30, limit: 99, w: 0.20 }
         }
       }
     }

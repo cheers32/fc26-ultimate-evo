@@ -8,6 +8,7 @@ export const futtiesCountdown1151: EvolutionDefinition = {
   description: 'Get ready for FUTTIES with an all-round boost to a qualifying player.',
   cost: '500 FUTTIES Tokens / 100,000 Coins',
   trainingTime: '3 Days',
+  defaultDisabled: true,
   requirements: {
     maxOvr: 94,
     notRarity: 'World Tour Silver Stars',

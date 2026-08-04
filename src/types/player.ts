@@ -117,6 +117,9 @@ export interface EvolutionDefinition {
   levels?: EvolutionLevel[];
   maxRepeatable?: number;
   trainingTime?: string;
+  // Ships switched off (expired/irrelevant evos). Seeded into the user's disabled list once,
+  // so re-enabling one in the UI still sticks.
+  defaultDisabled?: boolean;
 }
 
 export interface ChainStepResult {
