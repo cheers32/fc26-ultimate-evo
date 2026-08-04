@@ -165,6 +165,7 @@ export interface EvoFilters {
 
 export interface PlayerEvoState {
   activePathId: string;
+  expandedPathIds: string[];
   evosPool: string[];
   generatedPaths: EvolutionPath[];
   manualPaths: EvolutionPath[];

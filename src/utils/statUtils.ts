@@ -3,6 +3,14 @@ export interface ChipInfo {
   className: string;
 }
 
+export const getStatColorClass = (val: number) => {
+  if (val >= 95) return 'text-purple-400 drop-shadow-[0_0_3px_rgba(192,132,252,0.4)] font-black';
+  if (val >= 90) return 'text-fcGreen font-bold';
+  if (val >= 80) return 'text-lime-400 font-semibold';
+  if (val >= 70) return 'text-yellow-500 font-semibold';
+  return 'text-red-500 opacity-90';
+};
+
 export function calculateChip(
   base: number,
   allowedBoost: number,

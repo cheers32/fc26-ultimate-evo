@@ -4,6 +4,7 @@ import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
 import { PlayerData, StatsData, PlayStylesData, EvolutionPath, EvoFilters } from './types/player';
 import { HeaderCard } from './components/HeaderCard';
+import { PlayerSubInfo } from './components/PlayerSubInfo';
 import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
@@ -140,6 +141,7 @@ export default function App() {
 
   const currentState = playerStates[selectedPlayerId] || {
     activePathId: DEFAULT_PATH_ID,
+    expandedPathIds: [DEFAULT_PATH_ID],
     evosPool: [],
     generatedPaths: [],
     manualPaths: [],
@@ -286,13 +288,23 @@ export default function App() {
 
   // Drop one evo from the active path. Later steps may stop being eligible without it; the
   // chain simulation surfaces that rather than us silently trimming them.
-  const handleRemoveNode = (index: number) => {
-    const path = allPaths.find(p => p.id === currentState.activePathId);
-    if (!path || index < 0 || index >= path.chainIds.length) return;
+  const handleRemoveNode = (pathId: string, index: number) => {
+    const targetPathId = pathId;
+    const path = allPaths.find(p => p.id === targetPathId);
+    if (!path) return;
 
-    const newChainIds = path.chainIds.filter((_, i) => i !== index);
+    const newChainIds = [...path.chainIds];
+    newChainIds.splice(index, 1);
+    
+    // Auto paths become manual paths when edited
+    const newPath = {
+      ...path,
+      id: path.id.startsWith('auto') ? `custom-${Date.now()}` : path.id,
+      name: path.id.startsWith('auto') ? `${path.name} (Edited)` : path.name,
+      chainIds: newChainIds
+    };
     const steps = simulateEvoChain(newChainIds, playerBio, initialOvrData, statsData, playStylesData).steps;
-    const updated: EvolutionPath = { ...path, chainIds: newChainIds, steps };
+    const updated: EvolutionPath = { ...newPath, steps };
 
     // Removing a step shifts everything after it, so the base has to follow.
     const currentBase = currentState.baseIndex ?? -1;
@@ -632,7 +644,12 @@ export default function App() {
           }}
           onViewEvo={(id) => setViewingEvoId(id)}
           baseIndex={safeBaseIndex}
-          onSetBase={(idx) => setBaseIndex(idx === safeBaseIndex ? -1 : idx)}
+          onSetBase={(pathId, idx) => {
+            if (activePathId !== pathId) {
+               updateState({ activePathId: pathId });
+            }
+            setBaseIndex(idx === safeBaseIndex ? -1 : idx);
+          }}
           onRemoveNode={handleRemoveNode}
         />
 
@@ -689,31 +706,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800/80 text-sm ml-auto mt-2 lg:mt-0">
-            <button
-              onClick={() => setActiveTab('workbench')}
-              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
-                activeTab === 'workbench'
-                  ? 'bg-[#1ED760] text-black shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Stats Workbench
-            </button>
-            <button
-              onClick={() => setActiveTab('evos')}
-              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
-                activeTab === 'evos'
-                  ? 'bg-[#1ED760] text-black shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              EVO Chain Lab
-            </button>
-          </div>
+          <PlayerSubInfo bio={playerBio} playStyles={previewPlayStyles} isEvo={activePath.chainIds.length > 0} />
         </div>
 
         {activeTab === 'workbench' && (
@@ -771,7 +764,34 @@ export default function App() {
           />
         </div>
 
-        <div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">
+        <div className="flex justify-center mb-4">
+{/* Tab Navigation */}
+          <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800/80 text-sm ml-auto mt-2 lg:mt-0">
+            <button
+              onClick={() => setActiveTab('workbench')}
+              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
+                activeTab === 'workbench'
+                  ? 'bg-[#1ED760] text-black shadow'
+                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Stats Workbench
+            </button>
+            <button
+              onClick={() => setActiveTab('evos')}
+              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
+                activeTab === 'evos'
+                  ? 'bg-[#1ED760] text-black shadow'
+                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              EVO Chain Lab
+            </button>
+          </div>
+</div>
+<div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">
           <span>EA FC 26 Player Stats & Evolution Preview Calculator</span>
           <span className="flex items-center gap-1 text-fcGreen font-medium">
             <Trophy className="w-3.5 h-3.5" /> Built for Ultimate Team Enthusiasts

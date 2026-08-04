@@ -1,21 +1,45 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
+import { getPlayStyleIconUrl } from '../utils/playstyles';
 
-export const EvoDetailsModal = ({ evoId, onClose }: { evoId: string | null; onClose: () => void }) => {
+import { Plus } from 'lucide-react';
+export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | null; onClose: () => void; onAddEvo?: (id: string) => void }) => {
+  useEffect(() => {
+    if (!evoId) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [evoId, onClose]);
+
   if (!evoId) return null;
   const evo = availableEvolutions[evoId];
   if (!evo) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="bg-[#1a1c1a] border border-gray-700 w-full max-w-lg rounded-2xl flex flex-col max-h-[90vh] shadow-2xl">
+    <div id="evo-details-modal" className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#1a1c1a] border border-gray-700 w-full max-w-lg rounded-2xl flex flex-col max-h-[90vh] shadow-2xl" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-[#1f211f] rounded-t-2xl">
           <h2 className="text-xl font-bold text-white tracking-wide">{evo.name}</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-800 rounded-full text-gray-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            {onAddEvo && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddEvo(evoId);
+                }}
+                className="px-4 py-1.5 bg-fcGreen hover:bg-[#1db954] text-black font-bold rounded-lg text-sm flex items-center gap-1.5 shadow-md"
+              >
+                <Plus className="w-4 h-4" /> Add
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 hover:bg-gray-800 rounded-full text-gray-400 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         
         {/* Content */}
@@ -66,16 +90,17 @@ export const EvoDetailsModal = ({ evoId, onClose }: { evoId: string | null; onCl
           {((evo.playStylesAdded?.gold?.length || 0) > 0 || (evo.playStylesAdded?.silver?.length || 0) > 0) && (
             <div>
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">PlayStyles Added</h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 {(evo.playStylesAdded?.gold || []).map(ps => (
-                   <span key={`gold-${ps}`} className="px-2.5 py-1.5 rounded text-xs font-bold bg-yellow-900/40 text-yellow-500 border border-yellow-700/50 flex items-center gap-1.5 shadow-[0_0_10px_rgba(234,179,8,0.15)]">
-                     {ps} <span className="text-[9px] text-black bg-yellow-500 px-1 rounded-sm font-black tracking-wider">PS+</span>
-                   </span>
+                   <div key={`gold-${ps}`} className="relative group">
+                     <img src={getPlayStyleIconUrl(ps, true)} alt={ps} title={ps} className="w-16 h-16 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
+                     <span className="absolute -top-1 -right-2 text-[8px] text-black bg-yellow-500 px-1 rounded-sm font-black tracking-wider shadow-sm">PS+</span>
+                   </div>
                 ))}
                 {(evo.playStylesAdded?.silver || []).map(ps => (
-                   <span key={`silver-${ps}`} className="px-2.5 py-1.5 rounded text-xs font-bold bg-gray-800 text-gray-300 border border-gray-600 flex items-center shadow-sm">
-                     {ps}
-                   </span>
+                   <div key={`silver-${ps}`} className="relative group">
+                     <img src={getPlayStyleIconUrl(ps, false)} alt={ps} title={ps} className="w-12 h-12 drop-shadow-[0_0_4px_rgba(156,163,175,0.4)]" />
+                   </div>
                 ))}
               </div>
             </div>

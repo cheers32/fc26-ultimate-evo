@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatsData, EvolutionDefinition } from '../types/player';
-import { calculateChip } from '../utils/statUtils';
+import { calculateChip, getStatColorClass } from '../utils/statUtils';
 
 interface StatsGridProps {
   baseStats: StatsData;
@@ -15,14 +15,6 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   activeChemBoosts,
   activeEvo
 }) => {
-  const getStatColorClass = (val: number) => {
-    if (val >= 95) return 'text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.4)] font-black';
-    if (val >= 90) return 'text-fcGreen font-bold';
-    if (val >= 80) return 'text-lime-400 font-semibold';
-    if (val >= 70) return 'text-yellow-500 font-semibold';
-    return 'text-red-500 opacity-90';
-  };
-  
   // Calculate Utilization stats if a specific EVO is selected
   let totalAllowedBoost = 0;
   let totalActualBoost = 0;
@@ -84,19 +76,21 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           totalFaceValBase += effectiveVal * subDataBase.w;
           totalFaceValChem += finalVal * subDataBase.w;
 
-          const actualBoost = Math.max(0, effectiveVal - activeBase);
+          const diff = effectiveVal - activeBase;
           let utilChip = null;
 
           if (activeEvo && activeEvo.subStatBoosts[subKey]) {
             const allowedBoost = activeEvo.subStatBoosts[subKey].boost;
             const limit = activeEvo.subStatBoosts[subKey].limit;
-            utilChip = calculateChip(activeBase, allowedBoost, limit, actualBoost, false);
+            utilChip = calculateChip(activeBase, allowedBoost, limit, Math.max(0, diff), false);
           } else if (activeEvo && activeEvo.faceBoosts?.[faceKey]) {
             const allowedBoost = activeEvo.faceBoosts[faceKey].boost;
             const limit = activeEvo.faceBoosts[faceKey].limit;
-            utilChip = calculateChip(activeBase, allowedBoost, limit, actualBoost, false);
-          } else if (actualBoost > 0) {
-            utilChip = { text: `+${actualBoost}`, className: 'text-fcGreen border-fcGreen bg-green-950/40 border px-1.5' };
+            utilChip = calculateChip(activeBase, allowedBoost, limit, Math.max(0, diff), false);
+          } else if (diff > 0) {
+            utilChip = { text: `+${diff}`, className: 'text-fcGreen border-fcGreen bg-green-950/40 border px-1.5' };
+          } else if (diff < 0) {
+            utilChip = { text: `${diff}`, className: 'text-red-500 border-red-500/50 bg-red-950/40 border px-1.5' };
           }
 
           return (
@@ -118,8 +112,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
                   {showEvo ? effectiveVal : '00'}
                 </span>
 
-                <span className={`font-normal text-[11px] ml-1.5 w-10 text-left tracking-tighter ${boost > 0 ? 'text-fcGreen font-bold' : 'text-transparent'}`}>
-                  {boost > 0 ? `➜ +${boost}` : '➜ +0'}
+                <span className={`font-normal text-[11px] ml-1.5 w-10 text-left tracking-tighter ${boost > 0 ? 'text-fcGreen font-bold' : boost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                  {boost > 0 ? `➜ +${boost}` : boost < 0 ? `➜ ${boost}` : '➜ +0'}
                 </span>
 
                 <span className={`w-5 text-right ${boost > 0 ? getStatColorClass(finalVal) : 'text-transparent'}`}>
@@ -157,8 +151,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
                 {showEvoFace ? effectiveFaceVal : '00'}
               </span>
 
-              <span className={`text-[13px] font-normal ml-2 w-10 text-left tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : 'text-transparent'}`}>
-                {faceBoost > 0 ? `➜ +${faceBoost}` : '➜ +0'}
+              <span className={`text-[13px] font-normal ml-2 w-10 text-left tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : faceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                {faceBoost > 0 ? `➜ +${faceBoost}` : faceBoost < 0 ? `➜ ${faceBoost}` : '➜ +0'}
               </span>
 
               <span className={`w-8 text-right ml-1.5 ${faceBoost > 0 ? getStatColorClass(newFaceVal) : 'text-transparent'}`}>
