@@ -287,19 +287,27 @@ export function applyEvo(
     // Apply PlayStyles
     const goldLimit = evo.playStylesLimit?.gold ?? 99;
     evo.playStylesAdded.gold.forEach((ps) => {
-      if (!currentPlayStyles.base.gold.includes(ps)) {
+      const baseName = ps.replace('+', '').trim();
+      const hasGold = currentPlayStyles.base.gold.some(g => g.replace('+', '').trim() === baseName);
+      
+      if (!hasGold) {
         if (currentPlayStyles.base.gold.length < goldLimit) {
           currentPlayStyles.base.gold.push(ps);
         }
       }
       // If upgraded to gold, remove from silver
-      currentPlayStyles.base.silver = currentPlayStyles.base.silver.filter(s => s !== ps);
+      currentPlayStyles.base.silver = currentPlayStyles.base.silver.filter(s => s.replace('+', '').trim() !== baseName);
     });
 
     const silverLimit = evo.playStylesLimit?.silver ?? 99;
     evo.playStylesAdded.silver.forEach((ps) => {
+      const baseName = ps.replace('+', '').trim();
+      
       // Only add to silver if they don't already have it as gold or silver
-      if (!currentPlayStyles.base.silver.includes(ps) && !currentPlayStyles.base.gold.includes(ps)) {
+      const hasGold = currentPlayStyles.base.gold.some(g => g.replace('+', '').trim() === baseName);
+      const hasSilver = currentPlayStyles.base.silver.some(s => s.replace('+', '').trim() === baseName);
+      
+      if (!hasSilver && !hasGold) {
         if (currentPlayStyles.base.silver.length < silverLimit) {
           currentPlayStyles.base.silver.push(ps);
         }
