@@ -304,7 +304,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <div 
                   className="absolute top-full right-0 mt-2 w-72 bg-[#1A1C1A] border border-gray-700 rounded-xl shadow-2xl z-50 p-4"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' || e.key === 'Escape') {
                       setShowFilters(false);
                     }
                   }}
