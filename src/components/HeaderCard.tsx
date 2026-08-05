@@ -136,7 +136,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     : null;
 
   return (
-    <div className="flex flex-col gap-2 mb-4">
+    <div className="relative z-50 flex flex-col gap-2 mb-4">
       {/* Player Header Section (Ultra Compressed) */}
       <div className="flex flex-col gap-3 bg-[#1f211f]/60 p-4 rounded-xl border border-gray-800/80 backdrop-blur-sm w-full">
         
