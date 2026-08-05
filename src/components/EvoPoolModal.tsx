@@ -8,6 +8,8 @@ interface EvoPoolModalProps {
   evosPool: string[];
   setEvosPool: (pool: string[]) => void;
   disabledEvos?: string[];
+  requiredEvos?: string[];
+  setRequiredEvos?: (required: string[]) => void;
 }
 
 export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
@@ -15,7 +17,9 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   onClose,
   evosPool,
   setEvosPool,
-  disabledEvos = []
+  disabledEvos = [],
+  requiredEvos = [],
+  setRequiredEvos = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -26,8 +30,22 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   const toggleEvo = (id: string) => {
     if (evosPool.includes(id)) {
       setEvosPool(evosPool.filter((e) => e !== id));
+      if (requiredEvos.includes(id)) {
+        setRequiredEvos(requiredEvos.filter(e => e !== id));
+      }
     } else {
       setEvosPool([...evosPool, id]);
+    }
+  };
+
+  const toggleRequired = (id: string) => {
+    if (requiredEvos.includes(id)) {
+      setRequiredEvos(requiredEvos.filter(e => e !== id));
+    } else {
+      setRequiredEvos([...requiredEvos, id]);
+      if (!evosPool.includes(id)) {
+        setEvosPool([...evosPool, id]);
+      }
     }
   };
 
@@ -46,11 +64,13 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
 
   const handleClear = () => {
     setEvosPool([]);
+    setRequiredEvos([]);
   };
 
   const EvoCard = ({ evo }: { evo: any }) => {
     const disabled = isEvoDisabled(evo.id);
     const isSelected = evosPool.includes(evo.id);
+    const isRequired = requiredEvos.includes(evo.id);
 
     return (
       <div
@@ -103,6 +123,19 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
               Rarity → {evo.rarityChange}
             </span>
           )}
+        </div>
+
+        {/* Must Include Toggle */}
+        <div 
+          className="absolute bottom-3 right-3 flex items-center gap-2 cursor-pointer z-10 hover:opacity-80" 
+          onClick={(e) => { e.stopPropagation(); toggleRequired(evo.id); }}
+        >
+          <span className={`text-[10px] font-bold ${isRequired ? 'text-fcGreen' : 'text-gray-500'}`}>
+            MUST INCLUDE
+          </span>
+          <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${isRequired ? 'bg-fcGreen' : 'bg-gray-700'}`}>
+            <div className={`w-3 h-3 bg-white rounded-full transition-transform ${isRequired ? 'translate-x-4' : 'translate-x-0'}`} />
+          </div>
         </div>
       </div>
     );

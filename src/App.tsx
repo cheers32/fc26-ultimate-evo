@@ -977,6 +977,8 @@ export default function App() {
         evosPool={evosPool}
         setEvosPool={setEvosPool}
         disabledEvos={disabledEvos}
+        requiredEvos={evoFilters.requiredEvos || []}
+        setRequiredEvos={(req) => setEvoFilters({ ...evoFilters, requiredEvos: req })}
       />
       <ManualPathModal
         isOpen={isManualPathOpen}
