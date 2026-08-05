@@ -26,6 +26,8 @@ interface HeaderCardProps {
   evoFilters: EvoFilters;
   onEvoFiltersChange: (val: EvoFilters) => void;
   onAnalyze: () => void;
+  rawBaseOvr: number;
+  rawPlayStyles: import('../types/player').PlayStylesData;
   evosPool: string[];
   evoPreview: boolean;
   evoLocked: boolean;
@@ -78,6 +80,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   evoFilters,
   onEvoFiltersChange,
   onAnalyze,
+  rawBaseOvr,
+  rawPlayStyles,
   evosPool,
   evoPreview,
   evoLocked,
@@ -531,7 +535,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   >
                     Base Card
                     <span className={`font-normal text-[9.5px] ml-1.5 opacity-90 tracking-wide font-mono ${selectedNodes.includes(-1) ? 'text-black font-bold' : 'text-gray-300'}`}>
-                      ({activeBaseOvr}/{playStyles.base.gold.length + playStyles.ev.gold.length})
+                      ({rawBaseOvr}/{rawPlayStyles.base.gold.length + (rawPlayStyles.ev?.gold?.length || 0)})
                     </span>
                   </button>
                   {onSetBase && (
