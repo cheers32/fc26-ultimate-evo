@@ -290,13 +290,20 @@ export function applyEvo(
       const baseName = ps.replace('+', '').trim();
       const hasGold = currentPlayStyles.base.gold.some(g => g.replace('+', '').trim() === baseName);
       
+      let upgraded = false;
       if (!hasGold) {
         if (currentPlayStyles.base.gold.length < goldLimit) {
           currentPlayStyles.base.gold.push(ps);
+          upgraded = true;
         }
+      } else {
+        upgraded = true;
       }
-      // If upgraded to gold, remove from silver
-      currentPlayStyles.base.silver = currentPlayStyles.base.silver.filter(s => s.replace('+', '').trim() !== baseName);
+      
+      // If upgraded to gold (or already gold), remove from silver
+      if (upgraded) {
+        currentPlayStyles.base.silver = currentPlayStyles.base.silver.filter(s => s.replace('+', '').trim() !== baseName);
+      }
     });
 
     const silverLimit = evo.playStylesLimit?.silver ?? 99;
