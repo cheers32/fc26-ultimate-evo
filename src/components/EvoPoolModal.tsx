@@ -26,6 +26,8 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   const [viewMode, setViewMode] = useState<'active' | 'disabled'>('active');
   const [filterMustInclude, setFilterMustInclude] = useState(false);
   const [filterSecondary, setFilterSecondary] = useState(false);
+  const [filterNewRarity, setFilterNewRarity] = useState(false);
+  const [filterNewPosition, setFilterNewPosition] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -104,12 +106,16 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
     if (filterMustInclude && !draftRequiredEvos.includes(evo.id)) return false;
     if (filterSecondary && viewMode === 'active' && draftEvosPool.includes(evo.id)) return false; // EXCLUDED means not in pool
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterNewRarity && !evo.rarityChange) return false;
+    if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
     return true;
   });
   const filteredDisabledEvos = disabledEvosList.filter(evo => {
     if (filterMustInclude && !draftRequiredEvos.includes(evo.id)) return false;
     if (filterSecondary && viewMode === 'disabled' && !draftEvosPool.includes(evo.id)) return false; // SELECTED means in pool
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterNewRarity && !evo.rarityChange) return false;
+    if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
     return true;
   });
 
@@ -306,7 +312,23 @@ isSelected
               >
                 ★ MUST INCLUDE
               </button>
-                <input
+              <button
+                onClick={() => setFilterNewRarity(!filterNewRarity)}
+                className={`px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                  filterNewRarity ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                }`}
+              >
+                New Rarity
+              </button>
+              <button
+                onClick={() => setFilterNewPosition(!filterNewPosition)}
+                className={`px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                  filterNewPosition ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                }`}
+              >
+                New Position
+              </button>
+              <input
                   type="text"
                   placeholder="Search EVOs..."
                   value={searchQuery}
