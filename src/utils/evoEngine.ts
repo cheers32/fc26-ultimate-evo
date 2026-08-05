@@ -1,6 +1,31 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
 
+const POSITION_WEIGHTS: Record<string, Record<string, number>> = {
+  'ST': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
+  'CF': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
+  'LW': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
+  'RW': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
+  'LM': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
+  'RM': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
+  'CAM':{ pac: 0.10, sho: 0.20, pas: 0.35, dri: 0.30, def: 0.00, phy: 0.05 },
+  'CM': { pac: 0.10, sho: 0.15, pas: 0.30, dri: 0.25, def: 0.10, phy: 0.10 },
+  'CDM':{ pac: 0.10, sho: 0.00, pas: 0.20, dri: 0.10, def: 0.40, phy: 0.20 },
+  'CB': { pac: 0.15, sho: 0.00, pas: 0.10, dri: 0.05, def: 0.45, phy: 0.25 },
+  'LB': { pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
+  'RB': { pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
+  'LWB':{ pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
+  'RWB':{ pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
+};
+
+function getPositionScore(stats: StatsData, pos: string): number {
+  const w = POSITION_WEIGHTS[pos.trim().toUpperCase()];
+  if (!w) {
+    return ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].reduce((sum, s) => sum + (stats[s]?.baseFace || 0), 0);
+  }
+  return ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].reduce((sum, s) => sum + (stats[s]?.baseFace || 0) * (w[s] || 0), 0);
+}
+
 export interface FullChainResult {
   chainIds: string[];
   isValidChain: boolean;
@@ -374,7 +399,7 @@ export function analyzeEvolutions(
 ): EvolutionPath[] {
   // Only the primitives needed for ranking are kept per candidate. Holding the whole
   // ChainState for every hit would pin hundreds of thousands of stat objects in memory.
-  type Candidate = { chainIds: string[]; ovr: number; igs: number };
+  type Candidate = { chainIds: string[]; ovr: number; igs: number; stats: StatsData };
   const validPaths: Candidate[] = [];
 
   const igsOf = (stats: StatsData) =>
@@ -454,7 +479,8 @@ export function analyzeEvolutions(
         validPaths.push({
           chainIds: [...currentChainIds],
           ovr: state.ovr,
-          igs: igsOf(state.stats)
+          igs: igsOf(state.stats),
+          stats: cloneStats(state.stats)
         });
       }
     }
@@ -498,18 +524,56 @@ export function analyzeEvolutions(
 
   dfs([...prefixChainIds], seedState);
 
-  validPaths.sort((a, b) => b.igs - a.igs); // Sort by IGS descending
+  // Create unique key for a candidate
+  const getCandKey = (c: Candidate) => c.chainIds.join('|');
+  
+  const recommendedPaths: { cand: Candidate, name: string }[] = [];
+  const addedKeys = new Set<string>();
 
-  const topPaths = validPaths.slice(0, 5);
-  // Per-step snapshots are only needed for the handful of chains we actually return,
-  // so they are built here rather than for every node visited during the search.
-  return topPaths.map((cand, idx) => {
+  const addRecommendation = (cand: Candidate, name: string) => {
+    const key = getCandKey(cand);
+    const existing = recommendedPaths.find(p => getCandKey(p.cand) === key);
+    if (existing) {
+      existing.name += ` / ${name}`;
+    } else {
+      recommendedPaths.push({ cand, name });
+      addedKeys.add(key);
+    }
+  };
+
+  // 1. Top 3 Highest IGS
+  validPaths.sort((a, b) => b.igs - a.igs);
+  let count = 1;
+  for (const cand of validPaths) {
+    if (count > 3) break;
+    addRecommendation(cand, `Max IGS ${count}`);
+    count++;
+  }
+
+  // 2. Top 3 per Position
+  const positions = baseBio.primaryPositions.split(',').map(p => p.trim()).filter(p => p.length > 0);
+  positions.forEach(pos => {
+    validPaths.sort((a, b) => getPositionScore(b.stats, pos) - getPositionScore(a.stats, pos));
+    let posCount = 1;
+    for (const cand of validPaths) {
+      if (posCount > 3) break;
+      addRecommendation(cand, `${pos}${posCount}`);
+      posCount++;
+    }
+  });
+
+  return recommendedPaths.map(({ cand, name }, idx) => {
     const full = simulateEvoChain(cand.chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+    
+    const evoNames = cand.chainIds.map(id => availableEvolutions[id]?.name || id).join(' ➜ ');
+    
+    // Format: Name: OVR/IGS/EvosCount (e.g. CB1: 97/2750/4)
+    const formattedName = `${name}: ${cand.ovr}/${cand.igs}/${cand.chainIds.length}`;
 
     return {
       id: `auto-path-${Date.now()}-${idx}`,
-      name: `${cand.ovr}/${cand.chainIds.length}/${cand.igs}`,
-      description: `Optimal chain spanning ${cand.chainIds.length} EVOs. Reaches ${cand.ovr} OVR.`,
+      name: formattedName,
+      description: `Evos: ${evoNames}`,
       isRecommended: true,
       chainIds: [...cand.chainIds],
       steps: full.steps

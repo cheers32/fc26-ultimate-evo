@@ -11,25 +11,125 @@ import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { calculateAccelerateType } from './utils/statUtils';
 import { simulateEvoChain, analyzeEvolutions } from './utils/evoEngine';
 import { EvolutionDefinition } from './types/player';
-import { PlayerCarousel } from './components/PlayerCarousel';
+import { PlayerSelectionModal } from './components/PlayerSelectionModal';
 import { EvoPoolModal } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { SquadPanel } from './components/SquadPanel';
-import { Trophy, RefreshCw, LayoutGrid, Layers } from 'lucide-react';
+import { ImportPlayerModal } from './components/ImportPlayerModal';
+import { Trophy, RefreshCw, LayoutGrid, Layers, Upload } from 'lucide-react';
 import { Squad, SquadMember, PlayerEvoState } from './types/player';
 
 const DEFAULT_PATH_ID = 'default-path';
 
 export default function App() {
-  // Read-only now that base selection replaced rebasing; previously rebased cards still load.
-  const [customPlayers] = useState<Record<string, PlayerData>>(() => {
+  const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('futEvo_deleted_db_players');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [];
+  });
+
+  const [customPlayers, setCustomPlayers] = useState<Record<string, PlayerData>>(() => {
     try {
       const saved = localStorage.getItem('futEvo_custom_players');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Migration: Repair broken custom players
+        Object.values(parsed).forEach((p: any) => {
+          if (p && p.stats) {
+            const required = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
+            required.forEach(f => {
+              if (!p.stats[f]) {
+                p.stats[f] = { label: f.toUpperCase(), baseFace: 50, evFace: 50, subs: {} };
+              }
+            });
+          }
+        });
+        return parsed;
+      }
     } catch(e) {}
     return {};
   });
+
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isPlayerSelectionOpen, setIsPlayerSelectionOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea
+      if (
+        (e.key === '/' || e.code === 'Slash') &&
+        !isPlayerSelectionOpen &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA'
+      ) {
+        e.preventDefault();
+        setIsPlayerSelectionOpen(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlayerSelectionOpen]);
+
+  const handleImportPlayer = (player: PlayerData) => {
+    const newCustomPlayers = { ...customPlayers, [player.id]: player };
+    setCustomPlayers(newCustomPlayers);
+    localStorage.setItem('futEvo_custom_players', JSON.stringify(newCustomPlayers));
+    setSelectedPlayerId(player.id);
+  };
+
+  const handleDeletePlayer = (id: string) => {
+    if (id.startsWith('custom-') || customPlayers[id]) {
+      const newCustomPlayers = { ...customPlayers };
+      delete newCustomPlayers[id];
+      setCustomPlayers(newCustomPlayers);
+      localStorage.setItem('futEvo_custom_players', JSON.stringify(newCustomPlayers));
+    } else {
+      const newDeleted = [...deletedDatabasePlayers, id];
+      setDeletedDatabasePlayers(newDeleted);
+      localStorage.setItem('futEvo_deleted_db_players', JSON.stringify(newDeleted));
+    }
+    
+    if (selectedPlayerId === id) {
+      // Find another available player to select
+      const availableIds = Object.keys(allPlayersData).filter(pId => pId !== id);
+      setSelectedPlayerId(availableIds.length > 0 ? availableIds[0] : 'rodri-91');
+    }
+  };
+
+  const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[]) => {
+    // If it's a built-in player, we create an override in customPlayers
+    const targetPlayer = customPlayers[id] || playersDatabase[id];
+    if (targetPlayer) {
+      const updatedPlayer = {
+        ...targetPlayer,
+        avatarUrl: newUrl || targetPlayer.avatarUrl,
+        futbinLink: newFutbinUrl || targetPlayer.futbinLink,
+        bio: {
+          ...targetPlayer.bio,
+          name: newName || targetPlayer.bio.name,
+          primaryPositions: newPositions || targetPlayer.bio.primaryPositions
+        },
+        playStyles: {
+          ...targetPlayer.playStyles,
+          base: {
+            ...targetPlayer.playStyles.base,
+            gold: goldPs || targetPlayer.playStyles.base.gold,
+            silver: silverPs || targetPlayer.playStyles.base.silver
+          }
+        }
+      };
+      const newCustomPlayers = {
+        ...customPlayers,
+        [id]: updatedPlayer
+      };
+      setCustomPlayers(newCustomPlayers);
+      localStorage.setItem('futEvo_custom_players', JSON.stringify(newCustomPlayers));
+    }
+  };
 
   // Evolutions the user never wants used. Global rather than per-player, so it lives in
   // localStorage alongside custom players instead of in the per-player save files.
@@ -139,7 +239,11 @@ export default function App() {
     saveSquads(updatedSquads);
   };
 
-  const allPlayersData = useMemo(() => ({ ...playersDatabase, ...customPlayers }), [customPlayers]);
+  const allPlayersData = useMemo(() => {
+    const combined = { ...playersDatabase, ...customPlayers };
+    deletedDatabasePlayers.forEach(id => delete combined[id]);
+    return combined;
+  }, [customPlayers, deletedDatabasePlayers]);
 
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('rodri-91');
   
@@ -664,21 +768,10 @@ export default function App() {
     <div className="min-h-screen bg-[#121212] py-4 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
       <div className="bg-[#1A1C1A] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-6xl border border-gray-800/80">
         
-        {/* Player Selector Strip */}
-        <PlayerCarousel
-          players={allPlayersData}
-          selectedPlayerId={selectedPlayerId}
-          onSelectPlayer={(id) => {
-            setSelectedPlayerId(id);
-            setHoveredChem(null);
-            setLockedChem(null);
-            setEvoPreview(false);
-            setSelectionQueue([-1, -1]);
-            setOvr(playersDatabase[id].ovr);
-          }}
-        />
+
 
         <HeaderCard
+          onChangePlayer={() => setIsPlayerSelectionOpen(true)}
           bio={playerBio}
           futbinLink={currentPlayer.futbinLink}
           avatarUrl={currentPlayer.avatarUrl}
@@ -751,6 +844,28 @@ export default function App() {
         {activeTab === 'workbench' && (
           <>
 
+            <div className="flex items-center gap-4 mb-3 px-1">
+              <span className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800">
+                {accelerateType}
+              </span>
+
+              <div className="font-medium flex items-center font-mono text-[13px] text-gray-300 bg-gray-900/60 px-3 py-1 rounded border border-gray-800">
+                <span>{faceSum.activeBase}/{igs.activeBase}</span>
+                {previewOvr !== activeBaseOvr && (
+                  <>
+                    <span className="text-gray-600 text-[11px] mx-1.5">➜</span>
+                    <span className="text-[#EBB626] font-bold">{faceSum.effective}/{igs.effective}</span>
+                  </>
+                )}
+                {(faceSum.diff > 0 || igs.diff > 0) && (
+                  <>
+                    <span className="text-fcGreen text-[11px] mx-1.5">➜</span>
+                    <span className="text-fcGreen font-bold">{faceSum.chem}/{igs.chem} <span className="pl-1 text-[11px]">(+{faceSum.diff}/+{igs.diff})</span></span>
+                  </>
+                )}
+              </div>
+            </div>
+
             <StatsGrid
               baseStats={activeBaseStats}
               previewStats={previewStats}
@@ -759,6 +874,7 @@ export default function App() {
               aside={
                 <ChemistryGrid
                   chemStyles={chemStyles}
+                  previewStats={previewStats}
                   hoveredChem={hoveredChem}
                   lockedChem={lockedChem}
                   onHoverChem={setHoveredChem}
@@ -875,6 +991,32 @@ export default function App() {
         evoId={viewingEvoId} 
         onClose={() => setViewingEvoId(null)} 
       />
+
+      {isPlayerSelectionOpen && (
+        <PlayerSelectionModal
+          players={allPlayersData}
+          onClose={() => setIsPlayerSelectionOpen(false)}
+          onSelectPlayer={(id) => {
+            setSelectedPlayerId(id);
+            setHoveredChem(null);
+            setLockedChem(null);
+            setEvoPreview(false);
+            setSelectionQueue([-1, -1]);
+            const ovrData = allPlayersData[id]?.ovr || playersDatabase['rodri-91'].ovr;
+            setOvr(ovrData);
+          }}
+          onOpenImport={() => setIsImportModalOpen(true)}
+          onDeletePlayer={handleDeletePlayer}
+          onEditPlayerAvatar={handleEditPlayerAvatar}
+        />
+      )}
+
+      {isImportModalOpen && (
+        <ImportPlayerModal 
+          onClose={() => setIsImportModalOpen(false)}
+          onImport={handleImportPlayer}
+        />
+      )}
     </div>
   );
 }

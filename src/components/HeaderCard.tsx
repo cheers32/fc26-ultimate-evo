@@ -47,6 +47,7 @@ interface HeaderCardProps {
   onNodeClick: (nodeIndex: number) => void;
   playStyles: import('../types/player').PlayStylesData;
   onDeletePath?: (pathId: string) => void;
+  onChangePlayer?: () => void;
   onClearPaths?: () => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
   onViewEvo?: (evoId: string) => void;
@@ -89,6 +90,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   playStyles,
   onDeletePath,
   onToggleFavoritePath,
+  onChangePlayer,
   onClearPaths,
   onViewEvo,
   baseIndex = -1,
@@ -136,149 +138,114 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   return (
     <div className="flex flex-col gap-2 mb-4">
       {/* Player Header Section (Ultra Compressed) */}
-      <div className="flex flex-col gap-3 bg-[#1f211f]/60 p-3 rounded-xl border border-gray-800/80 backdrop-blur-sm items-start">
-        <div className="flex flex-col gap-1 w-full min-w-0">
-          {/* Row 1: Avatar, Name, OVR, and Basic Bio */}
-          <div className="flex items-center gap-x-4 gap-y-1 border-b border-gray-800/60 pb-1 overflow-x-auto">
-          {/* Avatar, Name & FUTBIN */}
-          <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-col gap-3 bg-[#1f211f]/60 p-4 rounded-xl border border-gray-800/80 backdrop-blur-sm w-full">
+        
+        {/* Top Part: LEFT (Avatar/Name/OVR/Pos/Stats) + RIGHT (Bio/PlayStyles) */}
+        <div className="flex items-center gap-5 w-full">
+          {/* LEFT SIDE */}
+          <div className="flex items-center gap-4 shrink-0">
             {avatarUrl && (
-              <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-gray-600 bg-[#121212] flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                <img
-                  src={avatarUrl}
-                  alt={bio.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://futhead.cursecdn.com/static/img/24/players/p_placeholder.png';
-                  }}
-                />
+              <div className="relative">
+                <div className="w-[80px] h-[80px] shrink-0 rounded-full border-2 border-gray-600 bg-[#121212] overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                  <img
+                    src={avatarUrl}
+                    alt={bio.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://futhead.cursecdn.com/static/img/24/players/p_placeholder.png';
+                    }}
+                  />
+                </div>
               </div>
             )}
-            <h1 className="text-2xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-              {bio.name}
-            </h1>
-            <a
-              href={futbinLink}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1 transition-colors shadow-sm"
-              title="View on FUTBIN"
-            >
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
 
-          {/* Main OVR Rating Badge */}
-          <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-2 py-0.5 rounded font-bold text-base shadow-sm border border-yellow-300 flex items-center gap-1.5 whitespace-nowrap">
-            <span className="text-black/60 text-[10px] font-semibold tracking-wider">OVR</span>
-            <span>{activeBaseOvr}</span>
-            {showEvoOvr && (
-              <>
-                <span className="text-black/50 text-xs font-normal">➜</span>
-                <span>{previewOvr}</span>
-              </>
-            )}
-            {ovrChip && (
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ml-0.5 ${ovrChip.className}`}>
-                {ovrChip.text}
-              </span>
-            )}
-          </div>
-
-          {/* Compressed Bio */}
-          <div className="flex items-center gap-2 text-gray-300 font-medium text-xs ml-auto whitespace-nowrap shrink-0">
-            <div className="flex items-center gap-3">
-              <span className="text-gray-300 font-bold">{bio.primaryPositions}</span>
-              <span className="flex items-center gap-1.5 pl-3 border-l border-gray-700/60">
-                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">SM</span>
-                {bio.skillMoves}
-              </span>
-              <span className="flex items-center gap-1.5 pl-3 border-l border-gray-700/60">
-                <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">WF</span>
-                {bio.weakFoot}
-              </span>
+            <div className="flex flex-col justify-center h-full gap-1.5">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                  {bio.name}
+                </h1>
+                <a
+                  href={futbinLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1 transition-colors shadow-sm"
+                  title="View on FUTBIN"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                {/* Main OVR Rating Badge */}
+                <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-2 py-0.5 rounded font-bold text-base shadow-sm border border-yellow-300 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="text-black/60 text-[10px] font-semibold tracking-wider">OVR</span>
+                  <span>{activeBaseOvr}</span>
+                  {showEvoOvr && (
+                    <>
+                      <span className="text-black/50 text-xs font-normal">➜</span>
+                      <span>{previewOvr}</span>
+                    </>
+                  )}
+                  {ovrChip && (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ml-0.5 ${ovrChip.className}`}>
+                      {ovrChip.text}
+                    </span>
+                  )}
+                </div>
+                
+                <span className="text-gray-300 font-bold text-sm bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/50 shadow-sm">{bio.primaryPositions}</span>
+              </div>
             </div>
-            <span className="text-gray-600 pl-1">|</span>
-            <span>{bio.nation}</span>
-            <span className="text-gray-600">|</span>
-            <span>{bio.league}</span>
-            <span className="text-gray-600">|</span>
-            <span>{bio.club}</span>
-            <span className="text-gray-600">|</span>
-            <span>{bio.rarity}</span>
-            <div className="flex items-center gap-2 text-gray-400 pl-3 border-l border-gray-700/60">
-              <span>{bio.height}</span>
+          </div>
+
+          {/* RIGHT SIDE: Bio details + PlayStyles */}
+          <div className="flex flex-col gap-4 ml-auto border-l border-gray-800/60 pl-6 flex-1 min-w-0 justify-center py-1">
+            
+            {/* Row 1: Bio */}
+            <div className="flex flex-wrap items-center gap-2 text-gray-300 font-medium text-xs">
+              <span>{bio.nation}</span>
               <span className="text-gray-600">|</span>
-              <span>{bio.footAge}</span>
-              {bio.bodyType && (
-                <>
-                  <span className="text-gray-600">|</span>
-                  <span>{bio.bodyType}</span>
-                </>
-              )}
+              <span>{bio.league}</span>
+              <span className="text-gray-600">|</span>
+              <span>{bio.club}</span>
+              <span className="text-gray-600">|</span>
+              <span>{bio.rarity}</span>
+              <div className="flex items-center gap-2 text-gray-400 pl-3 border-l border-gray-700/60">
+                <span>{bio.height}</span>
+                <span className="text-gray-600">|</span>
+                <span>{bio.footAge}</span>
+                {bio.bodyType && (
+                  <>
+                    <span className="text-gray-600">|</span>
+                    <span>{bio.bodyType}</span>
+                  </>
+                )}
+              </div>
+
+            </div>
+
+            {/* Row 2: PlayStyles */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <PlayerSubInfo bio={bio} playStyles={playStyles} isEvo={activePath.chainIds.length > 0} />
             </div>
           </div>
         </div>
 
-        {/* Row 1.5: Accelerate / Face Stats / IGS + PlayStyles + Positions */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 pt-1 border-t border-gray-800/60">
-          <div className="flex flex-wrap gap-x-6">
-            <div className="flex flex-col min-w-[80px]">
-              <span className="text-gray-500 font-semibold text-[10px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-fcGreen" />
-                AcceleRATE
-              </span>
-              <span className={`font-bold text-xs transition-colors ${accelerateType === 'Lengthy' ? 'text-fcGreen drop-shadow-[0_0_8px_rgba(30,215,96,0.4)]' : 'text-white'}`}>
-                {accelerateType}
-              </span>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-gray-500 font-semibold text-[10px] uppercase tracking-wider mb-0.5">Face Stats</span>
-              <div className="font-medium flex items-center gap-1.5 font-mono text-xs">
-                <span className="text-gray-300">{faceSum.activeBase}</span>
-                {previewOvr !== activeBaseOvr && (
-                  <>
-                    <span className="text-gray-600 text-sm">➜</span>
-                    <span className="text-[#EBB626] font-bold">{faceSum.effective}</span>
-                  </>
-                )}
-                {faceSum.diff > 0 && (
-                  <>
-                    <span className="text-fcGreen text-sm">➜</span>
-                    <span className="text-fcGreen font-bold">{faceSum.chem} <span className="text-sm">(+{faceSum.diff})</span></span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-gray-500 font-semibold text-[10px] uppercase tracking-wider mb-0.5">IGS (In-Game Stats)</span>
-              <div className="font-medium flex items-center gap-1.5 font-mono text-xs">
-                <span className="text-gray-300">{igs.activeBase}</span>
-                {previewOvr !== activeBaseOvr && (
-                  <>
-                    <span className="text-gray-600 text-sm">➜</span>
-                    <span className="text-[#EBB626] font-bold">{igs.effective}</span>
-                  </>
-                )}
-                {igs.diff > 0 && (
-                  <>
-                    <span className="text-fcGreen text-sm">➜</span>
-                    <span className="text-fcGreen font-bold">{igs.chem} <span className="text-sm">(+{igs.diff})</span></span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <PlayerSubInfo bio={bio} playStyles={playStyles} isEvo={activePath.chainIds.length > 0} />
-        </div>
-
-        {/* Row 2: Action Buttons */}
-        <div className="flex items-start gap-x-5 gap-y-2 mt-3 w-full">
+        {/* Row 3: Action Buttons */}
+        <div className="flex items-start gap-x-5 gap-y-2 mt-1 w-full border-t border-gray-800/60 pt-3">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex gap-1 items-center relative">
+              {onChangePlayer && (
+                <button
+                  onClick={onChangePlayer}
+                  title="Change Player (/)"
+                  className="px-3 py-1.5 border border-gray-600 hover:border-fuchsia-500/50 bg-[#1f2937] hover:bg-gray-800 rounded-lg text-gray-300 hover:text-white text-xs flex items-center gap-1.5 transition-colors mr-1"
+                >
+                  <span className="text-[10px]">👤</span> Change
+                  <kbd className="ml-1 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">/</kbd>
+                </button>
+              )}
+
               <button onClick={() => setShowFilters(!showFilters)} className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1.5 transition-colors ${showFilters ? 'bg-fcGreen text-black font-bold border-fcGreen' : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'}`}>
                 <Settings2 className="w-3.5 h-3.5" /> Filters
               </button>
@@ -444,7 +411,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   <GitBranch className="w-3.5 h-3.5" /> Branch
                 </button>
               )}
-              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${(evosPool?.length || 0) > 0 ? 'bg-fcGreen text-black border-fcGreen hover:bg-[#1db954]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
+              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${(evosPool?.length || 0) > 0 ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-500 hover:border-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.4)]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
                 <Zap className="w-3.5 h-3.5" /> Analyze
               </button>
               {onClearPaths && (
@@ -460,7 +427,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           </div>
         </div>
       </div>
-    </div>
 
     {/* Path Selection & Action Buttons */}
     <div className="flex flex-col gap-2 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-3 shadow-md">

@@ -1,0 +1,100 @@
+{
+  "playerBio": {
+    "name": "Prices and Rating\nSummary\nStats\nMarket\nEvolution\nChiellini",
+    "roles": {
+      "ONS": [
+        "Greats of the Game Icon\nSkills\n3\nWeak Foot\n4\nHeight"
+      ],
+      "CB": [
+        "Defender++",
+        "Wide Back++",
+        "Ball-Playing Defender++",
+        "Stopper++"
+      ],
+      "IGS": [
+        "2339\n0\n2900"
+      ]
+    }
+  },
+  "initialOvrData": {
+    "base": 92,
+    "diff": 0
+  },
+  "statsData": {
+    "pac": {
+      "base": 88,
+      "acceleration": 88,
+      "sprintSpeed": 88
+    },
+    "sho": {
+      "base": 62,
+      "positioning": 57,
+      "finishing": 57,
+      "shotPower": 83,
+      "longShots": 58,
+      "volleys": 56,
+      "penalties": 59
+    },
+    "pas": {
+      "base": 76,
+      "vision": 70,
+      "crossing": 75,
+      "fkAccuracy": 67,
+      "shortPassing": 81,
+      "longPassing": 80,
+      "curve": 70
+    },
+    "dri": {
+      "base": 81,
+      "agility": 80,
+      "balance": 80,
+      "reactions": 88,
+      "ballControl": 80,
+      "dribbling": 80,
+      "composure": 88
+    },
+    "def": {
+      "base": 96,
+      "interceptions": 95,
+      "headingAccuracy": 94,
+      "defensiveAwareness": 97,
+      "standingTackle": 96,
+      "slidingTackle": 94
+    },
+    "phy": {
+      "base": 95,
+      "jumping": 93,
+      "stamina": 94,
+      "strength": 95,
+      "aggression": 96
+    }
+  },
+  "playStylesData": {
+    "limits": {
+      "gold": 4,
+      "silver": 8
+    },
+    "base": {
+      "gold": [
+        "Intercept",
+        "Bruiser",
+        "Block"
+      ],
+      "silver": [
+        "Incisive Pass",
+        "Long Ball Pass",
+        "Jockey",
+        "Anticipate",
+        "Slide Tackle",
+        "Aerial Fortress",
+        "Quick Step",
+        "Long Throw"
+      ]
+    },
+    "ev": {
+      "gold": [],
+      "silver": []
+    }
+  },
+  "evoPaths": []
+}
