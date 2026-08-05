@@ -42,11 +42,36 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     groupedChems[type].push(name);
   });
 
+  const getFaceBoost = (chemName: string) => {
+    const boost = chemStyles[chemName] || {};
+    let totalFaceBoost = 0;
+    if (!previewStats) return 0;
+    
+    Object.keys(previewStats).forEach((faceKey) => {
+      const faceData = previewStats[faceKey];
+      let baseSum = 0;
+      let chemSum = 0;
+      Object.keys(faceData.subs).forEach((subKey) => {
+        const subData = faceData.subs[subKey];
+        const b = boost[subKey] || 0;
+        const baseVal = subData.base;
+        const finalVal = Math.min(99, baseVal + b);
+        baseSum += baseVal * subData.w;
+        chemSum += finalVal * subData.w;
+      });
+      totalFaceBoost += (Math.round(chemSum) - Math.round(baseSum));
+    });
+    return totalFaceBoost;
+  };
+
   return (
     <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full flex flex-col gap-4 pl-0 lg:pl-2">
       {['Lengthy', 'Controlled', 'Explosive'].map((group) => {
         const items = groupedChems[group];
         if (!items || items.length === 0) return null;
+
+        // Sort items by highest total face stat boost
+        items.sort((a, b) => getFaceBoost(b) - getFaceBoost(a));
 
         return (
           <div key={group} className="flex flex-col gap-2">
