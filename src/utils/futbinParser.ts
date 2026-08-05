@@ -124,23 +124,30 @@ export function parseFutbinText(text: string, avatarUrl: string): PlayerData | n
 
     // 3. Extract Roles
     const roles: Record<string, string[]> = {};
-    const roleRegex = /([A-Z]{2,3})\n([\w\s-]+)\n(\+{0,2})/g;
+    const validPositions = new Set(["CB", "RB", "LB", "CDM", "CM", "CAM", "RM", "LM", "RW", "LW", "ST", "CF", "GK", "RWB", "LWB"]);
+    
+    // Match: Valid Position -> Newline -> Role Name (no newlines) -> Optional Newline + Pluses
+    const roleRegex = /\n([A-Z]{2,3})\n([^\n]+)(?:\n(\+{1,2}))?/g;
     let match;
     while ((match = roleRegex.exec(text)) !== null) {
-      const pos = match[1].toLowerCase();
+      const posUpper = match[1].trim();
+      if (!validPositions.has(posUpper)) continue;
+      
+      const pos = posUpper.toLowerCase();
       const roleName = match[2].trim();
-      const plus = match[3];
+      
+      // Filter out garbage matches (e.g. alternate positions listed right after the main position)
+      if (validPositions.has(roleName) || ["+", "++", "R", "L", "RWB", "LWB"].includes(roleName) || roleName.length <= 2) {
+        continue;
+      }
+      
+      const plus = match[3] ? match[3].trim() : "";
       
       if (!roles[pos]) roles[pos] = [];
       const formattedRole = plus ? `${roleName}${plus}` : roleName;
       if (!roles[pos].includes(formattedRole)) {
         roles[pos].push(formattedRole);
       }
-    }
-    
-    // De-duplicate if needed
-    for (const p in roles) {
-      roles[p] = Array.from(new Set(roles[p]));
     }
 
     // 4. Extract PlayStyles
