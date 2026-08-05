@@ -138,7 +138,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   return (
     <div className="relative z-50 flex flex-col gap-2 mb-4">
       {/* Player Header Section (Ultra Compressed) */}
-      <div className="flex flex-col gap-3 bg-[#1f211f]/60 p-4 rounded-xl border border-gray-800/80 backdrop-blur-sm w-full">
+      <div className="relative z-50 flex flex-col gap-3 bg-[#1f211f]/60 p-4 rounded-xl border border-gray-800/80 backdrop-blur-sm w-full">
         
         {/* Top Part: LEFT (Avatar/Name/OVR/Pos/Stats) + RIGHT (Bio/PlayStyles) */}
         <div className="flex items-center gap-5 w-full">
@@ -400,7 +400,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <Settings className="w-3.5 h-3.5" /> Pool ({evosPool?.length || 0})
               </button>
               <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Add EVO
+                <Plus className="w-3.5 h-3.5" /> Add EVO <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">.</kbd>
               </button>
               {onBranchFromBase && (
                 <button

@@ -291,6 +291,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   placeholder="Search EVOs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const filteredPool = poolWithStatus.filter(({ evo }) => !searchQuery || evo?.name.toLowerCase().includes(searchQuery.toLowerCase()));
+                      const topEligible = filteredPool.find(p => p.isEligible && !p.limitReached);
+                      if (topEligible) {
+                        handleAdd(topEligible.id);
+                      }
+                    }
+                  }}
                   className="w-full bg-[#121212] border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen focus:outline-none transition-colors"
                 />
               </div>

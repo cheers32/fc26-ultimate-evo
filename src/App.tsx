@@ -55,24 +55,34 @@ export default function App() {
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPlayerSelectionOpen, setIsPlayerSelectionOpen] = useState(false);
+  const [isManualPathOpen, setIsManualPathOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'append' | 'branch'>('append');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input/textarea
       if (
-        (e.key === '/' || e.code === 'Slash') &&
-        !isPlayerSelectionOpen &&
-        document.activeElement?.tagName !== 'INPUT' &&
-        document.activeElement?.tagName !== 'TEXTAREA'
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
       ) {
+        return;
+      }
+
+      if ((e.key === '/' || e.code === 'Slash') && !isPlayerSelectionOpen && !isManualPathOpen) {
         e.preventDefault();
         setIsPlayerSelectionOpen(true);
+      }
+
+      if ((e.key === '.' || e.code === 'Period') && !isPlayerSelectionOpen && !isManualPathOpen) {
+        e.preventDefault();
+        setPickerMode('append');
+        setIsManualPathOpen(true);
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlayerSelectionOpen]);
+  }, [isPlayerSelectionOpen, isManualPathOpen]);
 
   const handleImportPlayer = (player: PlayerData) => {
     const newCustomPlayers = { ...customPlayers, [player.id]: player };
@@ -372,9 +382,7 @@ export default function App() {
   const setBaseIndex = (val: number) => updateState({ baseIndex: val });
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
-  const [isManualPathOpen, setIsManualPathOpen] = useState(false);
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
-  const [pickerMode, setPickerMode] = useState<'append' | 'branch'>('append');
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
 
@@ -980,6 +988,7 @@ export default function App() {
           }
           setActivePathId(path.id);
           setIsManualPathOpen(false);
+          setBaseIndex(-1);
           if (!evoPreview) setEvoPreview(true);
         }}
         baseBio={playerBio}
