@@ -842,9 +842,23 @@ export default function App() {
     } as unknown as EvolutionDefinition;
   }, [baseNode, previewNode, activePath.chainIds, availableEvolutions]);
 
+
+  const excludedCount = useMemo(() => {
+    const totalCount = Object.keys(availableEvolutions).length;
+    const activeCount = totalCount - disabledEvos.length;
+    return activeCount - effectiveEvosPool.length;
+  }, [disabledEvos.length, effectiveEvosPool.length]);
+
+  const extraCount = useMemo(() => {
+    return evosPool.filter(id => disabledEvos.includes(id)).length;
+  }, [evosPool, disabledEvos]);
+
   return (
     <div className="min-h-screen bg-[#121212] py-4 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
       <div className="bg-[#1A1C1A] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-6xl border border-gray-800/80">
+        
+
+
         
 
 
@@ -872,6 +886,8 @@ export default function App() {
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
+          excludedCount={excludedCount}
+          extraCount={extraCount}
           onEvoFiltersChange={setEvoFilters}
           onAnalyze={runAnalyze}
           isAnalyzing={isAnalyzing}
@@ -1032,14 +1048,13 @@ export default function App() {
         evosPool={evosPool}
         disabledEvos={disabledEvos}
         requiredEvos={evoFilters.requiredEvos || []}
-        blockedEvos={evoFilters.blockedEvos || []}
-        onConfirm={(pool, required, blocked) => {
+        onConfirm={(pool, required, disabled) => {
+          setDisabledEvos(disabled);
           updateState({
             evosPool: pool,
             evoFilters: {
               ...evoFilters,
               requiredEvos: required,
-              blockedEvos: blocked
             }
           });
         }}

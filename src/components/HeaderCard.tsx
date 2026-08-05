@@ -24,6 +24,8 @@ interface HeaderCardProps {
   originalIgs: number;
   originalFaceSum: number;
   evoFilters: EvoFilters;
+  excludedCount: number;
+  extraCount: number;
   onEvoFiltersChange: (val: EvoFilters) => void;
   onAnalyze: () => void;
   isAnalyzing?: boolean;
@@ -81,6 +83,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   originalIgs,
   originalFaceSum,
   evoFilters,
+  excludedCount,
+  extraCount,
   onEvoFiltersChange,
   onAnalyze,
   isAnalyzing = false,
@@ -478,9 +482,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     ★ {evoFilters!.requiredEvos!.length}
                   </span>
                 )}
-                {(evoFilters?.blockedEvos?.length || 0) > 0 && (
+                {excludedCount > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 bg-red-900/40 text-red-400 rounded font-bold text-[9px]" title="Excluded">
-                    🚫 {evoFilters!.blockedEvos!.length}
+                    ✖ {excludedCount}
+                  </span>
+                )}
+                {extraCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-orange-900/40 text-orange-400 rounded font-bold text-[9px]" title="Extra (Selected Disabled)">
+                    + {extraCount}
                   </span>
                 )}
               </button>
