@@ -158,6 +158,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterNewRarity, setFilterNewRarity] = useState(false);
+  const [filterNewPosition, setFilterNewPosition] = useState(false);
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -566,7 +568,24 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   })}
                 </div>
               </div>
-              <div className="relative max-w-[300px] w-full">
+              <div className="flex gap-2 items-center flex-1 md:flex-none justify-end">
+                <button
+                  onClick={() => setFilterNewRarity(!filterNewRarity)}
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterNewRarity ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  New Rarity
+                </button>
+                <button
+                  onClick={() => setFilterNewPosition(!filterNewPosition)}
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterNewPosition ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  New Position
+                </button>
+                <div className="relative max-w-[250px] w-full">
                 <input 
                   ref={searchInputRef}
                   type="text"
@@ -576,7 +595,13 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      const filteredPool = poolWithStatus.filter(({ evo }) => !searchQuery || evo?.name.toLowerCase().includes(searchQuery.toLowerCase()));
+                      const filteredPool = poolWithStatus.filter(({ evo }) => {
+                    if (!evo) return false;
+                    if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                    if (filterNewRarity && !evo.rarityChange) return false;
+                    if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+                    return true;
+});
                       const topEligible = filteredPool.find(p => p.isEligible && !p.limitReached);
                       if (topEligible) {
                         handleAdd(topEligible.id);
@@ -585,6 +610,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   }}
                   className="w-full bg-[#121212] border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen focus:outline-none transition-colors"
                 />
+              </div>
               </div>
             </div>
             
@@ -595,7 +621,13 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               ) : (
                 poolWithStatus
-                  .filter(({ evo }) => !searchQuery || evo?.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .filter(({ evo }) => {
+                    if (!evo) return false;
+                    if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                    if (filterNewRarity && !evo.rarityChange) return false;
+                    if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+                    return true;
+})
                   .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons }) => {
                   if (!evo) return null;
 
