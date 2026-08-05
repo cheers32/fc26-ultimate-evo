@@ -42,6 +42,9 @@ interface HeaderCardProps {
   rawBaseOvr: number;
   rawPlayStyles: import('../types/player').PlayStylesData;
   rawStats: StatsData;
+  // The untouched card's rarity/positions, so the headline can mark what the chain changed.
+  rawRarity?: string;
+  rawPositions?: string;
   evosPool: string[];
   evoPreview: boolean;
   evoLocked: boolean;
@@ -185,6 +188,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   rawBaseOvr,
   rawPlayStyles,
   rawStats,
+  rawRarity,
+  rawPositions,
   evosPool,
   evoPreview,
   evoLocked,
@@ -321,6 +326,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     ovrChip = { text: `+${actualOvrBoost}`, className: 'text-fcGreen border-fcGreen bg-green-950' };
   }
 
+  // Compared as lists: applying an evo re-joins the positions with ', ', so a raw string compare
+  // would flag a card whose spacing differs from that but whose positions don't.
+  const positionList = (s: string) => s.split(',').map(p => p.trim()).filter(Boolean).join(',');
+  const positionsChanged = !!rawPositions && positionList(bio.primaryPositions) !== positionList(rawPositions);
+
   const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+)\//) : null;
   const futbinPlayerId = playerIdMatch ? playerIdMatch[1] : '';
   // FUTBIN only knows about real evos, so PlayStyle steps are left out of the builder URL.
@@ -387,7 +397,26 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   )}
                 </div>
                 
-                <span className="text-gray-300 font-bold text-sm bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/50 shadow-sm">{bio.primaryPositions}</span>
+                {/* Positions and rarity as the build leaves them — both turn purple once the chain
+                    has changed them, so the headline says what the finished card actually is. */}
+                <span className={`font-bold text-sm px-2 py-0.5 rounded border shadow-sm ${
+                  positionsChanged
+                    ? 'bg-purple-950/50 text-purple-300 border-purple-700/60'
+                    : 'bg-gray-800/80 text-gray-300 border-gray-700/50'
+                }`}>
+                  {bio.primaryPositions}
+                </span>
+
+                <span className={`font-bold text-sm px-2 py-0.5 rounded border shadow-sm whitespace-nowrap ${
+                  rawRarity && bio.rarity !== rawRarity
+                    ? 'bg-purple-950/50 text-purple-300 border-purple-700/60'
+                    : 'bg-gray-800/80 text-gray-300 border-gray-700/50'
+                }`}>
+                  {rawRarity && bio.rarity !== rawRarity && (
+                    <span className="text-gray-500 font-normal">{rawRarity} ➜ </span>
+                  )}
+                  {bio.rarity}
+                </span>
               </div>
             </div>
           </div>
@@ -903,6 +932,22 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               ({evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost})
                             </span>
                           </div>
+                          {/* What the step turns the card into — the same rarity/position badges the
+                              pool and picker use, so a finished chain shows it without opening them. */}
+                          {(evo.rarityChange || (evo.positionsAdded && evo.positionsAdded.length > 0)) && (
+                            <div className="flex flex-wrap items-center gap-1 px-1">
+                              {evo.rarityChange && (
+                                <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
+                                  → {evo.rarityChange}
+                                </span>
+                              )}
+                              {evo.positionsAdded && evo.positionsAdded.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
+                                  + Pos: {evo.positionsAdded.join(', ')}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {stepResult && (
                             <>
                               <div className="flex gap-2 items-center px-1 mb-0.5">

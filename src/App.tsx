@@ -1003,6 +1003,8 @@ export default function App() {
           rawBaseOvr={initialOvrData.base}
           rawPlayStyles={playStylesData}
           rawStats={statsData}
+          rawRarity={playerBio.rarity}
+          rawPositions={playerBio.primaryPositions}
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
