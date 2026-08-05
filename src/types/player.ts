@@ -141,6 +141,10 @@ export interface EvolutionPath {
   isFavorite?: boolean;
   chainIds: string[]; // List of EVO IDs in order e.g. ['1076', '1159']
   steps?: ChainStepResult[];
+  // Free-pick PlayStyles the user manually added once this path's rarity unlocked the
+  // in-game "any PlayStyle" picker (Futties Evo / National Pride / Glory Hunters /
+  // FUT Birthday). Only meaningful once the chain actually reaches one of those rarities.
+  freePlayStyles?: { gold: string[]; silver: string[] };
 }
 
 export interface ChainValidation {

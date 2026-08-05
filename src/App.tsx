@@ -9,13 +9,14 @@ import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { calculateAccelerateType } from './utils/statUtils';
-import { simulateEvoChain } from './utils/evoEngine';
+import { simulateEvoChain, applyFreePlayStylesToChain, FREE_PLAYSTYLE_RARITIES } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
 import { EvolutionDefinition } from './types/player';
 import { PlayerSelectionModal } from './components/PlayerSelectionModal';
 import { EvoPoolModal } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
+import { PlayStylePickerModal } from './components/PlayStylePickerModal';
 import { SquadPanel } from './components/SquadPanel';
 import { ImportPlayerModal } from './components/ImportPlayerModal';
 import { Trophy, RefreshCw, LayoutGrid, Layers, Upload } from 'lucide-react';
@@ -383,6 +384,7 @@ export default function App() {
   const setBaseIndex = (val: number) => updateState({ baseIndex: val });
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
+  const [isPlayStylePickerOpen, setIsPlayStylePickerOpen] = useState(false);
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
@@ -483,6 +485,25 @@ export default function App() {
     });
   };
 
+  // Same "auto becomes manual" rule as handleRemoveNode — otherwise a fresh Analyze run would
+  // wipe out picks the user just made in the free-PlayStyle panel.
+  const handleSetFreePlayStyles = (pathId: string, freePlayStyles: { gold: string[]; silver: string[] }) => {
+    const path = allPaths.find(p => p.id === pathId);
+    if (!path) return;
+
+    const wasGenerated = currentState.generatedPaths.some(p => p.id === path.id);
+    const updated: EvolutionPath = { ...path, freePlayStyles };
+
+    updateState({
+      generatedPaths: wasGenerated
+        ? currentState.generatedPaths.filter(p => p.id !== path.id)
+        : currentState.generatedPaths,
+      manualPaths: wasGenerated
+        ? [...currentState.manualPaths, updated]
+        : currentState.manualPaths.map(p => (p.id === path.id ? updated : p))
+    });
+  };
+
   // Queue of the last two clicked nodes (indices -1 to length-1)
   const [selectionQueue, setSelectionQueue] = useState<[number, number]>([-1, 0]);
   
@@ -507,9 +528,21 @@ export default function App() {
   const baseNode = Math.min(safeNodes[0], safeNodes[1]);
   const previewNode = Math.max(safeNodes[0], safeNodes[1]);
 
-  const chainResult = useMemo(() => {
+  // The chain on its own, with no free PlayStyle picks layered in. The picker needs this to
+  // tell which entries the chain itself granted (locked) from what the user chose freely.
+  const evoOnlyChainResult = useMemo(() => {
     return simulateEvoChain(activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
   }, [activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData]);
+
+  const chainResult = useMemo(() => {
+    return applyFreePlayStylesToChain(evoOnlyChainResult, activePath.freePlayStyles);
+  }, [evoOnlyChainResult, activePath.freePlayStyles]);
+
+  const evoOnlyPlayStyles = evoOnlyChainResult.finalPlayStyles;
+
+  // With no evos in the chain the "end of the chain" is the base card itself, so free picks have
+  // to ride on the base PlayStyles or the preview would never show them.
+  const displayBasePlayStyles = chainResult.steps.length === 0 ? chainResult.finalPlayStyles : playStylesData;
 
   const comparePath = useMemo(() => {
     return allPaths.find(p => p.id === currentState.comparePathId);
@@ -517,7 +550,10 @@ export default function App() {
 
   const compareChainResult = useMemo(() => {
     if (!comparePath) return null;
-    return simulateEvoChain(comparePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
+    const result = simulateEvoChain(comparePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
+    // The compare column gets its own free picks too, so the diff isn't polluted by picks both
+    // paths happen to share.
+    return applyFreePlayStylesToChain(result, comparePath.freePlayStyles);
   }, [comparePath, playerBio, initialOvrData, statsData, playStylesData]);
 
   // The chosen base clamps to the active path, so switching to a shorter path can't leave
@@ -611,7 +647,7 @@ export default function App() {
     if (baseNode === -1) {
       aBaseStats = statsData;
       aBaseOvr = initialOvrData.base;
-      aPlayStyles.base = JSON.parse(JSON.stringify(playStylesData.base));
+      aPlayStyles.base = JSON.parse(JSON.stringify(displayBasePlayStyles.base));
       aBaseBio = playerBio;
     } else {
       const bStep = chainResult.steps[baseNode];
@@ -643,7 +679,8 @@ export default function App() {
       } else {
         aBaseStats = statsData;
         aBaseOvr = initialOvrData.base;
-        aPlayStyles.base = JSON.parse(JSON.stringify(playStylesData.base));
+        // No steps on the compare path, so its "final" is the raw card (plus any free picks).
+        aPlayStyles.base = JSON.parse(JSON.stringify(compareChainResult.finalPlayStyles.base));
         aBaseBio = playerBio;
       }
       
@@ -700,7 +737,7 @@ export default function App() {
       previewPlayStyles: pPlayStyles,
       previewBio: pBio
     };
-  }, [baseNode, previewNode, evoPreview, chainResult, compareChainResult, statsData, initialOvrData, playStylesData, playerBio]);
+  }, [baseNode, previewNode, evoPreview, chainResult, compareChainResult, statsData, initialOvrData, playStylesData, displayBasePlayStyles, playerBio]);
 
   // Calculate IGS & Face Stats Summary
   const { igs, faceSum, accelerateType } = useMemo(() => {
@@ -881,6 +918,8 @@ export default function App() {
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
+          canPickFreePlayStyles={FREE_PLAYSTYLE_RARITIES.includes(chainResult.finalBio.rarity)}
+          onOpenPlayStylePicker={() => setIsPlayStylePickerOpen(true)}
           rawBaseOvr={initialOvrData.base}
           rawPlayStyles={playStylesData}
           rawStats={statsData}
@@ -1090,9 +1129,20 @@ export default function App() {
         baseStats={statsData}
         basePlayStyles={playStylesData}
       />
-      <EvoDetailsModal 
-        evoId={viewingEvoId} 
-        onClose={() => setViewingEvoId(null)} 
+      <EvoDetailsModal
+        evoId={viewingEvoId}
+        onClose={() => setViewingEvoId(null)}
+      />
+      <PlayStylePickerModal
+        isOpen={isPlayStylePickerOpen}
+        onClose={() => setIsPlayStylePickerOpen(false)}
+        rarity={chainResult.finalBio.rarity}
+        lockedGold={evoOnlyPlayStyles.base.gold}
+        lockedSilver={evoOnlyPlayStyles.base.silver}
+        limits={evoOnlyPlayStyles.limits}
+        freeGold={activePath.freePlayStyles?.gold || []}
+        freeSilver={activePath.freePlayStyles?.silver || []}
+        onSave={(free) => handleSetFreePlayStyles(activePath.id, free)}
       />
 
       {isPlayerSelectionOpen && (

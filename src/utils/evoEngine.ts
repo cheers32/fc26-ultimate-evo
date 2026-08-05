@@ -4,7 +4,8 @@ import { availableEvolutions } from '../data/evolutionsData';
 // Rarities that unlock free PlayStyle assignment in-game. Once a card is one of these,
 // running another rarity-changing evo just overwrites the string for no extra benefit —
 // the perk doesn't stack, so a chain should carry at most one rarity-changing evo total.
-const FREE_PLAYSTYLE_RARITIES = ['Futties Evo', 'National Pride', 'Glory Hunters', 'FUT Birthday'];
+// Exported so the UI can gate the free-PlayStyle picker on the same list.
+export const FREE_PLAYSTYLE_RARITIES = ['Futties Evo', 'National Pride', 'Glory Hunters', 'FUT Birthday'];
 
 // --- Path-ranking helpers used by analyzeEvolutions' search -----------------------------
 // Pulled out to module scope (rather than recreated as closures on every call) since they're
@@ -236,6 +237,69 @@ function clonePlayStyles(ps: PlayStylesData): PlayStylesData {
     limits: { gold: ps.limits.gold, silver: ps.limits.silver },
     base: { gold: [...ps.base.gold], silver: [...ps.base.silver] },
     ev: { gold: [...ps.ev.gold], silver: [...ps.ev.silver] }
+  };
+}
+
+/**
+ * Layers a user's manual "free PlayStyle" picks (only meaningful once the card is one of the
+ * FREE_PLAYSTYLE_RARITIES) on top of an already-computed PlayStylesData. Mirrors applyEvo's
+ * own PlayStyle rules — gold supersedes silver for the same name, and neither list grows past
+ * its slot limit — so a free pick behaves exactly like an evo-granted one everywhere else that
+ * reads `base`.
+ */
+export function applyFreePlayStyles(
+  playStyles: PlayStylesData,
+  free?: { gold: string[]; silver: string[] }
+): PlayStylesData {
+  if (!free || (free.gold.length === 0 && free.silver.length === 0)) return playStyles;
+
+  const result = clonePlayStyles(playStyles);
+  const baseName = (ps: string) => ps.replace('+', '').trim();
+
+  free.gold.forEach(ps => {
+    const name = baseName(ps);
+    const hasGold = result.base.gold.some(g => baseName(g) === name);
+    if (!hasGold && result.base.gold.length < result.limits.gold) {
+      result.base.gold.push(ps);
+    }
+    result.base.silver = result.base.silver.filter(s => baseName(s) !== name);
+  });
+
+  free.silver.forEach(ps => {
+    const name = baseName(ps);
+    const hasGold = result.base.gold.some(g => baseName(g) === name);
+    const hasSilver = result.base.silver.some(s => baseName(s) === name);
+    if (!hasGold && !hasSilver && result.base.silver.length < result.limits.silver) {
+      result.base.silver.push(ps);
+    }
+  });
+
+  return result;
+}
+
+/**
+ * Layers a path's free PlayStyle picks onto its simulated chain. The picks only exist if the
+ * finished build actually lands on a rarity that unlocks free assignment in-game, and they land
+ * on the final step alone — no earlier point in the chain has reached that rarity yet. Returns
+ * the input untouched when there's nothing to apply, so callers can rely on referential equality.
+ */
+export function applyFreePlayStylesToChain(
+  result: FullChainResult,
+  free?: { gold: string[]; silver: string[] }
+): FullChainResult {
+  if (!free || (free.gold.length === 0 && free.silver.length === 0)) return result;
+  if (!FREE_PLAYSTYLE_RARITIES.includes(result.finalBio.rarity)) return result;
+
+  const steps = [...result.steps];
+  const lastStep = steps[steps.length - 1];
+  if (lastStep) {
+    steps[steps.length - 1] = { ...lastStep, playStylesAfter: applyFreePlayStyles(lastStep.playStylesAfter, free) };
+  }
+
+  return {
+    ...result,
+    steps,
+    finalPlayStyles: applyFreePlayStyles(result.finalPlayStyles, free)
   };
 }
 

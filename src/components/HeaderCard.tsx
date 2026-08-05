@@ -3,7 +3,7 @@ import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, Sta
 import { calculateChip, getStatColorClass } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2 } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -22,6 +22,10 @@ interface HeaderCardProps {
   onOpenEvoPool: () => void;
   onOpenManualPath: () => void;
   onBranchFromBase?: () => void;
+  // True once the active path's final result is a rarity that unlocks free PlayStyle
+  // assignment in-game (Futties Evo / National Pride / Glory Hunters / FUT Birthday).
+  canPickFreePlayStyles?: boolean;
+  onOpenPlayStylePicker?: () => void;
   originalIgs: number;
   originalFaceSum: number;
   evoFilters: EvoFilters;
@@ -82,6 +86,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenEvoPool,
   onOpenManualPath,
   onBranchFromBase,
+  canPickFreePlayStyles,
+  onOpenPlayStylePicker,
   originalIgs,
   originalFaceSum,
   evoFilters,
@@ -148,6 +154,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
       } else if (key === 'b' && onBranchFromBase) {
         e.preventDefault();
         onBranchFromBase();
+      } else if (key === 's' && canPickFreePlayStyles && onOpenPlayStylePicker) {
+        e.preventDefault();
+        onOpenPlayStylePicker();
       } else if (key === 'c' && onClearPaths) {
         e.preventDefault();
         onClearPaths();
@@ -162,7 +171,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showFilters, onOpenEvoPool, onOpenManualPath, onBranchFromBase, onAnalyze, onClearPaths, onChangePlayer, evosPool]);
+  }, [showFilters, onOpenEvoPool, onOpenManualPath, onBranchFromBase, canPickFreePlayStyles, onOpenPlayStylePicker, onAnalyze, onClearPaths, onChangePlayer, evosPool]);
 
   const activeFiltersCount = React.useMemo(() => {
     if (!evoFilters) return 0;
@@ -531,6 +540,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-purple-800/60 rounded-lg text-purple-300 text-xs flex items-center gap-1.5"
                 >
                   <GitBranch className="w-3.5 h-3.5" /> Branch <kbd className="ml-0.5 px-1 bg-black/40 border border-purple-900 rounded text-[9px] text-purple-400 font-mono">b</kbd>
+                </button>
+              )}
+              {canPickFreePlayStyles && onOpenPlayStylePicker && (
+                <button
+                  onClick={onOpenPlayStylePicker}
+                  title="This rarity unlocks picking any PlayStyle — add whichever you want"
+                  className="px-3 py-1.5 bg-yellow-950/30 hover:bg-yellow-900/40 border border-yellow-700/60 rounded-lg text-yellow-400 text-xs flex items-center gap-1.5 shadow-[0_0_10px_rgba(234,179,8,0.15)]"
+                >
+                  <Wand2 className="w-3.5 h-3.5" /> Add Skill <kbd className="ml-0.5 px-1 bg-black/40 border border-yellow-900 rounded text-[9px] text-yellow-400 font-mono">s</kbd>
                 </button>
               )}
               {isAnalyzing ? (
