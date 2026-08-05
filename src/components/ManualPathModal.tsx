@@ -395,6 +395,13 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           <span className="font-bold text-[9.5px] tracking-wide font-mono opacity-90">
                             ({evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost})
                           </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setLocalViewingEvo(id); }}
+                            className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors ml-auto shrink-0"
+                            title="View Details"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </button>
                         </div>
                         <div className="flex gap-2 items-center px-1 mb-0.5">
                           {(() => {
