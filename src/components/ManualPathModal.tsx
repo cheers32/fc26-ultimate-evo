@@ -663,7 +663,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               </div>
                             )}
                             {evo.requirements.positions && evo.requirements.positions.length > 0 && (
-                              <p className="text-[10px] text-gray-500 font-medium">Req Pos: {evo.requirements.positions.join(', ')}</p>
+                              <span className="px-1.5 py-0.5 bg-red-950/40 rounded text-[9px] text-red-400 border border-red-900/50 font-bold whitespace-nowrap">
+                                Req Pos: {evo.requirements.positions.join(', ')}
+                              </span>
+                            )}
+                            {evo.requirements.excludedPositions && evo.requirements.excludedPositions.length > 0 && (
+                              <span className="px-1.5 py-0.5 bg-red-950/40 rounded text-[9px] text-red-400 border border-red-900/50 font-bold whitespace-nowrap">
+                                Excl Pos: {evo.requirements.excludedPositions.join(', ')}
+                              </span>
                             )}
                             {evo.positionsAdded && evo.positionsAdded.length > 0 && (
                               <span className="px-1.5 py-0.5 bg-purple-950/40 rounded text-[9px] text-purple-400 border border-purple-800/40 font-bold whitespace-nowrap">

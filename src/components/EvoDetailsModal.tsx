@@ -53,11 +53,19 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Object.entries(evo.requirements || {}).map(([key, val]) => {
                 if (val === undefined) return null;
+                if (Array.isArray(val) && val.length === 0) return null;
                 const displayKey = key.replace('max', 'Max ').replace('PlayStylesPlus', 'PS+').replace('PlayStyles', 'PS');
+                const isPositionReq = key === 'positions' || key === 'excludedPositions';
                 return (
-                  <div key={key} className="bg-[#121212] p-2 rounded border border-gray-800 flex flex-col items-center justify-center text-center">
-                    <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">{displayKey}</span>
-                    <span className="font-bold text-gray-200 text-sm">{Array.isArray(val) ? val.join(', ') : val}</span>
+                  <div key={key} className={`p-2 rounded border flex flex-col items-center justify-center text-center ${
+                    isPositionReq ? 'bg-red-950/40 border-red-900/50' : 'bg-[#121212] border-gray-800'
+                  }`}>
+                    <span className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${isPositionReq ? 'text-red-500' : 'text-gray-500'}`}>
+                      {key === 'excludedPositions' ? 'Excluded Pos' : key === 'positions' ? 'Req Pos' : displayKey}
+                    </span>
+                    <span className={`font-bold text-sm ${isPositionReq ? 'text-red-400' : 'text-gray-200'}`}>
+                      {Array.isArray(val) ? val.join(', ') : val}
+                    </span>
                   </div>
                 );
               })}
@@ -74,6 +82,12 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
                   <span className="text-yellow-400 font-bold text-lg">+{evo.ovrBoost.boost}</span>
                   <span className="text-gray-500 text-xs">Limit: {evo.ovrBoost.limit}</span>
                 </div>
+              </div>
+            )}
+            {evo.positionsAdded && evo.positionsAdded.length > 0 && (
+              <div className="mb-3 bg-purple-900/20 p-3 rounded-lg border border-purple-800/40 flex justify-between items-center">
+                <span className="text-purple-400 font-bold text-sm tracking-wide">Position Added</span>
+                <span className="text-purple-300 font-bold text-base">+ {evo.positionsAdded.join(', ')}</span>
               </div>
             )}
             {evo.rarityChange && (

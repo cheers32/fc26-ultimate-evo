@@ -73,6 +73,21 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                         Training: {evo.trainingTime}
                       </span>
                     )}
+                    {evo.requirements.positions && evo.requirements.positions.length > 0 && (
+                      <span className="px-1.5 py-0.5 bg-red-950/40 rounded text-[10px] text-red-400 border border-red-900/50 font-bold ml-2">
+                        Req Pos: {evo.requirements.positions.join(', ')}
+                      </span>
+                    )}
+                    {evo.requirements.excludedPositions && evo.requirements.excludedPositions.length > 0 && (
+                      <span className="px-1.5 py-0.5 bg-red-950/40 rounded text-[10px] text-red-400 border border-red-900/50 font-bold ml-2">
+                        Excl Pos: {evo.requirements.excludedPositions.join(', ')}
+                      </span>
+                    )}
+                    {evo.positionsAdded && evo.positionsAdded.length > 0 && (
+                      <span className="px-1.5 py-0.5 bg-purple-950/40 rounded text-[10px] text-purple-400 border border-purple-800/40 font-bold ml-2">
+                        + Pos: {evo.positionsAdded.join(', ')}
+                      </span>
+                    )}
                     {evo.rarityChange && (
                       <span className="px-1.5 py-0.5 bg-purple-950/40 rounded text-[10px] text-purple-400 border border-purple-800/40 font-bold ml-2">
                         Rarity → {evo.rarityChange}
@@ -129,8 +144,8 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                   
                   {(evo.requirements.positions || evo.requirements.excludedPositions || evo.requirements.rarity || evo.requirements.notRarity) && (
                     <div className="pt-0.5 mt-0.5 border-t border-gray-800/60 flex flex-wrap gap-x-3 gap-y-0 text-white">
-                      {evo.requirements.positions && <div className="flex gap-1"><span>Positions:</span><span className="font-bold">{evo.requirements.positions.join(', ')}</span></div>}
-                      {evo.requirements.excludedPositions && <div className="flex gap-1"><span>Excluded:</span><span className="font-bold">{evo.requirements.excludedPositions.join(', ')}</span></div>}
+                      {evo.requirements.positions && <div className="flex gap-1 text-red-400"><span>Req Pos:</span><span className="font-bold">{evo.requirements.positions.join(', ')}</span></div>}
+                      {evo.requirements.excludedPositions && <div className="flex gap-1 text-red-400"><span>Excluded Pos:</span><span className="font-bold">{evo.requirements.excludedPositions.join(', ')}</span></div>}
                       {evo.requirements.rarity && <div className="flex gap-1"><span>Rarity:</span><span className="font-bold">{evo.requirements.rarity}</span></div>}
                       {evo.requirements.notRarity && <div className="flex gap-1"><span>Not Rarity:</span><span className="font-bold">{evo.requirements.notRarity}</span></div>}
                     </div>

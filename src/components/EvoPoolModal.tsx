@@ -167,13 +167,23 @@ isSelected
         </div>
         <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">{evo.cost}</p>
 
-        <div className="mt-3 flex gap-2 text-[10px]">
+        <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
           <span className="px-2 py-1 bg-black/40 rounded text-gray-300">
             Max OVR {evo.requirements.maxOvr}
           </span>
           {evo.requirements.maxPace && (
             <span className="px-2 py-1 bg-black/40 rounded text-gray-300">
               Max PAC {evo.requirements.maxPace}
+            </span>
+          )}
+          {evo.requirements.positions && evo.requirements.positions.length > 0 && (
+            <span className="px-2 py-1 bg-red-950/40 rounded text-red-400 border border-red-900/50 font-bold">
+              Req Pos: {evo.requirements.positions.join(', ')}
+            </span>
+          )}
+          {evo.requirements.excludedPositions && evo.requirements.excludedPositions.length > 0 && (
+            <span className="px-2 py-1 bg-red-950/40 rounded text-red-400 border border-red-900/50 font-bold">
+              Excl Pos: {evo.requirements.excludedPositions.join(', ')}
             </span>
           )}
           {evo.maxRepeatable && evo.maxRepeatable > 1 && (
@@ -184,6 +194,11 @@ isSelected
           {evo.trainingTime && (
             <span className="px-2 py-1 bg-blue-950/40 rounded text-blue-400 border border-blue-800/40 font-bold">
               Training: {evo.trainingTime}
+            </span>
+          )}
+          {evo.positionsAdded && evo.positionsAdded.length > 0 && (
+            <span className="px-2 py-1 bg-purple-950/40 rounded text-purple-400 border border-purple-800/40 font-bold">
+              + Pos: {evo.positionsAdded.join(', ')}
             </span>
           )}
           {evo.rarityChange && (
