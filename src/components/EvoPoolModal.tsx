@@ -159,6 +159,13 @@ isSelected
             {evo.name}
           </h3>
           <button
+            onClick={(e) => { e.stopPropagation(); setViewingEvo(evo.id); }}
+            className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors ml-auto mr-1 shrink-0"
+            title="View Details"
+          >
+            <Eye className="w-3 h-3" />
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); toggleDisabledToggle(evo.id); }}
             title={disabled
               ? 'Re-enable — Analyze and the EVOs pool can use it again'
