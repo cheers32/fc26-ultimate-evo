@@ -139,11 +139,12 @@ export interface EvolutionPath {
   description: string;
   isRecommended?: boolean;
   isFavorite?: boolean;
-  chainIds: string[]; // List of EVO IDs in order e.g. ['1076', '1159']
+  // Steps of the build in order: EVO ids e.g. ['1076', '1159'], plus at most one 'ps:...' entry
+  // for the PlayStyles the player picked themselves (see PLAYSTYLE_NODE_PREFIX in evoEngine).
+  chainIds: string[];
   steps?: ChainStepResult[];
-  // Free-pick PlayStyles the user manually added once this path's rarity unlocked the
-  // in-game "any PlayStyle" picker (Futties Evo / National Pride / Glory Hunters /
-  // FUT Birthday). Only meaningful once the chain actually reaches one of those rarities.
+  // Legacy: PlayStyle picks used to hang off the path instead of being a step in it. Only read,
+  // to migrate old saves — see migratePlayStylePicks in App.tsx.
   freePlayStyles?: { gold: string[]; silver: string[] };
 }
 

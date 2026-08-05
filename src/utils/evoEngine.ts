@@ -277,30 +277,55 @@ export function applyFreePlayStyles(
   return result;
 }
 
+// --- Free PlayStyle nodes ---------------------------------------------------------------
+// Assigning PlayStyles is a step of the build, not a property of the path: the game hands you
+// the picker as part of the evo that turns the card into one of FREE_PLAYSTYLE_RARITIES (or,
+// for a card that already is one, off the base card itself). So a pick lives in `chainIds` as
+// its own entry and travels with the path through every mechanism that already exists —
+// removal, branching, save/load — with no side table to keep in sync.
+//
+//   ps:Finesse Shot+|Tiki Taka        a trailing '+' marks a PlayStyle+, everything else is
+//                                     a plain PlayStyle. No PlayStyle name contains '+' or '|'.
+export const PLAYSTYLE_NODE_PREFIX = 'ps:';
+
+export function isPlayStyleNodeId(id: string): boolean {
+  return id.startsWith(PLAYSTYLE_NODE_PREFIX);
+}
+
+export function buildPlayStyleNodeId(free: { gold: string[]; silver: string[] }): string {
+  const clean = (ps: string) => ps.replace('+', '').trim();
+  const parts = [...free.gold.map(ps => `${clean(ps)}+`), ...free.silver.map(clean)];
+  return PLAYSTYLE_NODE_PREFIX + parts.join('|');
+}
+
+export function parsePlayStyleNodeId(id: string): { gold: string[]; silver: string[] } {
+  const gold: string[] = [];
+  const silver: string[] = [];
+  id.slice(PLAYSTYLE_NODE_PREFIX.length)
+    .split('|')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .forEach(part => {
+      if (part.endsWith('+')) gold.push(part.slice(0, -1).trim());
+      else silver.push(part);
+    });
+  return { gold, silver };
+}
+
 /**
- * Layers a path's free PlayStyle picks onto its simulated chain. The picks only exist if the
- * finished build actually lands on a rarity that unlocks free assignment in-game, and they land
- * on the final step alone — no earlier point in the chain has reached that rarity yet. Returns
- * the input untouched when there's nothing to apply, so callers can rely on referential equality.
+ * The one index in `chainIds` where a PlayStyle node may sit: directly after whatever unlocked
+ * free assignment — the base card when it already is one of FREE_PLAYSTYLE_RARITIES, otherwise
+ * the evo that changed rarity into one. Returns null when nothing in the chain unlocks it.
+ *
+ * One unlock, one slot: since a chain carries at most one rarity-changing evo, that also caps
+ * a chain at a single PlayStyle node.
  */
-export function applyFreePlayStylesToChain(
-  result: FullChainResult,
-  free?: { gold: string[]; silver: string[] }
-): FullChainResult {
-  if (!free || (free.gold.length === 0 && free.silver.length === 0)) return result;
-  if (!FREE_PLAYSTYLE_RARITIES.includes(result.finalBio.rarity)) return result;
-
-  const steps = [...result.steps];
-  const lastStep = steps[steps.length - 1];
-  if (lastStep) {
-    steps[steps.length - 1] = { ...lastStep, playStylesAfter: applyFreePlayStyles(lastStep.playStylesAfter, free) };
+export function findPlayStyleNodeSlot(steps: ChainStepResult[], baseRarity: string): number | null {
+  if (FREE_PLAYSTYLE_RARITIES.includes(baseRarity)) return 0;
+  for (let i = 0; i < steps.length; i++) {
+    if (FREE_PLAYSTYLE_RARITIES.includes(steps[i].bioAfter.rarity)) return i + 1;
   }
-
-  return {
-    ...result,
-    steps,
-    finalPlayStyles: applyFreePlayStyles(result.finalPlayStyles, free)
-  };
+  return null;
 }
 
 // `roles` is never mutated while applying an evolution, so it can stay shared.
@@ -496,7 +521,39 @@ export function simulateEvoChain(
   const steps: ChainStepResult[] = [];
   let overallValid = true;
 
-  for (const evoId of chainIds) {
+  // Index of the entry that last unlocked free PlayStyle assignment (-1 = the base card did),
+  // or null while nothing has. A PlayStyle node is only legal directly after its unlock.
+  let unlockIndex: number | null = FREE_PLAYSTYLE_RARITIES.includes(state.bio.rarity) ? -1 : null;
+
+  for (let index = 0; index < chainIds.length; index++) {
+    const evoId = chainIds[index];
+
+    if (isPlayStyleNodeId(evoId)) {
+      const picks = parsePlayStyleNodeId(evoId);
+      const reasons: string[] = [];
+      if (!FREE_PLAYSTYLE_RARITIES.includes(state.bio.rarity)) {
+        reasons.push(`Only ${FREE_PLAYSTYLE_RARITIES.join(' / ')} cards can pick PlayStyles freely`);
+      } else if (unlockIndex === null || index !== unlockIndex + 1) {
+        reasons.push('PlayStyles are assigned as part of the evolution that unlocks them, so this has to come directly after it');
+      }
+      // Picks still apply when misplaced, the same way an ineligible evo still shows its
+      // effects — the step is flagged rather than silently doing nothing.
+      state = { ...state, playStyles: applyFreePlayStyles(state.playStyles, picks) };
+      if (reasons.length > 0) overallValid = false;
+
+      steps.push({
+        evoId,
+        evoName: 'PlayStyle Pick',
+        futbinLink: '',
+        validation: { eligible: reasons.length === 0, reasons },
+        ovrAfter: state.ovr,
+        statsAfter: cloneStats(state.stats),
+        playStylesAfter: clonePlayStyles(state.playStyles),
+        bioAfter: cloneBio(state.bio)
+      });
+      continue;
+    }
+
     const evo = availableEvolutions[evoId];
     if (!evo) continue;
 
@@ -505,6 +562,9 @@ export function simulateEvoChain(
       overallValid = false;
     }
     state = applied.state;
+    if (evo.rarityChange && FREE_PLAYSTYLE_RARITIES.includes(state.bio.rarity)) {
+      unlockIndex = index;
+    }
 
     steps.push({
       evoId,
@@ -716,6 +776,12 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
     bio: cloneBio(baseBio)
   };
   for (const evoId of prefixChainIds) {
+    // A locked-in PlayStyle node counts towards the PS+/PS the search has to respect, so it is
+    // seeded like any other step rather than skipped as an unknown id.
+    if (isPlayStyleNodeId(evoId)) {
+      seedState = { ...seedState, playStyles: applyFreePlayStyles(seedState.playStyles, parsePlayStyleNodeId(evoId)) };
+      continue;
+    }
     const evo = availableEvolutions[evoId];
     if (!evo) continue;
     seedState = applyEvo(seedState, evo).state;

@@ -1,5 +1,6 @@
 import React from 'react';
-import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData } from '../types/player';
+import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
+import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
@@ -22,9 +23,11 @@ interface HeaderCardProps {
   onOpenEvoPool: () => void;
   onOpenManualPath: () => void;
   onBranchFromBase?: () => void;
-  // True once the active path's final result is a rarity that unlocks free PlayStyle
-  // assignment in-game (Futties Evo / National Pride / Glory Hunters / FUT Birthday).
+  // True once something in the active path unlocks free PlayStyle assignment in-game — the base
+  // card already being one of those rarities, or an evo changing it into one.
   canPickFreePlayStyles?: boolean;
+  // Whether that path already carries a PlayStyle node, so the button reads Edit rather than Add.
+  hasPlayStyleNode?: boolean;
   onOpenPlayStylePicker?: () => void;
   originalIgs: number;
   originalFaceSum: number;
@@ -70,6 +73,86 @@ interface HeaderCardProps {
   onRemoveNode?: (pathId: string, index: number) => void;
 }
 
+/**
+ * A PlayStyle pick rendered as what it is: a step of the build, sitting in the chain next to the
+ * evos. Shows the picks it grants, and flags itself when the chain no longer justifies it (the
+ * evo that unlocked it was removed, or it drifted away from directly after that evo).
+ */
+const PlayStyleNode: React.FC<{
+  id: string;
+  idx: number;
+  step?: ChainStepResult;
+  isActive: boolean;
+  onClick?: () => void;
+  onEdit?: () => void;
+  onRemove?: () => void;
+}> = ({ id, idx, step, isActive, onClick, onEdit, onRemove }) => {
+  const picks = parsePlayStyleNodeId(id);
+  const invalid = step ? !step.validation.eligible : false;
+
+  const border = invalid
+    ? 'border-red-600 ring-1 ring-red-700/60'
+    : isActive
+    ? 'border-[#EBB626] ring-1 ring-[#EBB626] shadow-[0_0_8px_rgba(235,182,38,0.3)]'
+    : 'border-yellow-800/70 hover:border-yellow-600';
+
+  return (
+    <div className="flex items-center gap-0.5 group/node shrink-0 relative">
+      <button
+        onClick={onClick}
+        title={invalid
+          ? step!.validation.reasons.join(' · ')
+          : `Preview Step ${idx + 1} (PlayStyle Pick) stats`}
+        className={`shrink-0 p-1.5 rounded font-bold flex flex-col gap-1 border text-left transition-all cursor-pointer shadow bg-yellow-950/25 text-yellow-300 ${border}`}
+      >
+        <div className="flex items-center gap-1.5 px-1">
+          <Wand2 className="w-3 h-3 shrink-0" />
+          <span className="text-[10.5px]">PlayStyle Pick</span>
+          {invalid && <span className="text-[9px] font-black uppercase tracking-wide text-red-400">Invalid</span>}
+        </div>
+        <div className="flex flex-wrap items-center gap-1 px-1 pb-0.5">
+          {picks.gold.map(ps => (
+            <img
+              key={`g-${ps}`}
+              src={getPlayStyleIconUrl(ps, true)}
+              alt={ps}
+              title={`${ps} (PS+)`}
+              className="w-4 h-4 drop-shadow-[0_0_2px_rgba(234,179,8,0.5)] ring-[1.5px] ring-fcGreen ring-offset-[#1f211f] ring-offset-[1.5px] rounded-full"
+            />
+          ))}
+          {picks.silver.map(ps => (
+            <img
+              key={`s-${ps}`}
+              src={getPlayStyleIconUrl(ps, false)}
+              alt={ps}
+              title={ps}
+              className="w-3.5 h-3.5 ring-[1.5px] ring-fcGreen ring-offset-[#1f211f] ring-offset-[1px] rounded-full"
+            />
+          ))}
+        </div>
+      </button>
+      {onEdit && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          className="absolute -top-1.5 -right-1.5 p-0.5 bg-yellow-900/90 text-yellow-400 hover:bg-yellow-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
+          title="Change these PlayStyles"
+        >
+          <Settings2 className="w-2.5 h-2.5" />
+        </button>
+      )}
+      {onRemove && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          className="absolute -top-1.5 -left-1.5 p-0.5 bg-red-900/90 text-red-400 hover:bg-red-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
+          title="Remove this PlayStyle step"
+        >
+          <X className="w-2.5 h-2.5" />
+        </button>
+      )}
+    </div>
+  );
+};
+
 export const HeaderCard: React.FC<HeaderCardProps> = ({
   bio,
   futbinLink,
@@ -87,6 +170,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenManualPath,
   onBranchFromBase,
   canPickFreePlayStyles,
+  hasPlayStyleNode,
   onOpenPlayStylePicker,
   originalIgs,
   originalFaceSum,
@@ -239,8 +323,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
   const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+)\//) : null;
   const futbinPlayerId = playerIdMatch ? playerIdMatch[1] : '';
-  const builderLink = futbinPlayerId && activePath.chainIds.length > 0
-    ? `https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${activePath.chainIds.join('_')}?includeExpired=false`
+  // FUTBIN only knows about real evos, so PlayStyle steps are left out of the builder URL.
+  const futbinChain = (path: EvolutionPath) => path.chainIds.filter(id => !isPlayStyleNodeId(id));
+  const builderLink = futbinPlayerId && futbinChain(activePath).length > 0
+    ? `https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${futbinChain(activePath).join('_')}?includeExpired=false`
     : null;
 
   return (
@@ -545,10 +631,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               {canPickFreePlayStyles && onOpenPlayStylePicker && (
                 <button
                   onClick={onOpenPlayStylePicker}
-                  title="This rarity unlocks picking any PlayStyle — add whichever you want"
+                  title="This build unlocks picking any PlayStyle — added to the chain as its own step"
                   className="px-3 py-1.5 bg-yellow-950/30 hover:bg-yellow-900/40 border border-yellow-700/60 rounded-lg text-yellow-400 text-xs flex items-center gap-1.5 shadow-[0_0_10px_rgba(234,179,8,0.15)]"
                 >
-                  <Wand2 className="w-3.5 h-3.5" /> Add Skill <kbd className="ml-0.5 px-1 bg-black/40 border border-yellow-900 rounded text-[9px] text-yellow-400 font-mono">s</kbd>
+                  <Wand2 className="w-3.5 h-3.5" /> {hasPlayStyleNode ? 'Edit Skills' : 'Add Skill'} <kbd className="ml-0.5 px-1 bg-black/40 border border-yellow-900 rounded text-[9px] text-yellow-400 font-mono">s</kbd>
                 </button>
               )}
               {isAnalyzing ? (
@@ -751,9 +837,28 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 )}
 
                 {renderPath.chainIds.map((id, idx) => {
+                  if (isPlayStyleNodeId(id)) {
+                    return (
+                      <React.Fragment key={`${id}-${idx}`}>
+                        <PlayStyleNode
+                          id={id}
+                          idx={idx}
+                          step={renderPath.steps?.[idx]}
+                          isActive={renderPath.id === activePathId && selectedNodes.includes(idx)}
+                          onClick={renderPath.id === activePathId ? () => onNodeClick(idx) : undefined}
+                          onEdit={renderPath.id === activePathId ? onOpenPlayStylePicker : undefined}
+                          onRemove={onRemoveNode ? () => onRemoveNode(renderPath.id, idx) : undefined}
+                        />
+                        {idx < renderPath.chainIds.length - 1 && (
+                          <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                        )}
+                      </React.Fragment>
+                    );
+                  }
+
                   const evo = availableEvolutions[id];
                   if (!evo) return null;
-                  
+
                   const isStepActive = selectedNodes.includes(idx);
 
                   let stepStatsStr = null;
@@ -943,9 +1048,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   );
                 })}
 
-                {futbinPlayerId && renderPath.chainIds.length > 0 && (
+                {futbinPlayerId && futbinChain(renderPath).length > 0 && (
                   <a
-                    href={`https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${renderPath.chainIds.join('_')}?includeExpired=false`}
+                    href={`https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${futbinChain(renderPath).join('_')}?includeExpired=false`}
                     target="_blank"
                     rel="noreferrer"
                     className="shrink-0 ml-auto text-[10px] text-fcGreen hover:text-white flex items-center gap-1 bg-green-950/60 px-2 py-1 rounded border border-green-800/60 transition-colors"

@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, X, Users } from 'lucide-react';
 import { Squad, SquadMember, PlayerEvoState } from '../types/player';
+import { isPlayStyleNodeId } from '../utils/evoEngine';
+
+// A chain can carry a PlayStyle pick alongside its evos, and that isn't an evo.
+const evoCount = (chainIds: string[]) => chainIds.filter(id => !isPlayStyleNodeId(id)).length;
 
 interface SquadPanelProps {
   squads: Squad[];
@@ -134,8 +138,8 @@ export const SquadPanel: React.FC<SquadPanelProps> = ({
                     <Plus className="w-4 h-4" />
                     {hasSameChain(squad) ? 'Update' : 'Add'} {currentSnapshot.name} (
                     {currentSnapshot.evoOvr} OVR
-                    {currentSnapshot.chainIds.length > 0
-                      ? ` · ${currentSnapshot.chainIds.length} EVO${currentSnapshot.chainIds.length !== 1 ? 's' : ''}`
+                    {evoCount(currentSnapshot.chainIds) > 0
+                      ? ` · ${evoCount(currentSnapshot.chainIds)} EVO${evoCount(currentSnapshot.chainIds) !== 1 ? 's' : ''}`
                       : ' · no EVOs'}
                     )
                   </button>
@@ -167,8 +171,8 @@ export const SquadPanel: React.FC<SquadPanelProps> = ({
                                 )}
                               </p>
                               <p className="text-xs text-gray-500 truncate">
-                                {snap.chainIds.length > 0
-                                  ? `${snap.pathName} · ${snap.chainIds.length} EVO${snap.chainIds.length !== 1 ? 's' : ''}`
+                                {evoCount(snap.chainIds) > 0
+                                  ? `${snap.pathName} · ${evoCount(snap.chainIds)} EVO${evoCount(snap.chainIds) !== 1 ? 's' : ''}`
                                   : 'No EVOs applied'}
                               </p>
                             </button>

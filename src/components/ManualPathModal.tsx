@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, AlertTriangle, Eye } from 'lucide-react';
+import { X, Plus, Trash2, AlertTriangle, Eye, Wand2 } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
-import { simulateEvoChain, validateRequirement } from '../utils/evoEngine';
+import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { getStatColorClass } from '../utils/statUtils';
 
@@ -372,6 +372,35 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 )}
 
                 {selectedChain.map((id, idx) => {
+                  // PlayStyle picks are steps too, but they're edited from the player panel —
+                  // here they only need to show so the chain reads in the right order.
+                  if (isPlayStyleNodeId(id)) {
+                    const picks = parsePlayStyleNodeId(id);
+                    const invalid = validationResult.result?.steps[idx]?.validation.eligible === false;
+                    return (
+                      <React.Fragment key={`${id}-${idx}`}>
+                        <div
+                          title={invalid ? validationResult.result!.steps[idx].validation.reasons.join(' · ') : 'PlayStyle Pick'}
+                          className={`shrink-0 flex items-center gap-1.5 p-1.5 rounded border font-bold text-[10.5px] bg-yellow-950/25 text-yellow-300 ${
+                            invalid ? 'border-red-600 ring-1 ring-red-700/60' : 'border-yellow-800/70'
+                          }`}
+                        >
+                          <Wand2 className="w-3 h-3 shrink-0" />
+                          PlayStyle Pick
+                          {picks.gold.map(ps => (
+                            <img key={`g-${ps}`} src={getPlayStyleIconUrl(ps, true)} alt={ps} title={`${ps} (PS+)`} className="w-4 h-4" />
+                          ))}
+                          {picks.silver.map(ps => (
+                            <img key={`s-${ps}`} src={getPlayStyleIconUrl(ps, false)} alt={ps} title={ps} className="w-3.5 h-3.5" />
+                          ))}
+                        </div>
+                        {idx < selectedChain.length - 1 && (
+                          <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                        )}
+                      </React.Fragment>
+                    );
+                  }
+
                   const evo = availableEvolutions[id];
                   if (!evo) return null;
                   const stepResult = validationResult.result!.steps[idx];

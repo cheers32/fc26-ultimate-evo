@@ -6,14 +6,14 @@ interface PlayStylePickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   rarity: string;
-  // PlayStyles the chain itself already granted — shown locked, not removable here.
+  // PlayStyles the card already has at this point in the chain — shown locked, not removable here.
   lockedGold: string[];
   lockedSilver: string[];
   limits: { gold: number; silver: number };
-  // The user's current free picks for this path.
-  freeGold: string[];
-  freeSilver: string[];
-  onSave: (free: { gold: string[]; silver: string[] }) => void;
+  // The picks currently on this path's PlayStyle node, if it has one.
+  picks: { gold: string[]; silver: string[] };
+  // Saving with nothing selected removes the node from the chain.
+  onSave: (picks: { gold: string[]; silver: string[] }) => void;
 }
 
 const baseName = (ps: string) => ps.replace('+', '').trim();
@@ -25,24 +25,23 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
   lockedGold,
   lockedSilver,
   limits,
-  freeGold,
-  freeSilver,
+  picks,
   onSave
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [draftGold, setDraftGold] = useState<string[]>([]);
   const [draftSilver, setDraftSilver] = useState<string[]>([]);
 
-  // Seed the draft from the saved picks when the modal opens, and only then — the parent hands
-  // fresh array literals down on every render, so watching freeGold/freeSilver here would reset
-  // the user's in-progress picks any time anything else on the page re-rendered.
-  const savedFree = useRef({ gold: freeGold, silver: freeSilver });
-  savedFree.current = { gold: freeGold, silver: freeSilver };
+  // Seed the draft from the saved picks when the modal opens, and only then — the parent rebuilds
+  // this object on every render, so watching `picks` here would reset the user's in-progress
+  // selection any time anything else on the page re-rendered.
+  const savedPicks = useRef(picks);
+  savedPicks.current = picks;
 
   useEffect(() => {
     if (isOpen) {
-      setDraftGold(savedFree.current.gold);
-      setDraftSilver(savedFree.current.silver);
+      setDraftGold(savedPicks.current.gold);
+      setDraftSilver(savedPicks.current.silver);
       setSearchQuery('');
     }
   }, [isOpen]);
@@ -87,9 +86,9 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-[#1f211f]">
           <div>
-            <h2 className="text-xl font-bold text-white tracking-wide">Free PlayStyle Picker</h2>
+            <h2 className="text-xl font-bold text-white tracking-wide">PlayStyle Pick</h2>
             <p className="text-xs text-gray-400 mt-1">
-              <span className="text-purple-400 font-semibold">{rarity}</span> unlocks picking any PlayStyle — pick one tier per skill, up to your card's slots.
+              <span className="text-purple-400 font-semibold">{rarity}</span> unlocks picking any PlayStyle — these become a step in the chain, right after the evo that unlocked them.
             </p>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors">
@@ -190,7 +189,15 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-800 bg-[#1f211f] flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-800 bg-[#1f211f] flex justify-end items-center gap-3">
+          {(picks.gold.length > 0 || picks.silver.length > 0) && (
+            <button
+              onClick={() => { onSave({ gold: [], silver: [] }); onClose(); }}
+              className="mr-auto px-4 py-2 text-sm font-semibold text-red-400 hover:text-white border border-red-900/60 hover:bg-red-900/40 rounded-lg transition-colors"
+            >
+              Remove Step
+            </button>
+          )}
           <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-300 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">
             Cancel
           </button>

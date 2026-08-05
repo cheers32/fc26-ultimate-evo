@@ -2,6 +2,7 @@ import React from 'react';
 import { PlayerBio, StatsData, EvolutionPath } from '../types/player';
 import { Shield, Sparkles } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
+import { isPlayStyleNodeId } from '../utils/evoEngine';
 
 interface FcCardPreviewProps {
   bio: PlayerBio;
@@ -81,6 +82,13 @@ export const FcCardPreview: React.FC<FcCardPreviewProps> = ({
             <div className="flex flex-col items-end gap-1 max-w-[150px]">
               {/* Render Multi-EVO Badges on Card */}
               {isEvo && activePath.chainIds.map((id) => {
+                if (isPlayStyleNodeId(id)) {
+                  return (
+                    <span key={id} className="flex items-center gap-1 bg-yellow-950/90 text-yellow-300 border border-yellow-600/80 px-2 py-0.5 rounded text-[9px] font-black tracking-wider shadow truncate">
+                      <Sparkles className="w-2.5 h-2.5 shrink-0 text-yellow-400" /> PlayStyle Pick
+                    </span>
+                  );
+                }
                 const evo = availableEvolutions[id];
                 if (!evo) return null;
                 return (
