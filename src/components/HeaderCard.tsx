@@ -105,6 +105,43 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const isLockedOrEvo = evoLocked || evoPreview;
 
   const [showFilters, setShowFilters] = React.useState(false);
+
+  const activeFiltersCount = React.useMemo(() => {
+    if (!evoFilters) return 0;
+    
+    let count = 0;
+    if (evoFilters.requiredEvos && evoFilters.requiredEvos.length > 0) count++;
+    
+    // Check stats
+    const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy', 'ovr'];
+    for (const stat of statsToCheck) {
+      const statFilter = (evoFilters as any)[stat];
+      if (statFilter) {
+        if (stat === 'ovr' && statFilter.max === 99 && statFilter.min === undefined) {
+           // Ignore default max ovr 99
+        } else if (statFilter.min !== undefined || statFilter.max !== undefined) {
+           count++;
+        }
+        
+        if (statFilter.subs) {
+           for (const sub of Object.values(statFilter.subs)) {
+             const s = sub as any;
+             if (s.min !== undefined || s.max !== undefined) count++;
+           }
+        }
+      }
+    }
+    
+    // Check playStyles limits
+    if (evoFilters.ps) {
+       if (evoFilters.ps.min !== undefined || evoFilters.ps.max !== undefined) count++;
+    }
+    if (evoFilters.psPlus) {
+       if (evoFilters.psPlus.min !== undefined || evoFilters.psPlus.max !== undefined) count++;
+    }
+    
+    return count;
+  }, [evoFilters]);
   const [expandedStats, setExpandedStats] = React.useState<Set<string>>(new Set());
 
   const toggleExpand = (stat: string) => {
@@ -250,8 +287,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 </button>
               )}
 
-              <button onClick={() => setShowFilters(!showFilters)} className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1.5 transition-colors ${showFilters ? 'bg-fcGreen text-black font-bold border-fcGreen' : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'}`}>
+              <button onClick={() => setShowFilters(!showFilters)} className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1.5 transition-colors relative ${
+                showFilters 
+                  ? 'bg-fcGreen text-black font-bold border-fcGreen' 
+                  : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'
+              }`}>
                 <Settings2 className="w-3.5 h-3.5" /> Filters
+                {activeFiltersCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-fcGreen/20 text-fcGreen rounded font-bold text-[9px]">
+                    {activeFiltersCount}
+                  </span>
+                )}
               </button>
               
               {showFilters && (
