@@ -11,6 +11,7 @@ interface ImportPlayerModalProps {
 export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps) {
   const [rawText, setRawText] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [futbinUrl, setFutbinUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
       return;
     }
 
-    const player = parseFutbinText(rawText, avatarUrl);
+    const player = parseFutbinText(rawText, avatarUrl, futbinUrl);
     if (player) {
       onImport(player);
       onClose();
@@ -64,15 +65,28 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
             </p>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Avatar Image URL (Optional)</label>
-            <input 
-              type="text" 
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="e.g., https://cdn3.futbin.com/..."
-              className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Avatar Image URL (Optional)</label>
+              <input 
+                type="text" 
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="e.g., https://cdn.futbin.com/..."
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Futbin Player URL (Optional)</label>
+              <input 
+                type="text" 
+                value={futbinUrl}
+                onChange={(e) => setFutbinUrl(e.target.value)}
+                placeholder="e.g., https://www.futbin.com/26/player/..."
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

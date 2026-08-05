@@ -1,6 +1,6 @@
 import { PlayerData } from '../types/player';
 
-export function parseFutbinText(text: string, avatarUrl: string): PlayerData | null {
+export function parseFutbinText(text: string, avatarUrl: string = '', futbinUrl: string = ''): PlayerData | null {
   try {
     const data: any = {};
 
@@ -202,7 +202,7 @@ export function parseFutbinText(text: string, avatarUrl: string): PlayerData | n
     // Construct PlayerData
     const newPlayer: PlayerData = {
       id: playerId,
-      futbinLink: '',
+      futbinLink: futbinUrl,
       avatarUrl: avatarUrl || '/images/default-avatar.png',
       bio: {
         name: data.name,
