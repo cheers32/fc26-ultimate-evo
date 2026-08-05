@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Ban } from 'lucide-react';
+import { X, Check, Ban, Eye } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 
 interface EvoPoolModalProps {
@@ -28,6 +28,7 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   const [filterSecondary, setFilterSecondary] = useState(false);
   const [filterNewRarity, setFilterNewRarity] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
+  const [viewingEvo, setViewingEvo] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
