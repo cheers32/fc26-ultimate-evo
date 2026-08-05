@@ -6,6 +6,59 @@ import { availableEvolutions } from '../data/evolutionsData';
 // the perk doesn't stack, so a chain should carry at most one rarity-changing evo total.
 const FREE_PLAYSTYLE_RARITIES = ['Futties Evo', 'National Pride', 'Glory Hunters', 'FUT Birthday'];
 
+// --- Path-ranking helpers used by analyzeEvolutions' search -----------------------------
+// Pulled out to module scope (rather than recreated as closures on every call) since they're
+// pure functions of a candidate's chainIds/score and don't touch any search-local state.
+
+// Only the best few per ranking are ever returned from a search.
+const TOP_N = 3;
+
+// Scores within this fraction of each other are "the same" for ranking purposes — a chain
+// that's only technically higher by a couple of points nobody would notice isn't a real
+// improvement. Scales with the metric itself so it works for both raw IGS (thousands) and
+// the 0-99 position score without two separate constants.
+const TIE_FRACTION = 0.0025;
+
+// Order-independent identity for a chain: two chains that run the same evos in a different
+// order are the same build as far as a user is concerned.
+function canonicalKey(ids: string[]): string {
+  return [...ids].sort().join(',');
+}
+
+// A sub-stat sitting at 98 or 99 reads as "maxed" and is worth more to a player than the same
+// raw point gain lower down the scale — the flat IGS sum doesn't know the difference between
+// a point that moves 60->61 and one that moves 98->99. This weighs *every* sub-stat within
+// reach of the 99 ceiling, not a fixed list of "important" ones, so pushing anything to 98/99
+// counts, not just a couple of hand-picked stats.
+const NEAR_CAP_FLOOR = 97; // 98 -> +1, 99 -> +2, anything at or below 97 -> +0
+
+function nearCapBonus(stats: StatsData): number {
+  let bonus = 0;
+  for (const face of Object.values(stats)) {
+    for (const sub of Object.values(face.subs)) {
+      bonus += Math.max(0, sub.base - NEAR_CAP_FLOOR);
+    }
+  }
+  return bonus;
+}
+
+// >0 means `a` outranks `b`. Ties (within TIE_FRACTION) first check which chain gets more
+// sub-stats up near 98/99 — a longer chain that quietly maxes out Composure, Reactions, or
+// anything else shouldn't lose to a shorter one just because the aggregate IGS barely moved.
+// Only once that also ties does length decide: shorter wins, since the whole point of ranking
+// is to surface a build worth using, and a longer chain that isn't meaningfully better just
+// adds steps nobody can attribute value to.
+function rank<T extends { chainIds: string[]; nearCap: number }>(a: T, b: T, score: (c: T) => number): number {
+  const sa = score(a), sb = score(b);
+  const eps = Math.max(1, Math.abs(sa), Math.abs(sb)) * TIE_FRACTION;
+  if (Math.abs(sa - sb) <= eps) {
+    if (a.nearCap !== b.nearCap) return a.nearCap - b.nearCap;
+    if (a.chainIds.length !== b.chainIds.length) return b.chainIds.length - a.chainIds.length;
+    return 0;
+  }
+  return sa - sb;
+}
+
 const POSITION_WEIGHTS: Record<string, Record<string, number>> = {
   'ST': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
   'CF': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
@@ -430,7 +483,7 @@ export function analyzeEvolutions(
   // Only the primitives needed for ranking are kept per candidate. Holding the whole
   // ChainState for every hit would pin hundreds of thousands of stat objects in memory,
   // so the position scores are computed here and the stats themselves are dropped.
-  type Candidate = { chainIds: string[]; ovr: number; igs: number; posScores: number[] };
+  type Candidate = { chainIds: string[]; ovr: number; igs: number; posScores: number[]; nearCap: number };
 
   const rankPositions = baseBio.primaryPositions
     .split(',')
@@ -439,15 +492,18 @@ export function analyzeEvolutions(
 
   // Only the best few per ranking are ever returned, so nothing else is retained. Without
   // this the search kept every hit and ran the tab out of memory at the depths the app uses.
-  const TOP_N = 3;
   const topByIgs: Candidate[] = [];
   const topByPosition: Candidate[][] = rankPositions.map(() => []);
 
   const offer = (list: Candidate[], cand: Candidate, score: (c: Candidate) => number) => {
-    const s = score(cand);
-    if (list.length >= TOP_N && s <= score(list[list.length - 1])) return;
+    // Same set of evos in a different order isn't a meaningfully different option — without
+    // this, "Max IGS 1/2/3" often ended up as the identical 5 evos shuffled three ways.
+    const candKey = canonicalKey(cand.chainIds);
+    if (list.some(c => canonicalKey(c.chainIds) === candKey)) return;
+
+    if (list.length >= TOP_N && rank(cand, list[list.length - 1], score) <= 0) return;
     let i = list.length;
-    while (i > 0 && score(list[i - 1]) < s) i--;
+    while (i > 0 && rank(list[i - 1], cand, score) < 0) i--;
     list.splice(i, 0, cand);
     if (list.length > TOP_N) list.length = TOP_N;
   };
@@ -554,7 +610,8 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
           chainIds: [...currentChainIds],
           ovr: state.ovr,
           igs: igsOf(state.stats),
-          posScores: rankPositions.map(pos => getPositionScore(state.stats, pos))
+          posScores: rankPositions.map(pos => getPositionScore(state.stats, pos)),
+          nearCap: nearCapBonus(state.stats)
         };
         offer(topByIgs, cand, c => c.igs);
         topByPosition.forEach((list, i) => offer(list, cand, c => c.posScores[i]));
@@ -602,8 +659,11 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
 
   dfs([...prefixChainIds], seedState);
 
-  // Create unique key for a candidate
-  const getCandKey = (c: Candidate) => c.chainIds.join('|');
+  // Canonical (order-independent) key for a candidate. The IGS ranking and each position
+  // ranking run their own independent search bookkeeping, so it's routine for two of them to
+  // land on the same set of evos in a different internal order — merge those into one
+  // recommendation instead of showing what looks like two different builds.
+  const getCandKey = (c: Candidate) => canonicalKey(c.chainIds);
   
   const recommendedPaths: { cand: Candidate, name: string }[] = [];
   const addedKeys = new Set<string>();
