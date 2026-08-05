@@ -168,13 +168,33 @@ export function parseFutbinText(text: string, avatarUrl: string): PlayerData | n
     const silver: string[] = [];
     
     // In FC26 copied text, playstyles appear simply as the names, one per line.
+    // They are usually ordered with PlayStyle+ first.
+    const foundPlaystyles: { name: string, index: number }[] = [];
+    
     for (const ps of validPlayStyles) {
       // Create a regex to match the playstyle on its own line, tolerating some spaces
       const psRegex = new RegExp(`\\n\\s*${ps}\\s*\\n`, 'i');
-      if (psRegex.test(text)) {
-        silver.push(ps);
+      const match = text.match(psRegex);
+      if (match && match.index !== undefined) {
+        foundPlaystyles.push({ name: ps, index: match.index });
       }
     }
+    
+    // Sort by appearance in the text
+    foundPlaystyles.sort((a, b) => a.index - b.index);
+    
+    // Guess how many PlayStyle+ the player has based on OVR
+    let goldCount = 1;
+    if (data.baseOvr >= 90) goldCount = 3;
+    else if (data.baseOvr >= 80) goldCount = 2;
+    
+    foundPlaystyles.forEach((ps, idx) => {
+      if (idx < goldCount) {
+        gold.push(ps.name + '+');
+      } else {
+        silver.push(ps.name);
+      }
+    });
 
     // Create unique ID
     const playerId = `custom-${data.name.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Date.now()}`;
