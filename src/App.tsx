@@ -988,7 +988,7 @@ export default function App() {
           }
           setActivePathId(path.id);
           setIsManualPathOpen(false);
-          setBaseIndex(-1);
+          setBaseIndex(path.chainIds.length - 1);
           if (!evoPreview) setEvoPreview(true);
         }}
         baseBio={playerBio}
