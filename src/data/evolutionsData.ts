@@ -70,6 +70,8 @@ import { futties1192 } from './evolutions/futties1192';
 import { lwShift1193 } from './evolutions/lwShift1193';
 import { theCreativeSpark1196 } from './evolutions/theCreativeSpark1196';
 import { letMeCook1197 } from './evolutions/letMeCook1197';
+import { bailOut1198 } from './evolutions/bailOut1198';
+import { yearOfTheFullbacks1199 } from './evolutions/yearOfTheFullbacks1199';
 import { laMasiaSpark1118 } from './evolutions/laMasiaSpark1118';
 import { stillGotIt1119 } from './evolutions/stillGotIt1119';
 import { ironSentinel1126 } from './evolutions/ironSentinel1126';
@@ -170,7 +172,9 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1194': futtiesBlueprintII1194,
   '1195': thePerfectBreak1195,
   '1196': theCreativeSpark1196,
-  '1197': letMeCook1197
+  '1197': letMeCook1197,
+  '1198': bailOut1198,
+  '1199': yearOfTheFullbacks1199
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
