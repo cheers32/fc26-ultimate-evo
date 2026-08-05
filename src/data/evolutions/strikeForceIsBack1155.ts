@@ -26,6 +26,7 @@ export const strikeForceIsBack1155: EvolutionDefinition = {
   weakFootBoost: 3,
   skillMovesBoost: 4,
   positionsAdded: ['RW', 'LW'],
+  rarityChange: 'Futties Evo',
   playStylesAdded: {
     gold: ['Quick Step+', 'Finesse Shot+', 'Low Driven Shot+'],
     silver: []

@@ -34,6 +34,7 @@ export const futtiesBlueprintI1183: EvolutionDefinition = {
   },
   weakFootBoost: 4,
   positionsAdded: ['ST'],
+  rarityChange: 'Futties Evo',
   playStylesAdded: {
     gold: ['Finesse Shot+', 'Low Driven Shot+', 'Rapid+'],
     silver: ['Incisive Pass', 'Quick Step', 'Gamechanger', 'Technical', 'Tiki Taka']

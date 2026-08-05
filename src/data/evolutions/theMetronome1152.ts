@@ -37,6 +37,7 @@ export const theMetronome1152: EvolutionDefinition = {
     standTackle: { boost: 25, limit: 96 }
   },
   positionsAdded: ['CAM'],
+  rarityChange: 'Futties Evo',
   playStylesAdded: {
     gold: ['Pinged Pass+', 'Finesse Shot+', 'Incisive Pass+', 'Gamechanger+'],
     silver: ['Tiki Taka', 'Technical', 'Intercept', 'First Touch']

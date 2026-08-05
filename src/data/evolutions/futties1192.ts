@@ -12,7 +12,7 @@ export const futties1192: EvolutionDefinition = {
   },
   ovrBoost: { boost: 0, limit: 96 },
   subStatBoosts: {},
-  rarityChange: 'FUTTIES',
+  rarityChange: 'Futties Evo',
   playStylesAdded: {
     gold: [],
     silver: []
@@ -20,7 +20,7 @@ export const futties1192: EvolutionDefinition = {
   levels: [
     {
       name: 'Level 1',
-      upgrades: ['Rarity → FUTTIES (cosmetic only, no stat upgrades)']
+      upgrades: ['Rarity → Futties Evo (cosmetic only, no stat upgrades)']
     }
   ],
   maxRepeatable: 2

@@ -42,6 +42,7 @@ export const thePerfect10_1120: EvolutionDefinition = {
     volleys: { boost: 50, limit: 92 }
   },
   skillMovesBoost: 4,
+  rarityChange: 'National Pride',
   playStylesAdded: {
     gold: ['Incisive Pass', 'Finesse Shot', 'Technical', 'First Touch'],
     silver: []

@@ -38,6 +38,7 @@ export const nationalPrideStarPart1_1112: EvolutionDefinition = {
     volleys: { boost: 45, limit: 95 },
     composure: { boost: 50, limit: 95 }
   },
+  rarityChange: 'National Pride',
   playStylesAdded: {
     gold: [],
     silver: []

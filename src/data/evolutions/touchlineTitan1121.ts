@@ -36,6 +36,7 @@ export const touchlineTitan1121: EvolutionDefinition = {
     slideTackle: { boost: 30, limit: 97 },
     standTackle: { boost: 30, limit: 97 }
   },
+  rarityChange: 'National Pride',
   playStylesAdded: {
     gold: ['Jockey', 'Quick Step', 'Anticipate', 'Slide Tackle'],
     silver: []

@@ -39,6 +39,7 @@ export const windUpMerchant1184: EvolutionDefinition = {
     composure: { boost: 30, limit: 95 }
   },
   weakFootBoost: 4,
+  rarityChange: 'Futties Evo',
   playStylesAdded: {
     gold: ['Intercept+', 'Bruiser+', 'Incisive Pass+', 'Pinged Pass+'],
     silver: ['Tiki Taka', 'Anticipate']

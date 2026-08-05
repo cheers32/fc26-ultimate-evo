@@ -37,6 +37,7 @@ export const goldStandard979: EvolutionDefinition = {
     composure: { boost: 40, limit: 92 }
   },
   weakFootBoost: 4,
+  rarityChange: 'National Pride',
   playStylesAdded: {
     gold: [],
     silver: []

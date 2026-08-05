@@ -36,6 +36,7 @@ export const theKiwiWall1012: EvolutionDefinition = {
     composure: { boost: 10, limit: 93 }
   },
   weakFootBoost: 4,
+  rarityChange: 'National Pride',
   playStylesAdded: {
     gold: [],
     silver: []

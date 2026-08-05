@@ -23,6 +23,7 @@ export const totalGlory1076: EvolutionDefinition = {
   },
   subStatBoosts: {},
   weakFootBoost: 2,
+  rarityChange: 'Glory Hunters',
   playStylesAdded: {
     gold: [],
     silver: []
