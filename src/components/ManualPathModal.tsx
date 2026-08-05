@@ -432,6 +432,22 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             <Eye className="w-3 h-3" />
                           </button>
                         </div>
+                        {/* What this step turns the card into, same badges as the pool below and the
+                            chain on the player panel. */}
+                        {(evo.rarityChange || (evo.positionsAdded && evo.positionsAdded.length > 0)) && (
+                          <div className="flex flex-wrap items-center gap-1 px-1">
+                            {evo.rarityChange && (
+                              <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
+                                → {evo.rarityChange}
+                              </span>
+                            )}
+                            {evo.positionsAdded && evo.positionsAdded.length > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
+                                + Pos: {evo.positionsAdded.join(', ')}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div className="flex gap-2 items-center px-1 mb-0.5">
                           {(() => {
                             const prevStats = idx === 0 ? baseStats : validationResult.result!.steps[idx - 1].statsAfter;
