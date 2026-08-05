@@ -5,18 +5,36 @@ export function parseFutbinText(text: string, avatarUrl: string): PlayerData | n
     const data: any = {};
 
     // 1. Extract Name and OVR
-    // Format: 
-    // Chiellini
-    // 92
-    // CB
-    const nameOvrMatch = text.match(/([A-Za-z\s.-]+)\n(\d{2})\n(?:CB|RB|LB|CDM|CM|CAM|RM|LM|RW|LW|ST|CF|GK)\n/);
+    // Format could have multiple lines before the OVR
+    const nameOvrMatch = text.match(/([A-Za-z\s.-]+)\n(\d{2})\n(?:CB|RB|LB|CDM|CM|CAM|RM|LM|RW|LW|ST|CF|GK|RWB|LWB)\n/);
     if (nameOvrMatch) {
-      data.name = nameOvrMatch[1].trim();
+      const nameParts = nameOvrMatch[1].trim().split('\n');
+      data.name = nameParts[nameParts.length - 1].trim();
       data.baseOvr = parseInt(nameOvrMatch[2], 10);
     } else {
       data.name = "Imported Player";
       data.baseOvr = 80;
     }
+
+    // 1.5 Extract Nation, Club, League, Skills, Weak Foot
+    const extractNextLine = (label: string) => {
+      const match = text.match(new RegExp(`\\n${label}\\n([^\\n]+)`));
+      return match ? match[1].trim() : `Unknown ${label}`;
+    };
+
+    data.nation = extractNextLine('Nation');
+    data.club = extractNextLine('Club');
+    data.league = extractNextLine('League');
+    
+    const skillsMatch = text.match(/\nSkills\n(\d)/);
+    data.skills = skillsMatch ? parseInt(skillsMatch[1], 10) : 3;
+    
+    const wfMatch = text.match(/\nWeak Foot\n(\d)/);
+    data.wf = wfMatch ? parseInt(wfMatch[1], 10) : 3;
+    
+    const heightMatch = text.match(/\nHeight\n([^\n]+)/);
+    data.height = heightMatch ? heightMatch[1].trim() : 'Unknown Height';
+
 
     // 2. Extract Stats
     const stats: any = {};
@@ -139,16 +157,17 @@ export function parseFutbinText(text: string, avatarUrl: string): PlayerData | n
       "Rush Out", "Cross Claimer", "Deflector", "Far Throw"
     ];
 
-    const foundPlaystyles: string[] = [];
+    const gold: string[] = [];
+    const silver: string[] = [];
+    
+    // In FC26 copied text, playstyles appear simply as the names, one per line.
     for (const ps of validPlayStyles) {
-      if (text.includes(ps)) {
-        foundPlaystyles.push(ps);
+      // Create a regex to match the playstyle on its own line, tolerating some spaces
+      const psRegex = new RegExp(`\\n\\s*${ps}\\s*\\n`, 'i');
+      if (psRegex.test(text)) {
+        silver.push(ps);
       }
     }
-
-    // Fallback logic: first 3 are gold, rest silver.
-    const gold = foundPlaystyles.slice(0, 3).map(ps => ps + '+');
-    const silver = foundPlaystyles.slice(3);
 
     // Create unique ID
     const playerId = `custom-${data.name.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Date.now()}`;
@@ -160,15 +179,15 @@ export function parseFutbinText(text: string, avatarUrl: string): PlayerData | n
       avatarUrl: avatarUrl || '/images/default-avatar.png',
       bio: {
         name: data.name,
-        club: 'Unknown Club',
-        nation: 'Unknown Nation',
-        league: 'Unknown League',
+        club: data.club,
+        nation: data.nation,
+        league: data.league,
         title: 'Custom Import',
         primaryPositions: Object.keys(roles).map(p => p.toUpperCase()).join(', ') || 'CB',
-        height: `Unknown`,
+        height: data.height,
         footAge: 'Unknown',
-        weakFoot: 3,
-        skillMoves: 3,
+        weakFoot: data.wf,
+        skillMoves: data.skills,
         rarity: 'Custom',
         roles: roles
       },
