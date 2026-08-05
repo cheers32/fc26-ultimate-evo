@@ -301,7 +301,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               </button>
               
               {showFilters && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-[#1A1C1A] border border-gray-700 rounded-xl shadow-2xl z-50 p-4">
+                <div 
+                  className="absolute top-full right-0 mt-2 w-72 bg-[#1A1C1A] border border-gray-700 rounded-xl shadow-2xl z-50 p-4"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setShowFilters(false);
+                    }
+                  }}
+                >
                   <div className="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
                     <h4 className="text-sm font-bold text-white uppercase">Advanced Filters</h4>
                     <button onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
@@ -402,8 +409,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     })}
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-gray-800 flex justify-end">
+                  <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center">
                     <button onClick={() => onEvoFiltersChange({})} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold">Clear All</button>
+                    <button onClick={() => setShowFilters(false)} className="px-4 py-1.5 bg-fcGreen hover:bg-[#1db954] text-black font-bold text-xs rounded-lg shadow-sm">OK</button>
                   </div>
                 </div>
               )}
