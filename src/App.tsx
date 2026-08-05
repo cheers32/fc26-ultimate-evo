@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { playersDatabase } from './data/playersData';
 import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
@@ -9,7 +9,8 @@ import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { calculateAccelerateType } from './utils/statUtils';
-import { simulateEvoChain, analyzeEvolutions } from './utils/evoEngine';
+import { simulateEvoChain } from './utils/evoEngine';
+import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
 import { EvolutionDefinition } from './types/player';
 import { PlayerSelectionModal } from './components/PlayerSelectionModal';
 import { EvoPoolModal } from './components/EvoPoolModal';
@@ -528,6 +529,64 @@ export default function App() {
   );
 
   // The player as the active path leaves them — this is what gets stored in a squad.
+  // The path search runs in a worker; these drive the button's busy state and let the user
+  // abandon a run that is taking too long.
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzeProgress, setAnalyzeProgress] = useState(0);
+  const analyzeHandle = useRef<EvoSearchHandle | null>(null);
+
+  const cancelAnalyze = () => {
+    analyzeHandle.current?.cancel();
+    analyzeHandle.current = null;
+    setIsAnalyzing(false);
+    setAnalyzeProgress(0);
+  };
+
+  const runAnalyze = () => {
+    analyzeHandle.current?.cancel();
+    setIsAnalyzing(true);
+    setAnalyzeProgress(0);
+
+    const handle = runEvoSearch(
+      {
+        poolIds: effectiveEvosPool,
+        maxDepth: 5,
+        bio: playerBio,
+        ovr: initialOvrData,
+        stats: statsData,
+        playStyles: playStylesData,
+        filters: evoFilters,
+        prefixChainIds: basePrefix
+      },
+      nodes => setAnalyzeProgress(nodes)
+    );
+    analyzeHandle.current = handle;
+
+    handle.promise
+      .then(results => {
+        if (analyzeHandle.current !== handle) return; // superseded by a newer run
+        analyzeHandle.current = null;
+        setIsAnalyzing(false);
+        setGeneratedPaths(results);
+        if (results.length > 0) {
+          setActivePathId(results[0].id);
+          if (!evoPreview) setEvoPreview(true);
+        }
+      })
+      .catch(err => {
+        if (err?.name === 'AbortError') return; // cancelAnalyze already reset the state
+        if (analyzeHandle.current !== handle) return;
+        analyzeHandle.current = null;
+        setIsAnalyzing(false);
+        console.error('Evolution search failed:', err);
+      });
+  };
+
+  // Abandon an in-flight search when the player changes, so its result can't land on someone else.
+  useEffect(() => {
+    return () => analyzeHandle.current?.cancel();
+  }, [selectedPlayerId]);
+
   const currentSnapshot = useMemo<SquadMember['snapshot']>(() => {
     const lastStep = chainResult.steps[chainResult.steps.length - 1];
     return {
@@ -814,14 +873,10 @@ export default function App() {
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
           onEvoFiltersChange={setEvoFilters}
-          onAnalyze={() => {
-            const results = analyzeEvolutions(effectiveEvosPool, 5, playerBio, initialOvrData, statsData, playStylesData, evoFilters, basePrefix);
-            setGeneratedPaths(results);
-            if (results.length > 0) {
-              setActivePathId(results[0].id);
-              if (!evoPreview) setEvoPreview(true);
-            }
-          }}
+          onAnalyze={runAnalyze}
+          isAnalyzing={isAnalyzing}
+          analyzeProgress={analyzeProgress}
+          onCancelAnalyze={cancelAnalyze}
           evosPool={effectiveEvosPool}
           evoPreview={evoPreview}
           evoLocked={evoLocked}

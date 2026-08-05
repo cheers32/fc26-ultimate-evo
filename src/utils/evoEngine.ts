@@ -410,12 +410,35 @@ export function analyzeEvolutions(
   filters?: EvoFilters,
   // Evos already locked in ahead of the search. The DFS starts seeded with these so repeat
   // limits and eligibility account for them, and returned chains stay applicable to the raw card.
-  prefixChainIds: string[] = []
+  prefixChainIds: string[] = [],
+  // Called every few thousand nodes. Returning false aborts the search and returns whatever
+  // has been found so far, which is what lets the worker be cancelled mid-run.
+  onProgress?: (nodesVisited: number) => boolean | void
 ): EvolutionPath[] {
   // Only the primitives needed for ranking are kept per candidate. Holding the whole
-  // ChainState for every hit would pin hundreds of thousands of stat objects in memory.
-  type Candidate = { chainIds: string[]; ovr: number; igs: number; stats: StatsData };
-  const validPaths: Candidate[] = [];
+  // ChainState for every hit would pin hundreds of thousands of stat objects in memory,
+  // so the position scores are computed here and the stats themselves are dropped.
+  type Candidate = { chainIds: string[]; ovr: number; igs: number; posScores: number[] };
+
+  const rankPositions = baseBio.primaryPositions
+    .split(',')
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  // Only the best few per ranking are ever returned, so nothing else is retained. Without
+  // this the search kept every hit and ran the tab out of memory at the depths the app uses.
+  const TOP_N = 3;
+  const topByIgs: Candidate[] = [];
+  const topByPosition: Candidate[][] = rankPositions.map(() => []);
+
+  const offer = (list: Candidate[], cand: Candidate, score: (c: Candidate) => number) => {
+    const s = score(cand);
+    if (list.length >= TOP_N && s <= score(list[list.length - 1])) return;
+    let i = list.length;
+    while (i > 0 && score(list[i - 1]) < s) i--;
+    list.splice(i, 0, cand);
+    if (list.length > TOP_N) list.length = TOP_N;
+  };
 
   const igsOf = (stats: StatsData) =>
     Object.values(stats).reduce(
@@ -423,7 +446,20 @@ export function analyzeEvolutions(
       0
     );
 
+  const PROGRESS_INTERVAL = 20000;
+  let nodesVisited = 0;
+  let aborted = false;
+
   function dfs(currentChainIds: string[], state: ChainState) {
+    if (aborted) return;
+
+    if (++nodesVisited % PROGRESS_INTERVAL === 0 && onProgress) {
+      if (onProgress(nodesVisited) === false) {
+        aborted = true;
+        return;
+      }
+    }
+
     if (currentChainIds.length > prefixChainIds.length) {
       const maxOvrAllowed = filters?.ovr?.max ?? 99;
       if (state.ovr > maxOvrAllowed) {
@@ -494,12 +530,14 @@ export function analyzeEvolutions(
       }
 
       if (passesFilters) {
-        validPaths.push({
+        const cand: Candidate = {
           chainIds: [...currentChainIds],
           ovr: state.ovr,
           igs: igsOf(state.stats),
-          stats: cloneStats(state.stats)
-        });
+          posScores: rankPositions.map(pos => getPositionScore(state.stats, pos))
+        };
+        offer(topByIgs, cand, c => c.igs);
+        topByPosition.forEach((list, i) => offer(list, cand, c => c.posScores[i]));
       }
     }
 
@@ -525,6 +563,8 @@ export function analyzeEvolutions(
       currentChainIds.push(evoId);
       dfs(currentChainIds, applyEvo(state, evo).state);
       currentChainIds.pop();
+
+      if (aborted) return;
     }
   }
 
@@ -560,24 +600,11 @@ export function analyzeEvolutions(
   };
 
   // 1. Top 3 Highest IGS
-  validPaths.sort((a, b) => b.igs - a.igs);
-  let count = 1;
-  for (const cand of validPaths) {
-    if (count > 3) break;
-    addRecommendation(cand, `Max IGS ${count}`);
-    count++;
-  }
+  topByIgs.forEach((cand, i) => addRecommendation(cand, `Max IGS ${i + 1}`));
 
   // 2. Top 3 per Position
-  const positions = baseBio.primaryPositions.split(',').map(p => p.trim()).filter(p => p.length > 0);
-  positions.forEach(pos => {
-    validPaths.sort((a, b) => getPositionScore(b.stats, pos) - getPositionScore(a.stats, pos));
-    let posCount = 1;
-    for (const cand of validPaths) {
-      if (posCount > 3) break;
-      addRecommendation(cand, `${pos}${posCount}`);
-      posCount++;
-    }
+  rankPositions.forEach((pos, posIdx) => {
+    topByPosition[posIdx].forEach((cand, i) => addRecommendation(cand, `${pos}${i + 1}`));
   });
 
   return recommendedPaths.map(({ cand, name }, idx) => {

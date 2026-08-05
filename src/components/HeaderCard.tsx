@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters } from '../types/player';
 import { calculateChip } from '../utils/statUtils';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2 } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -26,6 +26,9 @@ interface HeaderCardProps {
   evoFilters: EvoFilters;
   onEvoFiltersChange: (val: EvoFilters) => void;
   onAnalyze: () => void;
+  isAnalyzing?: boolean;
+  analyzeProgress?: number;
+  onCancelAnalyze?: () => void;
   rawBaseOvr: number;
   rawPlayStyles: import('../types/player').PlayStylesData;
   evosPool: string[];
@@ -80,6 +83,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   evoFilters,
   onEvoFiltersChange,
   onAnalyze,
+  isAnalyzing = false,
+  analyzeProgress = 0,
+  onCancelAnalyze,
   rawBaseOvr,
   rawPlayStyles,
   evosPool,
@@ -490,9 +496,22 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   <GitBranch className="w-3.5 h-3.5" /> Branch <kbd className="ml-0.5 px-1 bg-black/40 border border-purple-900 rounded text-[9px] text-purple-400 font-mono">b</kbd>
                 </button>
               )}
-              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${(evosPool?.length || 0) > 0 ? 'border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 shadow-[0_0_10px_rgba(37,99,235,0.2)]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
-                <Zap className="w-3.5 h-3.5" /> Analyze
-              </button>
+              {isAnalyzing ? (
+                <button
+                  onClick={() => { setShowFilters(false); onCancelAnalyze?.(); }}
+                  title="Stop the search"
+                  className="px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border-red-700 hover:border-red-500 bg-red-950/30 hover:bg-red-900/40 text-red-300"
+                >
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {analyzeProgress > 0
+                    ? `${Math.round(analyzeProgress / 1000)}k · Stop`
+                    : 'Analyzing · Stop'}
+                </button>
+              ) : (
+                <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${(evosPool?.length || 0) > 0 ? 'border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 shadow-[0_0_10px_rgba(37,99,235,0.2)]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
+                  <Zap className="w-3.5 h-3.5" /> Analyze
+                </button>
+              )}
               {onClearPaths && (
                 <button
                   onClick={onClearPaths}
