@@ -883,6 +883,7 @@ export default function App() {
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
           rawBaseOvr={initialOvrData.base}
           rawPlayStyles={playStylesData}
+          rawStats={statsData}
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}

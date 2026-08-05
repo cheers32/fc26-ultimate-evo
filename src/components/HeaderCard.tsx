@@ -1,6 +1,7 @@
 import React from 'react';
-import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters } from '../types/player';
-import { calculateChip } from '../utils/statUtils';
+import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData } from '../types/player';
+import { calculateChip, getStatColorClass } from '../utils/statUtils';
+import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
@@ -33,6 +34,7 @@ interface HeaderCardProps {
   onCancelAnalyze?: () => void;
   rawBaseOvr: number;
   rawPlayStyles: import('../types/player').PlayStylesData;
+  rawStats: StatsData;
   evosPool: string[];
   evoPreview: boolean;
   evoLocked: boolean;
@@ -92,6 +94,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onCancelAnalyze,
   rawBaseOvr,
   rawPlayStyles,
+  rawStats,
   evosPool,
   evoPreview,
   evoLocked,
@@ -645,7 +648,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               if (!renderPath) return null;
               
               return (
-                <div key={renderPathId} className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full pb-2 items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border border-gray-800">
+                <div key={renderPathId} className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full pt-2 pl-2 pb-2 items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border border-gray-800">
                   <Layers className="w-3.5 h-3.5 text-gray-500 mr-1 shrink-0" />
 
                 {/* Base Card Chip — always present, so an empty path still anchors on the raw card */}
@@ -655,16 +658,54 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   <button
                     onClick={() => onNodeClick(-1)}
                     title="Original Base Card"
-                    className={`shrink-0 px-2.5 py-1 rounded text-[10px] font-bold flex items-center transition-all shadow ${
+                    className={`shrink-0 p-1.5 rounded font-bold flex flex-col transition-all shadow gap-1 ${
                       selectedNodes.includes(-1)
                         ? 'bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]'
-                        : 'bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200'
-                    }`}
+                        : 'bg-[#1f211f] text-gray-200 border-gray-700 hover:border-gray-500 hover:text-white'
+                    } border text-left cursor-pointer`}
                   >
-                    Base Card
-                    <span className={`font-normal text-[9.5px] ml-1.5 opacity-90 tracking-wide font-mono ${selectedNodes.includes(-1) ? 'text-black font-bold' : 'text-gray-300'}`}>
-                      ({rawBaseOvr}/{rawPlayStyles.base.gold.length + (rawPlayStyles.ev?.gold?.length || 0)})
-                    </span>
+                    <div className="flex items-center gap-1.5 px-1">
+                      <span className="font-mono tracking-tight font-extrabold opacity-80 text-[10.5px]">
+                        {rawBaseOvr}/{rawPlayStyles.base.gold.length + (rawPlayStyles.ev?.gold?.length || 0)}
+                      </span>
+                      <span className="text-[10.5px]">Base Card</span>
+                    </div>
+                    <div className="flex gap-2 items-center px-1 mb-0.5">
+                      <div className={`flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] ${selectedNodes.includes(-1) ? 'bg-black/20 border-black/30' : 'bg-gray-800/80 border-gray-600'}`}>
+                        <span className={`${selectedNodes.includes(-1) ? 'text-black' : 'text-white'} font-bold`}>BS</span>
+                        <span className={`${selectedNodes.includes(-1) ? 'text-black' : 'text-blue-400'} font-bold`}>{Object.values(rawStats).reduce((acc, f) => acc + f.baseFace, 0)}</span>
+                      </div>
+                      <div className={`flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] ${selectedNodes.includes(-1) ? 'bg-black/20 border-black/30' : 'bg-gray-800/80 border-gray-600'}`}>
+                        <span className={`${selectedNodes.includes(-1) ? 'text-black' : 'text-white'} font-bold`}>IGS</span>
+                        <span className={`${selectedNodes.includes(-1) ? 'text-black' : 'text-blue-400'} font-bold`}>{Object.values(rawStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0)}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-0.5">
+                      {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
+                        const val = rawStats[statKey as keyof StatsData].baseFace;
+                        return (
+                          <div key={statKey} className={`flex gap-0.5 items-center px-1 py-0.5 rounded text-[8.5px] shadow-inner border ${selectedNodes.includes(-1) ? 'bg-black/10 border-black/20' : 'bg-black/40 border-gray-800/50'}`}>
+                            <span className={`${selectedNodes.includes(-1) ? 'text-black/70' : 'text-gray-400'} uppercase`}>{statKey}</span>
+                            <span className={`font-black ${selectedNodes.includes(-1) ? 'text-black' : getStatColorClass(val)}`}>{val}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {(() => {
+                      const gold = [...rawPlayStyles.base.gold, ...(rawPlayStyles.ev?.gold || [])];
+                      const silver = [...rawPlayStyles.base.silver, ...(rawPlayStyles.ev?.silver || [])];
+                      if (gold.length === 0 && silver.length === 0) return null;
+                      return (
+                        <div className={`flex flex-wrap items-center gap-1 mt-0.5 border-t pt-1 ${selectedNodes.includes(-1) ? 'border-black/20' : 'border-gray-700/50'}`}>
+                          {gold.map(ps => (
+                            <img key={`g-${ps}`} src={getPlayStyleIconUrl(ps, true)} alt={ps} title={`${ps} (PS+)`} className="w-4 h-4 drop-shadow-[0_0_2px_rgba(234,179,8,0.5)]" />
+                          ))}
+                          {silver.map(ps => (
+                            <img key={`s-${ps}`} src={getPlayStyleIconUrl(ps, false)} alt={ps} title={ps} className="w-3.5 h-3.5 drop-shadow-[0_0_1px_rgba(0,0,0,0.3)]" />
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </button>
                   {onSetBase && (
                     <button
@@ -723,17 +764,125 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         <button
                           onClick={() => onNodeClick(idx)}
                           title={`Preview Step ${idx + 1} (${evo.name}) stats`}
-                          className={`${baseClass} px-2.5 py-1 rounded text-[10.5px] font-bold flex items-center transition-all cursor-pointer shadow gap-1.5`}
+                          className={`shrink-0 p-1.5 rounded font-bold flex flex-col transition-all cursor-pointer shadow gap-1 border text-left ${baseClass}`}
                         >
-                          {stepResult && (
-                            <span className="font-mono tracking-tight font-extrabold opacity-80">
-                              {stepResult.ovrAfter}/{afterPsPlus}
+                          <div className="flex items-center gap-1.5 px-1">
+                            <span className="font-mono tracking-tight font-extrabold opacity-80 text-[10.5px]">
+                              {(() => {
+                                const prevOvr = idx === 0 ? rawBaseOvr : renderPath.steps![idx - 1].ovrAfter;
+                                const ovrDiff = stepResult ? stepResult.ovrAfter - prevOvr : 0;
+                                return ovrDiff > 0 ? <span className={`${isStepActive ? 'text-black' : 'text-fcGreen'} font-bold text-[10px] mr-0.5`}>+{ovrDiff}</span> : null;
+                              })()}
+                              {stepResult ? stepResult.ovrAfter : '?'}/{afterPsPlus}
                             </span>
+                            <span className="text-[10.5px]">{evo.name}</span>
+                            <span className={`font-bold text-[9.5px] tracking-wide font-mono opacity-90 ${isStepActive ? 'text-black' : 'text-gray-300'}`}>
+                              ({evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost})
+                            </span>
+                          </div>
+                          {stepResult && (
+                            <>
+                              <div className="flex gap-2 items-center px-1 mb-0.5">
+                                {(() => {
+                                  const prevStats = idx === 0 ? rawStats : renderPath.steps![idx - 1].statsAfter;
+                                  const prevFace = Object.values(prevStats).reduce((a, b) => a + b.baseFace, 0);
+                                  const curFace = Object.values(stepResult.statsAfter).reduce((a, b) => a + b.baseFace, 0);
+                                  const bsDiff = curFace - prevFace;
+
+                                  const prevIgs = Object.values(prevStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
+                                  const curIgs = Object.values(stepResult.statsAfter).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
+                                  const igsDiff = curIgs - prevIgs;
+
+                                  return (
+                                    <>
+                                      <div className={`flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] ${isStepActive ? 'bg-black/20 border-black/30' : 'bg-gray-800/80 border-gray-600'}`}>
+                                        <span className={`${isStepActive ? 'text-black' : 'text-white'} font-bold`}>BS</span>
+                                        <div className="flex items-baseline gap-0.5">
+                                          {bsDiff > 0 && <span className={`${isStepActive ? 'text-black' : 'text-fcGreen'} font-bold text-[7.5px]`}>+{bsDiff}</span>}
+                                          <span className={`${isStepActive ? 'text-black' : 'text-blue-400'} font-bold`}>{curFace}</span>
+                                        </div>
+                                      </div>
+                                      <div className={`flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] ${isStepActive ? 'bg-black/20 border-black/30' : 'bg-gray-800/80 border-gray-600'}`}>
+                                        <span className={`${isStepActive ? 'text-black' : 'text-white'} font-bold`}>IGS</span>
+                                        <div className="flex items-baseline gap-0.5">
+                                          {igsDiff > 0 && <span className={`${isStepActive ? 'text-black' : 'text-fcGreen'} font-bold text-[7.5px]`}>+{igsDiff}</span>}
+                                          <span className={`${isStepActive ? 'text-black' : 'text-blue-400'} font-bold`}>{curIgs}</span>
+                                        </div>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                              <div className="grid grid-cols-3 gap-0.5">
+                                {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
+                                  const val = stepResult.statsAfter[statKey as keyof StatsData].baseFace;
+                                  const prevStats = idx === 0 ? rawStats : renderPath.steps![idx - 1].statsAfter;
+                                  const prevVal = prevStats[statKey as keyof StatsData].baseFace;
+                                  const diff = val - prevVal;
+                                  
+                                  let diffColor = isStepActive ? "text-black/80" : "text-gray-300";
+                                  if (diff >= 8) diffColor = isStepActive ? "text-purple-900 font-bold" : "text-purple-400 font-bold";
+                                  else if (diff >= 4) diffColor = isStepActive ? "text-green-900 font-bold" : "text-fcGreen font-bold";
+                                  else if (diff >= 2) diffColor = isStepActive ? "text-lime-900 font-semibold" : "text-lime-400 font-semibold";
+
+                                  return (
+                                    <div key={statKey} className={`flex gap-0.5 items-center px-1 py-0.5 rounded text-[8.5px] shadow-inner border ${isStepActive ? 'bg-black/10 border-black/20' : 'bg-black/40 border-gray-800/50'}`}>
+                                      <span className={`${isStepActive ? 'text-black/70' : 'text-gray-400'} uppercase`}>{statKey}</span>
+                                      <div className="flex items-baseline gap-0.5 ml-0.5">
+                                        {diff > 0 && <span className={`${diffColor} text-[7px] leading-none tracking-tighter`}>+{diff}</span>}
+                                        <span className={`font-black ${isStepActive ? 'text-black' : getStatColorClass(val)}`}>{val}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              
+                              {/* PlayStyle Additions */}
+                              {(() => {
+                                const prevPlayStyles = idx === 0 ? rawPlayStyles : renderPath.steps![idx - 1].playStylesAfter;
+                                
+                                const beforeGold = [...prevPlayStyles.base.gold, ...(prevPlayStyles.ev?.gold || [])];
+                                const beforeSilver = [...prevPlayStyles.base.silver, ...(prevPlayStyles.ev?.silver || [])];
+                                
+                                const afterGold = [...stepResult.playStylesAfter.base.gold, ...(stepResult.playStylesAfter.ev?.gold || [])];
+                                const afterSilver = [...stepResult.playStylesAfter.base.silver, ...(stepResult.playStylesAfter.ev?.silver || [])];
+                                
+                                const addedGold = afterGold.filter(ps => !beforeGold.includes(ps));
+                                const addedSilver = afterSilver.filter(ps => !beforeSilver.includes(ps));
+                                
+                                if (afterGold.length === 0 && afterSilver.length === 0) return null;
+                                
+                                return (
+                                  <div className={`flex flex-wrap items-center gap-1 mt-0.5 border-t pt-1 ${isStepActive ? 'border-black/20' : 'border-gray-700/50'}`}>
+                                    {afterGold.map(ps => {
+                                      const isNew = addedGold.includes(ps);
+                                      return (
+                                        <img 
+                                          key={`g-${ps}`} 
+                                          src={getPlayStyleIconUrl(ps, true)} 
+                                          alt={ps} 
+                                          title={`${ps} (PS+)`} 
+                                          className={`w-4 h-4 drop-shadow-[0_0_2px_rgba(234,179,8,0.5)] ${isNew ? `ring-[1.5px] ${isStepActive ? 'ring-black ring-offset-transparent' : 'ring-fcGreen ring-offset-[#1f211f]'} ring-offset-[1.5px] rounded-full` : ''}`} 
+                                        />
+                                      );
+                                    })}
+                                    {afterSilver.map(ps => {
+                                      const isNew = addedSilver.includes(ps);
+                                      return (
+                                        <img 
+                                          key={`s-${ps}`} 
+                                          src={getPlayStyleIconUrl(ps, false)} 
+                                          alt={ps} 
+                                          title={ps} 
+                                          className={`w-3.5 h-3.5 drop-shadow-[0_0_1px_rgba(0,0,0,0.3)] ${isNew ? `ring-[1.5px] ${isStepActive ? 'ring-black ring-offset-transparent' : 'ring-fcGreen ring-offset-[#1f211f]'} ring-offset-[1px] rounded-full` : ''}`} 
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
+                            </>
                           )}
-                          <span>{evo.name}</span>
-                          <span className={`font-normal text-[9.5px] opacity-90 tracking-wide font-mono ${isStepActive ? 'text-black font-bold' : 'text-gray-300'}`}>
-                            ({evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost})
-                          </span>
                         </button>
                         {onViewEvo && (
                           <button
