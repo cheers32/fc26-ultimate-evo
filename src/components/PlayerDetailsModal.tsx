@@ -16,10 +16,17 @@ export function PlayerDetailsModal({ player, onClose, onSelect, onDelete }: Play
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      // Enter confirms. No "are you typing?" guard: this modal has no inputs of its own, and the
+      // search box behind it keeps focus — the picker's own Enter handler already stands down
+      // while this modal is open, so the keypress is ours to take.
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onSelect(player.id);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, onSelect, player.id]);
 
   // Calculate top-line stats
   const accelerateType = useMemo(() => {
@@ -188,6 +195,7 @@ export function PlayerDetailsModal({ player, onClose, onSelect, onDelete }: Play
             >
               <Check className="w-5 h-5" />
               Select Player
+              <kbd className="ml-1 px-1.5 py-0.5 bg-black/20 border border-black/30 rounded text-[10px] font-mono">⏎</kbd>
             </button>
           </div>
         </div>
