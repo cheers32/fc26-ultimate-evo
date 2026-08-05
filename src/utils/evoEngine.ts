@@ -484,9 +484,12 @@ export function analyzeEvolutions(
 
         if (filters.requiredEvos && filters.requiredEvos.length > 0) {
           const hasAllRequired = filters.requiredEvos.every(evoId => currentChainIds.includes(evoId));
-          if (!hasAllRequired) {
-            passesFilters = false;
-          }
+          if (!hasAllRequired) passesFilters = false;
+        }
+
+        if (filters.blockedEvos && filters.blockedEvos.length > 0) {
+          const hasBlocked = filters.blockedEvos.some(evoId => currentChainIds.includes(evoId));
+          if (hasBlocked) passesFilters = false;
         }
       }
 

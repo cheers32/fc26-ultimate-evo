@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Upload, Info } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { parseFutbinText } from '../utils/futbinParser';
@@ -12,6 +12,14 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
   const [rawText, setRawText] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   const handleImport = () => {
     setError(null);

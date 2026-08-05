@@ -164,6 +164,7 @@ export interface EvoFilters {
   psPlus?: StatFilter;
   ps?: StatFilter;
   requiredEvos?: string[];
+  blockedEvos?: string[];
 }
 
 export interface PlayerEvoState {

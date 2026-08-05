@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { FC26_PLAYSTYLES, getPlayStyleIconUrl } from '../utils/playstyles';
@@ -17,6 +17,14 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
 
   const [goldPs, setGoldPs] = useState<Set<string>>(new Set(player.playStyles.base.gold.map(p => p.replace('+', ''))));
   const [silverPs, setSilverPs] = useState<Set<string>>(new Set(player.playStyles.base.silver));
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   const handleSave = () => {
     onSave(

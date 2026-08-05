@@ -7,12 +7,15 @@ import { Plus } from 'lucide-react';
 export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | null; onClose: () => void; onAddEvo?: (id: string) => void }) => {
   useEffect(() => {
     if (!evoId) return;
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      if (e.key === 'Enter' && onAddEvo) {
+        onAddEvo(evoId);
+      }
     };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [evoId, onClose]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [evoId, onClose, onAddEvo]);
 
   if (!evoId) return null;
   const evo = availableEvolutions[evoId];

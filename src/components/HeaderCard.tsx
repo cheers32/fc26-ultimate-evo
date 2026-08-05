@@ -105,6 +105,51 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const isLockedOrEvo = evoLocked || evoPreview;
 
   const [showFilters, setShowFilters] = React.useState(false);
+  const [draftFilters, setDraftFilters] = React.useState<EvoFilters>(evoFilters || {});
+
+  React.useEffect(() => {
+    if (showFilters) {
+      setDraftFilters(evoFilters || {});
+    }
+  }, [showFilters, evoFilters]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      // Also ignore if a modifier key is pressed
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'p') {
+        e.preventDefault();
+        onOpenEvoPool();
+      } else if (key === 'f') {
+        e.preventDefault();
+        setShowFilters(prev => !prev);
+      } else if (key === 'a') {
+        e.preventDefault();
+        onOpenManualPath();
+      } else if (key === 'b' && onBranchFromBase) {
+        e.preventDefault();
+        onBranchFromBase();
+      } else if (key === 'c' && onClearPaths) {
+        e.preventDefault();
+        onClearPaths();
+      } else if (key === '/' && onChangePlayer) {
+        e.preventDefault();
+        onChangePlayer();
+      } else if (key === 'escape' && showFilters) {
+        e.preventDefault();
+        setShowFilters(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showFilters, onOpenEvoPool, onOpenManualPath, onBranchFromBase, onAnalyze, onClearPaths, onChangePlayer, evosPool]);
 
   const activeFiltersCount = React.useMemo(() => {
     if (!evoFilters) return 0;
@@ -279,11 +324,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               {onChangePlayer && (
                 <button
                   onClick={onChangePlayer}
-                  title="Change Player (/)"
-                  className="px-3 py-1.5 border border-gray-600 hover:border-fuchsia-500/50 bg-[#1f2937] hover:bg-gray-800 rounded-lg text-gray-300 hover:text-white text-xs flex items-center gap-1.5 transition-colors mr-1"
+                  title="Switch Player (/)"
+                  className="px-3 py-1.5 border border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 rounded-lg text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1.5 transition-colors mr-1 font-bold shadow-[0_0_10px_rgba(37,99,235,0.2)]"
                 >
-                  <span className="text-[10px]">👤</span> Change
-                  <kbd className="ml-1 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">/</kbd>
+                  <span className="text-[10px]">👤</span> Switch
+                  <kbd className="ml-1 px-1 bg-blue-950/50 border border-blue-800 rounded text-[9px] text-blue-300 font-mono">/</kbd>
                 </button>
               )}
 
@@ -293,6 +338,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'
               }`}>
                 <Settings2 className="w-3.5 h-3.5" /> Filters
+                <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">f</kbd>
                 {activeFiltersCount > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 bg-fcGreen/20 text-fcGreen rounded font-bold text-[9px]">
                     {activeFiltersCount}
@@ -304,7 +350,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <div 
                   className="absolute top-full right-0 mt-2 w-72 bg-[#1A1C1A] border border-gray-700 rounded-xl shadow-2xl z-50 p-4"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === 'Escape') {
+                    if (e.key === 'Enter') {
+                      onEvoFiltersChange(draftFilters);
+                      setShowFilters(false);
+                    } else if (e.key === 'Escape') {
                       setShowFilters(false);
                     }
                   }}
@@ -316,8 +365,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
                   <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                     {['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy', 'psPlus', 'ps'].map(stat => {
-                      const safeFilters = evoFilters || {};
-                      const statFilter = (safeFilters as any)[stat] || {};
+                      const statFilter = (draftFilters as any)[stat] || {};
                       const label = stat === 'psPlus' ? 'PS+' : stat === 'ps' ? 'PS' : stat.toUpperCase();
                       const hasSubs = !!statSubs[stat];
                       const isExpanded = expandedStats.has(stat);
@@ -339,7 +387,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                 value={statFilter.min || ''}
                                 onChange={(e) => {
                                   const val = e.target.value ? Number(e.target.value) : undefined;
-                                  onEvoFiltersChange({ ...safeFilters, [stat]: { ...statFilter, min: val } });
+                                  setDraftFilters({ ...draftFilters, [stat]: { ...statFilter, min: val } });
                                 }}
                                 className="w-14 bg-[#121212] border border-gray-700 rounded px-2 py-1 text-white text-center focus:border-fcGreen outline-none"
                               />
@@ -350,7 +398,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                 value={statFilter.max || ''}
                                 onChange={(e) => {
                                   const val = e.target.value ? Number(e.target.value) : undefined;
-                                  onEvoFiltersChange({ ...safeFilters, [stat]: { ...statFilter, max: val } });
+                                  setDraftFilters({ ...draftFilters, [stat]: { ...statFilter, max: val } });
                                 }}
                                 className="w-14 bg-[#121212] border border-gray-700 rounded px-2 py-1 text-white text-center focus:border-fcGreen outline-none"
                               />
@@ -371,8 +419,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                         value={subFilter.min || ''}
                                         onChange={(e) => {
                                           const val = e.target.value ? Number(e.target.value) : undefined;
-                                          onEvoFiltersChange({
-                                            ...safeFilters, 
+                                          setDraftFilters({
+                                            ...draftFilters, 
                                             [stat]: { 
                                               ...statFilter, 
                                               subs: { ...statFilter.subs, [sub.key]: { ...subFilter, min: val } } 
@@ -388,8 +436,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                         value={subFilter.max || ''}
                                         onChange={(e) => {
                                           const val = e.target.value ? Number(e.target.value) : undefined;
-                                          onEvoFiltersChange({
-                                            ...safeFilters, 
+                                          setDraftFilters({
+                                            ...draftFilters, 
                                             [stat]: { 
                                               ...statFilter, 
                                               subs: { ...statFilter.subs, [sub.key]: { ...subFilter, max: val } } 
@@ -410,17 +458,28 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center">
-                    <button onClick={() => onEvoFiltersChange({})} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold">Clear All</button>
-                    <button onClick={() => setShowFilters(false)} className="px-4 py-1.5 bg-fcGreen hover:bg-[#1db954] text-black font-bold text-xs rounded-lg shadow-sm">OK</button>
+                    <button onClick={() => setDraftFilters({})} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold">Clear All</button>
+                    <button onClick={() => { onEvoFiltersChange(draftFilters); setShowFilters(false); }} className="px-4 py-1.5 bg-fcGreen hover:bg-[#1db954] text-black font-bold text-xs rounded-lg shadow-sm">OK</button>
                   </div>
                 </div>
               )}
 
               <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5 ml-2">
                 <Settings className="w-3.5 h-3.5" /> Pool ({evosPool?.length || 0})
+                <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">p</kbd>
+                {(evoFilters?.requiredEvos?.length || 0) > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-fcGreen/20 text-fcGreen rounded font-bold text-[9px]" title="Must Include">
+                    ★ {evoFilters!.requiredEvos!.length}
+                  </span>
+                )}
+                {(evoFilters?.blockedEvos?.length || 0) > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-red-900/40 text-red-400 rounded font-bold text-[9px]" title="Excluded">
+                    🚫 {evoFilters!.blockedEvos!.length}
+                  </span>
+                )}
               </button>
               <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Add EVO <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">.</kbd>
+                <Plus className="w-3.5 h-3.5" /> Add EVO <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">a</kbd>
               </button>
               {onBranchFromBase && (
                 <button
@@ -428,10 +487,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   title="Start a new path from the base, leaving this one untouched"
                   className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-purple-800/60 rounded-lg text-purple-300 text-xs flex items-center gap-1.5"
                 >
-                  <GitBranch className="w-3.5 h-3.5" /> Branch
+                  <GitBranch className="w-3.5 h-3.5" /> Branch <kbd className="ml-0.5 px-1 bg-black/40 border border-purple-900 rounded text-[9px] text-purple-400 font-mono">b</kbd>
                 </button>
               )}
-              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 ${(evosPool?.length || 0) > 0 ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-500 hover:border-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.4)]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
+              <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${(evosPool?.length || 0) > 0 ? 'border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 shadow-[0_0_10px_rgba(37,99,235,0.2)]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
                 <Zap className="w-3.5 h-3.5" /> Analyze
               </button>
               {onClearPaths && (
@@ -440,7 +499,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   title="Clear all unstarred paths"
                   className="px-3 py-1.5 bg-[#1f2937] hover:bg-red-900/50 border border-gray-600 hover:border-red-500/50 rounded-lg text-gray-400 hover:text-red-300 text-xs flex items-center gap-1.5 ml-auto"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Clear Paths
+                  <Trash2 className="w-3.5 h-3.5" /> Clear Unstarred <kbd className="ml-0.5 px-1 bg-black/40 border border-red-900/50 rounded text-[9px] text-red-400 font-mono">c</kbd>
                 </button>
               )}
             </div>
@@ -583,24 +642,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   const evo = availableEvolutions[id];
                   if (!evo) return null;
                   
+                  const isStepActive = selectedNodes.includes(idx);
+
                   let stepStatsStr = null;
                   const stepResult = renderPath.steps?.[idx];
                   if (stepResult) {
                     const reqOvr = evo.requirements.maxOvr || 99;
                     const reqPsPlus = evo.requirements.maxPlayStylesPlus ?? 99;
                     const reqPsPlusStr = reqPsPlus === 99 ? '∞' : reqPsPlus;
-                    const addedPsPlus = evo.playStylesAdded?.gold?.length || 0;
-                    
-                    const isStepActive = selectedNodes.includes(idx);
-                    
-                    stepStatsStr = (
-                      <span className={`font-normal text-[9.5px] ml-1.5 opacity-90 tracking-wide font-mono ${isStepActive ? 'text-black font-bold' : 'text-gray-300'}`}>
-                        ({stepResult.ovrAfter}/{reqOvr}/{reqPsPlusStr}/{addedPsPlus})
-                      </span>
-                    );
                   }
 
-                  const isStepActive = selectedNodes.includes(idx);
+                  const afterPsPlus = stepResult 
+                    ? (stepResult.playStylesAfter.base.gold.length + stepResult.playStylesAfter.ev.gold.length)
+                    : '?';
                   const baseClass = isStepActive
                     ? "bg-[#EBB626] text-black border-[#d9a320] hover:bg-[#d4a21e]"
                     : "bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200";
@@ -616,10 +670,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         <button
                           onClick={() => onNodeClick(idx)}
                           title={`Preview Step ${idx + 1} (${evo.name}) stats`}
-                          className={`${baseClass} px-2.5 py-1 rounded text-[10.5px] font-bold flex items-center transition-all cursor-pointer shadow`}
+                          className={`${baseClass} px-2.5 py-1 rounded text-[10.5px] font-bold flex items-center transition-all cursor-pointer shadow gap-1.5`}
                         >
-                          {evo.name}
-                          {stepStatsStr}
+                          {stepResult && (
+                            <span className="font-mono tracking-tight font-extrabold opacity-80">
+                              {stepResult.ovrAfter}/{afterPsPlus}
+                            </span>
+                          )}
+                          <span>{evo.name}</span>
+                          <span className={`font-normal text-[9.5px] opacity-90 tracking-wide font-mono ${isStepActive ? 'text-black font-bold' : 'text-gray-300'}`}>
+                            ({evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost})
+                          </span>
                         </button>
                         {onViewEvo && (
                           <button

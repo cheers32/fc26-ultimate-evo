@@ -1,0 +1,12 @@
+runtime: nodejs24
+
+handlers:
+  # Serve all static files with their paths
+  - url: /(.*\..+)$
+    static_files: dist/\1
+    upload: dist/(.*\..+)$
+
+  # Catch all other paths and serve index.html for React Router
+  - url: /.*
+    static_files: dist/index.html
+    upload: dist/index.html

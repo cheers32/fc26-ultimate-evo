@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, Ban } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 
@@ -6,78 +6,148 @@ interface EvoPoolModalProps {
   isOpen: boolean;
   onClose: () => void;
   evosPool: string[];
-  setEvosPool: (pool: string[]) => void;
   disabledEvos?: string[];
   requiredEvos?: string[];
-  setRequiredEvos?: (required: string[]) => void;
+  blockedEvos?: string[];
+  onConfirm: (pool: string[], required: string[], blocked: string[]) => void;
 }
 
 export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   isOpen,
   onClose,
   evosPool,
-  setEvosPool,
   disabledEvos = [],
   requiredEvos = [],
-  setRequiredEvos = () => {}
+  blockedEvos = [],
+  onConfirm
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [draftEvosPool, setDraftEvosPool] = useState<string[]>([]);
+  const [draftRequiredEvos, setDraftRequiredEvos] = useState<string[]>([]);
+  const [draftBlockedEvos, setDraftBlockedEvos] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDraftEvosPool(evosPool);
+      setDraftRequiredEvos(requiredEvos);
+      setDraftBlockedEvos(blockedEvos);
+    }
+  }, [isOpen, evosPool, requiredEvos, blockedEvos]);
+
+  const handleConfirm = React.useCallback(() => {
+    onConfirm(draftEvosPool, draftRequiredEvos, draftBlockedEvos);
+    onClose();
+  }, [draftEvosPool, draftRequiredEvos, draftBlockedEvos, onConfirm, onClose]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'Enter') {
+        // Only if we aren't typing in the search input (it has its own enter handler)
+        if (document.activeElement?.tagName !== 'INPUT') {
+          handleConfirm();
+        }
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, handleConfirm]);
 
   if (!isOpen) return null;
 
   const isEvoDisabled = (id: string) => disabledEvos.includes(id);
 
   const toggleEvo = (id: string) => {
-    if (evosPool.includes(id)) {
-      setEvosPool(evosPool.filter((e) => e !== id));
-      if (requiredEvos.includes(id)) {
-        setRequiredEvos(requiredEvos.filter(e => e !== id));
+    if (draftEvosPool.includes(id)) {
+      setDraftEvosPool(draftEvosPool.filter((e) => e !== id));
+      if (draftRequiredEvos.includes(id)) {
+        setDraftRequiredEvos(draftRequiredEvos.filter(e => e !== id));
       }
     } else {
-      setEvosPool([...evosPool, id]);
+      setDraftEvosPool([...draftEvosPool, id]);
+      if (draftBlockedEvos.includes(id)) {
+        setDraftBlockedEvos(draftBlockedEvos.filter(e => e !== id));
+      }
     }
   };
 
   const toggleRequired = (id: string) => {
-    if (requiredEvos.includes(id)) {
-      setRequiredEvos(requiredEvos.filter(e => e !== id));
+    if (draftRequiredEvos.includes(id)) {
+      setDraftRequiredEvos(draftRequiredEvos.filter(e => e !== id));
     } else {
-      setRequiredEvos([...requiredEvos, id]);
-      if (!evosPool.includes(id)) {
-        setEvosPool([...evosPool, id]);
+      setDraftRequiredEvos([...draftRequiredEvos, id]);
+      if (!draftEvosPool.includes(id)) {
+        setDraftEvosPool([...draftEvosPool, id]);
+      }
+      if (draftBlockedEvos.includes(id)) {
+        setDraftBlockedEvos(draftBlockedEvos.filter(e => e !== id));
       }
     }
   };
 
-  const activeEvos = Object.values(availableEvolutions).filter(evo => !isEvoDisabled(evo.id));
+  const toggleBlocked = (id: string) => {
+    if (draftBlockedEvos.includes(id)) {
+      setDraftBlockedEvos(draftBlockedEvos.filter(e => e !== id));
+    } else {
+      setDraftBlockedEvos([...draftBlockedEvos, id]);
+      if (draftRequiredEvos.includes(id)) {
+        setDraftRequiredEvos(draftRequiredEvos.filter(e => e !== id));
+      }
+      if (!draftEvosPool.includes(id)) {
+        setDraftEvosPool([...draftEvosPool, id]);
+      }
+    }
+  };
+
+  const activeEvos = Object.values(availableEvolutions)
+    .filter(evo => !isEvoDisabled(evo.id))
+    .sort((a, b) => {
+      const aReq = draftRequiredEvos.includes(a.id);
+      const bReq = draftRequiredEvos.includes(b.id);
+      if (aReq && !bReq) return -1;
+      if (!aReq && bReq) return 1;
+
+      const aBlock = draftBlockedEvos.includes(a.id);
+      const bBlock = draftBlockedEvos.includes(b.id);
+      if (aBlock && !bBlock) return -1;
+      if (!aBlock && bBlock) return 1;
+
+      return 0;
+    });
   const disabledEvosList = Object.values(availableEvolutions).filter(evo => isEvoDisabled(evo.id));
 
   const filteredActiveEvos = activeEvos.filter(evo => !searchQuery || evo.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredDisabledEvos = disabledEvosList.filter(evo => !searchQuery || evo.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const selectedCount = evosPool.length;
+  const selectedCount = draftEvosPool.length;
   const totalCount = Object.keys(availableEvolutions).length;
 
   const handleSelectAll = () => {
-    setEvosPool(Object.keys(availableEvolutions).filter(id => !isEvoDisabled(id)));
+    setDraftEvosPool(Object.keys(availableEvolutions).filter(id => !isEvoDisabled(id)));
   };
 
   const handleClear = () => {
-    setEvosPool([]);
-    setRequiredEvos([]);
+    setDraftEvosPool([]);
+    setDraftRequiredEvos([]);
+    setDraftBlockedEvos([]);
   };
 
   const EvoCard = ({ evo }: { evo: any }) => {
     const disabled = isEvoDisabled(evo.id);
-    const isSelected = evosPool.includes(evo.id);
-    const isRequired = requiredEvos.includes(evo.id);
+    const isSelected = draftEvosPool.includes(evo.id);
+    const isRequired = draftRequiredEvos.includes(evo.id);
+    const isBlocked = draftBlockedEvos.includes(evo.id);
 
     return (
       <div
         key={evo.id}
         onClick={() => toggleEvo(evo.id)}
         className={`relative p-4 rounded-xl border transition-all ${
-          isSelected
+          isBlocked
+            ? 'bg-red-950/10 border-red-900/30 cursor-pointer'
+            : isSelected
             ? 'bg-green-950/30 border-fcGreen/60 cursor-pointer'
             : disabled
             ? 'bg-[#141614] border-red-900/40 hover:border-red-800/60 cursor-pointer'
@@ -94,7 +164,7 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
             <Ban className="w-3 h-3" /> Disabled
           </div>
         )}
-        <h3 className={`font-bold ${disabled && !isSelected ? 'text-gray-500 line-through' : isSelected ? 'text-fcGreen' : 'text-gray-200'}`}>
+        <h3 className={`font-bold ${isBlocked ? 'text-red-400 opacity-90' : disabled && !isSelected ? 'text-gray-500 line-through' : isSelected ? 'text-fcGreen' : 'text-gray-200'}`}>
           {evo.name}
         </h3>
         <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">{evo.cost}</p>
@@ -125,16 +195,30 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
           )}
         </div>
 
-        {/* Must Include Toggle */}
-        <div 
-          className="absolute bottom-3 right-3 flex items-center gap-2 cursor-pointer z-10 hover:opacity-80" 
-          onClick={(e) => { e.stopPropagation(); toggleRequired(evo.id); }}
-        >
-          <span className={`text-[10px] font-bold ${isRequired ? 'text-fcGreen' : 'text-gray-500'}`}>
-            MUST INCLUDE
-          </span>
-          <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${isRequired ? 'bg-fcGreen' : 'bg-gray-700'}`}>
-            <div className={`w-3 h-3 bg-white rounded-full transition-transform ${isRequired ? 'translate-x-4' : 'translate-x-0'}`} />
+        {/* Toggles */}
+        <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1.5">
+          <div 
+            className="flex items-center gap-2 cursor-pointer z-10 hover:opacity-80" 
+            onClick={(e) => { e.stopPropagation(); toggleRequired(evo.id); }}
+          >
+            <span className={`text-[9px] font-bold ${isRequired ? 'text-fcGreen' : 'text-gray-500'}`}>
+              MUST INCLUDE
+            </span>
+            <div className={`w-7 h-3.5 rounded-full p-0.5 transition-colors ${isRequired ? 'bg-fcGreen' : 'bg-gray-700'}`}>
+              <div className={`w-2.5 h-2.5 bg-white rounded-full transition-transform ${isRequired ? 'translate-x-3.5' : 'translate-x-0'}`} />
+            </div>
+          </div>
+          <div 
+            className="flex items-center gap-2 cursor-pointer z-10 hover:opacity-80" 
+            onClick={(e) => { e.stopPropagation(); toggleBlocked(evo.id); }}
+            title="Exclude from Auto Path Analysis"
+          >
+            <span className={`text-[9px] font-bold ${isBlocked ? 'text-red-400' : 'text-gray-500'}`}>
+              NO AUTO
+            </span>
+            <div className={`w-7 h-3.5 rounded-full p-0.5 transition-colors ${isBlocked ? 'bg-red-500' : 'bg-gray-700'}`}>
+              <div className={`w-2.5 h-2.5 bg-white rounded-full transition-transform ${isBlocked ? 'translate-x-3.5' : 'translate-x-0'}`} />
+            </div>
           </div>
         </div>
       </div>
@@ -171,14 +255,18 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                      e.preventDefault();
                       const topEvo = filteredActiveEvos[0] || filteredDisabledEvos[0];
-                      if (topEvo) {
-                        // If not already selected, select it
-                        if (!evosPool.includes(topEvo.id)) {
-                           setEvosPool([...evosPool, topEvo.id]);
-                        }
+                      if (topEvo && !draftEvosPool.includes(topEvo.id)) {
+                        onConfirm(
+                          [...draftEvosPool, topEvo.id],
+                          draftRequiredEvos,
+                          draftBlockedEvos
+                        );
+                        onClose();
+                      } else {
+                        handleConfirm();
                       }
-                      onClose();
                     }
                   }}
                   className="w-full sm:w-48 bg-[#1a1c1a] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen outline-none transition-colors"
@@ -234,7 +322,7 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
           <button onClick={onClose} className="px-5 py-2 rounded-lg text-sm font-semibold text-gray-300 bg-[#2A2D2A] hover:bg-[#374151] transition-colors border border-gray-700">
             Cancel
           </button>
-          <button onClick={onClose} className="px-6 py-2 rounded-lg text-sm font-bold text-black bg-[#1ED760] hover:bg-[#1db954] transition-colors shadow-lg">
+          <button onClick={handleConfirm} className="px-6 py-2 rounded-lg text-sm font-bold text-black bg-[#1ED760] hover:bg-[#1db954] transition-colors shadow-lg">
             Confirm Selection
           </button>
         </div>

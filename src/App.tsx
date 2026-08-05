@@ -73,7 +73,7 @@ export default function App() {
         setIsPlayerSelectionOpen(true);
       }
 
-      if ((e.key === '.' || e.code === 'Period') && !isPlayerSelectionOpen && !isManualPathOpen) {
+      if ((e.key === 'a' || e.key === 'A') && !isPlayerSelectionOpen && !isManualPathOpen) {
         e.preventDefault();
         setPickerMode('append');
         setIsManualPathOpen(true);
@@ -975,10 +975,19 @@ export default function App() {
         isOpen={isEvoPoolOpen}
         onClose={() => setIsEvoPoolOpen(false)}
         evosPool={evosPool}
-        setEvosPool={setEvosPool}
         disabledEvos={disabledEvos}
         requiredEvos={evoFilters.requiredEvos || []}
-        setRequiredEvos={(req) => setEvoFilters({ ...evoFilters, requiredEvos: req })}
+        blockedEvos={evoFilters.blockedEvos || []}
+        onConfirm={(pool, required, blocked) => {
+          updateState({
+            evosPool: pool,
+            evoFilters: {
+              ...evoFilters,
+              requiredEvos: required,
+              blockedEvos: blocked
+            }
+          });
+        }}
       />
       <ManualPathModal
         isOpen={isManualPathOpen}
@@ -1002,7 +1011,6 @@ export default function App() {
             });
           }
           setActivePathId(path.id);
-          setIsManualPathOpen(false);
           setBaseIndex(path.chainIds.length - 1);
           if (!evoPreview) setEvoPreview(true);
         }}
