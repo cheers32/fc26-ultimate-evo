@@ -541,29 +541,33 @@ export default function App() {
     };
   }, [chainResult, playerBio.name, activePath.name, activePath.chainIds, initialOvrData.base]);
 
-  const { activeBaseStats, previewStats, activeBaseOvr, previewOvr, activePlayStyles, previewPlayStyles } = useMemo(() => {
+  const { activeBaseStats, previewStats, activeBaseOvr, previewOvr, activePlayStyles, previewPlayStyles, previewBio } = useMemo(() => {
     let aBaseStats = statsData;
     let aBaseOvr = initialOvrData.base;
     let aPlayStyles = JSON.parse(JSON.stringify(playStylesData));
     aPlayStyles.ev = { gold: [], silver: [] };
+    let aBaseBio = playerBio;
 
     // 1. Determine Base
     if (baseNode === -1) {
       aBaseStats = statsData;
       aBaseOvr = initialOvrData.base;
       aPlayStyles.base = JSON.parse(JSON.stringify(playStylesData.base));
+      aBaseBio = playerBio;
     } else {
       const bStep = chainResult.steps[baseNode];
       if (bStep) {
         aBaseStats = bStep.statsAfter;
         aBaseOvr = bStep.ovrAfter;
         aPlayStyles.base = JSON.parse(JSON.stringify(bStep.playStylesAfter.base));
+        aBaseBio = bStep.bioAfter;
       }
     }
 
     let pStats = aBaseStats;
     let pOvr = aBaseOvr;
     let pPlayStyles = JSON.parse(JSON.stringify(aPlayStyles));
+    let pBio = aBaseBio;
 
     // 2. Determine Preview
     if (compareChainResult) {
@@ -576,15 +580,18 @@ export default function App() {
         aBaseStats = baseFinalStep.statsAfter;
         aBaseOvr = baseFinalStep.ovrAfter;
         aPlayStyles.base = JSON.parse(JSON.stringify(baseFinalStep.playStylesAfter.base));
+        aBaseBio = baseFinalStep.bioAfter;
       } else {
         aBaseStats = statsData;
         aBaseOvr = initialOvrData.base;
         aPlayStyles.base = JSON.parse(JSON.stringify(playStylesData.base));
+        aBaseBio = playerBio;
       }
       
       if (previewFinalStep) {
         pStats = previewFinalStep.statsAfter;
         pOvr = previewFinalStep.ovrAfter;
+        pBio = previewFinalStep.bioAfter;
         
         const beforeGold = aPlayStyles.base.gold;
         const beforeSilver = aPlayStyles.base.silver;
@@ -598,16 +605,19 @@ export default function App() {
       } else {
         pStats = statsData;
         pOvr = initialOvrData.base;
+        pBio = playerBio;
       }
     } else if (evoPreview && previewNode >= baseNode) {
       if (previewNode === -1) {
         pStats = statsData;
         pOvr = initialOvrData.base;
+        pBio = playerBio;
       } else {
         const pStep = chainResult.steps[previewNode];
         if (pStep) {
           pStats = pStep.statsAfter;
           pOvr = pStep.ovrAfter;
+          pBio = pStep.bioAfter;
           
           const beforeGold = aPlayStyles.base.gold;
           const beforeSilver = aPlayStyles.base.silver;
@@ -628,9 +638,10 @@ export default function App() {
       activeBaseOvr: aBaseOvr,
       previewOvr: pOvr,
       activePlayStyles: aPlayStyles,
-      previewPlayStyles: pPlayStyles
+      previewPlayStyles: pPlayStyles,
+      previewBio: pBio
     };
-  }, [baseNode, previewNode, evoPreview, chainResult, compareChainResult, statsData, initialOvrData, playStylesData]);
+  }, [baseNode, previewNode, evoPreview, chainResult, compareChainResult, statsData, initialOvrData, playStylesData, playerBio]);
 
   // Calculate IGS & Face Stats Summary
   const { igs, faceSum, accelerateType } = useMemo(() => {
@@ -780,7 +791,7 @@ export default function App() {
 
         <HeaderCard
           onChangePlayer={() => setIsPlayerSelectionOpen(true)}
-          bio={playerBio}
+          bio={previewBio}
           futbinLink={currentPlayer.futbinLink}
           avatarUrl={currentPlayer.avatarUrl}
           activeBaseOvr={activeBaseOvr}

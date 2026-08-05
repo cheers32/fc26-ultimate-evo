@@ -73,6 +73,12 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
                 </div>
               </div>
             )}
+            {evo.rarityChange && (
+              <div className="mb-3 bg-purple-900/20 p-3 rounded-lg border border-purple-800/40 flex justify-between items-center">
+                <span className="text-purple-400 font-bold text-sm tracking-wide">Rarity Change</span>
+                <span className="text-purple-300 font-bold text-base">{evo.rarityChange}</span>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Object.entries(evo.subStatBoosts || {}).map(([stat, boost]) => (
                 <div key={stat} className="bg-[#121212] p-2 rounded border border-gray-800 flex justify-between items-center text-xs group hover:border-fcGreen/50 transition-colors">

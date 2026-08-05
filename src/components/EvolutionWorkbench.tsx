@@ -101,6 +101,15 @@ export const EvolutionWorkbench: React.FC<EvolutionWorkbenchProps> = ({
                     <span className={`text-[10px] ${(selectedStep === 'full' || index <= selectedStep) ? 'text-black/70' : 'text-gray-400'}`}>
                       #{evo.id}
                     </span>
+                    {evo.rarityChange && (
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ml-1 ${
+                        (selectedStep === 'full' || index <= selectedStep)
+                          ? 'bg-purple-900/20 text-purple-900 border-purple-900/20'
+                          : 'bg-purple-950/40 text-purple-400 border-purple-800/40'
+                      }`}>
+                        Rarity → {evo.rarityChange}
+                      </span>
+                    )}
                   </span>
                 </button>
 
