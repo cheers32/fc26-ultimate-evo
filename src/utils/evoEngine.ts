@@ -535,9 +535,17 @@ export function analyzeEvolutions(
           if (!hasAllRequired) passesFilters = false;
         }
 
-        if (filters.blockedEvos && filters.blockedEvos.length > 0) {
+if (filters.blockedEvos && filters.blockedEvos.length > 0) {
           const hasBlocked = filters.blockedEvos.some(evoId => currentChainIds.includes(evoId));
           if (hasBlocked) passesFilters = false;
+        }
+
+        if (filters.newRarity && state.bio.rarity === baseBio.rarity) {
+          passesFilters = false;
+        }
+
+        if (filters.newPosition && state.bio.primaryPositions === baseBio.primaryPositions) {
+          passesFilters = false;
         }
       }
 

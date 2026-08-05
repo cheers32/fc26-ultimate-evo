@@ -465,9 +465,33 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         </div>
                       );
                     })}
+
+                    <div className="mt-3 pt-3 border-t border-gray-800">
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.newRarity}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, newRarity: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          New Rarity
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.newPosition}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, newPosition: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          New Position
+                        </label>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center">
+
                     <button onClick={() => setDraftFilters({})} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold">Clear All</button>
                     <button onClick={() => { onEvoFiltersChange(draftFilters); setShowFilters(false); }} className="px-4 py-1.5 bg-fcGreen hover:bg-[#1db954] text-black font-bold text-xs rounded-lg shadow-sm">OK</button>
                   </div>

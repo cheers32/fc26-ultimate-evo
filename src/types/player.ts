@@ -165,6 +165,8 @@ export interface EvoFilters {
   ps?: StatFilter;
   requiredEvos?: string[];
   blockedEvos?: string[];
+  newRarity?: boolean;
+  newPosition?: boolean;
 }
 
 export interface PlayerEvoState {
