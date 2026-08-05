@@ -1,6 +1,11 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
 
+// Rarities that unlock free PlayStyle assignment in-game. Once a card is one of these,
+// running another rarity-changing evo just overwrites the string for no extra benefit —
+// the perk doesn't stack, so a chain should carry at most one rarity-changing evo total.
+const FREE_PLAYSTYLE_RARITIES = ['Futties Evo', 'National Pride', 'Glory Hunters', 'FUT Birthday'];
+
 const POSITION_WEIGHTS: Record<string, Record<string, number>> = {
   'ST': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
   'CF': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
@@ -120,6 +125,13 @@ export function validateRequirement(
   }
   if (evo.requirements.notRarity && bio.rarity === evo.requirements.notRarity) {
     reasons.push(`Rarity (${bio.rarity}) matches Excluded Rarity (${evo.requirements.notRarity})`);
+  }
+
+  // A path should carry at most one rarity-changing evo: once the card already has a
+  // free-PlayStyle rarity (whether from the base card or an earlier step in this chain),
+  // running another one just overwrites the string for zero additional benefit.
+  if (evo.rarityChange && FREE_PLAYSTYLE_RARITIES.includes(bio.rarity)) {
+    reasons.push(`Card is already ${bio.rarity} (free PlayStyle rarity) — a second rarity-change evo (${evo.rarityChange}) would be redundant`);
   }
 
   // Check Positions
