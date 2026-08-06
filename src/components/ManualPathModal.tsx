@@ -383,7 +383,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const currentPlayStyles = validationResult.result ? validationResult.result.finalPlayStyles : basePlayStyles;
   const currentBio = validationResult.result ? validationResult.result.finalBio : baseBio;
 
-  const poolWithStatus = evosPool.map((id) => {
+  const poolWithStatus = Object.keys(availableEvolutions).map((id) => {
     const evo = availableEvolutions[id];
     const count = selectedChain.filter(eid => eid === id).length;
     const maxAllowed = evo?.maxRepeatable || 1;
