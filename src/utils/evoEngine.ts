@@ -324,19 +324,12 @@ export function parsePlayStyleNodeId(id: string): { gold: string[]; silver: stri
 }
 
 /**
- * The one index in `chainIds` where a PlayStyle node may sit: directly after whatever unlocked
- * free assignment — the base card when it already is one of FREE_PLAYSTYLE_RARITIES, otherwise
- * the evo that changed rarity into one. Returns null when nothing in the chain unlocks it.
- *
- * One unlock, one slot: since a chain carries at most one rarity-changing evo, that also caps
- * a chain at a single PlayStyle node.
+ * Whether a PlayStyle can be picked at this point of the build. The card just has to be one of
+ * the rarities that unlock free assignment — a chain can pick more than once, and each pick sits
+ * where it was actually made rather than being pulled back to the evo that unlocked it.
  */
-export function findPlayStyleNodeSlot(steps: ChainStepResult[], baseRarity: string): number | null {
-  if (FREE_PLAYSTYLE_RARITIES.includes(baseRarity)) return 0;
-  for (let i = 0; i < steps.length; i++) {
-    if (FREE_PLAYSTYLE_RARITIES.includes(steps[i].bioAfter.rarity)) return i + 1;
-  }
-  return null;
+export function canPickPlayStyles(rarity: string): boolean {
+  return FREE_PLAYSTYLE_RARITIES.includes(rarity);
 }
 
 // `roles` is never mutated while applying an evolution, so it can stay shared.
@@ -532,10 +525,6 @@ export function simulateEvoChain(
   const steps: ChainStepResult[] = [];
   let overallValid = true;
 
-  // Index of the entry that last unlocked free PlayStyle assignment (-1 = the base card did),
-  // or null while nothing has. A PlayStyle node is only legal directly after its unlock.
-  let unlockIndex: number | null = FREE_PLAYSTYLE_RARITIES.includes(state.bio.rarity) ? -1 : null;
-
   for (let index = 0; index < chainIds.length; index++) {
     const evoId = chainIds[index];
 
@@ -544,8 +533,6 @@ export function simulateEvoChain(
       const reasons: string[] = [];
       if (!FREE_PLAYSTYLE_RARITIES.includes(state.bio.rarity)) {
         reasons.push(`Only ${FREE_PLAYSTYLE_RARITIES.join(' / ')} cards can pick PlayStyles freely`);
-      } else if (unlockIndex === null || index !== unlockIndex + 1) {
-        reasons.push('PlayStyles are assigned as part of the evolution that unlocks them, so this has to come directly after it');
       }
       // Picks still apply when misplaced, the same way an ineligible evo still shows its
       // effects — the step is flagged rather than silently doing nothing.
@@ -573,9 +560,6 @@ export function simulateEvoChain(
       overallValid = false;
     }
     state = applied.state;
-    if (evo.rarityChange && FREE_PLAYSTYLE_RARITIES.includes(state.bio.rarity)) {
-      unlockIndex = index;
-    }
 
     steps.push({
       evoId,

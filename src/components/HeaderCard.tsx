@@ -23,12 +23,11 @@ interface HeaderCardProps {
   onOpenEvoPool: () => void;
   onOpenManualPath: () => void;
   onBranchFromBase?: () => void;
-  // True once something in the active path unlocks free PlayStyle assignment in-game — the base
-  // card already being one of those rarities, or an evo changing it into one.
+  // True when the build's current end is one of the rarities that unlock free PlayStyle
+  // assignment in-game, so another pick can be made right now.
   canPickFreePlayStyles?: boolean;
-  // Whether that path already carries a PlayStyle node, so the button reads Edit rather than Add.
-  hasPlayStyleNode?: boolean;
-  onOpenPlayStylePicker?: () => void;
+  // 'new' adds a pick at the end of the chain; a number edits the node at that index.
+  onOpenPlayStylePicker?: (target: number | 'new') => void;
   originalIgs: number;
   originalFaceSum: number;
   evoFilters: EvoFilters;
@@ -78,8 +77,8 @@ interface HeaderCardProps {
 
 /**
  * A PlayStyle pick rendered as what it is: a step of the build, sitting in the chain next to the
- * evos. Shows the picks it grants, and flags itself when the chain no longer justifies it (the
- * evo that unlocked it was removed, or it drifted away from directly after that evo).
+ * evos. Shows the picks it grants, and flags itself when the card isn't a rarity that could have
+ * made that pick at this point — say the evo that unlocked it was removed.
  */
 const PlayStyleNode: React.FC<{
   id: string;
@@ -173,7 +172,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenManualPath,
   onBranchFromBase,
   canPickFreePlayStyles,
-  hasPlayStyleNode,
   onOpenPlayStylePicker,
   originalIgs,
   originalFaceSum,
@@ -245,7 +243,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
         onBranchFromBase();
       } else if (key === 's' && canPickFreePlayStyles && onOpenPlayStylePicker) {
         e.preventDefault();
-        onOpenPlayStylePicker();
+        onOpenPlayStylePicker('new');
       } else if (key === 'c' && onClearPaths) {
         e.preventDefault();
         onClearPaths();
@@ -687,11 +685,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               )}
               {canPickFreePlayStyles && onOpenPlayStylePicker && (
                 <button
-                  onClick={onOpenPlayStylePicker}
-                  title="This build unlocks picking any PlayStyle — added to the chain as its own step"
+                  onClick={() => onOpenPlayStylePicker('new')}
+                  title="This build unlocks picking any PlayStyle — added to the chain as its own step, at the end"
                   className="px-3 py-1.5 bg-yellow-950/30 hover:bg-yellow-900/40 border border-yellow-700/60 rounded-lg text-yellow-400 text-xs flex items-center gap-1.5 shadow-[0_0_10px_rgba(234,179,8,0.15)]"
                 >
-                  <Wand2 className="w-3.5 h-3.5" /> {hasPlayStyleNode ? 'Edit Skills' : 'Add Skill'} <kbd className="ml-0.5 px-1 bg-black/40 border border-yellow-900 rounded text-[9px] text-yellow-400 font-mono">s</kbd>
+                  <Wand2 className="w-3.5 h-3.5" /> Add Skill <kbd className="ml-0.5 px-1 bg-black/40 border border-yellow-900 rounded text-[9px] text-yellow-400 font-mono">s</kbd>
                 </button>
               )}
               {isAnalyzing ? (
@@ -906,7 +904,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           step={renderPath.steps?.[idx]}
                           isActive={renderPath.id === activePathId && selectedNodes.includes(idx)}
                           onClick={renderPath.id === activePathId ? () => onNodeClick(idx) : undefined}
-                          onEdit={renderPath.id === activePathId ? onOpenPlayStylePicker : undefined}
+                          onEdit={renderPath.id === activePathId && onOpenPlayStylePicker ? () => onOpenPlayStylePicker(idx) : undefined}
                           onRemove={onRemoveNode ? () => onRemoveNode(renderPath.id, idx) : undefined}
                         />
                         {idx < renderPath.chainIds.length - 1 && (

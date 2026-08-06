@@ -14,7 +14,7 @@ import {
   isPlayStyleNodeId,
   buildPlayStyleNodeId,
   parsePlayStyleNodeId,
-  findPlayStyleNodeSlot
+  canPickPlayStyles
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
 import { EvolutionDefinition } from './types/player';
@@ -34,8 +34,8 @@ const EMPTY_PICKS = { gold: [], silver: [] };
 
 /**
  * Saves written before PlayStyle picks became a step kept them in a `freePlayStyles` field on
- * the path, applied at the end of whatever the chain happened to be. Convert those to a node in
- * the chain (at the slot the pick actually belongs to) the first time such a save is read.
+ * the path, applied at the end of whatever the chain happened to be. Convert those to a node at
+ * the end of the chain — the same place — the first time such a save is read.
  */
 function migratePlayStylePicks(
   state: PlayerEvoState,
@@ -52,15 +52,8 @@ function migratePlayStylePicks(
     if (picks.gold.length + picks.silver.length === 0) return rest;
     if (path.chainIds.some(isPlayStyleNodeId)) return rest;
 
-    const slot = findPlayStyleNodeSlot(
-      simulateEvoChain(path.chainIds, bio, ovr, stats, playStyles).steps,
-      bio.rarity
-    );
-    // Nothing in the chain unlocks free assignment any more, so the picks were already inert.
-    if (slot === null) return rest;
-
-    const chainIds = [...path.chainIds];
-    chainIds.splice(slot, 0, buildPlayStyleNodeId(picks));
+    // The old field applied at the end of whatever the chain was, so that's where the node goes.
+    const chainIds = [...path.chainIds, buildPlayStyleNodeId(picks)];
     return { ...rest, chainIds, steps: simulateEvoChain(chainIds, bio, ovr, stats, playStyles).steps };
   };
 
@@ -434,7 +427,9 @@ export default function App() {
   const setBaseIndex = (val: number) => updateState({ baseIndex: val });
 
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
-  const [isPlayStylePickerOpen, setIsPlayStylePickerOpen] = useState(false);
+  // Which PlayStyle node the picker is editing: an index in the chain, 'new' to add one at the
+  // end, or null when it's closed.
+  const [playStylePickerTarget, setPlayStylePickerTarget] = useState<number | 'new' | null>(null);
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
@@ -536,37 +531,40 @@ export default function App() {
     });
   };
 
-  // Writes the path's PlayStyle pick as a step in the chain: replacing the node it already has,
-  // or inserting one at `slot` (the position right after whatever unlocked free assignment).
-  // Saving an empty pick removes the node.
+  // Writes a PlayStyle pick into the chain. `target` is the index of the node being edited, or
+  // 'new' to add one at the end of the chain — where the pick is actually being made. A chain can
+  // hold several, since a build can reach a point where PlayStyles are assignable more than once.
+  // Saving an empty pick removes that node.
   const handleSetPlayStyleNode = (
     pathId: string,
     picks: { gold: string[]; silver: string[] },
-    slot: number
+    target: number | 'new'
   ) => {
     const path = allPaths.find(p => p.id === pathId);
     if (!path) return;
 
     const newChainIds = [...path.chainIds];
-    const existing = newChainIds.findIndex(isPlayStyleNodeId);
     const isEmpty = picks.gold.length === 0 && picks.silver.length === 0;
+    let insertedAt: number | null = null;
+    let removedAt: number | null = null;
 
-    if (existing >= 0) newChainIds.splice(existing, 1);
-    if (isEmpty && existing < 0) return;
-
-    // Saving always (re)places the node at its legal slot, so a pick stranded by an edit — say the
-    // evo that unlocked it was removed and added back at the end — is repaired by editing it,
-    // rather than being stuck flagged as invalid. Removing shifts anything after it left by one.
-    const target = existing >= 0 && slot > existing ? slot - 1 : slot;
-    const insertedAt = isEmpty ? null : Math.min(target, newChainIds.length);
-    if (insertedAt !== null) newChainIds.splice(insertedAt, 0, buildPlayStyleNodeId(picks));
+    if (target === 'new') {
+      if (isEmpty) return;
+      insertedAt = newChainIds.length;
+      newChainIds.push(buildPlayStyleNodeId(picks));
+    } else if (isEmpty) {
+      removedAt = target;
+      newChainIds.splice(target, 1);
+    } else {
+      newChainIds[target] = buildPlayStyleNodeId(picks);
+    }
 
     const steps = simulateEvoChain(newChainIds, playerBio, initialOvrData, statsData, playStylesData).steps;
     const updated: EvolutionPath = { ...path, chainIds: newChainIds, steps };
 
-    // Moving a step around shifts everything after it, so the base has to follow.
+    // Adding or dropping a step shifts everything after it, so the base has to follow.
     let nextBase = currentState.baseIndex ?? -1;
-    if (existing >= 0 && existing <= nextBase) nextBase -= 1;
+    if (removedAt !== null && removedAt <= nextBase) nextBase -= 1;
     if (insertedAt !== null && insertedAt <= nextBase) nextBase += 1;
 
     // The path may live in generatedPaths, in manualPaths, or in neither — the "Default" path is
@@ -611,19 +609,22 @@ export default function App() {
     return simulateEvoChain(activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
   }, [activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData]);
 
-  // Where this path's PlayStyle node belongs, and where it currently is (-1 if it has none).
-  const playStyleNodeSlot = useMemo(
-    () => findPlayStyleNodeSlot(chainResult.steps, playerBio.rarity),
-    [chainResult.steps, playerBio.rarity]
-  );
-  const playStyleNodeIndex = activePath.chainIds.findIndex(isPlayStyleNodeId);
+  // A new pick is made at the end of the chain, so that's the card state it has to be legal for.
+  const canAddPlayStylePick = canPickPlayStyles(chainResult.finalBio.rarity);
 
-  // What the card looks like at the moment the picker applies: everything the chain granted up
-  // to that point is locked, and the picks land on top of it.
-  const playStylesBeforePick = useMemo(() => {
-    if (playStyleNodeSlot === null || playStyleNodeSlot === 0) return playStylesData;
-    return chainResult.steps[playStyleNodeSlot - 1]?.playStylesAfter || playStylesData;
-  }, [chainResult.steps, playStyleNodeSlot, playStylesData]);
+  // What the card looks like just before the pick lands: everything up to that point is locked,
+  // and the picks go on top of it. For a new pick that's the end of the chain; for an existing
+  // node it's the step before it.
+  const playStylesBeforePick = (target: number | 'new') => {
+    if (target === 'new') return chainResult.finalPlayStyles;
+    if (target === 0) return playStylesData;
+    return chainResult.steps[target - 1]?.playStylesAfter || playStylesData;
+  };
+  const rarityAtPick = (target: number | 'new') => {
+    if (target === 'new') return chainResult.finalBio.rarity;
+    if (target === 0) return playerBio.rarity;
+    return chainResult.steps[target - 1]?.bioAfter.rarity || playerBio.rarity;
+  };
 
   const comparePath = useMemo(() => {
     return allPaths.find(p => p.id === currentState.comparePathId);
@@ -997,9 +998,8 @@ export default function App() {
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
-          canPickFreePlayStyles={playStyleNodeSlot !== null}
-          hasPlayStyleNode={playStyleNodeIndex >= 0}
-          onOpenPlayStylePicker={() => setIsPlayStylePickerOpen(true)}
+          canPickFreePlayStyles={canAddPlayStylePick}
+          onOpenPlayStylePicker={(target) => setPlayStylePickerTarget(target)}
           rawBaseOvr={initialOvrData.base}
           rawPlayStyles={playStylesData}
           rawStats={statsData}
@@ -1217,18 +1217,16 @@ export default function App() {
         onClose={() => setViewingEvoId(null)}
       />
       <PlayStylePickerModal
-        isOpen={isPlayStylePickerOpen && playStyleNodeSlot !== null}
-        onClose={() => setIsPlayStylePickerOpen(false)}
-        rarity={playStyleNodeSlot === 0
-          ? playerBio.rarity
-          : chainResult.steps[(playStyleNodeSlot ?? 0) - 1]?.bioAfter.rarity || playerBio.rarity}
-        lockedGold={playStylesBeforePick.base.gold}
-        lockedSilver={playStylesBeforePick.base.silver}
-        limits={playStylesBeforePick.limits}
-        picks={playStyleNodeIndex >= 0
-          ? parsePlayStyleNodeId(activePath.chainIds[playStyleNodeIndex])
+        isOpen={playStylePickerTarget !== null}
+        onClose={() => setPlayStylePickerTarget(null)}
+        rarity={rarityAtPick(playStylePickerTarget ?? 'new')}
+        lockedGold={playStylesBeforePick(playStylePickerTarget ?? 'new').base.gold}
+        lockedSilver={playStylesBeforePick(playStylePickerTarget ?? 'new').base.silver}
+        limits={playStylesBeforePick(playStylePickerTarget ?? 'new').limits}
+        picks={typeof playStylePickerTarget === 'number'
+          ? parsePlayStyleNodeId(activePath.chainIds[playStylePickerTarget])
           : EMPTY_PICKS}
-        onSave={(picks) => handleSetPlayStyleNode(activePath.id, picks, playStyleNodeSlot ?? 0)}
+        onSave={(picks) => handleSetPlayStyleNode(activePath.id, picks, playStylePickerTarget ?? 'new')}
       />
 
       {isPlayerSelectionOpen && (
