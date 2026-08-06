@@ -23,7 +23,13 @@ const MAX_CHAIN_RECOMMENDATIONS = 2;
 // Pool orderings. Every one of them keeps addable evos above ineligible ones — an ineligible card
 // has no simulated result at all (target OVR / IGS / BS are 0), so sorting it in with the rest
 // would park the whole unusable half of the pool at the top of any ascending sort.
-type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base';
+// The six face stats double as sort modes: "which evo adds the most DRI" is a question the totals
+// can't answer, since a big IGS gain can be spread over stats this card has no use for.
+const STAT_SORTS = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
+type StatSort = typeof STAT_SORTS[number];
+const isStatSort = (mode: SortMode): mode is StatSort => (STAT_SORTS as readonly string[]).includes(mode);
+
+type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base' | StatSort;
 
 const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
   { mode: 'default', label: 'Default', title: 'Cheapest entry first: required OVR, then target OVR, then base stats' },
@@ -36,7 +42,12 @@ const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
   { mode: 'reqOvr', label: 'Req OVR ↑', title: 'Lowest required OVR first — the evos about to age out of reach' },
   { mode: 'targetOvr', label: 'Target OVR ↑', title: 'Lowest resulting OVR first — keeps headroom for later evos' },
   { mode: 'igs', label: 'IGS ↓', title: 'Biggest resulting in-game stats total first' },
-  { mode: 'base', label: 'BS ↓', title: 'Biggest resulting base (face) stats total first' }
+  { mode: 'base', label: 'BS ↓', title: 'Biggest resulting base (face) stats total first' },
+  ...STAT_SORTS.map(stat => ({
+    mode: stat as SortMode,
+    label: `${stat.toUpperCase()} ↓`,
+    title: `Biggest ${stat.toUpperCase()} gain first — what this evo adds to the stat as it stands now`
+  }))
 ];
 
 /**
@@ -500,6 +511,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     const aMaxOvr = a.evo.requirements.maxOvr || 99;
     const bMaxOvr = b.evo.requirements.maxOvr || 99;
 
+    // Sorting on one face stat ranks by the gain the card is already showing (+9 DRI), not by the
+    // resulting value — an evo that takes a 90 to 92 beats one that takes an 80 to 85 on totals,
+    // but not on what you came here to add.
+    if (isStatSort(sortMode)) {
+      const gain = (p: typeof a) =>
+        p.expectedStats ? p.expectedStats[sortMode].baseFace - currentStats[sortMode].baseFace : 0;
+      const byGain = gain(b) - gain(a);
+      if (byGain !== 0) return byGain;
+    }
+
     switch (sortMode) {
       case 'rec':
         // A pick that would break a Filters max is still addable by hand, but it can't be near
@@ -859,7 +880,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               </div>
               <div className="flex gap-2 items-center flex-1 md:flex-none justify-end flex-wrap">
-                <div className="flex items-center gap-1 bg-[#121212] border border-gray-800 rounded-lg p-0.5">
+                {/* Wraps: twelve orderings don't fit one line at most widths. */}
+                <div className="flex flex-wrap items-center gap-1 bg-[#121212] border border-gray-800 rounded-lg p-0.5">
                   <span className="text-[9px] font-bold uppercase tracking-wide text-gray-600 px-1">Sort</span>
                   {SORT_OPTIONS.map(({ mode, label, title }) => (
                     <button
