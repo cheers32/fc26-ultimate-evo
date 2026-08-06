@@ -3,45 +3,58 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 
-function playerSavesPlugin() {
+// Two file-backed stores, so state follows the project rather than the browser it was made in:
+//   /api/saves/<playerId>  one file per player — paths, filters, pool
+//   /api/app/<key>         app-wide state that used to live only in localStorage, which is why
+//                          imported players and disabled evos didn't show up in a second browser
+const STORES: Record<string, string> = {
+  '/api/saves/': 'src/data/saves',
+  '/api/app/': 'src/data/app'
+};
+
+// The id becomes a filename, so it may not climb out of the store directory.
+const SAFE_ID = /^[A-Za-z0-9_-]+$/;
+
+function fileStorePlugin() {
   return {
-    name: 'player-saves',
+    name: 'file-store',
     configureServer(server: any) {
       server.middlewares.use((req: any, res: any, next: any) => {
-        if (req.url?.startsWith('/api/saves/')) {
-          const playerId = req.url.split('/').pop();
-          const saveDir = path.resolve(process.cwd(), 'src/data/saves');
-          const savePath = path.join(saveDir, `${playerId}.json`);
+        const prefix = Object.keys(STORES).find(p => req.url?.startsWith(p));
+        if (!prefix) return next();
 
-          // Ensure directory exists
-          if (!fs.existsSync(saveDir)) {
-            fs.mkdirSync(saveDir, { recursive: true });
-          }
+        const id = decodeURIComponent((req.url.split('?')[0].split('/').pop() || ''));
+        if (!SAFE_ID.test(id)) {
+          res.statusCode = 400;
+          res.end(JSON.stringify({ error: 'Invalid id' }));
+          return;
+        }
 
-          if (req.method === 'GET') {
-            if (fs.existsSync(savePath)) {
-              res.setHeader('Content-Type', 'application/json');
-              res.end(fs.readFileSync(savePath, 'utf-8'));
-            } else {
-              res.statusCode = 404;
-              res.end(JSON.stringify({ error: 'Save not found' }));
-            }
-          } else if (req.method === 'POST') {
-            let body = '';
-            req.on('data', (chunk: any) => {
-              body += chunk.toString();
-            });
-            req.on('end', () => {
-              fs.writeFileSync(savePath, body, 'utf-8');
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ success: true }));
-            });
+        const dir = path.resolve(process.cwd(), STORES[prefix]);
+        const filePath = path.join(dir, `${id}.json`);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+        if (req.method === 'GET') {
+          if (fs.existsSync(filePath)) {
+            res.setHeader('Content-Type', 'application/json');
+            res.end(fs.readFileSync(filePath, 'utf-8'));
           } else {
-            res.statusCode = 405;
-            res.end();
+            res.statusCode = 404;
+            res.end(JSON.stringify({ error: 'Not found' }));
           }
+        } else if (req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk: any) => {
+            body += chunk.toString();
+          });
+          req.on('end', () => {
+            fs.writeFileSync(filePath, body, 'utf-8');
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true }));
+          });
         } else {
-          next();
+          res.statusCode = 405;
+          res.end();
         }
       });
     }
@@ -50,7 +63,7 @@ function playerSavesPlugin() {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), playerSavesPlugin()],
+  plugins: [react(), fileStorePlugin()],
   server: {
     port: 3000,
     open: false

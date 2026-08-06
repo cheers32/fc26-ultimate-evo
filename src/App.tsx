@@ -17,6 +17,7 @@ import {
   canPickPlayStyles
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
+import { useSharedState } from './utils/sharedState';
 import { EvolutionDefinition } from './types/player';
 import { PlayerSelectionModal } from './components/PlayerSelectionModal';
 import { EvoPoolModal } from './components/EvoPoolModal';
@@ -68,35 +69,23 @@ function migratePlayStylePicks(
 }
 
 export default function App() {
-  const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('futEvo_deleted_db_players');
-      if (saved) return JSON.parse(saved);
-    } catch(e) {}
-    return [];
-  });
+  const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useSharedState<string[]>('futEvo_deleted_db_players', []);
 
-  const [customPlayers, setCustomPlayers] = useState<Record<string, PlayerData>>(() => {
-    try {
-      const saved = localStorage.getItem('futEvo_custom_players');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Migration: Repair broken custom players
-        Object.values(parsed).forEach((p: any) => {
-          if (p && p.stats) {
-            const required = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
-            required.forEach(f => {
-              if (!p.stats[f]) {
-                p.stats[f] = { label: f.toUpperCase(), baseFace: 50, evFace: 50, subs: {} };
-              }
-            });
+  const [storedCustomPlayers, setCustomPlayers] = useSharedState<Record<string, PlayerData>>('futEvo_custom_players', {});
+  // Repair custom players that were saved without a full stat block, whatever they came from —
+  // the shared copy arrives after mount, so this can't be a one-off at initialisation.
+  const customPlayers = useMemo(() => {
+    Object.values(storedCustomPlayers || {}).forEach((p: any) => {
+      if (p && p.stats) {
+        ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].forEach(f => {
+          if (!p.stats[f]) {
+            p.stats[f] = { label: f.toUpperCase(), baseFace: 50, evFace: 50, subs: {} };
           }
         });
-        return parsed;
       }
-    } catch(e) {}
-    return {};
-  });
+    });
+    return storedCustomPlayers || {};
+  }, [storedCustomPlayers]);
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPlayerSelectionOpen, setIsPlayerSelectionOpen] = useState(false);
@@ -132,7 +121,6 @@ export default function App() {
   const handleImportPlayer = (player: PlayerData) => {
     const newCustomPlayers = { ...customPlayers, [player.id]: player };
     setCustomPlayers(newCustomPlayers);
-    localStorage.setItem('futEvo_custom_players', JSON.stringify(newCustomPlayers));
     setSelectedPlayerId(player.id);
   };
 
@@ -141,11 +129,9 @@ export default function App() {
       const newCustomPlayers = { ...customPlayers };
       delete newCustomPlayers[id];
       setCustomPlayers(newCustomPlayers);
-      localStorage.setItem('futEvo_custom_players', JSON.stringify(newCustomPlayers));
     } else {
       const newDeleted = [...deletedDatabasePlayers, id];
       setDeletedDatabasePlayers(newDeleted);
-      localStorage.setItem('futEvo_deleted_db_players', JSON.stringify(newDeleted));
     }
     
     if (selectedPlayerId === id) {
@@ -182,66 +168,42 @@ export default function App() {
         [id]: updatedPlayer
       };
       setCustomPlayers(newCustomPlayers);
-      localStorage.setItem('futEvo_custom_players', JSON.stringify(newCustomPlayers));
     }
   };
 
-  // Evolutions the user never wants used. Global rather than per-player, so it lives in
-  // localStorage alongside custom players instead of in the per-player save files.
-  const [disabledEvos, setDisabledEvos] = useState<string[]>(() => {
-    let current: string[] = [];
-    try {
-      const saved = localStorage.getItem('futEvo_disabled_evos');
-      if (saved) current = JSON.parse(saved);
-    } catch(e) {}
+  // Evolutions the user never wants used. Global rather than per-player, so it lives alongside
+  // custom players in the shared app store rather than in the per-player save files.
+  const [disabledEvos, setDisabledEvos] = useSharedState<string[]>('futEvo_disabled_evos', []);
+  // Evos that ship switched off are folded in once each, tracked separately, so a later re-enable
+  // in the UI isn't undone on the next load.
+  const [seededDisabled, setSeededDisabled] = useSharedState<string[]>('futEvo_seeded_disabled', []);
 
-    // Evos that ship switched off are folded in once each, tracked separately, so a later
-    // re-enable in the UI isn't undone on the next load.
-    let seeded: string[] = [];
-    try {
-      const saved = localStorage.getItem('futEvo_seeded_disabled');
-      if (saved) seeded = JSON.parse(saved);
-    } catch(e) {}
-
+  useEffect(() => {
     const pending = Object.values(availableEvolutions)
-      .filter(evo => evo.defaultDisabled && !seeded.includes(evo.id))
+      .filter(evo => evo.defaultDisabled && !seededDisabled.includes(evo.id))
       .map(evo => evo.id);
-
-    if (pending.length === 0) return current;
-
-    const next = [...new Set([...current, ...pending])];
-    localStorage.setItem('futEvo_disabled_evos', JSON.stringify(next));
-    localStorage.setItem('futEvo_seeded_disabled', JSON.stringify([...seeded, ...pending]));
-    return next;
-  });
+    if (pending.length === 0) return;
+    setDisabledEvos([...new Set([...disabledEvos, ...pending])]);
+    setSeededDisabled([...seededDisabled, ...pending]);
+    // Runs whenever the shared copy lands, and is a no-op once everything has been seeded once.
+  }, [seededDisabled, disabledEvos, setDisabledEvos, setSeededDisabled]);
 
   const toggleEvoDisabled = (evoId: string) => {
-    const next = disabledEvos.includes(evoId)
+    setDisabledEvos(disabledEvos.includes(evoId)
       ? disabledEvos.filter(id => id !== evoId)
-      : [...disabledEvos, evoId];
-    setDisabledEvos(next);
-    localStorage.setItem('futEvo_disabled_evos', JSON.stringify(next));
+      : [...disabledEvos, evoId]);
   };
 
   // Squad management
-  const [squads, setSquads] = useState<Squad[]>(() => {
-    try {
-      const saved = localStorage.getItem('futEvo_squads');
-      if (saved) {
-        // Members predating per-entry ids need one before they can be removed individually.
-        return (JSON.parse(saved) as Squad[]).map(squad => ({
-          ...squad,
-          members: squad.members.map((m, i) => m.id ? m : { ...m, id: `${m.playerId}-${i}` })
-        }));
-      }
-    } catch(e) {}
-    return [];
-  });
-
-  const saveSquads = (newSquads: Squad[]) => {
-    setSquads(newSquads);
-    localStorage.setItem('futEvo_squads', JSON.stringify(newSquads));
-  };
+  const [storedSquads, saveSquads] = useSharedState<Squad[]>('futEvo_squads', []);
+  // Members predating per-entry ids need one before they can be removed individually.
+  const squads = useMemo(
+    () => (storedSquads || []).map(squad => ({
+      ...squad,
+      members: squad.members.map((m, i) => (m.id ? m : { ...m, id: `${m.playerId}-${i}` }))
+    })),
+    [storedSquads]
+  );
 
   const createSquad = (name: string) => {
     const newSquad: Squad = {
