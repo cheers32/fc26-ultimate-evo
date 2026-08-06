@@ -30,6 +30,10 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   const [filterSecondary, setFilterSecondary] = useState(false);
   const [filterNewRarity, setFilterNewRarity] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
+  // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
+  // opposite instead of leaving a combination that matches nothing.
+  const [filterNoRarity, setFilterNoRarity] = useState(false);
+  const [filterNoPosition, setFilterNoPosition] = useState(false);
   const [viewingEvo, setViewingEvo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -114,6 +118,8 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterNewRarity && !evo.rarityChange) return false;
     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+    if (filterNoRarity && evo.rarityChange) return false;
+    if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
     return true;
   });
   const filteredDisabledEvos = disabledEvosList.filter(evo => {
@@ -122,6 +128,8 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterNewRarity && !evo.rarityChange) return false;
     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+    if (filterNoRarity && evo.rarityChange) return false;
+    if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
     return true;
   });
 
@@ -328,16 +336,30 @@ isSelected
                 ★ MUST INCLUDE
               </button>
               <button
-                onClick={() => setFilterNewRarity(!filterNewRarity)}
+                onClick={() => { setFilterNewRarity(!filterNewRarity); setFilterNoRarity(false); }}
                 className={`${control} ${filterNewRarity ? controlOn : controlOff}`}
               >
                 NEW RARITY
               </button>
               <button
-                onClick={() => setFilterNewPosition(!filterNewPosition)}
+                onClick={() => { setFilterNewPosition(!filterNewPosition); setFilterNoPosition(false); }}
                 className={`${control} ${filterNewPosition ? controlOn : controlOff}`}
               >
                 NEW POSITION
+              </button>
+              <button
+                onClick={() => { setFilterNoRarity(!filterNoRarity); setFilterNewRarity(false); }}
+                title="Hide every evo that changes the card's rarity"
+                className={`${control} ${filterNoRarity ? controlOn : controlOff}`}
+              >
+                KEEP RARITY
+              </button>
+              <button
+                onClick={() => { setFilterNoPosition(!filterNoPosition); setFilterNewPosition(false); }}
+                title="Hide every evo that adds a position"
+                className={`${control} ${filterNoPosition ? controlOn : controlOff}`}
+              >
+                KEEP POSITIONS
               </button>
 
               {/* Search and the bulk actions travel as one group, so a narrow modal drops all

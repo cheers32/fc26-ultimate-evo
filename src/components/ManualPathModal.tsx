@@ -136,6 +136,18 @@ const getEvoRecommendation = ({
   if (filters) {
     if (filters.blockedEvos?.includes(evoId)) blocked = true;
 
+    // Asked to leave the card's rarity/positions alone: an evo that changes them is still
+    // addable by hand, but it is never what the app suggests doing next.
+    const evo = availableEvolutions[evoId];
+    if (filters.noRarityChange && evo?.rarityChange) {
+      blocked = true;
+      reasons.push(`Changes rarity to ${evo.rarityChange}`);
+    }
+    if (filters.noPositionChange && evo?.positionsAdded && evo.positionsAdded.length > 0) {
+      blocked = true;
+      reasons.push(`Adds ${evo.positionsAdded.join(', ')}`);
+    }
+
     const goldCount = (ps: PlayStylesData) => Math.min(ps.base.gold.length + ps.ev.gold.length, ps.limits.gold);
     const silverCount = (ps: PlayStylesData) => Math.min(ps.base.silver.length + ps.ev.silver.length, ps.limits.silver);
 
@@ -257,6 +269,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterNewRarity, setFilterNewRarity] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
+  // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
+  // opposite instead of leaving a combination that matches nothing.
+  const [filterNoRarity, setFilterNoRarity] = useState(false);
+  const [filterNoPosition, setFilterNoPosition] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('default');
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -897,7 +913,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   ))}
                 </div>
                 <button
-                  onClick={() => setFilterNewRarity(!filterNewRarity)}
+                  onClick={() => { setFilterNewRarity(!filterNewRarity); setFilterNoRarity(false); }}
                   className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
                     filterNewRarity ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
                   }`}
@@ -905,7 +921,25 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   New Rarity
                 </button>
                 <button
-                  onClick={() => setFilterNewPosition(!filterNewPosition)}
+                  onClick={() => { setFilterNoRarity(!filterNoRarity); setFilterNewRarity(false); }}
+                  title="Hide every evo that changes the card's rarity"
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterNoRarity ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  Keep Rarity
+                </button>
+                <button
+                  onClick={() => { setFilterNoPosition(!filterNoPosition); setFilterNewPosition(false); }}
+                  title="Hide every evo that adds a position"
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterNoPosition ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  Keep Positions
+                </button>
+                <button
+                  onClick={() => { setFilterNewPosition(!filterNewPosition); setFilterNoPosition(false); }}
                   className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
                     filterNewPosition ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
                   }`}
@@ -927,6 +961,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+                    if (filterNoRarity && evo.rarityChange) return false;
+                    if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
                     return true;
 });
                       const topEligible = filteredPool.find(p => p.isEligible && !p.limitReached);
@@ -1026,6 +1062,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+                    if (filterNoRarity && evo.rarityChange) return false;
+                    if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
                     return true;
 })
                   .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons }) => {

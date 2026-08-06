@@ -747,6 +747,16 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
         if (filters.newPosition && state.bio.primaryPositions === baseBio.primaryPositions) {
           passesFilters = false;
         }
+
+        // The inverse: leave the card as it is. Judged on the finished chain rather than per evo,
+        // so a build that changes rarity and changes it back still counts as having changed it.
+        if (filters.noRarityChange && state.bio.rarity !== baseBio.rarity) {
+          passesFilters = false;
+        }
+
+        if (filters.noPositionChange && state.bio.primaryPositions !== baseBio.primaryPositions) {
+          passesFilters = false;
+        }
       }
 
       if (passesFilters) {

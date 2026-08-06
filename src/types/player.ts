@@ -175,6 +175,20 @@ export interface EvoFilters {
   blockedEvos?: string[];
   newRarity?: boolean;
   newPosition?: boolean;
+  /**
+   * The opposite pair: keep rarity and positions as they are. Nothing that changes them is
+   * recommended — not by Analyze, not by the builder's thumbs-up or its continuations — since a
+   * card the player wants left alone can't use those evos however well they score.
+   */
+  noRarityChange?: boolean;
+  noPositionChange?: boolean;
+  /**
+   * Rank by "fit" — the player's own PlayStyle/sub-stat profile — instead of by raw stat totals.
+   * Off by default: it changes what every recommendation in the app means, so it is opt-in.
+   */
+  playstyleWeighting?: boolean;
+  /** Who drives this card. Decides which half of the PlayStyle weights applies. */
+  controlMode?: 'manual' | 'ai';
 }
 
 export interface PlayerEvoState {

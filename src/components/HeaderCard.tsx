@@ -267,7 +267,13 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     
     let count = 0;
     if (evoFilters.requiredEvos && evoFilters.requiredEvos.length > 0) count++;
-    
+    // The rarity/position toggles narrow results as much as any stat bound, so the badge counts
+    // them — otherwise a run that returns nothing because of them looks unfiltered.
+    if (evoFilters.newRarity) count++;
+    if (evoFilters.newPosition) count++;
+    if (evoFilters.noRarityChange) count++;
+    if (evoFilters.noPositionChange) count++;
+
     // Check stats
     const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy', 'ovr'];
     for (const stat of statsToCheck) {
@@ -502,13 +508,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
                   <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
 
-                    <div className="mb-4 pb-3 border-b border-gray-800">
+                    {/* Each pair is a three-way choice — want it, avoid it, don't care — so ticking
+                        one side clears the other rather than leaving a filter that matches nothing. */}
+                    <div className="mb-4 pb-3 border-b border-gray-800 space-y-2">
                       <div className="flex items-center gap-4">
                         <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors">
                           <input
                             type="checkbox"
                             checked={!!draftFilters.newRarity}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, newRarity: e.target.checked })}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, newRarity: e.target.checked, noRarityChange: e.target.checked ? false : draftFilters.noRarityChange })}
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           New Rarity
@@ -517,10 +525,30 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           <input
                             type="checkbox"
                             checked={!!draftFilters.newPosition}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, newPosition: e.target.checked })}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, newPosition: e.target.checked, noPositionChange: e.target.checked ? false : draftFilters.noPositionChange })}
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           New Position
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.noRarityChange}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, noRarityChange: e.target.checked, newRarity: e.target.checked ? false : draftFilters.newRarity })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          Keep Rarity
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.noPositionChange}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, noPositionChange: e.target.checked, newPosition: e.target.checked ? false : draftFilters.newPosition })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          Keep Positions
                         </label>
                       </div>
                     </div>
