@@ -43,16 +43,23 @@ function nearCapBonus(stats: StatsData): number {
   return bonus;
 }
 
-// >0 means `a` outranks `b`. Ties (within TIE_FRACTION) first check which chain gets more
-// sub-stats up near 98/99 — a longer chain that quietly maxes out Composure, Reactions, or
-// anything else shouldn't lose to a shorter one just because the aggregate IGS barely moved.
-// Only once that also ties does length decide: shorter wins, since the whole point of ranking
-// is to surface a build worth using, and a longer chain that isn't meaningfully better just
-// adds steps nobody can attribute value to.
-function rank<T extends { chainIds: string[]; nearCap: number }>(a: T, b: T, score: (c: T) => number): number {
+// >0 means `a` outranks `b`. Ties (within TIE_FRACTION) first drop the chain that spends a step
+// re-changing a rarity that was already free-PlayStyle — legal, and worth taking when it wins on
+// stats, but never worth taking when it doesn't. Next comes which chain gets more sub-stats up
+// near 98/99 — a longer chain that quietly maxes out Composure, Reactions, or anything else
+// shouldn't lose to a shorter one just because the aggregate IGS barely moved. Only once that
+// also ties does length decide: shorter wins, since the whole point of ranking is to surface a
+// build worth using, and a longer chain that isn't meaningfully better just adds steps nobody
+// can attribute value to.
+function rank<T extends { chainIds: string[]; nearCap: number; redundantRarity: number }>(
+  a: T,
+  b: T,
+  score: (c: T) => number
+): number {
   const sa = score(a), sb = score(b);
   const eps = Math.max(1, Math.abs(sa), Math.abs(sb)) * TIE_FRACTION;
   if (Math.abs(sa - sb) <= eps) {
+    if (a.redundantRarity !== b.redundantRarity) return b.redundantRarity - a.redundantRarity;
     if (a.nearCap !== b.nearCap) return a.nearCap - b.nearCap;
     if (a.chainIds.length !== b.chainIds.length) return b.chainIds.length - a.chainIds.length;
     return 0;
@@ -77,7 +84,7 @@ const POSITION_WEIGHTS: Record<string, Record<string, number>> = {
   'RWB':{ pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
 };
 
-function getPositionScore(stats: StatsData, pos: string): number {
+export function getPositionScore(stats: StatsData, pos: string): number {
   const w = POSITION_WEIGHTS[pos.trim().toUpperCase()];
   if (!w) {
     return ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].reduce((sum, s) => sum + (stats[s]?.baseFace || 0), 0);
@@ -119,6 +126,7 @@ export function validateRequirement(
   bio: PlayerBio
 ): ChainValidation {
   const reasons: string[] = [];
+  const warnings: string[] = [];
 
   // Check Max OVR
   if (currentOvr > evo.requirements.maxOvr) {
@@ -181,11 +189,12 @@ export function validateRequirement(
     reasons.push(`Rarity (${bio.rarity}) matches Excluded Rarity (${evo.requirements.notRarity})`);
   }
 
-  // A path should carry at most one rarity-changing evo: once the card already has a
-  // free-PlayStyle rarity (whether from the base card or an earlier step in this chain),
-  // running another one just overwrites the string for zero additional benefit.
+  // Running a second rarity-changing evo on a card that already has a free-PlayStyle rarity
+  // overwrites a rarity that was already doing that job — but the evo is still legal, and its
+  // stats and PlayStyles land like any other. So this warns instead of blocking: the pick stays
+  // available, and the path search only avoids it when something else scores as well.
   if (evo.rarityChange && FREE_PLAYSTYLE_RARITIES.includes(bio.rarity)) {
-    reasons.push(`Card is already ${bio.rarity} (free PlayStyle rarity) — a second rarity-change evo (${evo.rarityChange}) would be redundant`);
+    warnings.push(`Card is already ${bio.rarity} (free PlayStyle rarity) — ${evo.rarityChange} only overwrites it`);
   }
 
   // Check Positions
@@ -205,7 +214,8 @@ export function validateRequirement(
 
   return {
     eligible: reasons.length === 0,
-    reasons
+    reasons,
+    warnings
   };
 }
 
@@ -545,7 +555,7 @@ export function simulateEvoChain(
         evoId,
         evoName: 'PlayStyle Pick',
         futbinLink: '',
-        validation: { eligible: reasons.length === 0, reasons },
+        validation: { eligible: reasons.length === 0, reasons, warnings: [] },
         ovrAfter: state.ovr,
         statsAfter: cloneStats(state.stats),
         playStylesAfter: clonePlayStyles(state.playStyles),
@@ -607,7 +617,16 @@ export function analyzeEvolutions(
   // Only the primitives needed for ranking are kept per candidate. Holding the whole
   // ChainState for every hit would pin hundreds of thousands of stat objects in memory,
   // so the position scores are computed here and the stats themselves are dropped.
-  type Candidate = { chainIds: string[]; ovr: number; igs: number; posScores: number[]; nearCap: number };
+  type Candidate = {
+    chainIds: string[];
+    ovr: number;
+    igs: number;
+    posScores: number[];
+    nearCap: number;
+    // Steps that re-changed an already free-PlayStyle rarity. Carried down the recursion rather
+    // than recomputed per hit, and only ever used to break a tie (see `rank`).
+    redundantRarity: number;
+  };
 
   const rankPositions = baseBio.primaryPositions
     .split(',')
@@ -642,7 +661,7 @@ export function analyzeEvolutions(
   let nodesVisited = 0;
   let aborted = false;
 
-  function dfs(currentChainIds: string[], state: ChainState) {
+  function dfs(currentChainIds: string[], state: ChainState, redundantRarity: number) {
     if (aborted) return;
 
     if (++nodesVisited % PROGRESS_INTERVAL === 0 && onProgress) {
@@ -735,7 +754,8 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
           ovr: state.ovr,
           igs: igsOf(state.stats),
           posScores: rankPositions.map(pos => getPositionScore(state.stats, pos)),
-          nearCap: nearCapBonus(state.stats)
+          nearCap: nearCapBonus(state.stats),
+          redundantRarity
         };
         offer(topByIgs, cand, c => c.igs);
         topByPosition.forEach((list, i) => offer(list, cand, c => c.posScores[i]));
@@ -759,10 +779,11 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
       if (count >= maxAllowed) continue;
 
       // Cheap gate first — validateRequirement does no cloning, applyEvo does.
-      if (!validateRequirement(evo, state.ovr, state.stats, state.playStyles, state.bio).eligible) continue;
+      const validation = validateRequirement(evo, state.ovr, state.stats, state.playStyles, state.bio);
+      if (!validation.eligible) continue;
 
       currentChainIds.push(evoId);
-      dfs(currentChainIds, applyEvo(state, evo).state);
+      dfs(currentChainIds, applyEvo(state, evo).state, redundantRarity + validation.warnings.length);
       currentChainIds.pop();
 
       if (aborted) return;
@@ -787,7 +808,7 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
     seedState = applyEvo(seedState, evo).state;
   }
 
-  dfs([...prefixChainIds], seedState);
+  dfs([...prefixChainIds], seedState, 0);
 
   // Canonical (order-independent) key for a candidate. The IGS ranking and each position
   // ranking run their own independent search bookkeeping, so it's routine for two of them to

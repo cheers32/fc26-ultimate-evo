@@ -75,3 +75,12 @@ export function formatEvoTerms(evo: import('../types/player').EvolutionDefinitio
   const entry = `${evo.requirements.maxOvr || 99}/${evo.requirements.maxPlayStylesPlus ?? '∞'}`;
   return evo.ovrBoost.boost > 0 ? `${entry} (+${evo.ovrBoost.boost} ${evo.ovrBoost.limit})` : entry;
 }
+
+/**
+ * The excluded positions worth printing on a card. Over half the outfield evos exclude GK, so
+ * that one says nothing about the evo and only crowds out the badges that do — every other
+ * exclusion stays. Shared so each card that lists requirements makes the same call.
+ */
+export function displayExcludedPositions(evo: import('../types/player').EvolutionDefinition): string[] {
+  return (evo.requirements.excludedPositions || []).filter(pos => pos !== 'GK');
+}

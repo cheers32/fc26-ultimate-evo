@@ -151,6 +151,9 @@ export interface EvolutionPath {
 export interface ChainValidation {
   eligible: boolean;
   reasons: string[];
+  // Things that make the step a questionable idea without making it illegal — the evo can still
+  // be picked, and the path search may still choose it, just not on a coin flip.
+  warnings: string[];
 }
 
 export interface StatFilter { 

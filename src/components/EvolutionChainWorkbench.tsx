@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { simulateEvoChain } from '../utils/evoEngine';
+import { displayExcludedPositions } from '../utils/statUtils';
 import { PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
 import { ExternalLink, CheckCircle, XCircle, ArrowRight, GitCompare, Sparkles, Layers, Ban } from 'lucide-react';
 
@@ -78,9 +79,9 @@ export const EvolutionChainWorkbench: React.FC<EvolutionChainWorkbenchProps> = (
                         Req Pos: {evo.requirements.positions.join(', ')}
                       </span>
                     )}
-                    {evo.requirements.excludedPositions && evo.requirements.excludedPositions.length > 0 && (
+                    {displayExcludedPositions(evo).length > 0 && (
                       <span className="px-1.5 py-0.5 bg-red-950/40 rounded text-[10px] text-red-400 border border-red-900/50 font-bold ml-2">
-                        Excl Pos: {evo.requirements.excludedPositions.join(', ')}
+                        Excl Pos: {displayExcludedPositions(evo).join(', ')}
                       </span>
                     )}
                     {evo.positionsAdded && evo.positionsAdded.length > 0 && (

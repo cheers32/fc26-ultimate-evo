@@ -1,94 +1,176 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, AlertTriangle, Eye, Wand2 } from 'lucide-react';
+import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
-import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
-import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
+import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
+import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore } from '../utils/evoEngine';
+import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
-import { getStatColorClass, formatEvoTerms } from '../utils/statUtils';
+import { getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
 
-// How many evos may carry the RECOMMENDED badge at once. Every evo that trips any
-// heuristic used to be badged, which on a full pool marked most of the list and made the
-// badge meaningless — so candidates are scored and only the best few are highlighted.
-const MAX_RECOMMENDATIONS = 3;
+// How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
+// badged, which on a full pool marked most of the list and made the mark meaningless — so
+// candidates are scored and only the strongest couple are flagged. Why each one earned it is in
+// the badge's tooltip rather than on the card, which the reasons crowded out.
+const MAX_RECOMMENDATIONS = 2;
 
-const getEvoRecommendation = (
-  positions: string,
-  currentOvr: number,
-  expectedOvr: number,
-  currentStats: StatsData,
-  expectedStats: StatsData,
-  currentPlayStyles: PlayStylesData,
-  expectedPlayStyles: PlayStylesData
-): { score: number, reasons: string[] } => {
-  if (!currentStats || !expectedStats) return { score: 0, reasons: [] };
+// How deep past the current chain the continuation search looks. The full Analyze runs at 5 and
+// takes tens of seconds; the builder re-runs this after every pick, so it stays shallow enough to
+// land while the user is still reading the pool.
+const REC_CHAIN_DEPTH = 3;
+const MAX_CHAIN_RECOMMENDATIONS = 2;
 
-  const isAttacker = /ST|CF|RW|LW/.test(positions);
-  const isMidfielder = /CM|CAM|CDM|RM|LM/.test(positions);
-  const isDefender = /CB|RB|LB|RWB|LWB/.test(positions);
-  
-  const pacDiff = expectedStats.pac.evFace - currentStats.pac.evFace;
-  const shoDiff = expectedStats.sho.evFace - currentStats.sho.evFace;
-  const pasDiff = expectedStats.pas.evFace - currentStats.pas.evFace;
-  const driDiff = expectedStats.dri.evFace - currentStats.dri.evFace;
-  const defDiff = expectedStats.def.evFace - currentStats.def.evFace;
-  const phyDiff = expectedStats.phy.evFace - currentStats.phy.evFace;
-  
-  const totalStatsAdded = pacDiff + shoDiff + pasDiff + driDiff + defDiff + phyDiff;
+// Pool orderings. Every one of them keeps addable evos above ineligible ones — an ineligible card
+// has no simulated result at all (target OVR / IGS / BS are 0), so sorting it in with the rest
+// would park the whole unusable half of the pool at the top of any ascending sort.
+type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base';
+
+const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
+  { mode: 'default', label: 'Default', title: 'Cheapest entry first: required OVR, then target OVR, then base stats' },
+  {
+    mode: 'rec',
+    label: 'Rec ↓',
+    title: 'The thumbs-up ranking over the whole pool: position-weighted stat gain, PS+ gained, ' +
+      'OVR spent, and your Filters targets. Picks that would break a Filters max sink to the bottom.'
+  },
+  { mode: 'reqOvr', label: 'Req OVR ↑', title: 'Lowest required OVR first — the evos about to age out of reach' },
+  { mode: 'targetOvr', label: 'Target OVR ↑', title: 'Lowest resulting OVR first — keeps headroom for later evos' },
+  { mode: 'igs', label: 'IGS ↓', title: 'Biggest resulting in-game stats total first' },
+  { mode: 'base', label: 'BS ↓', title: 'Biggest resulting base (face) stats total first' }
+];
+
+/**
+ * Scores one candidate evo by what it does for the positions this player actually plays, using
+ * the same weights the path search ranks by (`getPositionScore`) so the builder and Analyze agree
+ * on what "better" means. A flat stat total used to drive this, which happily handed a CDM the
+ * +20 SHO evo over the one that added DEF.
+ */
+const getEvoRecommendation = ({
+  evoId,
+  positions,
+  currentOvr,
+  expectedOvr,
+  currentStats,
+  expectedStats,
+  currentPlayStyles,
+  expectedPlayStyles,
+  filters
+}: {
+  evoId: string;
+  positions: string;
+  currentOvr: number;
+  expectedOvr: number;
+  currentStats: StatsData;
+  expectedStats: StatsData;
+  currentPlayStyles: PlayStylesData;
+  expectedPlayStyles: PlayStylesData;
+  filters?: EvoFilters;
+}): { score: number, reasons: string[], blocked: boolean } => {
+  if (!currentStats || !expectedStats) return { score: 0, reasons: [], blocked: false };
+
+  const posList = positions.split(',').map(p => p.trim()).filter(p => p.length > 0);
+  const ratedPositions = posList.length > 0 ? posList : [''];
+
+  // The listed primary position is what the card is judged on; a secondary one still counts,
+  // at half weight, so a CM/CDM isn't scored as if either half of the card were the whole thing.
+  const weightOf = (idx: number) => (idx === 0 ? 1 : 0.5);
+  const totalWeight = ratedPositions.reduce((sum, _, idx) => sum + weightOf(idx), 0);
+  const positionGain = ratedPositions.reduce(
+    (sum, pos, idx) =>
+      sum + (getPositionScore(expectedStats, pos) - getPositionScore(currentStats, pos)) * weightOf(idx),
+    0
+  ) / totalWeight;
+
   const ovrDiff = expectedOvr - currentOvr;
-  
+
   const beforeGold = new Set([...currentPlayStyles.base.gold, ...currentPlayStyles.ev.gold]);
   const afterGold = new Set([...expectedPlayStyles.base.gold, ...expectedPlayStyles.ev.gold]);
   const newGoldCount = [...afterGold].filter(x => !beforeGold.has(x)).length;
 
-  let reasons: string[] = [];
-  let score = 0;
+  const reasons: string[] = [];
+  let score = positionGain * 6;
 
-  // 1. PlayStyle+ is extremely valuable
   if (newGoldCount > 0) {
     reasons.push(newGoldCount > 1 ? `Adds ${newGoldCount} PS+` : `Adds PS+`);
     score += newGoldCount * 15;
   }
 
-  // 2. Chaining Efficiency: High stat boost with low OVR cost
-  // A typical OVR +1 gives ~6 stats. 
-  const efficiencyRatio = totalStatsAdded - (ovrDiff * 6);
-  if (efficiencyRatio >= 5) {
-    reasons.push(`Highly Efficient (+${totalStatsAdded} BS / +${ovrDiff} OVR)`);
-    score += efficiencyRatio * 2;
-  } else if (totalStatsAdded >= 15) {
-    reasons.push(`Massive Stats (+${totalStatsAdded})`);
-  }
-  
-  // 3. Free Boosts: The holy grail of chained EVOs
-  if (ovrDiff === 0 && (totalStatsAdded > 0 || newGoldCount > 0)) {
-    reasons.push("Free Boost (+0 OVR)");
-    score += 25;
+  if (positionGain > 0) {
+    reasons.push(`+${positionGain.toFixed(1)} ${posList[0] || 'rating'}`);
   }
 
-  score += totalStatsAdded;
-  // Penalize OVR increases slightly as they restrict future EVOs
-  score -= (ovrDiff * 3);
-
-  // Position-based heuristics
-  if (isAttacker) {
-    if (pacDiff >= 5) { reasons.push(`+${pacDiff} PAC`); score += pacDiff; }
-    if (shoDiff >= 5) { reasons.push(`+${shoDiff} SHO`); score += shoDiff; }
-  }
-  if (isMidfielder) {
-    if (pasDiff >= 5) { reasons.push(`+${pasDiff} PAS`); score += pasDiff; }
-    if (driDiff >= 5) { reasons.push(`+${driDiff} DRI`); score += driDiff; }
-    if (pacDiff >= 4 && defDiff >= 4) { reasons.push(`Box-to-box`); score += pacDiff + defDiff; }
-  }
-  if (isDefender) {
-    if (defDiff >= 5) { reasons.push(`+${defDiff} DEF`); score += defDiff; }
-    if (phyDiff >= 5) { reasons.push(`+${phyDiff} PHY`); score += phyDiff; }
+  // OVR is the scarce resource in a chain — every point spent burns headroom on the max-OVR
+  // gates of the evos that could still follow, so a boost that costs none is worth a premium.
+  if (ovrDiff === 0 && (positionGain > 0 || newGoldCount > 0)) {
+    reasons.push('Free Boost (+0 OVR)');
+    score += 20;
+  } else {
+    score -= ovrDiff * 5;
   }
 
-  // Deduplicate reasons
-  reasons = [...new Set(reasons)];
+  // Name the stats behind the gain: the numbers are already on the card, but not which ones
+  // earned the thumbs-up for this position.
+  const topStats = (['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const)
+    .map(key => ({ key, diff: expectedStats[key].baseFace - currentStats[key].baseFace }))
+    .filter(s => s.diff > 0)
+    .sort((a, b) => b.diff - a.diff)
+    .slice(0, 3)
+    .map(s => `+${s.diff} ${s.key.toUpperCase()}`);
+  reasons.push(...topStats);
 
-  return reasons.length > 0 ? { score, reasons } : { score: 0, reasons: [] };
+  // What the Filters panel asks for outranks any generic notion of "good". Stats only ever go
+  // up, so blowing past a max is terminal for the build the user asked for — that pick is never
+  // recommended, however well it scores — while closing the gap on a min is the whole job.
+  let blocked = false;
+  if (filters) {
+    if (filters.blockedEvos?.includes(evoId)) blocked = true;
+
+    const goldCount = (ps: PlayStylesData) => Math.min(ps.base.gold.length + ps.ev.gold.length, ps.limits.gold);
+    const silverCount = (ps: PlayStylesData) => Math.min(ps.base.silver.length + ps.ev.silver.length, ps.limits.silver);
+
+    const targets: { label: string; filter?: StatFilter; before: number; after: number }[] = [
+      { label: 'OVR', filter: filters.ovr, before: currentOvr, after: expectedOvr },
+      ...(['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).map(key => ({
+        label: key.toUpperCase(),
+        filter: filters[key],
+        before: currentStats[key].baseFace,
+        after: expectedStats[key].baseFace
+      })),
+      { label: 'PS+', filter: filters.psPlus, before: goldCount(currentPlayStyles), after: goldCount(expectedPlayStyles) },
+      { label: 'PS', filter: filters.ps, before: silverCount(currentPlayStyles), after: silverCount(expectedPlayStyles) }
+    ];
+
+    for (const { label, filter, before, after } of targets) {
+      if (!filter) continue;
+
+      if (filter.max !== undefined && after > filter.max) {
+        blocked = true;
+        reasons.push(`${label} ${after} would break the ${label} ≤ ${filter.max} filter`);
+        continue;
+      }
+
+      if (filter.min !== undefined && before < filter.min) {
+        const progress = Math.min(after, filter.min) - before;
+        if (progress > 0) {
+          score += progress * 8;
+          reasons.push(
+            after >= filter.min
+              ? `Meets ${label} ≥ ${filter.min}`
+              : `+${progress} toward ${label} ≥ ${filter.min}`
+          );
+        }
+      }
+    }
+
+    // A must-have is not a preference — the build is not finished without it, so it leads the
+    // recommendations for as long as it stays addable.
+    if (filters.requiredEvos?.includes(evoId)) {
+      reasons.unshift('Must-have from your pool');
+      score += 200;
+    }
+  }
+
+  return { score, reasons, blocked };
 }
 
 const StatDisplay = ({ label, after, before }: { label: string, after: number, before?: number }) => {
@@ -142,6 +224,9 @@ interface ManualPathModalProps {
   editingPath?: EvolutionPath | null;
   // Steps locked in by the chosen base. New paths start seeded with these and can't drop them.
   lockedPrefix?: string[];
+  // The pool's must-haves and the stat targets from Filters. The builder never blocks a pick on
+  // them — it's a manual builder — but every recommendation is aimed at them.
+  evoFilters?: EvoFilters;
 }
 
 export const ManualPathModal: React.FC<ManualPathModalProps> = ({
@@ -154,12 +239,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   baseStats,
   basePlayStyles,
   editingPath,
-  lockedPrefix = []
+  lockedPrefix = [],
+  evoFilters
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterNewRarity, setFilterNewRarity] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('default');
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -195,12 +282,86 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     return { isValid: res.isValidChain, result: res };
   }, [selectedChain, baseBio, baseOvr, baseStats, basePlayStyles]);
 
+  // A few evos deep, the best pick stops being visible one card at a time — what matters is where
+  // the chain can still end up. So the same search Analyze uses runs from the current chain as its
+  // prefix, shallow enough to land in a second or two, and offers the best continuations whole.
+  const [chainRecs, setChainRecs] = useState<EvolutionPath[]>([]);
+  const [isSearchingChains, setIsSearchingChains] = useState(false);
+  // Set once a search has actually returned, so "nothing matches your filters" is only ever said
+  // about a search that finished rather than one still running or one that errored.
+  const [chainSearchSettled, setChainSearchSettled] = useState(false);
+  const chainSearchHandle = useRef<EvoSearchHandle | null>(null);
+  const chainKey = selectedChain.join('|');
+
+  useEffect(() => {
+    chainSearchHandle.current?.cancel();
+    chainSearchHandle.current = null;
+
+    if (!isOpen) {
+      setChainRecs([]);
+      setIsSearchingChains(false);
+      setChainSearchSettled(false);
+      return;
+    }
+
+    setChainRecs([]);
+    setChainSearchSettled(false);
+    setIsSearchingChains(true);
+
+    const handle = runEvoSearch({
+      poolIds: evosPool,
+      maxDepth: REC_CHAIN_DEPTH,
+      bio: baseBio,
+      ovr: baseOvr,
+      stats: baseStats,
+      playStyles: basePlayStyles,
+      // Same filters Analyze runs under, so a continuation the builder offers is one the user's
+      // own must-haves and stat targets would accept. A must-have that can't be reached within
+      // REC_CHAIN_DEPTH steps simply leaves the search with nothing to offer, which is the
+      // honest answer rather than a suggestion that ignores it.
+      filters: evoFilters,
+      prefixChainIds: selectedChain
+    });
+    chainSearchHandle.current = handle;
+
+    handle.promise
+      .then(paths => {
+        if (chainSearchHandle.current !== handle) return; // superseded by a newer chain
+        chainSearchHandle.current = null;
+        setIsSearchingChains(false);
+        // analyzeEvolutions returns the Max-IGS picks first, then one per primary position.
+        // The position-ranked ones are what this builder wants; IGS is the fallback when a
+        // player's position has no weights of its own.
+        const positioned = paths.filter(p => !p.name.startsWith('Max IGS'));
+        const ranked = positioned.length > 0 ? positioned : paths;
+        setChainRecs(
+          ranked
+            .filter(p => p.chainIds.length > selectedChain.length)
+            .slice(0, MAX_CHAIN_RECOMMENDATIONS)
+        );
+        setChainSearchSettled(true);
+      })
+      .catch(err => {
+        if (err?.name === 'AbortError') return; // a newer search already took over
+        if (chainSearchHandle.current !== handle) return;
+        chainSearchHandle.current = null;
+        setIsSearchingChains(false);
+        console.error('Chain recommendation search failed:', err);
+      });
+
+    return () => handle.cancel();
+    // selectedChain is compared by its joined key so a re-render with an equal array can't
+    // restart a search that is already running for it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, chainKey, evosPool, baseBio, baseOvr, baseStats, basePlayStyles, evoFilters]);
+
   if (!isOpen) return null;
 
   // Picking an evo appends it to the base and hands straight back to the player screen —
   // the chain is inspected and edited there, not in here.
-  const handleAdd = (id: string) => {
-    const chain = [...selectedChain, id];
+  const handleAdd = (id: string) => applyChain([...selectedChain, id]);
+
+  const applyChain = (chain: string[]) => {
     const result = simulateEvoChain(chain, baseBio, baseOvr, baseStats, basePlayStyles);
     const igs = Object.values(result.finalStats).reduce(
       (acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0),
@@ -230,17 +391,20 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
     let isEligible = false;
     let reasons: string[] = [];
+    let warnings: string[] = [];
     let expectedOvr = 0;
     let expectedIgs = 0;
     let expectedStats = null;
     let expectedPlayStyles = null;
     let recScore = 0;
     let recReasons: string[] = [];
+    let recBlocked = false;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
       isEligible = validation.eligible;
       reasons = validation.reasons;
+      warnings = validation.warnings;
 
       if (isEligible) {
         const testRes = simulateEvoChain([...selectedChain, id], baseBio, baseOvr, baseStats, basePlayStyles);
@@ -250,9 +414,22 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedPlayStyles = testRes.finalPlayStyles;
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
           
-          const rec = getEvoRecommendation(currentBio.primaryPositions, currentOvr, expectedOvr, currentStats, expectedStats, currentPlayStyles, expectedPlayStyles);
-          recScore = rec.score;
+          const rec = getEvoRecommendation({
+            evoId: id,
+            positions: currentBio.primaryPositions,
+            currentOvr,
+            expectedOvr,
+            currentStats,
+            expectedStats,
+            currentPlayStyles,
+            expectedPlayStyles,
+            filters: evoFilters
+          });
+          // A warned pick is legal and can still be the right call, but it shouldn't collect a
+          // thumbs-up unless it beats the clean options by a real margin rather than a hair.
+          recScore = rec.score - warnings.length * 30;
           recReasons = rec.reasons;
+          recBlocked = rec.blocked;
         }
       }
     }
@@ -265,15 +442,41 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       limitReached,
       isEligible,
       reasons,
+      warnings,
       expectedOvr,
       expectedIgs,
       expectedFaceStats,
       expectedStats,
       expectedPlayStyles,
       recScore,
-      recReasons
+      recReasons,
+      recBlocked
     };
   });
+
+  // What the recommendations are currently aiming at, spelled out next to them — otherwise a
+  // shortlist narrowed by a filter set in another modal just looks arbitrary.
+  const missingRequired = (evoFilters?.requiredEvos || []).filter(reqId => !selectedChain.includes(reqId));
+  const filterTargets: string[] = [
+    ...missingRequired.map(reqId => `must have ${availableEvolutions[reqId]?.name || reqId}`),
+    ...([
+      ['OVR', evoFilters?.ovr],
+      ['PAC', evoFilters?.pac],
+      ['SHO', evoFilters?.sho],
+      ['PAS', evoFilters?.pas],
+      ['DRI', evoFilters?.dri],
+      ['DEF', evoFilters?.def],
+      ['PHY', evoFilters?.phy],
+      ['PS+', evoFilters?.psPlus],
+      ['PS', evoFilters?.ps]
+    ] as const).flatMap(([label, filter]) => {
+      const parts: string[] = [];
+      if (filter?.min !== undefined) parts.push(`${label} ≥ ${filter.min}`);
+      // 99 is the app's default OVR ceiling rather than something the user asked for.
+      if (filter?.max !== undefined && !(label === 'OVR' && filter.max >= 99)) parts.push(`${label} ≤ ${filter.max}`);
+      return parts;
+    })
+  ];
 
 
 
@@ -281,27 +484,49 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // stays a shortlist rather than a label on most of the pool.
   const recommendedRank = new Map<string, number>();
   poolWithStatus
-    .filter(p => p.recScore > 0 && p.isEligible && !p.limitReached)
+    .filter(p => p.isEligible && !p.limitReached && !p.recBlocked && p.recReasons.length > 0)
     .sort((a, b) => b.recScore - a.recScore || b.expectedIgs - a.expectedIgs)
     .slice(0, MAX_RECOMMENDATIONS)
     .forEach((p, idx) => recommendedRank.set(p.id, idx + 1));
 
-  // Sort: Eligible first, then ineligible, then limit reached. Within same status, sort by maxOvr ascending.
+  // Sort: Eligible first, then ineligible, then limit reached — in every mode, since only an
+  // addable evo has a simulated target to sort on. The chosen mode orders within a status group.
   poolWithStatus.sort((a, b) => {
     if (a.limitReached && !b.limitReached) return 1;
     if (!a.limitReached && b.limitReached) return -1;
     if (a.isEligible && !b.isEligible) return -1;
     if (!a.isEligible && b.isEligible) return 1;
-    
-    // 1. max required ovr ASC
+
     const aMaxOvr = a.evo.requirements.maxOvr || 99;
     const bMaxOvr = b.evo.requirements.maxOvr || 99;
+
+    switch (sortMode) {
+      case 'rec':
+        // A pick that would break a Filters max is still addable by hand, but it can't be near
+        // the top of a list that answers "what should I take next".
+        if (a.recBlocked !== b.recBlocked) return a.recBlocked ? 1 : -1;
+        if (a.recScore !== b.recScore) return b.recScore - a.recScore;
+        break;
+      case 'reqOvr':
+        if (aMaxOvr !== bMaxOvr) return aMaxOvr - bMaxOvr;
+        break;
+      case 'targetOvr':
+        if (a.expectedOvr !== b.expectedOvr) return a.expectedOvr - b.expectedOvr;
+        break;
+      case 'igs':
+        if (a.expectedIgs !== b.expectedIgs) return b.expectedIgs - a.expectedIgs;
+        break;
+      case 'base':
+        if (a.expectedFaceStats !== b.expectedFaceStats) return b.expectedFaceStats - a.expectedFaceStats;
+        break;
+      default:
+        break;
+    }
+
+    // Default order, and the tiebreak every other mode falls back on: cheapest to enter first,
+    // then the one that spends the least OVR, then the one that ends up with more base stats.
     if (aMaxOvr !== bMaxOvr) return aMaxOvr - bMaxOvr;
-    
-    // 2. target ovr ASC
     if (a.expectedOvr !== b.expectedOvr) return a.expectedOvr - b.expectedOvr;
-    
-    // 3. target base stats DESC
     return b.expectedFaceStats - a.expectedFaceStats;
   });
 
@@ -432,10 +657,23 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             <Eye className="w-3 h-3" />
                           </button>
                         </div>
-                        {/* What this step turns the card into, same badges as the pool below and the
-                            chain on the player panel. */}
-                        {(evo.rarityChange || (evo.positionsAdded && evo.positionsAdded.length > 0)) && (
+                        {/* What this step asks for and turns the card into, same badges as the pool
+                            below and the chain on the player panel. */}
+                        {(evo.rarityChange
+                          || (evo.positionsAdded && evo.positionsAdded.length > 0)
+                          || (evo.requirements.positions && evo.requirements.positions.length > 0)
+                          || displayExcludedPositions(evo).length > 0) && (
                           <div className="flex flex-wrap items-center gap-1 px-1">
+                            {evo.requirements.positions && evo.requirements.positions.length > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-red-950/50 text-red-300 border border-red-900/50 text-[8.5px] font-bold tracking-wide">
+                                Req Pos: {evo.requirements.positions.join(', ')}
+                              </span>
+                            )}
+                            {displayExcludedPositions(evo).length > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-red-950/50 text-red-300 border border-red-900/50 text-[8.5px] font-bold tracking-wide">
+                                Excl Pos: {displayExcludedPositions(evo).join(', ')}
+                              </span>
+                            )}
                             {evo.rarityChange && (
                               <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
                                 → {evo.rarityChange}
@@ -620,7 +858,22 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   })}
                 </div>
               </div>
-              <div className="flex gap-2 items-center flex-1 md:flex-none justify-end">
+              <div className="flex gap-2 items-center flex-1 md:flex-none justify-end flex-wrap">
+                <div className="flex items-center gap-1 bg-[#121212] border border-gray-800 rounded-lg p-0.5">
+                  <span className="text-[9px] font-bold uppercase tracking-wide text-gray-600 px-1">Sort</span>
+                  {SORT_OPTIONS.map(({ mode, label, title }) => (
+                    <button
+                      key={mode}
+                      onClick={() => setSortMode(mode)}
+                      title={title}
+                      className={`px-1.5 py-1 text-[10px] font-bold rounded transition-colors whitespace-nowrap ${
+                        sortMode === mode ? 'bg-fcGreen text-black shadow-sm' : 'text-gray-400 hover:bg-[#2A2D2A]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <button
                   onClick={() => setFilterNewRarity(!filterNewRarity)}
                   className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
@@ -666,6 +919,79 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               </div>
             </div>
             
+            {(isSearchingChains || chainRecs.length > 0 || (chainSearchSettled && filterTargets.length > 0)) && (
+              <div className="px-4 pt-4">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <Wand2 className="w-3.5 h-3.5 text-fcGreen" />
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-gray-400">
+                    Recommended continuation
+                  </span>
+                  {isSearchingChains && (
+                    <span className="text-[10px] text-gray-500 animate-pulse">searching {REC_CHAIN_DEPTH} deep…</span>
+                  )}
+                  {filterTargets.length > 0 && (
+                    <span className="text-[10px] text-gray-500">
+                      aiming at <span className="text-amber-400/90">{filterTargets.join(' · ')}</span>
+                    </span>
+                  )}
+                </div>
+                {chainSearchSettled && chainRecs.length === 0 && filterTargets.length > 0 && (
+                  <div className="text-[11px] text-gray-500 bg-[#161816] border border-gray-800 rounded-xl p-3">
+                    No continuation within {REC_CHAIN_DEPTH} steps satisfies those filters — pick manually, or loosen
+                    them in Filters.
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {chainRecs.map(rec => {
+                    const added = rec.chainIds
+                      .slice(selectedChain.length)
+                      .map(stepId => availableEvolutions[stepId]?.name || stepId);
+                    const last = rec.steps?.[rec.steps.length - 1];
+                    const finalOvr = last ? last.ovrAfter : currentOvr;
+                    const finalIgs = last
+                      ? Object.values(last.statsAfter).reduce(
+                          (acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0),
+                          0
+                        )
+                      : currentIgs;
+
+                    return (
+                      <div
+                        key={rec.id}
+                        className="flex items-center gap-3 bg-[#161816] border border-fcGreen/30 rounded-xl p-3"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="font-mono text-xs font-extrabold text-white">
+                              {finalOvr > currentOvr && (
+                                <span className="text-fcGreen text-[10px] mr-0.5">+{finalOvr - currentOvr}</span>
+                              )}
+                              {finalOvr}
+                            </span>
+                            <span className="font-mono text-[10px] text-gray-400">
+                              IGS <span className="text-fcGreen">+{finalIgs - currentIgs}</span>{' '}
+                              <span className="text-blue-400 font-bold">{finalIgs}</span>
+                            </span>
+                            <span className="text-[9px] text-gray-500 font-mono">{added.length} more EVOs</span>
+                          </div>
+                          <div className="text-[11px] text-gray-300 mt-1 leading-snug">
+                            {added.join(' ➜ ')}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => applyChain(rec.chainIds)}
+                          className="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-green-900/60 text-green-400 hover:bg-green-500 hover:text-white transition-colors"
+                          title="Add all of these to the chain"
+                        >
+                          Apply all
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {poolWithStatus.length === 0 ? (
                 <div className="text-center py-6 text-gray-600 text-sm">
@@ -680,53 +1006,54 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
                     return true;
 })
-                  .map(({ id, evo, limitReached, isEligible, reasons, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons }) => {
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
+                  const excludedPositions = displayExcludedPositions(evo);
                   const recRank = recommendedRank.get(id);
                   const isRec = canAdd && recRank !== undefined;
                   
                   return (
                     <div 
                       key={id}
-                      className={`relative group bg-[#161816] border rounded-xl p-3 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''}`}
+                      className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''}`}
                       onClick={() => setLocalViewingEvo(id)}
                     >
-                      {isRec && (
-                         <div className="absolute top-0 right-0 px-2 py-0.5 bg-fcGreen text-black text-[9px] font-bold rounded-bl-lg">
-                           #{recRank} RECOMMENDED
-                         </div>
-                      )}
                       <div className="flex justify-between items-start w-full">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className={`font-bold text-sm transition-colors flex items-center ${canAdd ? 'text-gray-200 group-hover:text-blue-400' : 'text-gray-500'}`}>
+                        <div className="flex-1 min-w-0">
+                          {/* Name gets the room to wrap; the terms sit on their own line below so a
+                              long name can't shred them into a one-number-per-line column. */}
+                          <div className="flex items-start gap-2">
+                            <h4 className={`font-bold text-sm leading-snug flex-1 min-w-0 transition-colors ${canAdd ? 'text-gray-200 group-hover:text-blue-400' : 'text-gray-500'}`}>
                               {canAdd && (
                                 <span className="font-mono tracking-tight font-extrabold opacity-80 mr-1.5 text-white">
                                   {expectedOvr - currentOvr > 0 && <span className="text-fcGreen font-bold text-[10px] mr-0.5">+{expectedOvr - currentOvr}</span>}
                                   {expectedOvr}/{expectedPlayStyles ? (expectedPlayStyles.base.gold.length + expectedPlayStyles.ev.gold.length) : '?'}
                                 </span>
                               )}
+                              {isRec && (
+                                <span
+                                  title={recReasons && recReasons.length > 0 ? recReasons.join(' · ') : 'Recommended'}
+                                  className="inline-flex align-middle items-center mr-1.5 p-0.5 rounded bg-fcGreen/20 text-fcGreen border border-fcGreen/40"
+                                >
+                                  <ThumbsUp className="w-3 h-3" />
+                                </span>
+                              )}
                               <span>{evo.name}</span>
-                              <span className="font-mono text-xs opacity-70 ml-1.5 font-normal">
-                                {formatEvoTerms(evo)}
-                              </span>
                             </h4>
                             <button
                               onClick={(e) => { e.stopPropagation(); setLocalViewingEvo(id); }}
-                              className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors ml-auto mr-1 shrink-0"
+                              className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors shrink-0"
                               title="View Details"
                             >
                               <Eye className="w-3 h-3" />
                             </button>
                           </div>
-                          {isRec && recReasons && recReasons.length > 0 && (
-                            <p className="text-[10px] text-fcGreen font-semibold mt-1 leading-snug">
-                              Why: {recReasons.join(' · ')}
-                            </p>
-                          )}
-                          <div className="flex gap-2 flex-wrap items-center mt-0.5">
+                          <div className="font-mono text-[11px] opacity-70 mt-0.5 whitespace-nowrap">
+                            {formatEvoTerms(evo)}
+                          </div>
+                          <div className="flex gap-x-2 gap-y-1.5 flex-wrap items-center mt-2">
 
                             {canAdd && expectedStats && (
                               <div className="flex gap-1 items-center bg-gray-800/80 px-2 py-0.5 rounded border border-gray-600 text-[10px]">
@@ -751,9 +1078,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 Req Pos: {evo.requirements.positions.join(', ')}
                               </span>
                             )}
-                            {evo.requirements.excludedPositions && evo.requirements.excludedPositions.length > 0 && (
+                            {excludedPositions.length > 0 && (
                               <span className="px-1.5 py-0.5 bg-red-950/40 rounded text-[9px] text-red-400 border border-red-900/50 font-bold whitespace-nowrap">
-                                Excl Pos: {evo.requirements.excludedPositions.join(', ')}
+                                Excl Pos: {excludedPositions.join(', ')}
                               </span>
                             )}
                             {evo.positionsAdded && evo.positionsAdded.length > 0 && (
@@ -773,8 +1100,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             )}
                           </div>
                           {canAdd && expectedStats && expectedPlayStyles && (
-                            <div className="mt-1.5 pt-1.5 border-t border-gray-800/50">
-                              <div className="grid grid-cols-3 gap-1 mt-1">
+                            <div className="mt-2 pt-2 border-t border-gray-800/50">
+                              <div className="grid grid-cols-3 gap-1.5 mt-1">
                                 {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
                                   const val = expectedStats[statKey as keyof StatsData].baseFace;
                                   const prevVal = currentStats[statKey as keyof StatsData].baseFace;
@@ -786,7 +1113,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                   else if (diff >= 2) diffColor = "text-lime-400 font-semibold";
 
                                   return (
-                                    <div key={statKey} className="flex gap-0.5 items-center bg-[#101210] px-1 py-0.5 rounded text-[8.5px] shadow-inner border border-gray-800/80">
+                                    <div key={statKey} className="flex gap-0.5 items-center bg-[#101210] px-1.5 py-1 rounded text-[8.5px] shadow-inner border border-gray-800/80">
                                       <span className="text-gray-500 font-bold uppercase">{statKey}</span>
                                       <div className="flex items-baseline gap-0.5 ml-auto">
                                         {diff > 0 && <span className={`${diffColor} text-[7px] leading-none tracking-tighter`}>+{diff}</span>}
@@ -807,6 +1134,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           {reasons[0]} {reasons.length > 1 && `(+${reasons.length - 1} more)`}
                         </div>
                       )}
+
+                      {/* Amber, not red, and the card stays addable — this is a "think twice",
+                          not a rejection. */}
+                      {canAdd && warnings.length > 0 && (
+                        <div className="mt-2 flex items-start gap-1.5 text-[10px] text-amber-400/90 bg-amber-950/20 border border-amber-900/40 p-1.5 rounded pr-8">
+                          <AlertTriangle className="w-3 h-3 shrink-0 mt-px" />
+                          <span>
+                            {warnings[0]} {warnings.length > 1 && `(+${warnings.length - 1} more)`}
+                          </span>
+                        </div>
+                      )}
                       
                       <button
                         onClick={(e) => { e.stopPropagation(); handleAdd(id); }}
@@ -814,7 +1152,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                         className={`absolute bottom-3 right-3 p-1.5 rounded-full transition-colors shrink-0 shadow-lg z-10 ${canAdd ? 'bg-green-900/60 text-green-400 hover:bg-green-500 hover:text-white' : 'bg-gray-800/80 text-gray-600 cursor-not-allowed'}`}
                         title={canAdd ? "Add Evo" : "Ineligible"}
                       >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-4 h-4" />
                       </button>
                     </div>
                   );

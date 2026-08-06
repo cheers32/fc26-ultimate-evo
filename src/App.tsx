@@ -1210,6 +1210,7 @@ export default function App() {
         baseOvr={initialOvrData}
         baseStats={statsData}
         basePlayStyles={playStylesData}
+        evoFilters={evoFilters}
       />
       <EvoDetailsModal
         evoId={viewingEvoId}

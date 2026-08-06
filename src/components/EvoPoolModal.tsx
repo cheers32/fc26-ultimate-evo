@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Ban, Eye } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
+import { displayExcludedPositions } from '../utils/statUtils';
+import { EvoDetailsModal } from './EvoDetailsModal';
 
 interface EvoPoolModalProps {
   isOpen: boolean;
@@ -45,6 +47,9 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // The details modal opens on top of this one and handles its own keys — Escape there must
+      // close it rather than the pool underneath, and Enter must not confirm the whole selection.
+      if (document.getElementById('evo-details-modal')) return;
       if (e.key === 'Escape') onClose();
       if (e.key === 'Enter') {
         // Only if we aren't typing in the search input (it has its own enter handler)
@@ -195,9 +200,9 @@ isSelected
               Req Pos: {evo.requirements.positions.join(', ')}
             </span>
           )}
-          {evo.requirements.excludedPositions && evo.requirements.excludedPositions.length > 0 && (
+          {displayExcludedPositions(evo).length > 0 && (
             <span className="px-2 py-1 bg-red-950/40 rounded text-red-400 border border-red-900/50 font-bold">
-              Excl Pos: {evo.requirements.excludedPositions.join(', ')}
+              Excl Pos: {displayExcludedPositions(evo).join(', ')}
             </span>
           )}
           {evo.maxRepeatable && evo.maxRepeatable > 1 && (
@@ -420,6 +425,9 @@ isSelected
         </div>
 
       </div>
+
+      {/* The eye on every card sets this — without the modal rendered here, clicking it did nothing. */}
+      <EvoDetailsModal evoId={viewingEvo} onClose={() => setViewingEvo(null)} />
     </div>
   );
 };

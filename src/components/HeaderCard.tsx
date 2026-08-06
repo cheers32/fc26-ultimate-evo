@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2 } from 'lucide-react';
@@ -932,10 +932,24 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               {formatEvoTerms(evo)}
                             </span>
                           </div>
-                          {/* What the step turns the card into — the same rarity/position badges the
-                              pool and picker use, so a finished chain shows it without opening them. */}
-                          {(evo.rarityChange || (evo.positionsAdded && evo.positionsAdded.length > 0)) && (
+                          {/* What the step asks for and what it turns the card into — the same
+                              requirement/rarity/position badges the pool and picker use, so a
+                              finished chain shows it without opening them. */}
+                          {(evo.rarityChange
+                            || (evo.positionsAdded && evo.positionsAdded.length > 0)
+                            || (evo.requirements.positions && evo.requirements.positions.length > 0)
+                            || displayExcludedPositions(evo).length > 0) && (
                             <div className="flex flex-wrap items-center gap-1 px-1">
+                              {evo.requirements.positions && evo.requirements.positions.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded bg-red-950/50 text-red-300 border border-red-900/50 text-[8.5px] font-bold tracking-wide">
+                                  Req Pos: {evo.requirements.positions.join(', ')}
+                                </span>
+                              )}
+                              {displayExcludedPositions(evo).length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded bg-red-950/50 text-red-300 border border-red-900/50 text-[8.5px] font-bold tracking-wide">
+                                  Excl Pos: {displayExcludedPositions(evo).join(', ')}
+                                </span>
+                              )}
                               {evo.rarityChange && (
                                 <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
                                   → {evo.rarityChange}
