@@ -242,6 +242,12 @@ isSelected
     );
   };
 
+  // One shape for every control in the toolbar. They used to be a mix of text-xs/text-[10px] and
+  // rounded/rounded-lg in a single justify-between row, which fell apart as soon as it wrapped.
+  const control = 'px-3 py-1.5 text-[11px] font-bold rounded-lg border transition-colors flex items-center gap-1.5 whitespace-nowrap';
+  const controlOff = 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151] hover:text-gray-200';
+  const controlOn = 'bg-fcGreen text-black border-fcGreen/80 shadow-sm';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="bg-[#1A1C1A] border border-gray-700 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -259,47 +265,48 @@ isSelected
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-[#121212]">
-          <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-            <span className="text-sm font-semibold text-gray-300">
-              {selectedCount} / {totalCount} Selected
-            </span>
-            
-            {filterMustInclude ? (
-              <div className="flex-1 sm:flex-none flex justify-center">
-                <span className="text-xs font-bold text-fcGreen uppercase tracking-widest px-3 py-1.5 bg-green-950/30 border border-green-900/50 rounded-lg">
+          <div className="flex flex-col gap-3 mb-6">
+            {/* Row 1: which list you're looking at */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-sm font-semibold text-gray-300">
+                {selectedCount} / {totalCount} Selected
+              </span>
+
+              {filterMustInclude ? (
+                <span className="text-[11px] font-bold text-fcGreen uppercase tracking-widest px-3 py-1.5 bg-green-950/30 border border-green-900/50 rounded-lg">
                   Viewing Must Include
                 </span>
-              </div>
-            ) : (
-              <div className="flex bg-[#2A2D2A] p-1 rounded-lg border border-gray-700/50 flex-1 sm:flex-none justify-center">
-                <button
-                  onClick={() => { setViewMode('active'); setFilterSecondary(false); }}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors flex items-center gap-1.5 ${
-                    viewMode === 'active' ? 'bg-fcGreen text-black shadow' : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  <Check className="w-3.5 h-3.5" /> ACTIVE
-                </button>
-                <button
-                  onClick={() => { setViewMode('disabled'); setFilterSecondary(false); }}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors flex items-center gap-1.5 ${
-                    viewMode === 'disabled' ? 'bg-red-500 text-black shadow' : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  <Ban className="w-3.5 h-3.5" /> DISABLED
-                </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex bg-[#2A2D2A] p-1 rounded-lg border border-gray-700/50">
+                  <button
+                    onClick={() => { setViewMode('active'); setFilterSecondary(false); }}
+                    className={`px-4 py-1 text-[11px] font-bold rounded-md transition-colors flex items-center gap-1.5 ${
+                      viewMode === 'active' ? 'bg-fcGreen text-black shadow' : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" /> ACTIVE
+                  </button>
+                  <button
+                    onClick={() => { setViewMode('disabled'); setFilterSecondary(false); }}
+                    className={`px-4 py-1 text-[11px] font-bold rounded-md transition-colors flex items-center gap-1.5 ${
+                      viewMode === 'disabled' ? 'bg-red-500 text-black shadow' : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    <Ban className="w-3.5 h-3.5" /> DISABLED
+                  </button>
+                </div>
+              )}
+            </div>
 
-            <div className="flex gap-2 items-center flex-1 sm:flex-none justify-end">
-
+            {/* Row 2: narrowing that list down, then the bulk actions */}
+            <div className="flex items-center gap-2 flex-wrap">
               {!filterMustInclude && (
                 <button
                   onClick={() => setFilterSecondary(!filterSecondary)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1.5 ${
+                  className={`${control} ${
                     filterSecondary
                       ? (viewMode === 'active' ? 'bg-red-950/80 text-red-400 border-red-800/80 shadow-sm' : 'bg-green-950/80 text-fcGreen border-green-800/80 shadow-sm')
-                      : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                      : controlOff
                   }`}
                 >
                   {viewMode === 'active' ? (
@@ -311,32 +318,27 @@ isSelected
               )}
               <button
                 onClick={() => { setFilterMustInclude(!filterMustInclude); setFilterSecondary(false); }}
-
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1.5 ${
-                  filterMustInclude
-                    ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
-                    : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
-                }`}
+                className={`${control} ${filterMustInclude ? controlOn : controlOff}`}
               >
                 ★ MUST INCLUDE
               </button>
               <button
                 onClick={() => setFilterNewRarity(!filterNewRarity)}
-                className={`px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
-                  filterNewRarity ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
-                }`}
+                className={`${control} ${filterNewRarity ? controlOn : controlOff}`}
               >
-                New Rarity
+                NEW RARITY
               </button>
               <button
                 onClick={() => setFilterNewPosition(!filterNewPosition)}
-                className={`px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
-                  filterNewPosition ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
-                }`}
+                className={`${control} ${filterNewPosition ? controlOn : controlOff}`}
               >
-                New Position
+                NEW POSITION
               </button>
-              <input
+
+              {/* Search and the bulk actions travel as one group, so a narrow modal drops all
+                  three to the next line together instead of stranding them apart. */}
+              <div className="flex items-center gap-2 ml-auto">
+                <input
                   type="text"
                   placeholder="Search EVOs..."
                   value={searchQuery}
@@ -358,14 +360,15 @@ isSelected
                       }
                     }
                   }}
-                  className="w-full sm:w-48 bg-[#1a1c1a] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen outline-none transition-colors"
+                  className="w-44 sm:w-52 bg-[#1a1c1a] border border-gray-700 rounded-lg px-3 py-1.5 text-[11px] text-gray-300 focus:border-fcGreen outline-none transition-colors"
                 />
-              <button onClick={handleSelectAll} className="text-xs px-3 py-1.5 bg-[#2A2D2A] hover:bg-[#374151] border border-gray-700 rounded text-gray-300 hover:text-white transition-colors">
-                Select All
-              </button>
-              <button onClick={handleClear} className="text-xs px-3 py-1.5 bg-[#2A2D2A] hover:bg-[#374151] border border-gray-700 rounded text-gray-300 hover:text-white transition-colors">
-                Clear
-              </button>
+                <button onClick={handleSelectAll} className={`${control} ${controlOff}`}>
+                  Select All
+                </button>
+                <button onClick={handleClear} className={`${control} ${controlOff}`}>
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
 
