@@ -819,7 +819,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         return (
                           <div key={statKey} className={`flex gap-0.5 items-center px-1 py-0.5 rounded text-[8.5px] shadow-inner border bg-black/40 border-gray-800/50`}>
                             <span className={`text-gray-400 uppercase`}>{statKey}</span>
-                            <span className={`font-black ${selectedNodes.includes(-1) ? 'text-black' : getStatColorClass(val)}`}>{val}</span>
+                            {/* Selection is carried by the chip's gold ring, not by inverting the
+                                text — the selected chip is dark, so black-on-black hid the stats
+                                entirely, which is what a player with no evos yet always saw. */}
+                            <span className={`font-black ${getStatColorClass(val)}`}>{val}</span>
                           </div>
                         );
                       })}
