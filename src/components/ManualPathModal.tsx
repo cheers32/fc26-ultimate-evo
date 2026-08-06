@@ -5,7 +5,7 @@ import { EvoDetailsModal } from './EvoDetailsModal';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
-import { getStatColorClass } from '../utils/statUtils';
+import { getStatColorClass, formatEvoTerms } from '../utils/statUtils';
 
 // How many evos may carry the RECOMMENDED badge at once. Every evo that trips any
 // heuristic used to be badged, which on a full pool marked most of the list and made the
@@ -422,7 +422,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           </span>
                           <span className="text-[10.5px]">{evo.name}</span>
                           <span className="font-bold text-[9.5px] tracking-wide font-mono opacity-90">
-                            ({evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost})
+                            {formatEvoTerms(evo)}
                           </span>
                           <button
                             onClick={(e) => { e.stopPropagation(); setLocalViewingEvo(id); }}
@@ -710,7 +710,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               )}
                               <span>{evo.name}</span>
                               <span className="font-mono text-xs opacity-70 ml-1.5 font-normal">
-                                {evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost}
+                                {formatEvoTerms(evo)}
                               </span>
                             </h4>
                             <button

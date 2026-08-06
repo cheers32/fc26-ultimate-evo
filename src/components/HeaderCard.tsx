@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2 } from 'lucide-react';
@@ -929,7 +929,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             </span>
                             <span className="text-[10.5px]">{evo.name}</span>
                             <span className={`font-bold text-[9.5px] tracking-wide font-mono opacity-90 text-gray-300`}>
-                              ({evo.requirements.maxOvr || 99}/{evo.requirements.maxPlayStylesPlus ?? '∞'}/+{evo.ovrBoost.boost})
+                              {formatEvoTerms(evo)}
                             </span>
                           </div>
                           {/* What the step turns the card into — the same rarity/position badges the

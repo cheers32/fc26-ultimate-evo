@@ -64,3 +64,14 @@ export function calculateAccelerateType(
   }
   return "Controlled";
 }
+
+/**
+ * The short "what this evo asks for and gives" line shown on evo cards:
+ *
+ *   92/3 (+3 94)   max OVR to enter / max PS+ to enter, then the OVR boost and the OVR it caps at
+ *   96/∞           an evo that grants no OVR — the cap would be noise, so it's left off
+ */
+export function formatEvoTerms(evo: import('../types/player').EvolutionDefinition): string {
+  const entry = `${evo.requirements.maxOvr || 99}/${evo.requirements.maxPlayStylesPlus ?? '∞'}`;
+  return evo.ovrBoost.boost > 0 ? `${entry} (+${evo.ovrBoost.boost} ${evo.ovrBoost.limit})` : entry;
+}
