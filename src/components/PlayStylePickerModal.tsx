@@ -64,8 +64,11 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
 
   const lockedGoldNames = lockedGold.map(baseName);
   const lockedSilverNames = lockedSilver.map(baseName);
+  // Picking PS+ for something the chain gave as a plain PlayStyle upgrades it, exactly as an evo
+  // granting the gold version would: it takes a gold slot and gives the silver one back.
+  const upgradeCount = draftGold.filter(ps => lockedSilverNames.includes(baseName(ps))).length;
   const goldCount = lockedGold.length + draftGold.length;
-  const silverCount = lockedSilver.length + draftSilver.length;
+  const silverCount = lockedSilver.length + draftSilver.length - upgradeCount;
   const goldFull = goldCount >= limits.gold;
   const silverFull = silverCount >= limits.silver;
 
@@ -128,7 +131,9 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
               const isFreeGold = draftGold.some(ps => baseName(ps) === name);
               const isFreeSilver = draftSilver.some(ps => baseName(ps) === name);
               const tier: 'gold' | 'silver' | null = isLockedGold || isFreeGold ? 'gold' : (isLockedSilver || isFreeSilver ? 'silver' : null);
-              const goldDisabled = isLocked || (tier !== 'gold' && goldFull);
+              // Already PS+ from the chain leaves nothing to pick. Already a plain PlayStyle still
+              // leaves the upgrade to PS+ open — only re-picking the plain version is a no-op.
+              const goldDisabled = isLockedGold || (tier !== 'gold' && goldFull);
               const silverDisabled = isLocked || (tier !== 'silver' && silverFull);
 
               return (
@@ -141,8 +146,10 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
                   }`}
                 >
                   {isLocked && (
-                    <span className="absolute top-1.5 right-1.5 text-[8px] font-black uppercase tracking-wider text-gray-500 bg-black/50 px-1 rounded">
-                      From Evo
+                    <span className={`absolute top-1.5 right-1.5 text-[8px] font-black uppercase tracking-wider px-1 rounded bg-black/50 ${
+                      isLockedSilver && isFreeGold ? 'text-fcGreen' : 'text-gray-500'
+                    }`}>
+                      {isLockedSilver && isFreeGold ? 'Upgraded' : 'From Evo'}
                     </span>
                   )}
                   <img

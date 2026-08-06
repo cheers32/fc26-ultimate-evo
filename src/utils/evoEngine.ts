@@ -269,10 +269,11 @@ export function applyFreePlayStyles(
   free.gold.forEach(ps => {
     const name = baseName(ps);
     const hasGold = result.base.gold.some(g => baseName(g) === name);
-    if (!hasGold && result.base.gold.length < result.limits.gold) {
-      result.base.gold.push(ps);
-    }
-    result.base.silver = result.base.silver.filter(s => baseName(s) !== name);
+    // Only drop the plain version once the PS+ actually landed — same order as applyEvo. Removing
+    // it regardless would delete a PlayStyle the card already had whenever the gold slots are full.
+    const upgraded = hasGold || result.base.gold.length < result.limits.gold;
+    if (!hasGold && upgraded) result.base.gold.push(ps);
+    if (upgraded) result.base.silver = result.base.silver.filter(s => baseName(s) !== name);
   });
 
   free.silver.forEach(ps => {
