@@ -133,6 +133,13 @@ export function validateRequirement(
     reasons.push(`OVR ${currentOvr} exceeds Max Requirement of ${evo.requirements.maxOvr}`);
   }
 
+  // Check Min OVR. Most evos only cap the card, but the ones that continue a series (Part 2 of a
+  // set, say) also demand the OVR the earlier part leaves you on — without this a card that never
+  // did Part 1 looks eligible for Part 2.
+  if (evo.requirements.minOvr !== undefined && currentOvr < evo.requirements.minOvr) {
+    reasons.push(`OVR ${currentOvr} is below Min Requirement of ${evo.requirements.minOvr}`);
+  }
+
   // Check Max Pace
   if (evo.requirements.maxPace && currentStats.pac.baseFace > evo.requirements.maxPace) {
     reasons.push(`Pace ${currentStats.pac.baseFace} exceeds Max Requirement of ${evo.requirements.maxPace}`);

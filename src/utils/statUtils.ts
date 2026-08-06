@@ -72,7 +72,12 @@ export function calculateAccelerateType(
  *   96/∞           an evo that grants no OVR — the cap would be noise, so it's left off
  */
 export function formatEvoTerms(evo: import('../types/player').EvolutionDefinition): string {
-  const entry = `${evo.requirements.maxOvr || 99}/${evo.requirements.maxPlayStylesPlus ?? '∞'}`;
+  const maxOvr = evo.requirements.maxOvr || 99;
+  const { minOvr } = evo.requirements;
+  // A continuation evo wants an exact OVR (95-95) or a window — printing only the ceiling would
+  // hide half of what it asks for.
+  const ovr = minOvr === undefined ? `${maxOvr}` : minOvr === maxOvr ? `=${maxOvr}` : `${minOvr}-${maxOvr}`;
+  const entry = `${ovr}/${evo.requirements.maxPlayStylesPlus ?? '∞'}`;
   return evo.ovrBoost.boost > 0 ? `${entry} (+${evo.ovrBoost.boost} ${evo.ovrBoost.limit})` : entry;
 }
 

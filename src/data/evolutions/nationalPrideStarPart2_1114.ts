@@ -9,6 +9,7 @@ export const nationalPrideStarPart2_1114: EvolutionDefinition = {
   cost: 'Season 9 Level 14 Reward',
   requirements: {
     maxOvr: 95,
+    minOvr: 95,
     maxPlayStylesPlus: 3,
     rarity: 'National Pride'
   },
