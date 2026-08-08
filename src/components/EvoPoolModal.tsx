@@ -1,213 +1,245 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, Ban } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Check, Ban, Star, Filter } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
+
+// 'required' | 'included' = ACTIVE, in pool
+// undefined (no key)      = ACTIVE, NOT in pool  (default)
+// 'disabled'              = DISABLED for team (hidden from builder)
+export type EvoStatus = 'required' | 'included' | 'disabled';
+export type EvoStatuses = Record<string, EvoStatus>;
 
 interface EvoPoolModalProps {
   isOpen: boolean;
   onClose: () => void;
-  evosPool: string[];
-  disabledEvos?: string[];
-  requiredEvos?: string[];
-  onConfirm: (pool: string[], required: string[], disabled: string[]) => void;
+  evoStatuses: EvoStatuses;
+  setEvoStatuses: (statuses: EvoStatuses) => void;
 }
+
+type TabMode = 'active' | 'disabled';
+type FilterMode = 'all' | 'included' | 'not-included' | 'required';
 
 export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   isOpen,
   onClose,
-  evosPool,
-  disabledEvos = [],
-  requiredEvos = [],
-  onConfirm
+  evoStatuses,
+  setEvoStatuses
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [draftEvosPool, setDraftEvosPool] = useState<string[]>([]);
-  const [draftRequiredEvos, setDraftRequiredEvos] = useState<string[]>([]);
-  const [draftDisabledEvos, setDraftDisabledEvos] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'active' | 'disabled'>('active');
-  const [filterMustInclude, setFilterMustInclude] = useState(false);
-  const [filterSecondary, setFilterSecondary] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setDraftEvosPool(evosPool);
-      setDraftRequiredEvos(requiredEvos);
-      setDraftDisabledEvos(disabledEvos);
-    }
-  }, [isOpen, evosPool, requiredEvos, disabledEvos]);
-
-  const handleConfirm = React.useCallback(() => {
-    onConfirm(draftEvosPool, draftRequiredEvos, draftDisabledEvos);
-    onClose();
-  }, [draftEvosPool, draftRequiredEvos, draftDisabledEvos, onConfirm, onClose]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'Enter') {
-        // Only if we aren't typing in the search input (it has its own enter handler)
-        if (document.activeElement?.tagName !== 'INPUT') {
-          handleConfirm();
-        }
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, handleConfirm]);
+  const [tabMode, setTabMode] = useState<TabMode>('active');
+  const [filterMode, setFilterMode] = useState<FilterMode>('all');
+  const [search, setSearch] = useState('');
 
   if (!isOpen) return null;
 
-  const isEvoDisabled = (id: string) => draftDisabledEvos.includes(id);
+  // undefined = "active, not included" (default state)
+  const getStatus = (id: string): EvoStatus | undefined => evoStatuses[id];
 
-  const toggleEvo = (id: string) => {
-    if (draftEvosPool.includes(id)) {
-      setDraftEvosPool(draftEvosPool.filter((e) => e !== id));
-      if (draftRequiredEvos.includes(id)) {
-        setDraftRequiredEvos(draftRequiredEvos.filter(e => e !== id));
-      }
+  const setStatus = (id: string, status: EvoStatus | undefined) => {
+    const next = { ...evoStatuses };
+    if (status === undefined) {
+      delete next[id];
     } else {
-      setDraftEvosPool([...draftEvosPool, id]);
+      next[id] = status;
     }
+    setEvoStatuses(next);
   };
 
-  const toggleRequired = (id: string) => {
-    if (draftRequiredEvos.includes(id)) {
-      setDraftRequiredEvos(draftRequiredEvos.filter(e => e !== id));
-    } else {
-      setDraftRequiredEvos([...draftRequiredEvos, id]);
-      if (!draftEvosPool.includes(id)) {
-        setDraftEvosPool([...draftEvosPool, id]);
-      }
-    }
-  };
+  const allEvos = Object.values(availableEvolutions);
 
-  
-  const toggleDisabledToggle = (id: string) => {
-    if (draftDisabledEvos.includes(id)) {
-      setDraftDisabledEvos(draftDisabledEvos.filter(e => e !== id));
-    } else {
-      setDraftDisabledEvos([...draftDisabledEvos, id]);
-    }
-  };
-
-
-
-  const activeEvos = Object.values(availableEvolutions)
-    .filter(evo => !isEvoDisabled(evo.id))
-    ;
-  const disabledEvosList = Object.values(availableEvolutions).filter(evo => isEvoDisabled(evo.id));
-
-
-
-  const filteredActiveEvos = activeEvos.filter(evo => {
-    if (filterMustInclude && !draftRequiredEvos.includes(evo.id)) return false;
-    if (filterSecondary && viewMode === 'active' && draftEvosPool.includes(evo.id)) return false; // EXCLUDED means not in pool
-    if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-  const filteredDisabledEvos = disabledEvosList.filter(evo => {
-    if (filterMustInclude && !draftRequiredEvos.includes(evo.id)) return false;
-    if (filterSecondary && viewMode === 'disabled' && !draftEvosPool.includes(evo.id)) return false; // SELECTED means in pool
-    if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-
-  const selectedCount = draftEvosPool.length;
-  const totalCount = Object.keys(availableEvolutions).length;
+  // Derived counts for the tab badges
+  const activeEvos   = allEvos.filter(e => getStatus(e.id) !== 'disabled');
+  const disabledEvos = allEvos.filter(e => getStatus(e.id) === 'disabled');
 
   const handleSelectAll = () => {
-    setDraftEvosPool(Object.keys(availableEvolutions).filter(id => !isEvoDisabled(id)));
+    const next: EvoStatuses = { ...evoStatuses };
+    allEvos.forEach(e => { if (next[e.id] !== 'disabled') next[e.id] = 'included'; });
+    setEvoStatuses(next);
   };
 
   const handleClear = () => {
-    setDraftEvosPool([]);
-    setDraftRequiredEvos([]);
+    // Only clear pool statuses (required/included), leave disabled alone
+    const next: EvoStatuses = {};
+    Object.entries(evoStatuses).forEach(([id, s]) => {
+      if (s === 'disabled') next[id] = 'disabled';
+    });
+    setEvoStatuses(next);
   };
 
-  const EvoCard = ({ evo }: { evo: any }) => {
-    const disabled = isEvoDisabled(evo.id);
-    const isSelected = draftEvosPool.includes(evo.id);
-    const isRequired = draftRequiredEvos.includes(evo.id);
+  // Cards visible in the current tab BEFORE applying filter chips
+  const tabEvos = tabMode === 'active' ? activeEvos : disabledEvos;
+
+  // Apply filter chips + search within the current tab
+  const filteredEvos = useMemo(() => {
+    return tabEvos.filter(evo => {
+      const status = getStatus(evo.id);   // undefined | 'included' | 'required' | 'disabled'
+
+      const matchesFilter = (() => {
+        if (filterMode === 'all') return true;
+        if (filterMode === 'required') return status === 'required';
+        if (filterMode === 'included') return status === 'included' || status === 'required';
+        if (filterMode === 'not-included') return status === undefined || status === 'disabled';
+        return true;
+      })();
+
+      const matchesSearch = !search || evo.name.toLowerCase().includes(search.toLowerCase());
+      return matchesFilter && matchesSearch;
+    });
+  }, [tabEvos, filterMode, search, evoStatuses]);
+
+  // Section grouping within the filtered list
+  const requiredSection = filteredEvos.filter(e => getStatus(e.id) === 'required');
+  const includedSection = filteredEvos.filter(e => getStatus(e.id) === 'included');
+  // "Not included" in ACTIVE tab = no key; in DISABLED tab = disabled status
+  const notIncludedSection = filteredEvos.filter(e => {
+    const s = getStatus(e.id);
+    return s === undefined || s === 'disabled';
+  });
+
+  const totalRequired = allEvos.filter(e => getStatus(e.id) === 'required').length;
+  const totalIncluded = allEvos.filter(e => getStatus(e.id) === 'included').length;
+
+  // Filter chip definitions — only show relevant chips per tab
+  type FilterDef = { key: FilterMode; label: string; inactiveClass: string; activeClass: string };
+  const filterDefs: FilterDef[] = [
+    {
+      key: 'all',
+      label: 'All',
+      inactiveClass: 'border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300',
+      activeClass: 'bg-gray-700 text-white border-gray-600',
+    },
+    {
+      key: 'included',
+      label: `Included${totalRequired + totalIncluded > 0 ? ` (${totalRequired + totalIncluded})` : ''}`,
+      inactiveClass: 'border-gray-700 text-gray-500 hover:border-fcGreen/50 hover:text-fcGreen',
+      activeClass: 'bg-fcGreen/20 text-fcGreen border-fcGreen/60',
+    },
+    {
+      key: 'not-included',
+      label: 'Not Included',
+      inactiveClass: 'border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300',
+      activeClass: 'bg-gray-800 text-gray-300 border-gray-600',
+    },
+    {
+      key: 'required',
+      label: `Required${totalRequired > 0 ? ` (${totalRequired})` : ''}`,
+      inactiveClass: 'border-gray-700 text-gray-500 hover:border-amber-500/50 hover:text-amber-400',
+      activeClass: 'bg-amber-950/40 text-amber-400 border-amber-600/60',
+    },
+  ];
+
+  // In DISABLED tab, only "All" and "Not Included" make sense (all disabled = not included)
+  const visibleFilters = tabMode === 'disabled'
+    ? filterDefs.filter(f => f.key === 'all')
+    : filterDefs;
+
+  const SectionHeader = ({
+    label,
+    count,
+    accent,
+  }: {
+    label: string;
+    count: number;
+    accent: string;
+  }) => (
+    <div className="flex items-center gap-2 mb-3 mt-1">
+      <span className={`text-[11px] font-bold uppercase tracking-wider ${accent}`}>
+        {label} ({count})
+      </span>
+      <div className="flex-1 h-px bg-gray-800/80" />
+    </div>
+  );
+
+  const EvoCard = ({ evo }: { evo: typeof allEvos[0] }) => {
+    const status = getStatus(evo.id);
+    const isRequired = status === 'required';
+    const isIncluded = status === 'included';
+    const isDisabled = status === 'disabled';
+    // undefined = active, not included
+
+    const cardBorder = isRequired
+      ? 'border-amber-500/50 bg-amber-950/15'
+      : isIncluded
+      ? 'border-fcGreen/40 bg-green-950/15'
+      : isDisabled
+      ? 'border-gray-800/60 bg-[#181a18]'
+      : 'border-gray-800 bg-[#1f211f]';
 
     return (
-      <div
-        key={evo.id}
-        onClick={() => toggleEvo(evo.id)}
-        className={`relative p-4 rounded-xl border transition-all ${
-isSelected
-            ? 'bg-green-950/30 border-fcGreen/60 cursor-pointer'
-            : disabled
-            ? 'bg-[#141614] border-red-900/40 hover:border-red-800/60 cursor-pointer'
-            : 'bg-[#1f211f] border-gray-800 hover:border-gray-600 cursor-pointer'
-        }`}
-      >
-        {isSelected && (
-          <div className="absolute top-3 right-3 w-5 h-5 bg-fcGreen rounded-full flex items-center justify-center">
-            <Check className="w-3.5 h-3.5 text-black" />
-          </div>
-        )}
-        <div className="flex items-start justify-between pr-7 gap-2">
-          <h3 className={`font-bold leading-tight ${disabled && !isSelected ? 'text-gray-500 line-through' : isSelected ? 'text-fcGreen' : 'text-gray-200'}`}>
-            {evo.name}
-          </h3>
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleDisabledToggle(evo.id); }}
-            title={disabled
-              ? 'Re-enable — Analyze and the EVOs pool can use it again'
-              : 'Disable globally — excluded from Analyze and not selectable in the EVOs pool'}
-            className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded border transition-colors shrink-0 z-10 ${
-              disabled
-                ? 'text-red-400 bg-red-950/60 border-red-800/60 hover:bg-red-900/60'
-                : 'text-gray-400 bg-black/40 border-gray-700 hover:text-red-400 hover:border-red-800/60'
+      <div className={`relative p-3.5 rounded-xl border transition-all ${cardBorder}`}>
+        <div className="mb-2">
+          <h3
+            className={`font-bold text-sm truncate ${
+              isRequired
+                ? 'text-amber-300'
+                : isIncluded
+                ? 'text-fcGreen'
+                : 'text-gray-400'
             }`}
           >
-            <Ban className="w-2.5 h-2.5" /> {disabled ? 'Disabled' : 'Disable'}
-          </button>
+            {evo.name}
+          </h3>
+          <p className="text-[10px] text-gray-600 mt-0.5 uppercase tracking-wider">{evo.cost}</p>
         </div>
-        <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">{evo.cost}</p>
 
-        <div className="mt-3 flex gap-2 text-[10px]">
-          <span className="px-2 py-1 bg-black/40 rounded text-gray-300">
+        <div className="flex gap-1.5 mb-3 flex-wrap text-[10px]">
+          <span className="px-2 py-0.5 bg-black/40 rounded text-gray-500">
             Max OVR {evo.requirements.maxOvr}
           </span>
           {evo.requirements.maxPace && (
-            <span className="px-2 py-1 bg-black/40 rounded text-gray-300">
+            <span className="px-2 py-0.5 bg-black/40 rounded text-gray-500">
               Max PAC {evo.requirements.maxPace}
             </span>
           )}
           {evo.maxRepeatable && evo.maxRepeatable > 1 && (
-            <span className="px-2 py-1 bg-fcGold/20 rounded text-fcGold border border-fcGold/40 font-bold">
-              Repeatable: {evo.maxRepeatable}
-            </span>
-          )}
-          {evo.trainingTime && (
-            <span className="px-2 py-1 bg-blue-950/40 rounded text-blue-400 border border-blue-800/40 font-bold">
-              Training: {evo.trainingTime}
-            </span>
-          )}
-          {evo.rarityChange && (
-            <span className="px-2 py-1 bg-purple-950/40 rounded text-purple-400 border border-purple-800/40 font-bold">
-              Rarity → {evo.rarityChange}
+            <span className="px-2 py-0.5 bg-fcGold/20 rounded text-fcGold border border-fcGold/30 font-bold">
+              ×{evo.maxRepeatable}
             </span>
           )}
         </div>
 
-        {/* Toggles */}
-        <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1.5">
-          <div 
-            className="flex items-center gap-2 cursor-pointer z-10 hover:opacity-80" 
-            onClick={(e) => { e.stopPropagation(); toggleRequired(evo.id); }}
+        {/* 3 action buttons */}
+        <div className="flex gap-1.5">
+          {/* Require — only relevant in ACTIVE tab */}
+          {tabMode === 'active' && (
+            <button
+              onClick={() => setStatus(evo.id, isRequired ? undefined : 'required')}
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border transition-all ${
+                isRequired
+                  ? 'bg-amber-500/25 border-amber-500/60 text-amber-300'
+                  : 'bg-black/20 border-gray-700/80 text-gray-600 hover:border-amber-600/40 hover:text-amber-400'
+              }`}
+            >
+              <Star className="w-2.5 h-2.5" />
+              Require
+            </button>
+          )}
+
+          {/* Included — only relevant in ACTIVE tab */}
+          {tabMode === 'active' && (
+            <button
+              onClick={() => setStatus(evo.id, isIncluded ? undefined : 'included')}
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border transition-all ${
+                isIncluded
+                  ? 'bg-fcGreen/20 border-fcGreen/50 text-fcGreen'
+                  : 'bg-black/20 border-gray-700/80 text-gray-600 hover:border-fcGreen/40 hover:text-fcGreen'
+              }`}
+            >
+              <Check className="w-2.5 h-2.5" />
+              Included
+            </button>
+          )}
+
+          {/* Disable — toggles team-level disabled state */}
+          <button
+            onClick={() => setStatus(evo.id, isDisabled ? undefined : 'disabled')}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border transition-all ${
+              isDisabled
+                ? 'bg-red-950/30 border-red-700/50 text-red-400'
+                : 'bg-black/20 border-gray-700/80 text-gray-600 hover:border-red-700/40 hover:text-red-400'
+            }`}
           >
-            <span className={`text-[9px] font-bold ${isRequired ? 'text-fcGreen' : 'text-gray-500'}`}>
-              MUST INCLUDE
-            </span>
-            <div className={`w-7 h-3.5 rounded-full p-0.5 transition-colors ${isRequired ? 'bg-fcGreen' : 'bg-gray-700'}`}>
-              <div className={`w-2.5 h-2.5 bg-white rounded-full transition-transform ${isRequired ? 'translate-x-3.5' : 'translate-x-0'}`} />
-            </div>
-          </div>
-
-
+            <Ban className="w-2.5 h-2.5" />
+            {isDisabled ? 'Enable' : 'Disable'}
+          </button>
         </div>
       </div>
     );
@@ -215,160 +247,225 @@ isSelected
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[#1A1C1A] border border-gray-700 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="bg-[#1A1C1A] border border-gray-700 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-[#1f211f]">
-          <div>
-            <h2 className="text-xl font-bold text-white tracking-wide">Manage EVOs Pool</h2>
-            <p className="text-xs text-gray-400 mt-1">Select evolutions for auto-analysis and manual path creation. Disabled EVOs can still be included in the pool.</p>
+        <div className="px-6 py-4 border-b border-gray-800 bg-[#1f211f]">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-white tracking-wide">Team Evo Manager</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Manage which evolutions are available for your entire team. Disabled evolutions will be hidden from the builder and analyzer.
+              </p>
+            </div>
+
+            {/* ACTIVE / DISABLED top tabs */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => { setTabMode('active'); setFilterMode('all'); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  tabMode === 'active'
+                    ? 'bg-fcGreen text-black border-fcGreen shadow'
+                    : 'bg-transparent text-gray-400 border-gray-700 hover:text-white'
+                }`}
+              >
+                <Check className="w-3 h-3" />
+                ACTIVE
+                <span className={`ml-0.5 text-[10px] ${tabMode === 'active' ? 'opacity-70' : 'opacity-50'}`}>
+                  ({activeEvos.length})
+                </span>
+              </button>
+              <button
+                onClick={() => { setTabMode('disabled'); setFilterMode('all'); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  tabMode === 'disabled'
+                    ? 'bg-gray-700 text-white border-gray-600 shadow'
+                    : 'bg-transparent text-gray-400 border-gray-700 hover:text-white'
+                }`}
+              >
+                <Ban className="w-3 h-3" />
+                DISABLED
+                <span className={`ml-0.5 text-[10px] opacity-60`}>
+                  ({disabledEvos.length})
+                </span>
+              </button>
+              <button
+                onClick={onClose}
+                className="p-1.5 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors ml-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Pool filter chips — right under description, always visible */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            {([
+              { key: 'all' as FilterMode,          label: 'ALL' },
+              { key: 'included' as FilterMode,     label: 'INCLUDED' },
+              { key: 'not-included' as FilterMode, label: 'NOT INCLUDED' },
+              { key: 'required' as FilterMode,     label: 'REQUIRED' },
+            ]).map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilterMode(f.key)}
+                className={`px-3 py-1 text-[11px] font-bold tracking-wide border rounded transition-all ${
+                  filterMode === f.key
+                    ? f.key === 'included'
+                      ? 'bg-fcGreen/20 text-fcGreen border-fcGreen/60'
+                      : f.key === 'required'
+                      ? 'bg-amber-950/40 text-amber-400 border-amber-600/60'
+                      : f.key === 'not-included'
+                      ? 'bg-gray-700/60 text-gray-200 border-gray-500'
+                      : 'bg-gray-700/60 text-gray-200 border-gray-500'
+                    : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300 hover:border-gray-500'
+                }`}
+              >
+                {f.label}
+                {f.key === 'included' && totalRequired + totalIncluded > 0 && (
+                  <span className="ml-1 opacity-70">({totalRequired + totalIncluded})</span>
+                )}
+                {f.key === 'required' && totalRequired > 0 && (
+                  <span className="ml-1 opacity-70">({totalRequired})</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Search bar */}
+          <div className="mt-3">
+            <input
+              type="text"
+              placeholder="Search EVOs..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-[#121212] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-fcGreen/40 transition-colors"
+            />
+          </div>
+
+          {/* Search in DISABLED tab */}
+          {tabMode === 'disabled' && (
+            <div className="mt-3">
+              <input
+                type="text"
+                placeholder="Search disabled EVOs..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full bg-[#121212] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-gray-500/40 transition-colors"
+              />
+            </div>
+          )}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-[#121212]">
-          <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-            <span className="text-sm font-semibold text-gray-300">
-              {selectedCount} / {totalCount} Selected
+        <div className="flex-1 overflow-y-auto p-5 bg-[#121212]">
+          {/* Summary + actions */}
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-xs text-gray-500">
+              {tabMode === 'active' ? (
+                <>
+                  <span className="text-amber-400 font-bold">{totalRequired}</span> required ·{' '}
+                  <span className="text-fcGreen font-bold">{totalIncluded}</span> included ·{' '}
+                  <span className="text-gray-600">
+                    {activeEvos.length - totalRequired - totalIncluded}
+                  </span>{' '}
+                  not included
+                </>
+              ) : (
+                <span className="text-gray-500">{disabledEvos.length} EVOs disabled for this team</span>
+              )}
             </span>
-            
-            {filterMustInclude ? (
-              <div className="flex-1 sm:flex-none flex justify-center">
-                <span className="text-xs font-bold text-fcGreen uppercase tracking-widest px-3 py-1.5 bg-green-950/30 border border-green-900/50 rounded-lg">
-                  Viewing Must Include
-                </span>
-              </div>
-            ) : (
-              <div className="flex bg-[#2A2D2A] p-1 rounded-lg border border-gray-700/50 flex-1 sm:flex-none justify-center">
+            {tabMode === 'active' && (
+              <div className="flex gap-2">
                 <button
-                  onClick={() => { setViewMode('active'); setFilterSecondary(false); }}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors flex items-center gap-1.5 ${
-                    viewMode === 'active' ? 'bg-fcGreen text-black shadow' : 'text-gray-400 hover:text-gray-200'
-                  }`}
+                  onClick={handleSelectAll}
+                  className="text-xs px-3 py-1.5 bg-[#2A2D2A] hover:bg-[#374151] border border-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
                 >
-                  <Check className="w-3.5 h-3.5" /> ACTIVE
+                  Include All
                 </button>
                 <button
-                  onClick={() => { setViewMode('disabled'); setFilterSecondary(false); }}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors flex items-center gap-1.5 ${
-                    viewMode === 'disabled' ? 'bg-red-500 text-black shadow' : 'text-gray-400 hover:text-gray-200'
-                  }`}
+                  onClick={handleClear}
+                  className="text-xs px-3 py-1.5 bg-[#2A2D2A] hover:bg-[#374151] border border-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
                 >
-                  <Ban className="w-3.5 h-3.5" /> DISABLED
+                  Clear Pool
                 </button>
               </div>
             )}
-
-            <div className="flex gap-2 items-center flex-1 sm:flex-none justify-end">
-
-              {!filterMustInclude && (
-                <button
-                  onClick={() => setFilterSecondary(!filterSecondary)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1.5 ${
-                    filterSecondary
-                      ? (viewMode === 'active' ? 'bg-red-950/80 text-red-400 border-red-800/80 shadow-sm' : 'bg-green-950/80 text-fcGreen border-green-800/80 shadow-sm')
-                      : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
-                  }`}
-                >
-                  {viewMode === 'active' ? (
-                    <><X className="w-3.5 h-3.5" /> EXCLUDED</>
-                  ) : (
-                    <><Check className="w-3.5 h-3.5" /> SELECTED</>
-                  )}
-                </button>
-              )}
-              <button
-                onClick={() => { setFilterMustInclude(!filterMustInclude); setFilterSecondary(false); }}
-
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1.5 ${
-                  filterMustInclude
-                    ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
-                    : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
-                }`}
-              >
-                ★ MUST INCLUDE
-              </button>
-                <input
-                  type="text"
-                  placeholder="Search EVOs..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const topEvo = filteredActiveEvos[0] || filteredDisabledEvos[0];
-                      if (topEvo && !draftEvosPool.includes(topEvo.id)) {
-                        onConfirm(
-                          [...draftEvosPool, topEvo.id],
-                          draftRequiredEvos,
-                          draftDisabledEvos
-                        );
-                        onClose();
-                      } else {
-                        handleConfirm();
-                      }
-                    }
-                  }}
-                  className="w-full sm:w-48 bg-[#1a1c1a] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen outline-none transition-colors"
-                />
-              <button onClick={handleSelectAll} className="text-xs px-3 py-1.5 bg-[#2A2D2A] hover:bg-[#374151] border border-gray-700 rounded text-gray-300 hover:text-white transition-colors">
-                Select All
-              </button>
-              <button onClick={handleClear} className="text-xs px-3 py-1.5 bg-[#2A2D2A] hover:bg-[#374151] border border-gray-700 rounded text-gray-300 hover:text-white transition-colors">
-                Clear
-              </button>
-            </div>
           </div>
 
-          {/* Active EVOs Section */}
-          {(viewMode === 'active' || filterMustInclude) && filteredActiveEvos.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-sm font-bold text-fcGreen mb-3 flex items-center gap-2">
-                <Check className="w-4 h-4" />
-                Active Evolutions ({filteredActiveEvos.length})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredActiveEvos.map((evo) => (
-                  <EvoCard key={evo.id} evo={evo} />
-                ))}
-              </div>
+          {filteredEvos.length === 0 && (
+            <div className="text-center text-gray-600 text-sm py-14">
+              {tabMode === 'disabled' && disabledEvos.length === 0
+                ? 'No EVOs are currently disabled.'
+                : 'No EVOs match your filter.'}
             </div>
           )}
 
-          {/* Disabled EVOs Section */}
-          {(viewMode === 'disabled' || filterMustInclude) && filteredDisabledEvos.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-red-400 mb-3 flex items-center gap-2">
-                <Ban className="w-4 h-4" />
-                Disabled Evolutions ({filteredDisabledEvos.length})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredDisabledEvos.map((evo) => (
-                  <EvoCard key={evo.id} evo={evo} />
-                ))}
-              </div>
-            </div>
+          {/* ACTIVE tab: sectioned by status */}
+          {tabMode === 'active' && (
+            <>
+              {requiredSection.length > 0 && (
+                <div className="mb-5">
+                  <SectionHeader label="Must Include" count={requiredSection.length} accent="text-amber-400" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {requiredSection.map(evo => <EvoCard key={evo.id} evo={evo} />)}
+                  </div>
+                </div>
+              )}
+
+              {includedSection.length > 0 && (
+                <div className="mb-5">
+                  <SectionHeader label="Included" count={includedSection.length} accent="text-fcGreen" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {includedSection.map(evo => <EvoCard key={evo.id} evo={evo} />)}
+                  </div>
+                </div>
+              )}
+
+              {/* Not Included: shown in "All" and "Not Included" filter modes */}
+              {notIncludedSection.length > 0 && (filterMode === 'all' || filterMode === 'not-included') && (
+                <div className="mb-5">
+                  <SectionHeader
+                    label="Not Included"
+                    count={notIncludedSection.length}
+                    accent="text-gray-500"
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {notIncludedSection.map(evo => <EvoCard key={evo.id} evo={evo} />)}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {((viewMode === 'active' && !filterMustInclude && filteredActiveEvos.length === 0) || (viewMode === 'disabled' && !filterMustInclude && filteredDisabledEvos.length === 0) || (filterMustInclude && filteredActiveEvos.length === 0 && filteredDisabledEvos.length === 0)) && (
-            <div className="text-center py-8 text-gray-500">
-              No evolutions found matching "{searchQuery}"
+          {/* DISABLED tab: flat list */}
+          {tabMode === 'disabled' && filteredEvos.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {filteredEvos.map(evo => <EvoCard key={evo.id} evo={evo} />)}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-800 bg-[#1f211f] flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2 rounded-lg text-sm font-semibold text-gray-300 bg-[#2A2D2A] hover:bg-[#374151] transition-colors border border-gray-700">
-            Cancel
-          </button>
-          <button onClick={handleConfirm} className="px-6 py-2 rounded-lg text-sm font-bold text-black bg-[#1ED760] hover:bg-[#1db954] transition-colors shadow-lg">
-            Confirm Selection
-          </button>
+        <div className="p-4 border-t border-gray-800 bg-[#1f211f] flex justify-between items-center gap-3">
+          <span className="text-xs text-gray-500">
+            {totalRequired + totalIncluded} / {allEvos.length} active in pool ·{' '}
+            {disabledEvos.length} disabled
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-5 py-2 rounded-lg text-sm font-semibold text-gray-300 bg-[#2A2D2A] hover:bg-[#374151] transition-colors border border-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 rounded-lg text-sm font-bold text-black bg-[#1ED760] hover:bg-[#1db954] transition-colors shadow-lg"
+            >
+              Confirm
+            </button>
+          </div>
         </div>
 
       </div>

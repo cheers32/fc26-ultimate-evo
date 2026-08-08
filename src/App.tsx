@@ -13,7 +13,7 @@ import { simulateEvoChain } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
 import { EvolutionDefinition } from './types/player';
 import { PlayerSelectionModal } from './components/PlayerSelectionModal';
-import { EvoPoolModal } from './components/EvoPoolModal';
+import { EvoPoolModal, EvoStatuses } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { SquadPanel } from './components/SquadPanel';
@@ -1045,17 +1045,28 @@ export default function App() {
       <EvoPoolModal
         isOpen={isEvoPoolOpen}
         onClose={() => setIsEvoPoolOpen(false)}
-        evosPool={evosPool}
-        disabledEvos={disabledEvos}
-        requiredEvos={evoFilters.requiredEvos || []}
-        onConfirm={(pool, required, disabled) => {
+        evoStatuses={(() => {
+          // Bridge: convert the 3 upstream arrays into our unified EvoStatuses map
+          const s: EvoStatuses = {};
+          (evoFilters.requiredEvos || []).forEach(id => { s[id] = 'required'; });
+          evosPool.forEach(id => { if (!s[id]) s[id] = 'included'; });
+          disabledEvos.forEach(id => { s[id] = 'disabled'; });
+          return s;
+        })()}
+        setEvoStatuses={(statuses) => {
+          // Bridge back: split the EvoStatuses map into the 3 upstream arrays
+          const pool: string[] = [];
+          const required: string[] = [];
+          const disabled: string[] = [];
+          Object.entries(statuses).forEach(([id, st]) => {
+            if (st === 'required') { required.push(id); pool.push(id); }
+            else if (st === 'included') { pool.push(id); }
+            else if (st === 'disabled') { disabled.push(id); }
+          });
           setDisabledEvos(disabled);
           updateState({
             evosPool: pool,
-            evoFilters: {
-              ...evoFilters,
-              requiredEvos: required,
-            }
+            evoFilters: { ...evoFilters, requiredEvos: required }
           });
         }}
       />
