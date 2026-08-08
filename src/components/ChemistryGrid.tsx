@@ -7,6 +7,9 @@ interface ChemistryGridProps {
   previewStats: StatsData;
   hoveredChem: string | null;
   lockedChem: string | null;
+  /** Height decides which AcceleRATE archetypes are reachable at all — without it every chem
+   *  style is grouped as if the card were 180cm. */
+  heightCm?: number;
   onHoverChem: (name: string | null) => void;
   onLockChem: (name: string) => void;
 }
@@ -16,15 +19,20 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
   previewStats,
   hoveredChem,
   lockedChem,
+  heightCm,
   onHoverChem,
   onLockChem
 }) => {
   const names = Object.keys(chemStyles);
 
+  // Laid out fastest-to-slowest so the two "mostly" archetypes sit next to the ones they shade
+  // into, rather than appearing as surprise extra groups at the end.
   const groupedChems: Record<string, string[]> = {
-    Lengthy: [],
+    Explosive: [],
+    'Mostly Explosive': [],
     Controlled: [],
-    Explosive: []
+    'Mostly Lengthy': [],
+    Lengthy: []
   };
 
   names.forEach(name => {
@@ -32,12 +40,12 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     const accBase = previewStats?.pac?.subs?.acceleration?.base || 50;
     const agiBase = previewStats?.dri?.subs?.agility?.base || 50;
     const strBase = previewStats?.phy?.subs?.strength?.base || 50;
-    
+
     const acc = Math.min(99, accBase + (boost.acceleration || 0));
     const agi = Math.min(99, agiBase + (boost.agility || 0));
     const str = Math.min(99, strBase + (boost.strength || 0));
-    
-    const type = calculateAccelerateType(acc, agi, str);
+
+    const type = calculateAccelerateType(acc, agi, str, heightCm);
     if (!groupedChems[type]) groupedChems[type] = [];
     groupedChems[type].push(name);
   });
@@ -66,7 +74,7 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
 
   return (
     <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full flex flex-col gap-4 pl-0 lg:pl-2">
-      {['Lengthy', 'Controlled', 'Explosive'].map((group) => {
+      {Object.keys(groupedChems).map((group) => {
         const items = groupedChems[group];
         if (!items || items.length === 0) return null;
 

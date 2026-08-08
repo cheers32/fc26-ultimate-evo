@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { PlayerData } from '../types/player';
 import { StatsGrid } from './StatsGrid';
 import { PlayerSubInfo } from './PlayerSubInfo';
-import { calculateAccelerateType } from '../utils/statUtils';
+import { calculateAccelerateType, parseHeightCm } from '../utils/statUtils';
 
 interface PlayerDetailsModalProps {
   player: PlayerData;
@@ -33,7 +33,8 @@ export function PlayerDetailsModal({ player, onClose, onSelect, onDelete }: Play
     return calculateAccelerateType(
       player.stats.pac.subs.acceleration.base,
       player.stats.dri.subs.agility.base,
-      player.stats.phy.subs.strength.base
+      player.stats.phy.subs.strength.base,
+      parseHeightCm(player.bio.height)
     );
   }, [player]);
 

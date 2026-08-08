@@ -8,7 +8,7 @@ import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
-import { calculateAccelerateType } from './utils/statUtils';
+import { calculateAccelerateType, parseHeightCm } from './utils/statUtils';
 import {
   simulateEvoChain,
   isPlayStyleNodeId,
@@ -833,7 +833,7 @@ export default function App() {
       currentChemFace += newFaceVal;
     });
 
-    const accType = calculateAccelerateType(accVal, agiVal, strVal);
+    const accType = calculateAccelerateType(accVal, agiVal, strVal, parseHeightCm(playerBio.height));
 
     return {
       igs: {
@@ -1053,6 +1053,7 @@ export default function App() {
                   previewStats={previewStats}
                   hoveredChem={hoveredChem}
                   lockedChem={lockedChem}
+                  heightCm={parseHeightCm(playerBio.height)}
                   onHoverChem={setHoveredChem}
                   onLockChem={(name) => {
                     setLockedChem(lockedChem === name ? null : name);

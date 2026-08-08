@@ -7,6 +7,7 @@ import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyl
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
+import { FitBreakdown, controlModeFor, fitScore } from '../utils/fitScore';
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
 // badged, which on a full pool marked most of the list and made the mark meaningless — so
@@ -65,7 +66,8 @@ const getEvoRecommendation = ({
   expectedStats,
   currentPlayStyles,
   expectedPlayStyles,
-  filters
+  filters,
+  fitDelta
 }: {
   evoId: string;
   positions: string;
@@ -76,6 +78,12 @@ const getEvoRecommendation = ({
   currentPlayStyles: PlayStylesData;
   expectedPlayStyles: PlayStylesData;
   filters?: EvoFilters;
+  /**
+   * Fit gained by taking this evo, when the player's profile is switched on. It already accounts
+   * for PlayStyles, sub-stats and body type, so it replaces the generic position gain rather than
+   * adding to it — otherwise the same improvement would be counted twice.
+   */
+  fitDelta?: number;
 }): { score: number, reasons: string[], blocked: boolean } => {
   if (!currentStats || !expectedStats) return { score: 0, reasons: [], blocked: false };
 
@@ -99,20 +107,26 @@ const getEvoRecommendation = ({
   const newGoldCount = [...afterGold].filter(x => !beforeGold.has(x)).length;
 
   const reasons: string[] = [];
-  let score = positionGain * 6;
+
+  // With the profile on, fit is the whole judgement of what the card became — PlayStyles,
+  // sub-stats and AcceleRATE included. Without it, fall back to the position-weighted face-stat
+  // gain plus a flat bonus per PlayStyle+.
+  const usingFit = fitDelta !== undefined;
+  const gain = usingFit ? fitDelta : positionGain;
+  let score = gain * 6;
 
   if (newGoldCount > 0) {
     reasons.push(newGoldCount > 1 ? `Adds ${newGoldCount} PS+` : `Adds PS+`);
-    score += newGoldCount * 15;
+    if (!usingFit) score += newGoldCount * 15;
   }
 
-  if (positionGain > 0) {
-    reasons.push(`+${positionGain.toFixed(1)} ${posList[0] || 'rating'}`);
+  if (gain > 0) {
+    reasons.push(usingFit ? `+${gain.toFixed(1)} fit` : `+${gain.toFixed(1)} ${posList[0] || 'rating'}`);
   }
 
   // OVR is the scarce resource in a chain — every point spent burns headroom on the max-OVR
   // gates of the evos that could still follow, so a boost that costs none is worth a premium.
-  if (ovrDiff === 0 && (positionGain > 0 || newGoldCount > 0)) {
+  if (ovrDiff === 0 && (gain > 0 || newGoldCount > 0)) {
     reasons.push('Free Boost (+0 OVR)');
     score += 20;
   } else {
@@ -410,6 +424,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const currentPlayStyles = validationResult.result ? validationResult.result.finalPlayStyles : basePlayStyles;
   const currentBio = validationResult.result ? validationResult.result.finalBio : baseBio;
 
+  // The player's own profile, when they've switched it on in Filters. Everything downstream is
+  // opt-in on this: with it off the builder behaves exactly as it did before.
+  const useFit = evoFilters?.playstyleWeighting === true;
+  const fitMode = controlModeFor(currentBio, evoFilters?.controlMode);
+  const currentFit = useFit
+    ? fitScore({ stats: currentStats, playStyles: currentPlayStyles, bio: currentBio, mode: fitMode })
+    : null;
+
   const poolWithStatus = Object.keys(availableEvolutions).map((id) => {
     const evo = availableEvolutions[id];
     const count = selectedChain.filter(eid => eid === id).length;
@@ -426,6 +448,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let recScore = 0;
     let recReasons: string[] = [];
     let recBlocked = false;
+    let expectedFit: FitBreakdown | null = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -441,6 +464,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedPlayStyles = testRes.finalPlayStyles;
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
           
+          if (currentFit) {
+            expectedFit = fitScore({
+              stats: testRes.finalStats,
+              playStyles: testRes.finalPlayStyles,
+              bio: testRes.finalBio,
+              mode: fitMode
+            });
+          }
+
           const rec = getEvoRecommendation({
             evoId: id,
             positions: currentBio.primaryPositions,
@@ -450,7 +482,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
             expectedStats,
             currentPlayStyles,
             expectedPlayStyles,
-            filters: evoFilters
+            filters: evoFilters,
+            fitDelta: currentFit && expectedFit ? expectedFit.total - currentFit.total : undefined
           });
           // A warned pick is legal and can still be the right call, but it shouldn't collect a
           // thumbs-up unless it beats the clean options by a real margin rather than a hair.
@@ -477,7 +510,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       expectedPlayStyles,
       recScore,
       recReasons,
-      recBlocked
+      recBlocked,
+      expectedFit
     };
   });
 
@@ -1066,7 +1100,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
                     return true;
 })
-                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit }) => {
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
@@ -1130,6 +1164,27 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 <div className="flex items-baseline gap-0.5">
                                   {expectedIgs - currentIgs > 0 && <span className="text-fcGreen font-bold text-[8px]">+{expectedIgs - currentIgs}</span>}
                                   <span className="text-blue-400 font-bold">{expectedIgs}</span>
+                                </div>
+                              </div>
+                            )}
+                            {canAdd && currentFit && expectedFit && (
+                              <div
+                                className="flex gap-1 items-center bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/50 text-[10px]"
+                                title={
+                                  `Stats ${expectedFit.stats.toFixed(1)} · PlayStyles ${expectedFit.playStyles.toFixed(1)} · Body ${expectedFit.body.toFixed(1)} (${expectedFit.accelerate})` +
+                                  (expectedFit.playStyleDetail.length > 0
+                                    ? `\n${expectedFit.playStyleDetail.slice(0, 5).map(d => `${d.name}${d.gold ? '+' : ''} ${d.points.toFixed(1)}`).join(' · ')}`
+                                    : '')
+                                }
+                              >
+                                <span className="text-amber-200 font-bold">FIT</span>
+                                <div className="flex items-baseline gap-0.5">
+                                  {expectedFit.total - currentFit.total > 0 && (
+                                    <span className="text-fcGreen font-bold text-[8px]">
+                                      +{(expectedFit.total - currentFit.total).toFixed(1)}
+                                    </span>
+                                  )}
+                                  <span className="text-amber-300 font-bold">{expectedFit.total.toFixed(1)}</span>
                                 </div>
                               </div>
                             )}

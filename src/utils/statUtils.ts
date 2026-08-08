@@ -51,18 +51,42 @@ export function calculateChip(
   };
 }
 
+export type AccelerateType =
+  | 'Explosive'
+  | 'Mostly Explosive'
+  | 'Controlled'
+  | 'Mostly Lengthy'
+  | 'Lengthy';
+
+/** Pulls the centimetres out of a bio height string like `190cm | 6'3"`. */
+export function parseHeightCm(height?: string): number | undefined {
+  const cm = height?.match(/(\d{2,3})\s*cm/i);
+  return cm ? Number(cm[1]) : undefined;
+}
+
+/**
+ * AcceleRATE archetype. Height is part of the real rule — a tall card cannot be Explosive however
+ * agile it is — and the five-way split matters because the two ends want different PlayStyles
+ * (Rapid belongs on a Lengthy card, Quick Step on an Explosive one).
+ *
+ * Height is optional so a caller without a bio still gets a sane answer, but callers that have
+ * one should pass it: without height every card collapses towards Controlled.
+ */
 export function calculateAccelerateType(
   acc: number,
   agi: number,
-  str: number
-): "Lengthy" | "Controlled" | "Explosive" {
-  if (acc >= 40) {
-    const diff = str - agi;
-    if (diff >= 4) {
-      return "Lengthy";
-    }
-  }
-  return "Controlled";
+  str: number,
+  heightCm?: number
+): AccelerateType {
+  const h = heightCm ?? 180;
+  const agiLead = agi - str;
+  const strLead = str - agi;
+
+  if (agiLead >= 20 && agi >= 80 && acc >= 80 && h <= 175) return 'Explosive';
+  if (agiLead >= 12 && agi >= 70 && acc >= 80 && h <= 182) return 'Mostly Explosive';
+  if (strLead >= 20 && str >= 80 && acc >= 55 && h >= 188) return 'Lengthy';
+  if (strLead >= 12 && str >= 70 && acc >= 55 && h >= 183) return 'Mostly Lengthy';
+  return 'Controlled';
 }
 
 /**

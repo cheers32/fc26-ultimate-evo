@@ -506,6 +506,53 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
                   <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
 
+                    {/* Not a filter — it excludes nothing. It swaps what "better" means everywhere
+                        that ranks evos, so it gets its own block and starts switched off. */}
+                    <div className="mb-4 pb-3 border-b border-gray-800 space-y-2">
+                      <label className="flex items-center gap-2 text-xs font-bold text-gray-200 cursor-pointer hover:text-white transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={!!draftFilters.playstyleWeighting}
+                          onChange={(e) => setDraftFilters({ ...draftFilters, playstyleWeighting: e.target.checked })}
+                          className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                        />
+                        Rank by my PlayStyle profile
+                      </label>
+                      <p className="text-[10px] text-gray-500 leading-snug pl-5">
+                        Scores each build on the PlayStyles and sub-stats your game actually uses, instead of raw
+                        totals. Ranking only — nothing is filtered out.
+                      </p>
+                      {draftFilters.playstyleWeighting && (
+                        <div className="flex items-center gap-2 pl-5 pt-1">
+                          <span className="text-[10px] text-gray-500 uppercase tracking-wide">This card is</span>
+                          {([
+                            [undefined, 'Auto'],
+                            ['manual', 'Mine'],
+                            ['ai', 'AI']
+                          ] as const).map(([mode, label]) => (
+                            <button
+                              key={label}
+                              onClick={() => setDraftFilters({ ...draftFilters, controlMode: mode })}
+                              title={
+                                mode === undefined
+                                  ? 'Decide from the position: attackers are yours, defenders are the AI'
+                                  : mode === 'manual'
+                                  ? 'You hold the stick: stamina, dribbling and pressing PlayStyles are worth more'
+                                  : 'The AI plays it: positioning and interception PlayStyles are worth more'
+                              }
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                                draftFilters.controlMode === mode
+                                  ? 'bg-fcGreen text-black border-fcGreen/80'
+                                  : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     {/* Each pair is a three-way choice — want it, avoid it, don't care — so ticking
                         one side clears the other rather than leaving a filter that matches nothing. */}
                     <div className="mb-4 pb-3 border-b border-gray-800 space-y-2">

@@ -1,5 +1,7 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
+import { controlModeFor, fitForPosition, fitScore } from './fitScore';
+import { POSITION_WEIGHTS } from './positionWeights';
 
 // Rarities that unlock free PlayStyle assignment in-game. Once a card is one of these,
 // running another rarity-changing evo just overwrites the string for no extra benefit —
@@ -67,22 +69,6 @@ function rank<T extends { chainIds: string[]; nearCap: number; redundantRarity: 
   return sa - sb;
 }
 
-const POSITION_WEIGHTS: Record<string, Record<string, number>> = {
-  'ST': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
-  'CF': { pac: 0.25, sho: 0.35, pas: 0.10, dri: 0.20, def: 0.00, phy: 0.10 },
-  'LW': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
-  'RW': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
-  'LM': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
-  'RM': { pac: 0.35, sho: 0.20, pas: 0.15, dri: 0.25, def: 0.00, phy: 0.05 },
-  'CAM':{ pac: 0.10, sho: 0.20, pas: 0.35, dri: 0.30, def: 0.00, phy: 0.05 },
-  'CM': { pac: 0.10, sho: 0.15, pas: 0.30, dri: 0.25, def: 0.10, phy: 0.10 },
-  'CDM':{ pac: 0.10, sho: 0.00, pas: 0.20, dri: 0.10, def: 0.40, phy: 0.20 },
-  'CB': { pac: 0.15, sho: 0.00, pas: 0.10, dri: 0.05, def: 0.45, phy: 0.25 },
-  'LB': { pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
-  'RB': { pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
-  'LWB':{ pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
-  'RWB':{ pac: 0.30, sho: 0.00, pas: 0.15, dri: 0.15, def: 0.25, phy: 0.15 },
-};
 
 export function getPositionScore(stats: StatsData, pos: string): number {
   const w = POSITION_WEIGHTS[pos.trim().toUpperCase()];
@@ -615,6 +601,8 @@ export function analyzeEvolutions(
     igs: number;
     posScores: number[];
     nearCap: number;
+    /** Blended-position fit, only computed when the profile ranking is switched on. */
+    fit: number;
     // Steps that re-changed an already free-PlayStyle rarity. Carried down the recursion rather
     // than recomputed per hit, and only ever used to break a tie (see `rank`).
     redundantRarity: number;
@@ -624,6 +612,16 @@ export function analyzeEvolutions(
     .split(',')
     .map(p => p.trim())
     .filter(p => p.length > 0);
+
+  // With the profile switched on, every shortlist is ranked by what the build is worth to this
+  // player rather than by raw totals — otherwise "Max IGS" would keep winning with stats the
+  // player's positions and PlayStyles make no use of.
+  const useFit = filters?.playstyleWeighting === true;
+  const fitMode = controlModeFor(baseBio, filters?.controlMode);
+  const fitOf = (state: ChainState, pos?: string) => {
+    const ctx = { stats: state.stats, playStyles: state.playStyles, bio: state.bio, mode: fitMode };
+    return pos ? fitForPosition(ctx, pos) : fitScore(ctx).total;
+  };
 
   // Only the best few per ranking are ever returned, so nothing else is retained. Without
   // this the search kept every hit and ran the tab out of memory at the depths the app uses.
@@ -755,11 +753,14 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
           chainIds: [...currentChainIds],
           ovr: state.ovr,
           igs: igsOf(state.stats),
-          posScores: rankPositions.map(pos => getPositionScore(state.stats, pos)),
+          posScores: rankPositions.map(pos =>
+            useFit ? fitOf(state, pos) : getPositionScore(state.stats, pos)
+          ),
           nearCap: nearCapBonus(state.stats),
-          redundantRarity
+          redundantRarity,
+          fit: useFit ? fitOf(state) : 0
         };
-        offer(topByIgs, cand, c => c.igs);
+        offer(topByIgs, cand, c => (useFit ? c.fit : c.igs));
         topByPosition.forEach((list, i) => offer(list, cand, c => c.posScores[i]));
       }
     }
@@ -832,8 +833,8 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
     }
   };
 
-  // 1. Top 3 Highest IGS
-  topByIgs.forEach((cand, i) => addRecommendation(cand, `Max IGS ${i + 1}`));
+  // 1. Top 3 overall — by fit when the profile is on, by raw IGS otherwise
+  topByIgs.forEach((cand, i) => addRecommendation(cand, useFit ? `Best Fit ${i + 1}` : `Max IGS ${i + 1}`));
 
   // 2. Top 3 per Position
   rankPositions.forEach((pos, posIdx) => {
