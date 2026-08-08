@@ -96,69 +96,93 @@ export const SUBSTAT_WEIGHTS: Record<string, Record<string, number>> = {
   ST: {
     finishing: 0.20, positioning: 0.12, acceleration: 0.16, shotPower: 0.10,
     dribbling: 0.10, ballControl: 0.08, agility: 0.08, balance: 0.06,
-    strength: 0.06, composure: 0.04
+    strength: 0.06,
+    composure: 0.08, reactions: 0.08
   },
   CF: {
     finishing: 0.16, positioning: 0.10, acceleration: 0.14, dribbling: 0.14,
     ballControl: 0.10, shortPass: 0.10, agility: 0.10, balance: 0.06,
-    vision: 0.06, composure: 0.04
+    vision: 0.06,
+    composure: 0.08, reactions: 0.08
   },
   LW: {
     acceleration: 0.20, dribbling: 0.16, agility: 0.14, balance: 0.12,
     ballControl: 0.10, sprintSpeed: 0.10, finishing: 0.08, shortPass: 0.05,
-    composure: 0.05
+    composure: 0.08, reactions: 0.08
   },
   RW: {
     acceleration: 0.20, dribbling: 0.16, agility: 0.14, balance: 0.12,
     ballControl: 0.10, sprintSpeed: 0.10, finishing: 0.08, shortPass: 0.05,
-    composure: 0.05
+    composure: 0.08, reactions: 0.08
   },
   LM: {
     acceleration: 0.18, dribbling: 0.15, agility: 0.13, balance: 0.10,
     ballControl: 0.10, sprintSpeed: 0.10, shortPass: 0.09, stamina: 0.08,
-    finishing: 0.07
+    finishing: 0.07,
+    composure: 0.08, reactions: 0.08
   },
   RM: {
     acceleration: 0.18, dribbling: 0.15, agility: 0.13, balance: 0.10,
     ballControl: 0.10, sprintSpeed: 0.10, shortPass: 0.09, stamina: 0.08,
-    finishing: 0.07
+    finishing: 0.07,
+    composure: 0.08, reactions: 0.08
   },
   CAM: {
     // The manually-driven box-to-box role: passing and touch first, but stamina is not optional.
     shortPass: 0.18, vision: 0.15, dribbling: 0.14, acceleration: 0.12,
-    ballControl: 0.10, agility: 0.10, stamina: 0.08, balance: 0.07, composure: 0.06
+    ballControl: 0.10, agility: 0.10, stamina: 0.08, balance: 0.07,
+    composure: 0.08, reactions: 0.08
   },
   CM: {
     shortPass: 0.18, vision: 0.12, dribbling: 0.12, stamina: 0.11,
     acceleration: 0.10, ballControl: 0.10, agility: 0.08, defAwareness: 0.08,
-    interceptions: 0.06, composure: 0.05
+    interceptions: 0.06,
+    composure: 0.08, reactions: 0.08
   },
   CDM: {
     defAwareness: 0.22, interceptions: 0.16, standTackle: 0.16, shortPass: 0.12,
-    strength: 0.10, stamina: 0.08, acceleration: 0.06, composure: 0.05, reactions: 0.05
+    strength: 0.10, stamina: 0.08, acceleration: 0.06,
+    composure: 0.08, reactions: 0.08
   },
   CB: {
     defAwareness: 0.26, standTackle: 0.22, interceptions: 0.14, strength: 0.12,
-    sprintSpeed: 0.10, acceleration: 0.07, aggression: 0.04, composure: 0.03,
-    jumping: 0.02
+    sprintSpeed: 0.10, acceleration: 0.07, aggression: 0.04,
+    jumping: 0.02,
+    composure: 0.08, reactions: 0.08
   },
   LB: {
     defAwareness: 0.16, standTackle: 0.14, sprintSpeed: 0.16, acceleration: 0.14,
-    interceptions: 0.10, stamina: 0.10, shortPass: 0.08, agility: 0.06, balance: 0.06
+    interceptions: 0.10, stamina: 0.10, shortPass: 0.08, agility: 0.06, balance: 0.06,
+    composure: 0.08, reactions: 0.08
   },
   RB: {
     defAwareness: 0.16, standTackle: 0.14, sprintSpeed: 0.16, acceleration: 0.14,
-    interceptions: 0.10, stamina: 0.10, shortPass: 0.08, agility: 0.06, balance: 0.06
+    interceptions: 0.10, stamina: 0.10, shortPass: 0.08, agility: 0.06, balance: 0.06,
+    composure: 0.08, reactions: 0.08
   },
   LWB: {
     sprintSpeed: 0.17, acceleration: 0.15, stamina: 0.13, defAwareness: 0.13,
-    standTackle: 0.12, dribbling: 0.09, shortPass: 0.08, interceptions: 0.07, balance: 0.06
+    standTackle: 0.12, dribbling: 0.09, shortPass: 0.08, interceptions: 0.07, balance: 0.06,
+    composure: 0.08, reactions: 0.08
   },
   RWB: {
     sprintSpeed: 0.17, acceleration: 0.15, stamina: 0.13, defAwareness: 0.13,
-    standTackle: 0.12, dribbling: 0.09, shortPass: 0.08, interceptions: 0.07, balance: 0.06
+    standTackle: 0.12, dribbling: 0.09, shortPass: 0.08, interceptions: 0.07, balance: 0.06,
+    composure: 0.08, reactions: 0.08
   }
 };
+
+/**
+ * Sub-stats this player wants pinned at 99 on a card they actually build, not merely "high".
+ * A linear weight can't express that: it values 90 -> 91 the same as 98 -> 99, when the whole
+ * point is landing on the ceiling. These pay out on top of the weighted score, ramping from
+ * MUST_MAX_FLOOR so a card that is close still gets partial credit.
+ */
+export const MUST_MAX_SUBSTATS: Record<string, number> = {
+  composure: 2,
+  reactions: 2
+};
+export const MUST_MAX_FLOOR = 94;
 
 /**
  * Stamina on a card the player drives themselves is worth far more than the position table says,

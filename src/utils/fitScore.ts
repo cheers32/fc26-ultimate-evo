@@ -16,6 +16,8 @@ import {
   ControlMode,
   DEFAULT_SUBSTAT_WEIGHT,
   OVERLAP_DISCOUNT,
+  MUST_MAX_FLOOR,
+  MUST_MAX_SUBSTATS,
   POSITION_BODY_PREFERENCE,
   PS_PLUS_POINTS,
   SILVER_RATIO,
@@ -34,6 +36,7 @@ import {
  *   fit = sub-stat weighted position score
  *       + PlayStyle value (tier x gate x control mode x crowding)
  *       + AcceleRATE body fit
+ *       + credit for the sub-stats this player insists on having maxed
  *
  * Every taste-dependent number lives in playstyleProfile.ts; this file is only the arithmetic.
  */
@@ -50,6 +53,8 @@ export interface FitBreakdown {
   stats: number;
   playStyles: number;
   body: number;
+  /** Credit for the sub-stats this player wants sitting on the 99 ceiling. */
+  maxed: number;
   accelerate: AccelerateType;
   /** Per-PlayStyle contributions, best first — what the UI shows when asked "why". */
   playStyleDetail: { name: string; gold: boolean; points: number }[];
@@ -275,6 +280,22 @@ export function substatScore(stats: StatsData, bio: PlayerBio, mode: ControlMode
     : 0;
 }
 
+/**
+ * Sub-stats the player treats as "must be 99, not merely high". The weighted score can't say
+ * that — to it, 90 -> 91 and 98 -> 99 are the same point — so the last few points towards the
+ * ceiling are paid separately, ramping from MUST_MAX_FLOOR rather than all-or-nothing at 99.
+ */
+export function maxedScore(stats: StatsData): number {
+  let total = 0;
+  for (const [key, points] of Object.entries(MUST_MAX_SUBSTATS)) {
+    const value = subValue(stats, key);
+    if (value === undefined) continue;
+    const progress = (value - MUST_MAX_FLOOR) / (99 - MUST_MAX_FLOOR);
+    total += points * Math.max(0, Math.min(1, progress));
+  }
+  return total;
+}
+
 /** How well the card's AcceleRATE archetype matches what the position wants. */
 export function bodyFit(accelerate: AccelerateType, bio: PlayerBio): number {
   const preferences = positionsOf(bio).map(pos => POSITION_BODY_PREFERENCE[pos] || 'either');
@@ -310,12 +331,14 @@ export function fitScore(ctx: FitContext): FitBreakdown {
   const stats = substatScore(ctx.stats, ctx.bio, ctx.mode);
   const { total: playStyles, detail } = playStylesScore(ctx, accelerate);
   const body = bodyFit(accelerate, ctx.bio);
+  const maxed = maxedScore(ctx.stats);
 
   return {
-    total: stats + playStyles + body,
+    total: stats + playStyles + body + maxed,
     stats,
     playStyles,
     body,
+    maxed,
     accelerate,
     playStyleDetail: detail.sort((a, b) => b.points - a.points)
   };
