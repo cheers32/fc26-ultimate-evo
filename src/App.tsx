@@ -1032,7 +1032,8 @@ export default function App() {
           playerState: withoutSteps(currentState),
           snapshot: withoutSteps(currentSnapshot)
         }],
-        slots: {}
+        slots: {},
+        createdAt: Date.now()
       };
       saveSquads([...squads, newSquad]);
       setActiveSquadId(newSquadId);
