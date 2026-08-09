@@ -8,6 +8,7 @@ export const futtiesBlueprintII1194: EvolutionDefinition = {
   description: 'The final touches on your masterclass striker. Inject the ultimate finishing, composure, and raw instinct needed to turn those half-chances into guaranteed goals.',
   cost: 'Free',
   requirements: {
+    exactOvr: 97,
     maxOvr: 97,
     maxPlayStyles: 10,
     maxPlayStylesPlus: 4,

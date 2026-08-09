@@ -114,6 +114,11 @@ export function validateRequirement(
   const reasons: string[] = [];
   const warnings: string[] = [];
 
+  // Check Exact OVR
+  if (evo.requirements.exactOvr !== undefined && currentOvr !== evo.requirements.exactOvr) {
+    reasons.push(`OVR ${currentOvr} does not meet Exact Requirement of ${evo.requirements.exactOvr}`);
+  }
+
   // Check Max OVR
   if (currentOvr > evo.requirements.maxOvr) {
     reasons.push(`OVR ${currentOvr} exceeds Max Requirement of ${evo.requirements.maxOvr}`);

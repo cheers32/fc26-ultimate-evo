@@ -1256,6 +1256,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                   const prevVal = currentStats[statKey as keyof StatsData].baseFace;
                                   const diff = val - prevVal;
                                   
+                                  const expectedSubSum = Object.values(expectedStats[statKey as keyof StatsData].subs).reduce((acc, sub) => acc + sub.base, 0);
+                                  const prevSubSum = Object.values(currentStats[statKey as keyof StatsData].subs).reduce((acc, sub) => acc + sub.base, 0);
+                                  const subDiff = expectedSubSum - prevSubSum;
+                                  const showPlusZero = diff === 0 && subDiff > 0;
+                                  
                                   let diffColor = "text-gray-300";
                                   if (diff >= 8) diffColor = "text-purple-400 font-bold";
                                   else if (diff >= 4) diffColor = "text-fcGreen font-bold";
@@ -1266,6 +1271,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                       <span className="text-gray-500 font-bold uppercase">{statKey}</span>
                                       <div className="flex items-baseline gap-0.5 ml-auto">
                                         {diff > 0 && <span className={`${diffColor} text-[7px] leading-none tracking-tighter`}>+{diff}</span>}
+                                        {showPlusZero && <span className={`text-gray-400 font-bold text-[7px] leading-none tracking-tighter`} title="Sub-stats increased">+0</span>}
                                         <span className={`font-black ${getStatColorClass(val)}`}>{val}</span>
                                       </div>
                                     </div>
