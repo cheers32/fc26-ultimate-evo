@@ -265,6 +265,7 @@ interface ManualPathModalProps {
   // them — it's a manual builder — but every recommendation is aimed at them.
   evoFilters?: EvoFilters;
   disabledEvos?: string[];
+  includedEvos?: string[];
   onToggleDisabled?: (evoId: string) => void;
 }
 
@@ -281,11 +282,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   lockedPrefix = [],
   evoFilters,
   disabledEvos = [],
+  includedEvos,
   onToggleDisabled
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [showDisabled, setShowDisabled] = useState<boolean>(false);
+  const [showNotIncluded, setShowNotIncluded] = useState<boolean>(false);
   const [filterNewRarity, setFilterNewRarity] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
   // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
@@ -973,7 +975,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       if (e.key === 'Enter') {
                         const filteredPool = poolWithStatus.filter(({ id, evo, posMatchScore }) => {
                           if (!evo) return false;
-                          if (!showDisabled && disabledEvos.includes(id)) return false;
+                          const isNotIncluded = includedEvos ? !includedEvos.includes(id) : false;
+                          if (!showNotIncluded && isNotIncluded) return false;
                           if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                           if (filterNewRarity && !evo.rarityChange) return false;
                           if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
@@ -1065,10 +1068,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   Fit Position
                 </button>
                 <button
-                  onClick={() => setShowDisabled(!showDisabled)}
-                  title="Show or hide disabled evos"
+                  onClick={() => setShowNotIncluded(!showNotIncluded)}
+                  title="Show or hide not included evos"
                   className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
-                    showDisabled ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                    showNotIncluded ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
                   }`}
                 >
                   Show Not Included
@@ -1158,7 +1161,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 poolWithStatus
                   .filter(({ id, evo, posMatchScore }) => {
                     if (!evo) return false;
-                    if (!showDisabled && disabledEvos.includes(id)) return false;
+                    const isNotIncluded = includedEvos ? !includedEvos.includes(id) : false;
+                    if (!showNotIncluded && isNotIncluded) return false;
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
@@ -1171,6 +1175,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
+                  const isNotIncluded = includedEvos ? !includedEvos.includes(id) : false;
                   const isDisabled = disabledEvos.includes(id);
                   const excludedPositions = displayExcludedPositions(evo);
                   const recRank = recommendedRank.get(id);
@@ -1179,7 +1184,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   return (
                     <div 
                       key={id}
-                      className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''} ${isDisabled ? 'opacity-50 grayscale' : ''}`}
+                      className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''} ${isNotIncluded ? 'opacity-50 grayscale' : ''}`}
                       onClick={() => setLocalViewingEvo(id)}
                     >
                       <div className="flex justify-between items-start w-full">
@@ -1223,7 +1228,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 )}
                             </div>
                           </div>
-                          <div className={`font-mono text-[11px] opacity-70 mt-0.5 whitespace-nowrap ${isDisabled ? 'line-through' : ''}`}>
+                          <div className={`font-mono text-[11px] opacity-70 mt-0.5 whitespace-nowrap ${isNotIncluded ? 'line-through' : ''}`}>
                             {formatEvoTerms(evo)}
                           </div>
                           <div className="flex gap-x-2 gap-y-1.5 flex-wrap items-center mt-2">

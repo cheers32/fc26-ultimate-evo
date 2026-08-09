@@ -201,7 +201,7 @@ export default function App() {
     [evoStatuses]
   );
   const evosPool = useMemo(
-    () => Object.keys(availableEvolutions).filter(id => evoStatuses[id] !== 'disabled'),
+    () => Object.entries(evoStatuses).filter(([, s]) => s === 'included' || s === 'required').map(([id]) => id),
     [evoStatuses]
   );
   const requiredEvos = useMemo(
@@ -1256,7 +1256,8 @@ export default function App() {
       <ManualPathModal
         isOpen={isManualPathOpen}
         onClose={() => setIsManualPathOpen(false)}
-        evosPool={[...evosPool, ...disabledEvos]}
+        evosPool={Object.keys(availableEvolutions)}
+        includedEvos={evosPool}
         disabledEvos={disabledEvos}
         onToggleDisabled={toggleEvoDisabled}
         // Append grows the active path in place (so it keeps its id and name); branch leaves
