@@ -287,6 +287,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // opposite instead of leaving a combination that matches nothing.
   const [filterNoRarity, setFilterNoRarity] = useState(false);
   const [filterNoPosition, setFilterNoPosition] = useState(false);
+  // Position match is a shade of grey the eligibility check can't express: an evo that names the
+  // card's *primary* position is a different proposition from one that only matches a secondary
+  // one, and both are "eligible".
+  const [filterFitPosition, setFilterFitPosition] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('default');
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -496,6 +500,21 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
     const expectedFaceStats = expectedStats ? Object.values(expectedStats).reduce((acc, f) => acc + f.baseFace, 0) : 0;
 
+    // 2 = names the card's primary position, 1 = names a secondary one (or names none at all,
+    // so it fits anybody), 0 = names positions this card doesn't have.
+    let posMatchScore = 0;
+    const evoPositions = evo?.requirements?.positions;
+    if (evoPositions && evoPositions.length > 0) {
+      const playerPositions = currentBio.primaryPositions.split(',').map(x => x.trim());
+      if (evoPositions.includes(playerPositions[0])) {
+        posMatchScore = 2;
+      } else if (playerPositions.some(x => evoPositions.includes(x))) {
+        posMatchScore = 1;
+      }
+    } else if (evo) {
+      posMatchScore = 1;
+    }
+
     return {
       id,
       evo,
@@ -511,7 +530,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       recScore,
       recReasons,
       recBlocked,
-      expectedFit
+      expectedFit,
+      posMatchScore
     };
   });
 
@@ -557,6 +577,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (!a.limitReached && b.limitReached) return -1;
     if (a.isEligible && !b.isEligible) return -1;
     if (!a.isEligible && b.isEligible) return 1;
+
+    // While Fit Position is on it is the point of the list, so it outranks the chosen sort.
+    if (filterFitPosition && a.posMatchScore !== b.posMatchScore) return b.posMatchScore - a.posMatchScore;
 
     const aMaxOvr = a.evo.requirements.maxOvr || 99;
     const bMaxOvr = b.evo.requirements.maxOvr || 99;
@@ -980,6 +1003,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   New Position
                 </button>
+                <button
+                  onClick={() => setFilterFitPosition(!filterFitPosition)}
+                  title="Only evos that name a position this card actually has — and the ones naming its primary position first"
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterFitPosition ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  Fit Position
+                </button>
                 <div className="relative max-w-[250px] w-full">
                 <input 
                   ref={searchInputRef}
@@ -990,13 +1022,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      const filteredPool = poolWithStatus.filter(({ evo }) => {
+                      const filteredPool = poolWithStatus.filter(({ evo, posMatchScore }) => {
                     if (!evo) return false;
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
                     if (filterNoRarity && evo.rarityChange) return false;
                     if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
+                    if (filterFitPosition && posMatchScore === 0) return false;
                     return true;
 });
                       const topEligible = filteredPool.find(p => p.isEligible && !p.limitReached);
@@ -1091,13 +1124,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               ) : (
                 poolWithStatus
-                  .filter(({ evo }) => {
+                  .filter(({ evo, posMatchScore }) => {
                     if (!evo) return false;
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
                     if (filterNoRarity && evo.rarityChange) return false;
                     if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
+                    if (filterFitPosition && posMatchScore === 0) return false;
                     return true;
 })
                   .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit }) => {
