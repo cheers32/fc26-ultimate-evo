@@ -141,6 +141,7 @@ export default function App() {
   const handleImportPlayer = (player: PlayerData) => {
     const newCustomPlayers = { ...customPlayers, [player.id]: player };
     setCustomPlayers(newCustomPlayers);
+    setActiveMemberId(null);
     setSelectedPlayerId(player.id);
   };
 
@@ -157,6 +158,7 @@ export default function App() {
     if (selectedPlayerId === id) {
       // Find another available player to select
       const availableIds = Object.keys(allPlayersData).filter(pId => pId !== id);
+      setActiveMemberId(null);
       setSelectedPlayerId(availableIds.length > 0 ? availableIds[0] : 'rodri-91');
     }
   };
@@ -282,29 +284,38 @@ export default function App() {
     return value;
   };
 
-  const addPlayerToSquad = (squadId: string, playerId: string, rawState: PlayerEvoState, rawSnapshot: SquadMember['snapshot']) => {
+  const addPlayerToSquad = (squadId: string, playerId: string, rawState: PlayerEvoState, rawSnapshot: SquadMember['snapshot']): string | null => {
     const playerState = withoutSteps(rawState);
     const snapshot = withoutSteps(rawSnapshot);
+    let newMemberId: string | null = null;
     const updatedSquads = squads.map(squad => {
       if (squad.id === squadId) {
-        // A player may appear several times under different paths, so entries are keyed
-        // by player + chain. Re-adding the same chain refreshes it instead of duplicating.
-        const chainKey = snapshot.chainIds.join('>');
-        const existingIndex = squad.members.findIndex(
-          m => m.playerId === playerId && m.snapshot.chainIds.join('>') === chainKey
-        );
-        if (existingIndex >= 0) {
-          const newMembers = [...squad.members];
-          newMembers[existingIndex] = { ...newMembers[existingIndex], playerState, snapshot };
-          return { ...squad, members: newMembers };
-        }
         const member: SquadMember = {
           id: `${playerId}-${Date.now()}`,
           playerId,
           playerState,
           snapshot
         };
+        newMemberId = member.id;
         return { ...squad, members: [...squad.members, member] };
+      }
+      return squad;
+    });
+    saveSquads(updatedSquads);
+    return newMemberId;
+  };
+
+  const updatePlayerInSquad = (squadId: string, memberId: string, rawState: PlayerEvoState, rawSnapshot: SquadMember['snapshot']) => {
+    const playerState = withoutSteps(rawState);
+    const snapshot = withoutSteps(rawSnapshot);
+    const updatedSquads = squads.map(squad => {
+      if (squad.id === squadId) {
+        const existingIndex = squad.members.findIndex(m => m.id === memberId);
+        if (existingIndex >= 0) {
+          const newMembers = [...squad.members];
+          newMembers[existingIndex] = { ...newMembers[existingIndex], playerState, snapshot };
+          return { ...squad, members: newMembers };
+        }
       }
       return squad;
     });
@@ -395,9 +406,11 @@ export default function App() {
   // Set when opening a squad member, so the effect below restores that snapshot
   // instead of the player's own save.
   const [pendingRestore, setPendingRestore] = useState<{ playerId: string; state: PlayerEvoState } | null>(null);
+  const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
 
   const openSquadMember = (member: SquadMember) => {
     setPendingRestore({ playerId: member.playerId, state: member.playerState });
+    setActiveMemberId(member.id);
     setSelectedPlayerId(member.playerId);
     setEvoPreview(true);
     setActiveTab('workbench');
@@ -956,6 +969,7 @@ export default function App() {
     setEvosPool([]);
     setGeneratedPaths([]);
     setManualPaths([]);
+    setActiveMemberId(null);
   };
 
   const currentOvrVal = previewOvr;
@@ -1014,38 +1028,30 @@ export default function App() {
     return evosPool.filter(id => disabledEvos.includes(id)).length;
   }, [evosPool, disabledEvos]);
 
-  const handleAddToSquad = () => {
-    let targetSquadId: string | null = activeSquadId;
-    if (!targetSquadId && squads.length > 0) {
-      targetSquadId = squads[0].id;
+  const handleAddToCurrentSquad = () => {
+    let targetSquadId = activeSquadId;
+    if (!targetSquadId && squads.length > 0) targetSquadId = squads[0].id;
+    if (!targetSquadId) return alert('No squad available. Create one first.');
+    const newId = addPlayerToSquad(targetSquadId, selectedPlayerId, currentState, currentSnapshot);
+    if (newId) setActiveMemberId(newId);
+  };
+
+  const handleUpdateCurrentSquad = () => {
+    if (!activeMemberId) return;
+    let targetSquadId = activeSquadId;
+    if (!targetSquadId && squads.length > 0) targetSquadId = squads[0].id;
+    if (targetSquadId) {
+      updatePlayerInSquad(targetSquadId, activeMemberId, currentState, currentSnapshot);
     }
-    
-    if (!targetSquadId) {
-      const newSquadId = `squad-${Date.now()}`;
-      const newSquad: Squad = {
-        id: newSquadId,
-        name: 'Main Squad',
-        formation: '4-3-3',
-        members: [{
-          id: `${selectedPlayerId}-${Date.now()}`,
-          playerId: selectedPlayerId,
-          playerState: withoutSteps(currentState),
-          snapshot: withoutSteps(currentSnapshot)
-        }],
-        slots: {},
-        createdAt: Date.now()
-      };
-      saveSquads([...squads, newSquad]);
-      setActiveSquadId(newSquadId);
-    } else {
-      addPlayerToSquad(targetSquadId, selectedPlayerId, currentState, currentSnapshot);
-    }
-    
-    // Provide visual feedback by scrolling to the squad panel
-    const panel = document.getElementById('squad-panel');
-    if (panel) {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  };
+
+  const handleCreateNewSquadAndAdd = () => {
+    const name = window.prompt('Enter new squad name:', 'New Squad');
+    if (!name) return;
+    const newSquadId = createSquad(name);
+    setActiveSquadId(newSquadId);
+    const newId = addPlayerToSquad(newSquadId, selectedPlayerId, currentState, currentSnapshot);
+    if (newId) setActiveMemberId(newId);
   };
 
   // The team list is the way in: without one there is no pool and no squads to show.
@@ -1087,7 +1093,6 @@ export default function App() {
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
-          onAddToSquad={handleAddToSquad}
           canPickFreePlayStyles={canAddPlayStylePick}
           onOpenPlayStylePicker={(target) => setPlayStylePickerTarget(target)}
           rawBaseOvr={initialOvrData.base}
@@ -1217,14 +1222,13 @@ export default function App() {
           />
         )}
 
-        <div className="flex justify-center mt-6 mb-2">
-          {/* Tab Navigation */}
-          <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800/80 text-sm">
+        <div className="mt-8 mb-4 border-b border-gray-800/80 pb-2 flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('workbench')}
               className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
                 activeTab === 'workbench'
-                  ? 'bg-[#1ED760] text-black shadow'
+                  ? 'bg-blue-600 text-white shadow'
                   : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
               }`}
             >
@@ -1235,7 +1239,7 @@ export default function App() {
               onClick={() => setActiveTab('evos')}
               className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
                 activeTab === 'evos'
-                  ? 'bg-[#1ED760] text-black shadow'
+                  ? 'bg-blue-600 text-white shadow'
                   : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
               }`}
             >
@@ -1243,20 +1247,29 @@ export default function App() {
               EVO Chain Lab
             </button>
           </div>
-        </div>
-
-        <div className="my-6" id="squad-panel">
-          <SquadPanel
-            squads={squads}
-            onCreateSquad={createSquad}
-            onDeleteSquad={deleteSquad}
-            onAddPlayerToSquad={addPlayerToSquad}
-            onRemoveMember={removeSquadMember}
-            onOpenMember={openSquadMember}
-            currentPlayerState={currentState}
-            currentPlayerId={selectedPlayerId}
-            currentSnapshot={currentSnapshot}
-          />
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleAddToCurrentSquad}
+              className="px-3 py-1.5 bg-green-950/40 hover:bg-green-900/60 border border-green-700/60 rounded-md text-green-400 text-xs font-bold transition-colors"
+            >
+              Add to Current Squad
+            </button>
+            <button
+              onClick={handleUpdateCurrentSquad}
+              disabled={!activeMemberId}
+              title={!activeMemberId ? 'Open a build from the squad first to update it' : 'Update the opened build in the squad'}
+              className="px-3 py-1.5 disabled:opacity-30 disabled:cursor-not-allowed bg-blue-950/40 hover:bg-blue-900/60 border border-blue-700/60 rounded-md text-blue-400 text-xs font-bold transition-colors"
+            >
+              Update Current Squad
+            </button>
+            <button
+              onClick={handleCreateNewSquadAndAdd}
+              className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-md text-gray-300 text-xs font-bold transition-colors"
+            >
+              Create New Squad & Add
+            </button>
+          </div>
         </div>
 
         <div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">
@@ -1326,6 +1339,7 @@ export default function App() {
           players={allPlayersData}
           onClose={() => setIsPlayerSelectionOpen(false)}
           onSelectPlayer={(id) => {
+            setActiveMemberId(null);
             setSelectedPlayerId(id);
             setHoveredChem(null);
             setLockedChem(null);
