@@ -1,12 +1,11 @@
 runtime: nodejs24
 
-handlers:
-  # Serve all static files with their paths
-  - url: /(.*\..+)$
-    static_files: dist/\1
-    upload: dist/(.*\..+)$
+# The app is a Node server now, not a bucket of static files: it owns /api (the shared team and
+# player store) and serves the built front end itself. With static handlers here those API routes
+# would be answered with index.html, which is exactly how the deployed app ended up silently
+# falling back to per-browser localStorage.
+instance_class: F1
 
-  # Catch all other paths and serve index.html for React Router
-  - url: /.*
-    static_files: dist/index.html
-    upload: dist/index.html
+automatic_scaling:
+  min_instances: 0
+  max_instances: 2

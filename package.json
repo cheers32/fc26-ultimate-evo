@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server/index.js",
+    "serve": "npm run build && node server/index.js"
   },
   "dependencies": {
+    "@google-cloud/datastore": "^11.0.0",
     "clsx": "^2.1.1",
+    "express": "^5.2.1",
     "lucide-react": "^0.395.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
