@@ -1,7 +1,7 @@
 import { ChemStylesData } from '../types/player';
 
 export const chemStyles: ChemStylesData = {
-  Sniper: { acceleration: 3, sprintSpeed: 3, positioning: 9, finishing: 3, shotPower: 3, longShots: 6, volleys: 3, penalties: 3, stamina: 6, strength: 9, aggression: 3 },
+  Sniper: { positioning: 9, finishing: 3, shotPower: 3, longShots: 6, volleys: 3, penalties: 3, stamina: 6, strength: 9, aggression: 3 },
   Finisher: { positioning: 6, finishing: 9, shotPower: 3, volleys: 3, penalties: 3, agility: 6, balance: 3, reactions: 3, dribbling: 9 },
   Deadeye: { positioning: 6, finishing: 3, shotPower: 9, longShots: 3, penalties: 3, vision: 3, shortPass: 9, longPass: 3, curve: 6 },
   Marksman: { finishing: 6, shotPower: 3, longShots: 6, penalties: 3, reactions: 6, ballControl: 6, dribbling: 3, composure: 3, jumping: 3, strength: 6 },
