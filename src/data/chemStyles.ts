@@ -19,5 +19,5 @@ export const chemStyles: ChemStylesData = {
   Hunter: { acceleration: 6, sprintSpeed: 6, positioning: 3, finishing: 3, shotPower: 3, volleys: 9, penalties: 6 },
   Catalyst: { acceleration: 6, sprintSpeed: 6, vision: 9, crossing: 6, shortPass: 3, longPass: 6, curve: 3 },
   Shadow: { acceleration: 6, sprintSpeed: 6, interceptions: 3, headingAcc: 6, defAwareness: 3, standTackle: 3, slideTackle: 9 },
-  Basic: { acceleration: 3, sprintSpeed: 3, vision: 3, crossing: 6, shortPass: 3, longPass: 3, curve: 6, agility: 3, balance: 6, dribbling: 6 }
+  Basic: { sprintSpeed: 3, positioning: 3, shotPower: 3, penalties: 3, vision: 3, shortPass: 3, longPass: 3, curve: 3, agility: 3, ballControl: 3, dribbling: 3, composure: 3, defAwareness: 3, standTackle: 3, slideTackle: 3, strength: 3 }
 };
