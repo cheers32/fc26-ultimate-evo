@@ -67,7 +67,10 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4" id="stats-grid">
+      {/* Four columns at lg: the six stat cards flow through 1–3 and the aside is pinned to 4.
+          With only three declared, column 4 became an auto-sized implicit track that took the
+          whole width and collapsed the 1fr ones to 0. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4" id="stats-grid">
       {Object.keys(baseStats).map((faceKey) => {
         const baseFaceData = baseStats[faceKey];
         const previewFaceData = previewStats[faceKey];

@@ -4,14 +4,50 @@
     {
       "name": "fc26-ultimate-evo-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
     },
     {
       "name": "fc26-ultimate-evo-dev-3002",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "3002", "--strictPort"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3002",
+        "--strictPort"
+      ],
       "port": 3002
+    },
+    {
+      "name": "fc26-evo-verify",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3011",
+        "--strictPort"
+      ],
+      "port": 3011
+    },
+    {
+      "name": "fc26-evo-check",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3012",
+        "--strictPort"
+      ],
+      "port": 3012
     }
   ]
 }

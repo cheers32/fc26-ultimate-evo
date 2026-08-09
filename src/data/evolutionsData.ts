@@ -86,6 +86,15 @@ import { perfectLinkUp1145 } from './evolutions/perfectLinkUp1145';
 import { shutdown1146 } from './evolutions/shutdown1146';
 import { rapidResilience1147 } from './evolutions/rapidResilience1147';
 import { mrNonchalant1149 } from './evolutions/mrNonchalant1149';
+import { theHighLine1200 } from './evolutions/theHighLine1200';
+import { maxSweat1201 } from './evolutions/maxSweat1201';
+import { bornStriker1202 } from './evolutions/bornStriker1202';
+import { theLandlord1203 } from './evolutions/theLandlord1203';
+import { rightRoute1204 } from './evolutions/rightRoute1204';
+import { tooBasic1205 } from './evolutions/tooBasic1205';
+import { postureCheck1206 } from './evolutions/postureCheck1206';
+import { sunnyInnit1211 } from './evolutions/sunnyInnit1211';
+import { fullbackForce1216 } from './evolutions/fullbackForce1216';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '974': theMainEvent974,
@@ -174,7 +183,16 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1196': theCreativeSpark1196,
   '1197': letMeCook1197,
   '1198': bailOut1198,
-  '1199': yearOfTheFullbacks1199
+  '1199': yearOfTheFullbacks1199,
+  '1200': theHighLine1200,
+  '1201': maxSweat1201,
+  '1202': bornStriker1202,
+  '1203': theLandlord1203,
+  '1204': rightRoute1204,
+  '1205': tooBasic1205,
+  '1206': postureCheck1206,
+  '1211': sunnyInnit1211,
+  '1216': fullbackForce1216
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
