@@ -436,6 +436,15 @@ export function applyEvo(
     });
 
     // Apply PlayStyles
+    //
+    // How many plain PlayStyles the evo may add is decided by the card's count *before* any of
+    // this evo's grants, not as the list changes underneath. Promoting one to PlayStyle+ takes it
+    // out of the plain list, and that vacated slot is not one the same evo may refill: a card
+    // already at the cap gains the promotion and nothing else. Counting as we went let a card
+    // sitting at the limit pick up an extra PlayStyle it does not get in game — Route One on a
+    // card with seven plain PlayStyles handed out Block on the slot Anticipate had just left.
+    const silverBudget = Math.max(0, (evo.playStylesLimit?.silver ?? 99) - currentPlayStyles.base.silver.length);
+
     const goldLimit = evo.playStylesLimit?.gold ?? 99;
     evo.playStylesAdded.gold.forEach((ps) => {
       const baseName = ps.replace('+', '').trim();
@@ -457,18 +466,17 @@ export function applyEvo(
       }
     });
 
-    const silverLimit = evo.playStylesLimit?.silver ?? 99;
+    let silverRemaining = silverBudget;
     evo.playStylesAdded.silver.forEach((ps) => {
       const baseName = ps.replace('+', '').trim();
-      
+
       // Only add to silver if they don't already have it as gold or silver
       const hasGold = currentPlayStyles.base.gold.some(g => g.replace('+', '').trim() === baseName);
       const hasSilver = currentPlayStyles.base.silver.some(s => s.replace('+', '').trim() === baseName);
-      
-      if (!hasSilver && !hasGold) {
-        if (currentPlayStyles.base.silver.length < silverLimit) {
-          currentPlayStyles.base.silver.push(ps);
-        }
+
+      if (!hasSilver && !hasGold && silverRemaining > 0) {
+        currentPlayStyles.base.silver.push(ps);
+        silverRemaining--;
       }
     });
 
