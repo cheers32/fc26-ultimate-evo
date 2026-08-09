@@ -438,7 +438,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     ? fitScore({ stats: currentStats, playStyles: currentPlayStyles, bio: currentBio, mode: fitMode })
     : null;
 
-  const poolWithStatus = Object.keys(availableEvolutions).map((id) => {
+  const poolWithStatus = evosPool.map((id) => {
     const evo = availableEvolutions[id];
     const count = selectedChain.filter(eid => eid === id).length;
     const maxAllowed = evo?.maxRepeatable || 1;
