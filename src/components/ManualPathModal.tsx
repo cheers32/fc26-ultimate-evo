@@ -264,7 +264,8 @@ interface ManualPathModalProps {
   // The pool's must-haves and the stat targets from Filters. The builder never blocks a pick on
   // them — it's a manual builder — but every recommendation is aimed at them.
   evoFilters?: EvoFilters;
-  onDisableEvo?: (evoId: string) => void;
+  disabledEvos?: string[];
+  onToggleDisabled?: (evoId: string) => void;
 }
 
 export const ManualPathModal: React.FC<ManualPathModalProps> = ({
@@ -276,10 +277,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   baseOvr,
   baseStats,
   basePlayStyles,
-  editingPath,
+  editingPath = null,
   lockedPrefix = [],
   evoFilters,
-  onDisableEvo
+  disabledEvos = [],
+  onToggleDisabled
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -569,7 +571,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   poolWithStatus
     .filter(p => p.isEligible && !p.limitReached && !p.recBlocked && p.recReasons.length > 0)
     .sort((a, b) => b.recScore - a.recScore || b.expectedIgs - a.expectedIgs)
-    .slice(0, MAX_RECOMMENDATIONS)
+    .slice(0, MAX_CHAIN_RECOMMENDATIONS)
     .forEach((p, idx) => recommendedRank.set(p.id, idx + 1));
 
   // Sort: Eligible first, then ineligible, then limit reached — in every mode, since only an
@@ -1140,6 +1142,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
+                  const isDisabled = disabledEvos.includes(id);
                   const excludedPositions = displayExcludedPositions(evo);
                   const recRank = recommendedRank.get(id);
                   const isRec = canAdd && recRank !== undefined;
@@ -1147,7 +1150,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   return (
                     <div 
                       key={id}
-                      className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''}`}
+                      className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''} ${isDisabled ? 'opacity-50 grayscale' : ''}`}
                       onClick={() => setLocalViewingEvo(id)}
                     >
                       <div className="flex justify-between items-start w-full">
@@ -1180,18 +1183,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
-                                {onDisableEvo && (
+                                {onToggleDisabled && (
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); onDisableEvo(id); }}
-                                    className="p-1 bg-red-900/40 text-red-400 hover:bg-red-600 hover:text-white rounded-full transition-colors"
-                                    title="Disable Evo"
+                                    onClick={(e) => { e.stopPropagation(); onToggleDisabled(id); }}
+                                    className={`p-1 rounded-full transition-colors ${isDisabled ? 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700' : 'bg-red-900/40 text-red-400 hover:bg-red-600 hover:text-white'}`}
+                                    title={isDisabled ? "Enable Evo" : "Disable Evo"}
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
                             </div>
                           </div>
-                          <div className="font-mono text-[11px] opacity-70 mt-0.5 whitespace-nowrap">
+                          <div className={`font-mono text-[11px] opacity-70 mt-0.5 whitespace-nowrap ${isDisabled ? 'line-through' : ''}`}>
                             {formatEvoTerms(evo)}
                           </div>
                           <div className="flex gap-x-2 gap-y-1.5 flex-wrap items-center mt-2">

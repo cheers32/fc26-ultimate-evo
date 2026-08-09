@@ -1256,13 +1256,9 @@ export default function App() {
       <ManualPathModal
         isOpen={isManualPathOpen}
         onClose={() => setIsManualPathOpen(false)}
-        evosPool={evosPool}
-        onDisableEvo={(evoId) => {
-          setTeamEvoStatuses({
-            ...evoStatuses,
-            [evoId]: 'disabled'
-          });
-        }}
+        evosPool={[...evosPool, ...disabledEvos]}
+        disabledEvos={disabledEvos}
+        onToggleDisabled={toggleEvoDisabled}
         // Append grows the active path in place (so it keeps its id and name); branch leaves
         // it alone and starts a fresh path from the base prefix.
         editingPath={pickerMode === 'append' ? activePath : null}
