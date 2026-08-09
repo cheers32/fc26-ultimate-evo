@@ -1071,7 +1071,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     showDisabled ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
                   }`}
                 >
-                  Show Disabled
+                  Show Not Included
                 </button>
               </div>
             </div>
