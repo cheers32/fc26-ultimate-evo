@@ -285,6 +285,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showDisabled, setShowDisabled] = useState<boolean>(false);
   const [filterNewRarity, setFilterNewRarity] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
   // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
@@ -1016,6 +1017,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   Fit Position
                 </button>
+                <button
+                  onClick={() => setShowDisabled(!showDisabled)}
+                  title="Show or hide disabled evos"
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    showDisabled ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  Show Disabled
+                </button>
                 <div className="relative max-w-[250px] w-full">
                 <input 
                   ref={searchInputRef}
@@ -1026,8 +1036,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      const filteredPool = poolWithStatus.filter(({ evo, posMatchScore }) => {
+                      const filteredPool = poolWithStatus.filter(({ id, evo, posMatchScore }) => {
                     if (!evo) return false;
+                    if (!showDisabled && disabledEvos.includes(id)) return false;
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
@@ -1128,8 +1139,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               ) : (
                 poolWithStatus
-                  .filter(({ evo, posMatchScore }) => {
+                  .filter(({ id, evo, posMatchScore }) => {
                     if (!evo) return false;
+                    if (!showDisabled && disabledEvos.includes(id)) return false;
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
