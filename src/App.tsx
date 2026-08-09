@@ -1019,12 +1019,31 @@ export default function App() {
     if (!targetSquadId && squads.length > 0) {
       targetSquadId = squads[0].id;
     }
+    
     if (!targetSquadId) {
-      targetSquadId = createSquad('Main Squad');
-      setActiveSquadId(targetSquadId);
-    }
-    if (targetSquadId) {
+      const newSquadId = `squad-${Date.now()}`;
+      const newSquad: Squad = {
+        id: newSquadId,
+        name: 'Main Squad',
+        formation: '4-3-3',
+        members: [{
+          id: `${selectedPlayerId}-${Date.now()}`,
+          playerId: selectedPlayerId,
+          playerState: withoutSteps(currentState),
+          snapshot: withoutSteps(currentSnapshot)
+        }],
+        slots: {}
+      };
+      saveSquads([...squads, newSquad]);
+      setActiveSquadId(newSquadId);
+    } else {
       addPlayerToSquad(targetSquadId, selectedPlayerId, currentState, currentSnapshot);
+    }
+    
+    // Provide visual feedback by scrolling to the squad panel
+    const panel = document.getElementById('squad-panel');
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -1225,7 +1244,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="my-6">
+        <div className="my-6" id="squad-panel">
           <SquadPanel
             squads={squads}
             onCreateSquad={createSquad}
