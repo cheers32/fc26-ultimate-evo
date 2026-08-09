@@ -17,7 +17,8 @@ import {
   canPickPlayStyles
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
-import { useSharedState } from './utils/sharedState';
+import { useLibrary, useTeam, readActiveTeamId, writeActiveTeamId } from './utils/teamStore';
+import { TeamListPage } from './components/TeamListPage';
 import { EvolutionDefinition } from './types/player';
 import { PlayerSelectionModal } from './components/PlayerSelectionModal';
 import { EvoPoolModal, EvoStatuses } from './components/EvoPoolModal';
@@ -26,7 +27,7 @@ import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { PlayStylePickerModal } from './components/PlayStylePickerModal';
 import { SquadPanel } from './components/SquadPanel';
 import { ImportPlayerModal } from './components/ImportPlayerModal';
-import { Trophy, RefreshCw, LayoutGrid, Layers, Upload } from 'lucide-react';
+import { Trophy, RefreshCw, LayoutGrid, Layers, Upload, Users } from 'lucide-react';
 import { Squad, SquadMember, PlayerEvoState } from './types/player';
 
 const DEFAULT_PATH_ID = 'default-path';
@@ -69,9 +70,26 @@ function migratePlayStylePicks(
 }
 
 export default function App() {
-  const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useSharedState<string[]>('futEvo_deleted_db_players', []);
+  // Which team's state the app is looking at. The team owns its EVO pool and its squads; the
+  // player and EVO libraries below are global, so a card imported by anyone shows up for everyone.
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(() => readActiveTeamId());
+  const {
+    team,
+    loading: teamLoading,
+    error: teamError,
+    setEvoStatuses: setTeamEvoStatuses,
+    saveSquad: persistSquad,
+    deleteSquad: removeSquadFromTeam
+  } = useTeam(activeTeamId);
 
-  const [storedCustomPlayers, setCustomPlayers] = useSharedState<Record<string, PlayerData>>('futEvo_custom_players', {});
+  const openTeam = (teamId: string | null) => {
+    writeActiveTeamId(teamId);
+    setActiveTeamId(teamId);
+  };
+
+  const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useLibrary<string[]>('deletedPlayers', []);
+
+  const [storedCustomPlayers, setCustomPlayers] = useLibrary<Record<string, PlayerData>>('customPlayers', {});
   // Repair custom players that were saved without a full stat block, whatever they came from —
   // the shared copy arrives after mount, so this can't be a one-off at initialisation.
   const customPlayers = useMemo(() => {
@@ -171,39 +189,65 @@ export default function App() {
     }
   };
 
-  // Evolutions the user never wants used. Global rather than per-player, so it lives alongside
-  // custom players in the shared app store rather than in the per-player save files.
-  const [disabledEvos, setDisabledEvos] = useSharedState<string[]>('futEvo_disabled_evos', []);
-  // Evos that ship switched off are folded in once each, tracked separately, so a later re-enable
-  // in the UI isn't undone on the next load.
-  const [seededDisabled, setSeededDisabled] = useSharedState<string[]>('futEvo_seeded_disabled', []);
+  // Which evos this team can use. It belongs to the team, not to the player and not to the app:
+  // the same card is spent for one account and untouched for another, so two teams looking at the
+  // same evo can legitimately disagree about whether it is available.
+  const evoStatuses: EvoStatuses = useMemo(() => team?.evoStatuses || {}, [team?.evoStatuses]);
 
+  const disabledEvos = useMemo(
+    () => Object.entries(evoStatuses).filter(([, s]) => s === 'disabled').map(([id]) => id),
+    [evoStatuses]
+  );
+  const evosPool = useMemo(
+    () => Object.entries(evoStatuses).filter(([, s]) => s === 'included' || s === 'required').map(([id]) => id),
+    [evoStatuses]
+  );
+  const requiredEvos = useMemo(
+    () => Object.entries(evoStatuses).filter(([, s]) => s === 'required').map(([id]) => id),
+    [evoStatuses]
+  );
+
+  // Evos that ship switched off are folded into a team's statuses once, when it is first opened.
+  const seededTeams = useRef(new Set<string>());
   useEffect(() => {
+    if (!team || seededTeams.current.has(team.id)) return;
+    seededTeams.current.add(team.id);
     const pending = Object.values(availableEvolutions)
-      .filter(evo => evo.defaultDisabled && !seededDisabled.includes(evo.id))
+      .filter(evo => evo.defaultDisabled && !evoStatuses[evo.id])
       .map(evo => evo.id);
     if (pending.length === 0) return;
-    setDisabledEvos([...new Set([...disabledEvos, ...pending])]);
-    setSeededDisabled([...seededDisabled, ...pending]);
-    // Runs whenever the shared copy lands, and is a no-op once everything has been seeded once.
-  }, [seededDisabled, disabledEvos, setDisabledEvos, setSeededDisabled]);
+    const next: EvoStatuses = { ...evoStatuses };
+    pending.forEach(id => { next[id] = 'disabled'; });
+    setTeamEvoStatuses(next);
+  }, [team, evoStatuses, setTeamEvoStatuses]);
 
   const toggleEvoDisabled = (evoId: string) => {
-    setDisabledEvos(disabledEvos.includes(evoId)
-      ? disabledEvos.filter(id => id !== evoId)
-      : [...disabledEvos, evoId]);
+    const next: EvoStatuses = { ...evoStatuses };
+    if (next[evoId] === 'disabled') delete next[evoId];
+    else next[evoId] = 'disabled';
+    setTeamEvoStatuses(next);
   };
 
-  // Squad management
-  const [storedSquads, saveSquads] = useSharedState<Squad[]>('futEvo_squads', []);
-  // Members predating per-entry ids need one before they can be removed individually.
+  // Squads belong to the team, and they are the only place a finished build lives: a path that
+  // isn't in a squad is a draft, and drafts don't survive leaving the page.
   const squads = useMemo(
-    () => (storedSquads || []).map(squad => ({
+    () => (team?.squads || []).map(squad => ({
       ...squad,
-      members: squad.members.map((m, i) => (m.id ? m : { ...m, id: `${m.playerId}-${i}` }))
+      // Members predating per-entry ids need one before they can be removed individually.
+      members: (squad.members || []).map((m, i) => (m.id ? m : { ...m, id: `${m.playerId}-${i}` }))
     })),
-    [storedSquads]
+    [team?.squads]
   );
+
+  /** Every squad write goes through here so one changed squad is one request. */
+  const saveSquads = (next: Squad[]) => {
+    const before = new Map(squads.map(s => [s.id, JSON.stringify(s)]));
+    next.forEach(squad => {
+      if (before.get(squad.id) !== JSON.stringify(squad)) persistSquad(squad);
+    });
+    const kept = new Set(next.map(s => s.id));
+    squads.filter(s => !kept.has(s.id)).forEach(s => removeSquadFromTeam(s.id));
+  };
 
   const createSquad = (name: string) => {
     const newSquad: Squad = {
@@ -302,18 +346,11 @@ export default function App() {
         ...(prev[selectedPlayerId] as Partial<PlayerEvoState> || {})
       };
       
-      const newState = { ...current, ...updates };
-      
-      // Persist state silently
-      fetch(`/api/saves/${selectedPlayerId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newState)
-      }).catch(e => console.error('Failed to save player state:', e));
-
+      // Paths are drafts until they are put in a squad — that is what makes a build real — so
+      // nothing here is persisted. Leaving the page is meant to clear the workbench.
       return {
         ...prev,
-        [selectedPlayerId]: newState
+        [selectedPlayerId]: { ...current, ...updates }
       };
     });
   };
@@ -333,38 +370,24 @@ export default function App() {
   // Load persistence data when player changes
   useEffect(() => {
     if (pendingRestore && pendingRestore.playerId === selectedPlayerId) {
-      const { state } = pendingRestore;
-      setPlayerStates(prev => ({ ...prev, [selectedPlayerId]: state }));
+      // Opening a squad member loads that build into the workbench, which is the only way a
+      // saved build comes back — there is no per-player save behind it any more.
+      setPlayerStates(prev => ({
+        ...prev,
+        [selectedPlayerId]: migratePlayStylePicks(
+          pendingRestore.state,
+          playerBio,
+          initialOvrData,
+          statsData,
+          playStylesData
+        )
+      }));
       setPendingRestore(null);
-      // Make the restored snapshot the player's live save too.
-      fetch(`/api/saves/${selectedPlayerId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state)
-      }).catch(e => console.error('Failed to save restored squad state:', e));
-      return;
     }
-
-    let active = true;
-    fetch(`/api/saves/${selectedPlayerId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!active) return;
-        if (!data.error) {
-          setPlayerStates(prev => ({
-            ...prev,
-            [selectedPlayerId]: migratePlayStylePicks(data, playerBio, initialOvrData, statsData, playStylesData)
-          }));
-        }
-      })
-      .catch(e => console.error('No save found or error loading:', e));
-
-    return () => { active = false; };
-  }, [selectedPlayerId, pendingRestore]);
+  }, [selectedPlayerId, pendingRestore, playerBio, initialOvrData, statsData, playStylesData]);
 
   const activePathId = currentState.activePathId;
-  const evosPool = currentState.evosPool;
-  // Disabling filters at point of use rather than rewriting every player's saved pool,
+  // Disabling filters at point of use rather than rewriting the team's pool,
   // so re-enabling an evo restores it wherever it was already selected.
   const effectiveEvosPool = useMemo(
     () => evosPool.filter(id => !disabledEvos.includes(id)),
@@ -372,7 +395,12 @@ export default function App() {
   );
   const generatedPaths = currentState.generatedPaths;
   const manualPaths = currentState.manualPaths;
-  const evoFilters = currentState.evoFilters;
+  // The must-haves come from the team's pool, not from this player's filters — "required" is a
+  // statement about the team's cards, and it has to mean the same thing on every player screen.
+  const evoFilters = useMemo(
+    () => ({ ...currentState.evoFilters, requiredEvos }),
+    [currentState.evoFilters, requiredEvos]
+  );
 
   const setActivePathId = (val: string | ((prev: string) => string)) => {
     const nextId = typeof val === 'function' ? val(currentState.activePathId) : val;
@@ -932,9 +960,34 @@ export default function App() {
     return evosPool.filter(id => disabledEvos.includes(id)).length;
   }, [evosPool, disabledEvos]);
 
+  // The team list is the way in: without one there is no pool and no squads to show.
+  if (!activeTeamId || (!team && !teamLoading)) {
+    return <TeamListPage onOpenTeam={openTeam} activeTeamId={activeTeamId} />;
+  }
+
+  if (!team) {
+    return (
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center text-sm text-gray-600 animate-pulse">
+        Loading team…
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#121212] py-4 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
       <div className="bg-[#1A1C1A] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-6xl border border-gray-800/80">
+        {/* Which team's cards you are looking at — and the way back to the others. */}
+        <div className="flex items-center gap-2 mb-4 text-xs">
+          <button
+            onClick={() => openTeam(null)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#1f211f] border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 transition-colors font-bold"
+            title="Back to all teams"
+          >
+            <Users className="w-3.5 h-3.5" />
+            {team.name}
+          </button>
+          {teamError && <span className="text-red-400">{teamError}</span>}
+        </div>
         
 
 
@@ -1130,30 +1183,8 @@ export default function App() {
       <EvoPoolModal
         isOpen={isEvoPoolOpen}
         onClose={() => setIsEvoPoolOpen(false)}
-        evoStatuses={(() => {
-          // Bridge: convert the 3 upstream arrays into our unified EvoStatuses map
-          const s: EvoStatuses = {};
-          (evoFilters.requiredEvos || []).forEach(id => { s[id] = 'required'; });
-          evosPool.forEach(id => { if (!s[id]) s[id] = 'included'; });
-          disabledEvos.forEach(id => { s[id] = 'disabled'; });
-          return s;
-        })()}
-        setEvoStatuses={(statuses) => {
-          // Bridge back: split the EvoStatuses map into the 3 upstream arrays
-          const pool: string[] = [];
-          const required: string[] = [];
-          const disabled: string[] = [];
-          Object.entries(statuses).forEach(([id, st]) => {
-            if (st === 'required') { required.push(id); pool.push(id); }
-            else if (st === 'included') { pool.push(id); }
-            else if (st === 'disabled') { disabled.push(id); }
-          });
-          setDisabledEvos(disabled);
-          updateState({
-            evosPool: pool,
-            evoFilters: { ...evoFilters, requiredEvos: required }
-          });
-        }}
+        evoStatuses={evoStatuses}
+        setEvoStatuses={setTeamEvoStatuses}
       />
       <ManualPathModal
         isOpen={isManualPathOpen}
