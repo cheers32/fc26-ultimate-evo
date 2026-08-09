@@ -263,7 +263,25 @@ export default function App() {
     saveSquads(squads.filter(s => s.id !== squadId));
   };
 
-  const addPlayerToSquad = (squadId: string, playerId: string, playerState: PlayerEvoState, snapshot: SquadMember['snapshot']) => {
+  /**
+   * `steps` is 98% of a saved build by size and every byte of it is derivable from `chainIds`,
+   * so it never goes to the server — it is recomputed when the build is opened again.
+   */
+  const withoutSteps = <T,>(value: T): T => {
+    if (Array.isArray(value)) return value.map(withoutSteps) as T;
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>)
+          .filter(([key]) => key !== 'steps')
+          .map(([key, v]) => [key, withoutSteps(v)])
+      ) as T;
+    }
+    return value;
+  };
+
+  const addPlayerToSquad = (squadId: string, playerId: string, rawState: PlayerEvoState, rawSnapshot: SquadMember['snapshot']) => {
+    const playerState = withoutSteps(rawState);
+    const snapshot = withoutSteps(rawSnapshot);
     const updatedSquads = squads.map(squad => {
       if (squad.id === squadId) {
         // A player may appear several times under different paths, so entries are keyed
@@ -372,15 +390,29 @@ export default function App() {
     if (pendingRestore && pendingRestore.playerId === selectedPlayerId) {
       // Opening a squad member loads that build into the workbench, which is the only way a
       // saved build comes back — there is no per-player save behind it any more.
+      const withSteps = (paths: EvolutionPath[] = []) =>
+        paths.map(path =>
+          path.steps
+            ? path
+            : {
+                ...path,
+                steps: simulateEvoChain(path.chainIds, playerBio, initialOvrData, statsData, playStylesData).steps
+              }
+        );
+      const restored = migratePlayStylePicks(
+        pendingRestore.state,
+        playerBio,
+        initialOvrData,
+        statsData,
+        playStylesData
+      );
       setPlayerStates(prev => ({
         ...prev,
-        [selectedPlayerId]: migratePlayStylePicks(
-          pendingRestore.state,
-          playerBio,
-          initialOvrData,
-          statsData,
-          playStylesData
-        )
+        [selectedPlayerId]: {
+          ...restored,
+          generatedPaths: withSteps(restored.generatedPaths),
+          manualPaths: withSteps(restored.manualPaths)
+        }
       }));
       setPendingRestore(null);
     }

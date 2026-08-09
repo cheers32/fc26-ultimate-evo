@@ -20,6 +20,12 @@ import { Datastore, PropertyFilter } from '@google-cloud/datastore';
 const datastore = new Datastore();
 
 const TEAM = 'evo_team';
+/**
+ * Every team starts with one squad, so finishing a build never runs into "you have nowhere to put
+ * this" — a build has to live in a squad to exist at all.
+ */
+export const DEFAULT_SQUAD_ID = 'default';
+const DEFAULT_SQUAD_NAME = 'Default XI';
 const SQUAD = 'evo_squad';
 const LIBRARY = 'evo_library';
 
@@ -71,6 +77,12 @@ export async function createTeam(id, name) {
   await datastore.save(
     pack({ key, data: { name, createdAt, updatedAt: createdAt } }, { evoStatuses: {} })
   );
+  await saveSquad(id, DEFAULT_SQUAD_ID, {
+    name: DEFAULT_SQUAD_NAME,
+    formation: '4-2-3-1',
+    members: [],
+    createdAt
+  });
   return { id, name, createdAt, updatedAt: createdAt };
 }
 
@@ -80,7 +92,19 @@ export async function getTeam(id) {
   const [entity] = await datastore.get(key);
   if (!entity) return null;
 
-  const squads = await listSquads(id);
+  let squads = await listSquads(id);
+  if (squads.length === 0) {
+    // Teams made before squads were created up front, and any team whose last squad was deleted,
+    // still need somewhere for the next build to land.
+    await saveSquad(id, DEFAULT_SQUAD_ID, {
+      name: DEFAULT_SQUAD_NAME,
+      formation: '4-2-3-1',
+      members: [],
+      createdAt: now()
+    });
+    squads = await listSquads(id);
+  }
+
   return {
     id,
     name: entity.name || 'Untitled',
