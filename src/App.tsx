@@ -201,7 +201,7 @@ export default function App() {
     [evoStatuses]
   );
   const evosPool = useMemo(
-    () => Object.entries(evoStatuses).filter(([, s]) => s === 'included' || s === 'required').map(([id]) => id),
+    () => Object.keys(availableEvolutions).filter(id => evoStatuses[id] !== 'disabled'),
     [evoStatuses]
   );
   const requiredEvos = useMemo(
