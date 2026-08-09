@@ -62,6 +62,7 @@ interface SquadPitchProps {
   /** Assign the member sitting in the bench to a slot, or clear a slot. */
   onAssignSlot: (squadId: string, slotId: string, memberId: string | null) => void;
   playersById: Record<string, PlayerData>;
+  children?: React.ReactNode;
 }
 
 export const SquadPitch: React.FC<SquadPitchProps> = ({
@@ -71,7 +72,8 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
   onOpenMember,
   onRemoveMember,
   onAssignSlot,
-  playersById
+  playersById,
+  children
 }) => {
   const [pickingSlot, setPickingSlot] = useState<string | null>(null);
 
@@ -225,7 +227,18 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+      {/* The pitch. Markings are drawn rather than imported so it stays one file and one colour scheme. */}
+      <div className="relative w-full max-w-[300px] aspect-[3/4] rounded-xl border border-gray-800 bg-gradient-to-b from-[#132a17] to-[#0d1f11] overflow-hidden">
+        <div className="absolute inset-2 border border-white/10 rounded" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[22%] aspect-square border border-white/10 rounded-full" />
+        <div className="absolute left-2 right-2 top-1/2 h-px bg-white/10" />
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[46%] h-[14%] border border-white/10 border-t-0" />
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[46%] h-[14%] border border-white/10 border-b-0" />
+        {FORMATION_4231.map(renderSlot)}
+      </div>
+
+      {/* Squad selector bar — placed below the pitch */}
+      <div className="flex items-center gap-2 px-0.5">
         <div className="relative">
           <select
             value={squad.id}
@@ -246,15 +259,8 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
         )}
       </div>
 
-      {/* The pitch. Markings are drawn rather than imported so it stays one file and one colour scheme. */}
-      <div className="relative w-full max-w-[300px] aspect-[3/4] rounded-xl border border-gray-800 bg-gradient-to-b from-[#132a17] to-[#0d1f11] overflow-hidden">
-        <div className="absolute inset-2 border border-white/10 rounded" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[22%] aspect-square border border-white/10 rounded-full" />
-        <div className="absolute left-2 right-2 top-1/2 h-px bg-white/10" />
-        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[46%] h-[14%] border border-white/10 border-t-0" />
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[46%] h-[14%] border border-white/10 border-b-0" />
-        {FORMATION_4231.map(renderSlot)}
-      </div>
+      {/* ChemistryGrid or other elements inserted between pitch and bench */}
+      {children}
 
       {/* The bench is every build in the squad that isn't on the pitch. */}
       <div className="flex flex-col gap-1">

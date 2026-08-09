@@ -71,7 +71,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           full height was dividing across the two rows, so every card stretched to ~370px when
           Pace only needs ~105px. Out here the card rows size to their own content. */}
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-        <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 content-start" id="stats-grid">
+        <div className="flex-1 min-w-0 max-w-[740px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 content-start" id="stats-grid">
       {Object.keys(baseStats).map((faceKey) => {
         const baseFaceData = baseStats[faceKey];
         const previewFaceData = previewStats[faceKey];
@@ -111,11 +111,11 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           }
 
           return (
-            <div key={subKey} className="flex justify-between items-center text-[12px] text-fcTextDim my-[2px] hover:text-white transition-colors">
-              <div className="flex items-center gap-1.5 min-w-0">
+            <div key={subKey} className="flex justify-between items-center text-[11px] text-fcTextDim my-[1.5px] hover:text-white transition-colors">
+              <div className="flex items-center gap-1 min-w-0">
                 <span className="truncate">{subDataBase.label}</span>
                 {utilChip && (
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${utilChip.className}`}>
+                  <span className={`text-[8.5px] font-bold px-1 py-0.2 rounded ${utilChip.className}`}>
                     {utilChip.text}
                   </span>
                 )}
@@ -123,12 +123,12 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
               {/* Column widths here must match the face-stat row above so the two line up */}
               <div className="flex items-center justify-end font-mono">
-                <span className={`w-7 shrink-0 text-right ${getStatColorClass(activeBase)}`}>{activeBase}</span>
+                <span className={`w-6 shrink-0 text-right ${getStatColorClass(activeBase)}`}>{activeBase}</span>
 
                 {anyEvoDiff && (
                   <>
-                    <span className={`w-4 shrink-0 text-center text-[10px] ${showEvo ? 'text-gray-500' : 'text-transparent'}`}>➜</span>
-                    <span className={`w-7 shrink-0 text-right ${showEvo ? getStatColorClass(effectiveVal) : 'text-transparent'}`}>
+                    <span className={`w-3.5 shrink-0 text-center text-[9px] ${showEvo ? 'text-gray-500' : 'text-transparent'}`}>➜</span>
+                    <span className={`w-6 shrink-0 text-right ${showEvo ? getStatColorClass(effectiveVal) : 'text-transparent'}`}>
                       {showEvo ? effectiveVal : '00'}
                     </span>
                   </>
@@ -136,11 +136,11 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
                 {anyChemBoost && (
                   <>
-                    <span className={`font-normal text-[11px] ml-1 w-8 shrink-0 text-left tracking-tighter ${boost > 0 ? 'text-fcGreen font-bold' : boost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                    <span className={`font-normal text-[10.5px] ml-1 w-7 shrink-0 text-left tracking-tighter ${boost > 0 ? 'text-fcGreen font-bold' : boost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
                       {boost > 0 ? `+${boost}` : boost < 0 ? `${boost}` : '+0'}
                     </span>
 
-                    <span className={`w-7 shrink-0 text-right ${boost > 0 ? getStatColorClass(finalVal) : 'text-transparent'}`}>
+                    <span className={`w-6 shrink-0 text-right ${boost > 0 ? getStatColorClass(finalVal) : 'text-transparent'}`}>
                       {boost > 0 ? finalVal : '00'}
                     </span>
                   </>
@@ -161,23 +161,23 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
         return (
           <div
             key={faceKey}
-            className="bg-[#1f211f] p-3 rounded-lg border border-gray-800/90 hover:border-gray-700 transition-all shadow-md group"
+            className="bg-[#1f211f] p-2.5 rounded-lg border border-gray-800/90 hover:border-gray-700 transition-all shadow-md group"
           >
             {/* Title left, totals right — same column widths as the sub rows below */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <h3 className="font-bold text-base text-white group-hover:text-fcGreen transition-colors truncate">
+            <div className="flex items-center justify-between gap-1.5 mb-1.5">
+              <h3 className="font-bold text-sm text-white group-hover:text-fcGreen transition-colors truncate">
                 {baseFaceData.label}
               </h3>
 
-              <div className="text-[16px] text-gray-200 flex items-center font-mono shrink-0">
-                <span className={`w-7 shrink-0 text-right ${getStatColorClass(activeBaseFaceVal)}`}>{activeBaseFaceVal}</span>
+              <div className="text-[15px] text-gray-200 flex items-center font-mono shrink-0">
+                <span className={`w-6 shrink-0 text-right ${getStatColorClass(activeBaseFaceVal)}`}>{activeBaseFaceVal}</span>
 
                 {anyEvoDiff && (
                   <>
-                    <span className={`w-4 shrink-0 text-center text-[10px] font-normal ${showEvoFace ? 'text-gray-500' : 'text-transparent'}`}>
+                    <span className={`w-3.5 shrink-0 text-center text-[9px] font-normal ${showEvoFace ? 'text-gray-500' : 'text-transparent'}`}>
                       ➜
                     </span>
-                    <span className={`w-7 shrink-0 text-right ${showEvoFace ? getStatColorClass(effectiveFaceVal) : 'text-transparent'}`}>
+                    <span className={`w-6 shrink-0 text-right ${showEvoFace ? getStatColorClass(effectiveFaceVal) : 'text-transparent'}`}>
                       {showEvoFace ? effectiveFaceVal : '00'}
                     </span>
                   </>
@@ -185,11 +185,11 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
                 {anyChemBoost && (
                   <>
-                    <span className={`text-[11px] font-normal ml-1 w-8 shrink-0 text-left tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : faceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                    <span className={`text-[10.5px] font-normal ml-1 w-7 shrink-0 text-left tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : faceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
                       {faceBoost > 0 ? `+${faceBoost}` : faceBoost < 0 ? `${faceBoost}` : '+0'}
                     </span>
 
-                    <span className={`w-7 shrink-0 text-right ${faceBoost > 0 ? getStatColorClass(newFaceVal) : 'text-transparent'}`}>
+                    <span className={`w-6 shrink-0 text-right ${faceBoost > 0 ? getStatColorClass(newFaceVal) : 'text-transparent'}`}>
                       {faceBoost > 0 ? newFaceVal : '00'}
                     </span>
                   </>
@@ -197,14 +197,14 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
               </div>
             </div>
 
-            <div className="space-y-0.5 border-t border-gray-800/60 pt-2">{subRows}</div>
+            <div className="space-y-0.5 border-t border-gray-800/60 pt-1.5">{subRows}</div>
           </div>
         );
       })}
         </div>
 
         {aside && (
-          <div className="lg:w-[260px] lg:shrink-0">
+          <div className="lg:w-[300px] lg:shrink-0">
             {aside}
           </div>
         )}

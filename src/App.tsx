@@ -4,6 +4,7 @@ import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
 import { PlayerData, StatsData, PlayStylesData, EvolutionPath, EvoFilters, PlayerBio, OvrData } from './types/player';
 import { HeaderCard } from './components/HeaderCard';
+import { PlayerSubInfo } from './components/PlayerSubInfo';
 import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
@@ -250,7 +251,7 @@ export default function App() {
     squads.filter(s => !kept.has(s.id)).forEach(s => removeSquadFromTeam(s.id));
   };
 
-  const createSquad = (name: string) => {
+  const createSquad = (name: string): string => {
     const newSquad: Squad = {
       id: Date.now().toString(),
       name,
@@ -258,6 +259,7 @@ export default function App() {
       createdAt: Date.now()
     };
     saveSquads([...squads, newSquad]);
+    return newSquad.id;
   };
 
   const deleteSquad = (squadId: string) => {
@@ -1012,6 +1014,20 @@ export default function App() {
     return evosPool.filter(id => disabledEvos.includes(id)).length;
   }, [evosPool, disabledEvos]);
 
+  const handleAddToSquad = () => {
+    let targetSquadId: string | null = activeSquadId;
+    if (!targetSquadId && squads.length > 0) {
+      targetSquadId = squads[0].id;
+    }
+    if (!targetSquadId) {
+      targetSquadId = createSquad('Main Squad');
+      setActiveSquadId(targetSquadId);
+    }
+    if (targetSquadId) {
+      addPlayerToSquad(targetSquadId, selectedPlayerId, currentState, currentSnapshot);
+    }
+  };
+
   // The team list is the way in: without one there is no pool and no squads to show.
   if (!activeTeamId || (!team && !teamLoading)) {
     return <TeamListPage onOpenTeam={openTeam} activeTeamId={activeTeamId} />;
@@ -1026,27 +1042,13 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] py-4 px-4 sm:px-6 lg:px-8 flex justify-center items-start">
-      <div className="bg-[#1A1C1A] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-6xl border border-gray-800/80">
-        {/* Which team's cards you are looking at — and the way back to the others. */}
-        <div className="flex items-center gap-2 mb-4 text-xs">
-          <button
-            onClick={() => openTeam(null)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#1f211f] border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 transition-colors font-bold"
-            title="Back to all teams"
-          >
-            <Users className="w-3.5 h-3.5" />
-            {team.name}
-          </button>
-          {teamError && <span className="text-red-400">{teamError}</span>}
-        </div>
+    <div className="min-h-screen bg-[#121212] pt-1 pb-2 px-2 sm:px-4 flex justify-center items-start">
+      <div className="bg-[#1A1C1A] p-2.5 sm:p-4 rounded-2xl shadow-2xl w-full max-w-6xl border border-gray-800/80">
+        {teamError && <div className="text-red-400 text-xs mb-1">{teamError}</div>}
         
-
-
-        
-
-
         <HeaderCard
+          teamName={team.name}
+          onOpenTeamList={() => openTeam(null)}
           onChangePlayer={() => setIsPlayerSelectionOpen(true)}
           bio={previewBio}
           futbinLink={currentPlayer.futbinLink}
@@ -1065,6 +1067,7 @@ export default function App() {
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
+          onAddToSquad={handleAddToSquad}
           canPickFreePlayStyles={canAddPlayStylePick}
           onOpenPlayStylePicker={(target) => setPlayStylePickerTarget(target)}
           rawBaseOvr={initialOvrData.base}
@@ -1125,7 +1128,7 @@ export default function App() {
         {activeTab === 'workbench' && (
           <>
 
-            <div className="flex items-center gap-4 mb-3 px-1">
+            <div className="flex flex-wrap items-center gap-3 mb-2 px-1">
               <span className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800">
                 {accelerateType}
               </span>
@@ -1145,6 +1148,8 @@ export default function App() {
                   </>
                 )}
               </div>
+
+              <PlayerSubInfo bio={previewBio} playStyles={previewPlayStyles} isEvo={activePath.chainIds.length > 0} />
             </div>
 
             <StatsGrid
@@ -1153,7 +1158,15 @@ export default function App() {
               activeChemBoosts={activeChemBoosts}
               activeEvo={activeEvo}
               aside={
-                <div className="flex flex-col gap-3">
+                <SquadPitch
+                  squads={squads}
+                  activeSquadId={activeSquadId}
+                  onSelectSquad={setActiveSquadId}
+                  onOpenMember={openSquadMember}
+                  onRemoveMember={removeSquadMember}
+                  onAssignSlot={assignSquadSlot}
+                  playersById={allPlayersData}
+                >
                   <ChemistryGrid
                     chemStyles={chemStyles}
                     previewStats={previewStats}
@@ -1165,16 +1178,7 @@ export default function App() {
                       setLockedChem(lockedChem === name ? null : name);
                     }}
                   />
-                  <SquadPitch
-                    squads={squads}
-                    activeSquadId={activeSquadId}
-                    onSelectSquad={setActiveSquadId}
-                    onOpenMember={openSquadMember}
-                    onRemoveMember={removeSquadMember}
-                    onAssignSlot={assignSquadSlot}
-                    playersById={allPlayersData}
-                  />
-                </div>
+                </SquadPitch>
               }
             />
 

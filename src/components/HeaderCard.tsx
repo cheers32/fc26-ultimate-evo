@@ -4,13 +4,15 @@ import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2 } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
   bio: PlayerBio;
   futbinLink?: string;
   avatarUrl?: string;
+  teamName?: string;
+  onOpenTeamList?: () => void;
   activeBaseOvr: number;
   previewOvr: number;
   activePath: EvolutionPath;
@@ -23,6 +25,7 @@ interface HeaderCardProps {
   onOpenEvoPool: () => void;
   onOpenManualPath: () => void;
   onBranchFromBase?: () => void;
+  onAddToSquad?: () => void;
   // True when the build's current end is one of the rarities that unlock free PlayStyle
   // assignment in-game, so another pick can be made right now.
   canPickFreePlayStyles?: boolean;
@@ -159,6 +162,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   bio,
   futbinLink,
   avatarUrl,
+  teamName,
+  onOpenTeamList,
   activeBaseOvr,
   previewOvr,
   activePath,
@@ -171,6 +176,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenEvoPool,
   onOpenManualPath,
   onBranchFromBase,
+  onAddToSquad,
   canPickFreePlayStyles,
   onOpenPlayStylePicker,
   originalIgs,
@@ -344,17 +350,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     : null;
 
   return (
-    <div className="relative z-50 flex flex-col gap-2 mb-4">
+    <div className="relative z-50 flex flex-col gap-1.5 mb-2">
       {/* Player Header Section (Ultra Compressed) */}
-      <div className="relative z-50 flex flex-col gap-3 bg-[#1f211f]/60 p-4 rounded-xl border border-gray-800/80 backdrop-blur-sm w-full">
+      <div className="relative z-50 flex flex-col gap-1.5 bg-[#1f211f]/60 p-2.5 rounded-xl border border-gray-800/80 backdrop-blur-sm w-full">
         
-        {/* Top Part: LEFT (Avatar/Name/OVR/Pos/Stats) + RIGHT (Bio/PlayStyles) */}
-        <div className="flex items-center gap-5 w-full">
-          {/* LEFT SIDE */}
-          <div className="flex items-center gap-4 shrink-0">
+        {/* Single Row Header: LEFT (Avatar + Name + Badges) + MIDDLE (Metadata) + RIGHT (Team Name) */}
+        <div className="flex items-center gap-3 w-full flex-wrap">
+          {/* LEFT SIDE: Avatar + Name + OVR + Positions + Rarity */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             {avatarUrl && (
               <div className="relative">
-                <div className="w-[80px] h-[80px] shrink-0 rounded-full border-2 border-gray-600 bg-[#121212] overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                <div className="w-[44px] h-[44px] shrink-0 rounded-full border-2 border-gray-600 bg-[#121212] overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center">
                   <img
                     src={avatarUrl}
                     alt={bio.name}
@@ -367,100 +373,84 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               </div>
             )}
 
-            <div className="flex flex-col justify-center h-full gap-1.5">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-                  {bio.name}
-                </h1>
-                <a
-                  href={futbinLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1 transition-colors shadow-sm"
-                  title="View on FUTBIN"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                {/* Main OVR Rating Badge */}
-                <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-2 py-0.5 rounded font-bold text-base shadow-sm border border-yellow-300 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="text-black/60 text-[10px] font-semibold tracking-wider">OVR</span>
-                  <span>{activeBaseOvr}</span>
-                  {showEvoOvr && (
-                    <>
-                      <span className="text-black/50 text-xs font-normal">➜</span>
-                      <span>{previewOvr}</span>
-                    </>
-                  )}
-                  {ovrChip && (
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ml-0.5 ${ovrChip.className}`}>
-                      {ovrChip.text}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Positions and rarity as the build leaves them — both turn purple once the chain
-                    has changed them, so the headline says what the finished card actually is. */}
-                <span className={`font-bold text-sm px-2 py-0.5 rounded border shadow-sm ${
-                  positionsChanged
-                    ? 'bg-purple-950/50 text-purple-300 border-purple-700/60'
-                    : 'bg-gray-800/80 text-gray-300 border-gray-700/50'
-                }`}>
-                  {bio.primaryPositions}
-                </span>
+            <h1 className="text-lg font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent whitespace-nowrap">
+              {bio.name}
+            </h1>
+            <a
+              href={futbinLink}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[10px] bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-1.5 py-0.5 flex items-center gap-1 transition-colors shadow-sm"
+              title="View on FUTBIN"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
 
-                <span className={`font-bold text-sm px-2 py-0.5 rounded border shadow-sm whitespace-nowrap ${
-                  rawRarity && bio.rarity !== rawRarity
-                    ? 'bg-purple-950/50 text-purple-300 border-purple-700/60'
-                    : 'bg-gray-800/80 text-gray-300 border-gray-700/50'
-                }`}>
-                  {rawRarity && bio.rarity !== rawRarity && (
-                    <span className="text-gray-500 font-normal">{rawRarity} ➜ </span>
-                  )}
-                  {bio.rarity}
+            {/* Main OVR Rating Badge */}
+            <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-2 py-0.5 rounded font-bold text-xs shadow-sm border border-yellow-300 flex items-center gap-1 whitespace-nowrap">
+              <span className="text-black/60 text-[9px] font-semibold tracking-wider">OVR</span>
+              <span>{previewOvr}</span>
+              {ovrChip && (
+                <span className={`text-[8.5px] font-bold px-1 py-0.2 rounded border ml-0.5 ${ovrChip.className}`}>
+                  {ovrChip.text}
                 </span>
-              </div>
+              )}
             </div>
-          </div>
-
-          {/* RIGHT SIDE: Bio details + PlayStyles */}
-          <div className="flex flex-col gap-4 ml-auto border-l border-gray-800/60 pl-6 flex-1 min-w-0 justify-center py-1">
             
-            {/* Row 1: Bio */}
-            <div className="flex flex-wrap items-center gap-2 text-gray-300 font-medium text-xs">
-              <span>{bio.nation}</span>
-              <span className="text-gray-600">|</span>
-              <span>{bio.league}</span>
-              <span className="text-gray-600">|</span>
-              <span>{bio.club}</span>
-              <span className="text-gray-600">|</span>
-              <span>{bio.rarity}</span>
-              <div className="flex items-center gap-2 text-gray-400 pl-3 border-l border-gray-700/60">
-                <span>{bio.height}</span>
-                <span className="text-gray-600">|</span>
-                <span>{bio.footAge}</span>
-                {bio.bodyType && (
-                  <>
-                    <span className="text-gray-600">|</span>
-                    <span>{bio.bodyType}</span>
-                  </>
-                )}
-              </div>
+            {/* Positions */}
+            <span className={`font-bold text-xs px-2 py-0.5 rounded border shadow-sm whitespace-nowrap ${
+              positionsChanged
+                ? 'bg-purple-950/50 text-purple-300 border-purple-700/60'
+                : 'bg-gray-800/80 text-gray-300 border-gray-700/50'
+            }`}>
+              {bio.primaryPositions}
+            </span>
 
-            </div>
-
-            {/* Row 2: PlayStyles */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <PlayerSubInfo bio={bio} playStyles={playStyles} isEvo={activePath.chainIds.length > 0} />
-            </div>
+            {/* Rarity */}
+            <span className={`font-bold text-xs px-2 py-0.5 rounded border shadow-sm whitespace-nowrap ${
+              rawRarity && bio.rarity !== rawRarity
+                ? 'bg-purple-950/50 text-purple-300 border-purple-700/60'
+                : 'bg-gray-800/80 text-gray-300 border-gray-700/50'
+            }`}>
+              {bio.rarity}
+            </span>
           </div>
+
+          {/* MIDDLE: Bio Metadata (all in one line) */}
+          <div className="flex flex-wrap items-center gap-1.5 text-gray-300 font-medium text-xs border-l border-gray-800/60 pl-3 py-0.5">
+            <span>{bio.nation}</span>
+            <span className="text-gray-600">|</span>
+            <span>{bio.league}</span>
+            <span className="text-gray-600">|</span>
+            <span>{bio.club}</span>
+            <span className="text-gray-600">|</span>
+            <span>{bio.height}</span>
+            <span className="text-gray-600">|</span>
+            <span>{bio.footAge}</span>
+            {bio.bodyType && (
+              <>
+                <span className="text-gray-600">|</span>
+                <span>{bio.bodyType}</span>
+              </>
+            )}
+          </div>
+
+          {/* RIGHT: Team Name Button (placed top right) */}
+          {teamName && (
+            <button
+              onClick={onOpenTeamList}
+              className="ml-auto shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#121212] border border-gray-800 text-gray-300 hover:text-white hover:border-gray-600 transition-colors font-bold text-xs shadow-sm"
+              title="Back to all teams"
+            >
+              <Users className="w-3.5 h-3.5 text-fcGreen" />
+              <span>{teamName}</span>
+            </button>
+          )}
         </div>
 
         {/* Row 3: Action Buttons */}
-        <div className="flex items-start gap-x-5 gap-y-2 mt-1 w-full border-t border-gray-800/60 pt-3">
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-start gap-x-4 gap-y-1.5 mt-0.5 w-full border-t border-gray-800/60 pt-2">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Wraps because the row is wider than a tablet viewport and was pushing the page
                 into horizontal scroll. */}
             <div className="flex flex-wrap gap-1 items-center relative">
@@ -468,14 +458,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <button
                   onClick={onChangePlayer}
                   title="Switch Player (/)"
-                  className="px-3 py-1.5 border border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 rounded-lg text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1.5 transition-colors mr-1 font-bold shadow-[0_0_10px_rgba(37,99,235,0.2)]"
+                  className="px-2.5 py-1 border border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 rounded-lg text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition-colors mr-1 font-bold shadow-[0_0_10px_rgba(37,99,235,0.2)]"
                 >
                   <span className="text-[10px]">👤</span> Switch
-                  <kbd className="ml-1 px-1 bg-blue-950/50 border border-blue-800 rounded text-[9px] text-blue-300 font-mono">/</kbd>
+                  <kbd className="ml-0.5 px-1 bg-blue-950/50 border border-blue-800 rounded text-[9px] text-blue-300 font-mono">/</kbd>
                 </button>
               )}
 
-              <button onClick={() => setShowFilters(!showFilters)} className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1.5 transition-colors relative ${
+              <button onClick={() => setShowFilters(!showFilters)} className={`px-2.5 py-1 border rounded-lg text-xs flex items-center gap-1 transition-colors relative ${
                 showFilters 
                   ? 'bg-fcGreen text-black font-bold border-fcGreen' 
                   : 'bg-[#1f2937] hover:bg-[#374151] text-gray-300 border-gray-600'
@@ -483,7 +473,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <Settings2 className="w-3.5 h-3.5" /> Filters
                 <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">f</kbd>
                 {activeFiltersCount > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-fcGreen/20 text-fcGreen rounded font-bold text-[9px]">
+                  <span className="ml-1 px-1 py-0.2 bg-fcGreen/20 text-fcGreen rounded font-bold text-[9px]">
                     {activeFiltersCount}
                   </span>
                 )}
@@ -701,33 +691,42 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 </div>
               )}
 
-              <button onClick={onOpenEvoPool} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1.5 ml-2">
+              <button onClick={onOpenEvoPool} className="px-2.5 py-1 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 relative text-xs flex items-center gap-1 ml-1">
                 <Settings className="w-3.5 h-3.5" /> Pool ({evosPool?.length || 0})
                 <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">p</kbd>
                 {(evoFilters?.requiredEvos?.length || 0) > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-fcGreen/20 text-fcGreen rounded font-bold text-[9px]" title="Must Include">
+                  <span className="ml-1 px-1 py-0.2 bg-fcGreen/20 text-fcGreen rounded font-bold text-[9px]" title="Must Include">
                     ★ {evoFilters!.requiredEvos!.length}
                   </span>
                 )}
                 {excludedCount > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-red-900/40 text-red-400 rounded font-bold text-[9px]" title="Excluded">
+                  <span className="ml-1 px-1 py-0.2 bg-red-900/40 text-red-400 rounded font-bold text-[9px]" title="Excluded">
                     ✖ {excludedCount}
                   </span>
                 )}
                 {extraCount > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-orange-900/40 text-orange-400 rounded font-bold text-[9px]" title="Extra (Selected Disabled)">
+                  <span className="ml-1 px-1 py-0.2 bg-orange-900/40 text-orange-400 rounded font-bold text-[9px]" title="Extra (Selected Disabled)">
                     + {extraCount}
                   </span>
                 )}
               </button>
-              <button onClick={onOpenManualPath} className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1.5">
+              <button onClick={onOpenManualPath} className="px-2.5 py-1 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1">
                 <Plus className="w-3.5 h-3.5" /> Add EVO <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">a</kbd>
               </button>
+              {onAddToSquad && (
+                <button
+                  onClick={onAddToSquad}
+                  title="Add this build to your active squad"
+                  className="px-2.5 py-1 bg-green-950/40 hover:bg-green-900/60 border border-green-700/60 rounded-lg text-green-400 text-xs flex items-center gap-1 font-bold shadow-[0_0_10px_rgba(34,197,94,0.15)] transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> Add to Squad
+                </button>
+              )}
               {onBranchFromBase && (
                 <button
                   onClick={onBranchFromBase}
                   title="Start a new path from the base, leaving this one untouched"
-                  className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-purple-800/60 rounded-lg text-purple-300 text-xs flex items-center gap-1.5"
+                  className="px-2.5 py-1 bg-[#1f2937] hover:bg-[#374151] border border-purple-800/60 rounded-lg text-purple-300 text-xs flex items-center gap-1"
                 >
                   <GitBranch className="w-3.5 h-3.5" /> Branch <kbd className="ml-0.5 px-1 bg-black/40 border border-purple-900 rounded text-[9px] text-purple-400 font-mono">b</kbd>
                 </button>
@@ -736,7 +735,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <button
                   onClick={() => onOpenPlayStylePicker('new')}
                   title="This build unlocks picking any PlayStyle — added to the chain as its own step, at the end"
-                  className="px-3 py-1.5 bg-yellow-950/30 hover:bg-yellow-900/40 border border-yellow-700/60 rounded-lg text-yellow-400 text-xs flex items-center gap-1.5 shadow-[0_0_10px_rgba(234,179,8,0.15)]"
+                  className="px-2.5 py-1 bg-yellow-950/30 hover:bg-yellow-900/40 border border-yellow-700/60 rounded-lg text-yellow-400 text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(234,179,8,0.15)]"
                 >
                   <Wand2 className="w-3.5 h-3.5" /> Add Skill <kbd className="ml-0.5 px-1 bg-black/40 border border-yellow-900 rounded text-[9px] text-yellow-400 font-mono">s</kbd>
                 </button>
@@ -745,7 +744,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <button
                   onClick={() => { setShowFilters(false); onCancelAnalyze?.(); }}
                   title="Stop the search"
-                  className="px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border-red-700 hover:border-red-500 bg-red-950/30 hover:bg-red-900/40 text-red-300"
+                  className="px-2.5 py-1 border rounded-lg text-xs font-bold flex items-center gap-1 transition-colors border-red-700 hover:border-red-500 bg-red-950/30 hover:bg-red-900/40 text-red-300"
                 >
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   {analyzeProgress > 0
@@ -753,7 +752,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     : 'Analyzing · Stop'}
                 </button>
               ) : (
-                <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-3 py-1.5 border rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${(evosPool?.length || 0) > 0 ? 'border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 shadow-[0_0_10px_rgba(37,99,235,0.2)]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
+                <button onClick={() => { setShowFilters(false); onAnalyze(); }} disabled={!evosPool || evosPool.length === 0} className={`px-2.5 py-1 border rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${(evosPool?.length || 0) > 0 ? 'border-blue-600 hover:border-blue-500 bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 shadow-[0_0_10px_rgba(37,99,235,0.2)]' : 'bg-[#1f211f] text-gray-600 border-gray-800'}`}>
                   <Zap className="w-3.5 h-3.5" /> Analyze
                 </button>
               )}
@@ -761,7 +760,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <button
                   onClick={onClearPaths}
                   title="Clear all unstarred paths"
-                  className="px-3 py-1.5 bg-[#1f2937] hover:bg-red-900/50 border border-gray-600 hover:border-red-500/50 rounded-lg text-gray-400 hover:text-red-300 text-xs flex items-center gap-1.5 ml-auto"
+                  className="px-2.5 py-1 bg-[#1f2937] hover:bg-red-900/50 border border-gray-600 hover:border-red-500/50 rounded-lg text-gray-400 hover:text-red-300 text-xs flex items-center gap-1 ml-auto"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Clear Unstarred <kbd className="ml-0.5 px-1 bg-black/40 border border-red-900/50 rounded text-[9px] text-red-400 font-mono">c</kbd>
                 </button>
@@ -772,83 +771,83 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
       </div>
 
     {/* Path Selection & Action Buttons */}
-    <div className="flex flex-col gap-2 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-3 shadow-md">
-
-          
-          <div className="flex flex-wrap gap-2">
-            {allPaths.map((path) => (
-              <div key={path.id} className="relative flex items-center group">
-                <button
-                  onClick={() => onSelectPath(path.id)}
-                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all border flex items-center gap-1.5 ${
-                    expandedPathIds.includes(path.id)
-                      ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
-                      : comparePathId === path.id
-                      ? 'bg-purple-950/40 text-purple-400 border-purple-500 shadow-sm'
-                      : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
-                  }`}
-                >
-                  {path.name}
-                </button>
-                {onSetComparePathId && activePathId !== path.id && (
-                  <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSetComparePathId(comparePathId === path.id ? null : path.id);
-                      }}
-                      className={`rounded-full p-0.5 shadow-sm ${comparePathId === path.id ? 'bg-purple-600 text-white' : 'bg-purple-900 text-purple-400 hover:bg-purple-600 hover:text-white'}`}
-                      title={comparePathId === path.id ? "Stop Comparing" : "Compare with active path"}
-                    >
-                      <RefreshCw className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                )}
-                {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
-                  <div className="absolute -top-3 -left-1.5 z-10">
+    <div className="flex flex-col gap-1 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-2 shadow-md">
+      {allPaths.length > 1 && (
+        <div className="flex flex-wrap gap-1.5 mb-1">
+          {allPaths.map((path) => (
+            <div key={path.id} className="relative flex items-center group">
+              <button
+                onClick={() => onSelectPath(path.id)}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all border flex items-center gap-1.5 ${
+                  expandedPathIds.includes(path.id)
+                    ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
+                    : comparePathId === path.id
+                    ? 'bg-purple-950/40 text-purple-400 border-purple-500 shadow-sm'
+                    : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
+                }`}
+              >
+                {path.name}
+              </button>
+              {onSetComparePathId && activePathId !== path.id && (
+                <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSetComparePathId(comparePathId === path.id ? null : path.id);
+                    }}
+                    className={`rounded-full p-0.5 shadow-sm ${comparePathId === path.id ? 'bg-purple-600 text-white' : 'bg-purple-900 text-purple-400 hover:bg-purple-600 hover:text-white'}`}
+                    title={comparePathId === path.id ? "Stop Comparing" : "Compare with active path"}
+                  >
+                    <RefreshCw className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              )}
+              {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
+                <div className="absolute -top-3 -left-1.5 z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavoritePath(path);
+                    }}
+                    className="rounded-full p-0.5 shadow-sm bg-yellow-500 text-black hover:bg-yellow-400"
+                    title="Unstar (allow deletion)"
+                  >
+                    <Star className="w-2.5 h-2.5 fill-black" />
+                  </button>
+                </div>
+              )}
+              {(onDeletePath || onToggleFavoritePath) && path.chainIds.length > 0 && !path.isFavorite && (
+                <div className="absolute -top-1.5 -left-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  {onToggleFavoritePath && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggleFavoritePath(path);
                       }}
-                      className="rounded-full p-0.5 shadow-sm bg-yellow-500 text-black hover:bg-yellow-400"
-                      title="Unstar (allow deletion)"
+                      className="rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-500 hover:bg-yellow-500 hover:text-black"
+                      title="Star (keep permanently)"
                     >
-                      <Star className="w-2.5 h-2.5 fill-black" />
+                      <Star className="w-2.5 h-2.5" />
                     </button>
-                  </div>
-                )}
-                {(onDeletePath || onToggleFavoritePath) && path.chainIds.length > 0 && !path.isFavorite && (
-                  <div className="absolute -top-1.5 -left-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {onToggleFavoritePath && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleFavoritePath(path);
-                        }}
-                        className="rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-500 hover:bg-yellow-500 hover:text-black"
-                        title="Star (keep permanently)"
-                      >
-                        <Star className="w-2.5 h-2.5" />
-                      </button>
-                    )}
-                    {onDeletePath && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeletePath(path.id);
-                        }}
-                        className="bg-red-900 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
-                        title="Delete Path"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  )}
+                  {onDeletePath && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeletePath(path.id);
+                      }}
+                      className="bg-red-900 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
+                      title="Delete Path"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
           <div className="flex flex-col gap-2">
             {expandedPathIds.map(renderPathId => {
@@ -856,7 +855,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               if (!renderPath) return null;
               
               return (
-                <div key={renderPathId} className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full pt-2 pl-2 pb-2 items-center gap-1.5 bg-[#1a1c1a] p-2.5 rounded-lg border border-gray-800">
+                <div key={renderPathId} className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full p-1.5 items-center gap-1.5 bg-[#1a1c1a] rounded-lg border border-gray-800">
                   <Layers className="w-3.5 h-3.5 text-gray-500 mr-1 shrink-0" />
 
                 {/* Base Card Chip — always present, so an empty path still anchors on the raw card */}

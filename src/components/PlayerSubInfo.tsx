@@ -32,7 +32,7 @@ export const PlayerSubInfo: React.FC<PlayerSubInfoProps> = ({ playStyles, isEvo 
   const silverCurrent = silverBase + silverAdded;
 
   return (
-    <div className="flex flex-wrap items-center gap-4 lg:mt-0 mt-2">
+    <div className="flex flex-wrap items-center gap-3 ml-2">
       {/* PlayStyles */}
       {(playStyles.base.gold.length > 0 || playStyles.ev.gold.length > 0 || playStyles.base.silver.length > 0 || playStyles.ev.silver.length > 0) && (
         <div className="flex flex-wrap items-center gap-2">
