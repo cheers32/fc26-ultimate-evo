@@ -1048,10 +1048,26 @@ export default function App() {
   const handleCreateNewSquadAndAdd = () => {
     const name = window.prompt('Enter new squad name:', 'New Squad');
     if (!name) return;
-    const newSquadId = createSquad(name);
+    
+    const newSquadId = Date.now().toString();
+    const newMemberId = `${selectedPlayerId}-${Date.now()}`;
+    const newSquad: Squad = {
+      id: newSquadId,
+      name,
+      formation: '4-3-3', // Default formation
+      members: [{
+        id: newMemberId,
+        playerId: selectedPlayerId,
+        playerState: withoutSteps(currentState),
+        snapshot: withoutSteps(currentSnapshot)
+      }],
+      slots: {},
+      createdAt: Date.now()
+    };
+    
+    saveSquads([...squads, newSquad]);
     setActiveSquadId(newSquadId);
-    const newId = addPlayerToSquad(newSquadId, selectedPlayerId, currentState, currentSnapshot);
-    if (newId) setActiveMemberId(newId);
+    setActiveMemberId(newMemberId);
   };
 
   // The team list is the way in: without one there is no pool and no squads to show.
