@@ -30,7 +30,7 @@ const STAT_SORTS = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
 type StatSort = typeof STAT_SORTS[number];
 const isStatSort = (mode: SortMode): mode is StatSort => (STAT_SORTS as readonly string[]).includes(mode);
 
-type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base' | StatSort;
+type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base' | 'fit' | StatSort;
 
 const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
   { mode: 'default', label: 'Default', title: 'Cheapest entry first: required OVR, then target OVR, then base stats' },
@@ -44,6 +44,13 @@ const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
   { mode: 'targetOvr', label: 'Target OVR ↑', title: 'Lowest resulting OVR first — keeps headroom for later evos' },
   { mode: 'igs', label: 'IGS ↓', title: 'Biggest resulting in-game stats total first' },
   { mode: 'base', label: 'BS ↓', title: 'Biggest resulting base (face) stats total first' },
+  {
+    mode: 'fit',
+    label: 'Fit ↓',
+    title: 'Highest resulting Fit first — the card\'s own PlayStyle and body profile, not raw ' +
+      'totals. Picking this turns the Fit calculation on even when Filters has PlayStyle ' +
+      'weighting off, so the number you are sorting by is the one shown on each card.'
+  },
   ...STAT_SORTS.map(stat => ({
     mode: stat as SortMode,
     label: `${stat.toUpperCase()} ↓`,
@@ -452,7 +459,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
   // The player's own profile, when they've switched it on in Filters. Everything downstream is
   // opt-in on this: with it off the builder behaves exactly as it did before.
-  const useFit = evoFilters?.playstyleWeighting === true;
+  //
+  // Sorting by Fit counts as switching it on. Otherwise picking that sort would rank every evo by
+  // a score nothing had computed — a list in its default order, silently.
+  const useFit = evoFilters?.playstyleWeighting === true || sortMode === 'fit';
   const fitMode = controlModeFor(currentBio, evoFilters?.controlMode);
   const currentFit = useFit
     ? fitScore({ stats: currentStats, playStyles: currentPlayStyles, bio: currentBio, mode: fitMode })
@@ -635,6 +645,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       case 'base':
         if (a.expectedFaceStats !== b.expectedFaceStats) return b.expectedFaceStats - a.expectedFaceStats;
         break;
+      case 'fit': {
+        // An evo with no simulated result has no Fit either; those are already sorted below the
+        // addable ones, so treating a missing score as 0 only orders them among themselves.
+        const aFit = a.expectedFit?.total ?? 0;
+        const bFit = b.expectedFit?.total ?? 0;
+        if (aFit !== bFit) return bFit - aFit;
+        break;
+      }
       default:
         break;
     }
