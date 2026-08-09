@@ -67,7 +67,6 @@ export interface PlayerData {
 
 // Evolution Data Schemas for FC 26
 export interface EvolutionRequirement {
-  exactOvr?: number;
   maxOvr: number;
   /** Floor as well as a ceiling — the continuation evos require the OVR their earlier part ends on. */
   minOvr?: number;

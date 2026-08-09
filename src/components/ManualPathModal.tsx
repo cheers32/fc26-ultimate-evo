@@ -264,6 +264,7 @@ interface ManualPathModalProps {
   // The pool's must-haves and the stat targets from Filters. The builder never blocks a pick on
   // them — it's a manual builder — but every recommendation is aimed at them.
   evoFilters?: EvoFilters;
+  onDisableEvo?: (evoId: string) => void;
 }
 
 export const ManualPathModal: React.FC<ManualPathModalProps> = ({
@@ -277,7 +278,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   basePlayStyles,
   editingPath,
   lockedPrefix = [],
-  evoFilters
+  evoFilters,
+  onDisableEvo
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -1170,13 +1172,24 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               )}
                               <span>{evo.name}</span>
                             </h4>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setLocalViewingEvo(id); }}
-                              className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors shrink-0"
-                              title="View Details"
-                            >
-                              <Eye className="w-3 h-3" />
-                            </button>
+                            <div className="flex gap-1 items-center shrink-0">
+                              <button
+                                  onClick={(e) => { e.stopPropagation(); setLocalViewingEvo(id); }}
+                                  className="p-1 bg-blue-900/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full transition-colors"
+                                  title="View details"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                {onDisableEvo && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onDisableEvo(id); }}
+                                    className="p-1 bg-red-900/40 text-red-400 hover:bg-red-600 hover:text-white rounded-full transition-colors"
+                                    title="Disable Evo"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                            </div>
                           </div>
                           <div className="font-mono text-[11px] opacity-70 mt-0.5 whitespace-nowrap">
                             {formatEvoTerms(evo)}
