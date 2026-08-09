@@ -288,6 +288,21 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showNotIncluded, setShowNotIncluded] = useState<boolean>(false);
+
+  /**
+   * Which evos may be *recommended*, as distinct from merely listed.
+   *
+   * The grid is handed every evolution on purpose, so "Show Not Included" can surface one the team
+   * keeps out of its pool and let the user add it by hand. Recommendations must not work off that
+   * same list: an evo the user has left out of the pool, or disabled outright, should never be
+   * suggested — and both surfaces here were suggesting them, invisibly, because the grid hid them
+   * afterwards while the ranking had already counted them.
+   */
+  const recommendationPool = useMemo(
+    () => evosPool.filter(id => (!includedEvos || includedEvos.includes(id)) && !disabledEvos.includes(id)),
+    [evosPool, includedEvos, disabledEvos]
+  );
+  const canRecommend = useMemo(() => new Set(recommendationPool), [recommendationPool]);
   const [filterNewRarity, setFilterNewRarity] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
   // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
@@ -361,7 +376,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     setIsSearchingChains(true);
 
     const handle = runEvoSearch({
-      poolIds: evosPool,
+      poolIds: recommendationPool,
       maxDepth: REC_CHAIN_DEPTH,
       bio: baseBio,
       ovr: baseOvr,
@@ -405,7 +420,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     // selectedChain is compared by its joined key so a re-render with an equal array can't
     // restart a search that is already running for it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, chainKey, evosPool, baseBio, baseOvr, baseStats, basePlayStyles, evoFilters]);
+  }, [isOpen, chainKey, recommendationPool, baseBio, baseOvr, baseStats, basePlayStyles, evoFilters]);
 
   if (!isOpen) return null;
 
@@ -572,7 +587,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // stays a shortlist rather than a label on most of the pool.
   const recommendedRank = new Map<string, number>();
   poolWithStatus
-    .filter(p => p.isEligible && !p.limitReached && !p.recBlocked && p.recReasons.length > 0)
+    .filter(p => canRecommend.has(p.id) && p.isEligible && !p.limitReached && !p.recBlocked && p.recReasons.length > 0)
     .sort((a, b) => b.recScore - a.recScore || b.expectedIgs - a.expectedIgs)
     .slice(0, MAX_CHAIN_RECOMMENDATIONS)
     .forEach((p, idx) => recommendedRank.set(p.id, idx + 1));
@@ -975,8 +990,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       if (e.key === 'Enter') {
                         const filteredPool = poolWithStatus.filter(({ id, evo, posMatchScore }) => {
                           if (!evo) return false;
-                          const isNotIncluded = includedEvos ? !includedEvos.includes(id) : false;
-                          if (!showNotIncluded && isNotIncluded) return false;
+                          // Off, the grid is exactly the team's pool. On, it also shows what the
+                          // pool leaves out, so an evo can still be picked by hand.
+                          if (!showNotIncluded && !canRecommend.has(id)) return false;
                           if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                           if (filterNewRarity && !evo.rarityChange) return false;
                           if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
@@ -1161,8 +1177,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 poolWithStatus
                   .filter(({ id, evo, posMatchScore }) => {
                     if (!evo) return false;
-                    const isNotIncluded = includedEvos ? !includedEvos.includes(id) : false;
-                    if (!showNotIncluded && isNotIncluded) return false;
+                    if (!showNotIncluded && !canRecommend.has(id)) return false;
                     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                     if (filterNewRarity && !evo.rarityChange) return false;
                     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
@@ -1175,8 +1190,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
-                  const isNotIncluded = includedEvos ? !includedEvos.includes(id) : false;
                   const isDisabled = disabledEvos.includes(id);
+                  // Two different reasons an evo can be outside the pool, and the card says which:
+                  // one the team simply never added, versus one it switched off.
+                  const isNotIncluded = !isDisabled && !canRecommend.has(id);
+                  const isOutOfPool = isDisabled || isNotIncluded;
                   const excludedPositions = displayExcludedPositions(evo);
                   const recRank = recommendedRank.get(id);
                   const isRec = canAdd && recRank !== undefined;
@@ -1184,11 +1202,23 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   return (
                     <div 
                       key={id}
-                      className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''} ${isNotIncluded ? 'opacity-50 grayscale' : ''}`}
+                      className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''} ${isOutOfPool ? 'opacity-50 grayscale' : ''}`}
                       onClick={() => setLocalViewingEvo(id)}
                     >
                       <div className="flex justify-between items-start w-full">
                         <div className="flex-1 min-w-0">
+                          {/* Only ever visible with "Show Not Included" on, and then it is the
+                              whole point: a greyed card has to say which way it is out of the
+                              pool, because the two are undone by different buttons. */}
+                          {isOutOfPool && (
+                            <span className={`inline-block mb-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide border ${
+                              isDisabled
+                                ? 'bg-red-900/30 text-red-300 border-red-500/30'
+                                : 'bg-gray-700/40 text-gray-300 border-gray-600/40'
+                            }`}>
+                              {isDisabled ? 'Disabled' : 'Not included'}
+                            </span>
+                          )}
                           {/* Name gets the room to wrap; the terms sit on their own line below so a
                               long name can't shred them into a one-number-per-line column. */}
                           <div className="flex items-start gap-2">
