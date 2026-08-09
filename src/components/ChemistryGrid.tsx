@@ -73,7 +73,7 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
   };
 
   return (
-    <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full flex flex-col gap-4 pl-0 lg:pl-2">
+    <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full flex flex-col gap-2 pl-0 lg:pl-2">
       {Object.keys(groupedChems).map((group) => {
         const items = groupedChems[group];
         if (!items || items.length === 0) return null;
@@ -82,9 +82,11 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
         items.sort((a, b) => getFaceBoost(b) - getFaceBoost(a));
 
         return (
-          <div key={group} className="flex flex-col gap-2">
-            <h4 className="text-sm font-bold text-gray-400">{group}</h4>
-            <div className="grid grid-cols-3 gap-2">
+          <div key={group} className="flex flex-col gap-1">
+            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{group}</h4>
+            {/* No gaps: the styles are a dense lookup table, and the gutters were costing more
+                vertical space than the rows themselves. Borders collapse into a shared grid. */}
+            <div className="grid grid-cols-3 rounded-lg overflow-hidden border border-[#4b5563]/40">
               {items.map((name) => {
                 const isLocked = name === lockedChem;
                 const isHovered = name === hoveredChem;
@@ -96,13 +98,14 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
                     onMouseLeave={() => onHoverChem(null)}
                     onClick={() => onLockChem(name)}
                     className={`
-                      relative transition-all text-[11px] font-semibold py-2 px-1 rounded border cursor-pointer text-center select-none flex items-center justify-center gap-1.5
+                      relative transition-colors text-[10.5px] font-semibold py-1 px-1 cursor-pointer text-center select-none flex items-center justify-center
+                      border-r border-b border-[#4b5563]/25 last:border-r-0
                       ${
                         isLocked
-                          ? 'bg-[#1ED760]/20 text-[#1ED760] border-[#1ED760] shadow-[0_0_8px_rgba(30,215,96,0.2)]'
+                          ? 'bg-[#1ED760]/25 text-[#1ED760] ring-1 ring-inset ring-[#1ED760]'
                           : isHovered
-                          ? 'bg-[#374151] text-white border-gray-500'
-                          : 'bg-[#1f2937]/50 text-gray-300 border-[#4b5563]/50 hover:bg-[#374151] hover:text-white hover:border-gray-500'
+                          ? 'bg-[#374151] text-white'
+                          : 'bg-[#1f2937]/50 text-gray-300 hover:bg-[#374151] hover:text-white'
                       }
                     `}
                   >

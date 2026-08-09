@@ -26,6 +26,7 @@ import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { PlayStylePickerModal } from './components/PlayStylePickerModal';
 import { SquadPanel } from './components/SquadPanel';
+import { SquadPitch } from './components/SquadPitch';
 import { ImportPlayerModal } from './components/ImportPlayerModal';
 import { Trophy, RefreshCw, LayoutGrid, Layers, Upload, Users } from 'lucide-react';
 import { Squad, SquadMember, PlayerEvoState } from './types/player';
@@ -308,6 +309,22 @@ export default function App() {
     saveSquads(updatedSquads);
   };
 
+  /** Puts a build in a slot, or clears one. A member can only stand in one place at a time. */
+  const assignSquadSlot = (squadId: string, slotId: string, memberId: string | null) => {
+    saveSquads(
+      squads.map(squad => {
+        if (squad.id !== squadId) return squad;
+        const slots = { ...(squad.slots || {}) };
+        Object.keys(slots).forEach(key => {
+          if (memberId && slots[key] === memberId) delete slots[key];
+        });
+        if (memberId) slots[slotId] = memberId;
+        else delete slots[slotId];
+        return { ...squad, slots };
+      })
+    );
+  };
+
   const removeSquadMember = (squadId: string, memberId: string) => {
     const updatedSquads = squads.map(squad => {
       if (squad.id === squadId) {
@@ -455,6 +472,9 @@ export default function App() {
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
+  // Which squad the pitch is showing. Defaults to the team's first, which is the one every team
+  // is created with.
+  const [activeSquadId, setActiveSquadId] = useState<string | null>(null);
 
   // Every player starts on an empty "Default" path, so the card shows the raw base until
   // an evo is added. It only reaches manualPaths once something is appended to it.
@@ -1133,17 +1153,28 @@ export default function App() {
               activeChemBoosts={activeChemBoosts}
               activeEvo={activeEvo}
               aside={
-                <ChemistryGrid
-                  chemStyles={chemStyles}
-                  previewStats={previewStats}
-                  hoveredChem={hoveredChem}
-                  lockedChem={lockedChem}
-                  heightCm={parseHeightCm(playerBio.height)}
-                  onHoverChem={setHoveredChem}
-                  onLockChem={(name) => {
-                    setLockedChem(lockedChem === name ? null : name);
-                  }}
-                />
+                <div className="flex flex-col gap-3">
+                  <ChemistryGrid
+                    chemStyles={chemStyles}
+                    previewStats={previewStats}
+                    hoveredChem={hoveredChem}
+                    lockedChem={lockedChem}
+                    heightCm={parseHeightCm(playerBio.height)}
+                    onHoverChem={setHoveredChem}
+                    onLockChem={(name) => {
+                      setLockedChem(lockedChem === name ? null : name);
+                    }}
+                  />
+                  <SquadPitch
+                    squads={squads}
+                    activeSquadId={activeSquadId}
+                    onSelectSquad={setActiveSquadId}
+                    onOpenMember={openSquadMember}
+                    onRemoveMember={removeSquadMember}
+                    onAssignSlot={assignSquadSlot}
+                    playersById={allPlayersData}
+                  />
+                </div>
               }
             />
 

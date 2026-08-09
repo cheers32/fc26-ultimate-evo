@@ -228,4 +228,8 @@ export interface Squad {
   name: string;
   members: SquadMember[];
   createdAt: number;
+  /** Which formation the pitch draws. Only 4-2-3-1 exists so far. */
+  formation?: string;
+  /** Slot id -> member id. Members not in here are on the bench. */
+  slots?: Record<string, string>;
 }
