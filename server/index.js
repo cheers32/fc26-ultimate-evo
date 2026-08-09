@@ -15,10 +15,17 @@ const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist
 
 app.use('/api', createApiRouter());
 
+app.use('/assets', express.static(path.join(dist, 'assets'), { maxAge: '1y', immutable: true }));
+
 app.use(express.static(dist, { index: false, maxAge: '1h' }));
 
 // Anything that isn't a file or an API call is a client-side route.
-app.get(/.*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+app.get(/.*/, (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.sendFile(path.join(dist, 'index.html'));
+});
 
 const port = Number(process.env.PORT) || 8080;
 app.listen(port, () => console.log(`listening on ${port}`));
