@@ -1,6 +1,17 @@
 import { PlayerData } from '../types/player';
 
-export function parseFutbinText(text: string, avatarUrl: string = '', futbinUrl: string = ''): PlayerData | null {
+/**
+ * @param goldPlayStyleCount How many of the PlayStyles found are PlayStyle+. Futbin's copied text
+ *   lists them all together with no marker for which are which, only the convention that the
+ *   plus ones come first — so the count has to come from somewhere. Omit it to fall back to
+ *   guessing from OVR, which is what this did before the importer asked.
+ */
+export function parseFutbinText(
+  text: string,
+  avatarUrl: string = '',
+  futbinUrl: string = '',
+  goldPlayStyleCount?: number
+): PlayerData | null {
   try {
     const data: any = {};
 
@@ -170,24 +181,49 @@ export function parseFutbinText(text: string, avatarUrl: string = '', futbinUrl:
     // In FC26 copied text, playstyles appear simply as the names, one per line.
     // They are usually ordered with PlayStyle+ first.
     const foundPlaystyles: { name: string, index: number }[] = [];
-    
+
+    /**
+     * Some sub-stat labels are also PlayStyle names — "Slide Tackle" is both a Defending sub-stat
+     * and a PlayStyle — so a name found inside one of the six stat blocks is a row label, not a
+     * PlayStyle the card carries. That mattered: nearly every evo caps how many PlayStyles a card
+     * may have, so one phantom silver could make a card read as ineligible.
+     */
+    const statSpans: [number, number][] = [];
+    [pacMatch, shoMatch, pasMatch, driMatch, defMatch, phyMatch].forEach(m => {
+      if (m && m.index !== undefined) statSpans.push([m.index, m.index + m[0].length]);
+    });
+    const insideStatBlock = (index: number) =>
+      statSpans.some(([start, end]) => index >= start && index < end);
+
     for (const ps of validPlayStyles) {
-      // Create a regex to match the playstyle on its own line, tolerating some spaces
-      const psRegex = new RegExp(`\\n\\s*${ps}\\s*\\n`, 'i');
-      const match = text.match(psRegex);
-      if (match && match.index !== undefined) {
+      // Match the playstyle on its own line, tolerating some spaces. Scanned rather than matched
+      // once, so a name that appears as a stat label first is not mistaken for the card's own.
+      const psRegex = new RegExp(`\\n\\s*${ps}\\s*\\n`, 'gi');
+      let match: RegExpExecArray | null;
+      while ((match = psRegex.exec(text)) !== null) {
+        if (insideStatBlock(match.index)) continue;
         foundPlaystyles.push({ name: ps, index: match.index });
+        break;
       }
     }
     
     // Sort by appearance in the text
     foundPlaystyles.sort((a, b) => a.index - b.index);
     
-    // Guess how many PlayStyle+ the player has based on OVR
-    let goldCount = 1;
-    if (data.baseOvr >= 90) goldCount = 3;
-    else if (data.baseOvr >= 80) goldCount = 2;
-    
+    // How many PlayStyle+ the player has. Told to us where possible; the OVR guess below is only
+    // a fallback, and it is wrong often enough to matter — the count decides how many evos a card
+    // is eligible for, since most of them cap PlayStyles+.
+    let goldCount: number;
+    if (goldPlayStyleCount !== undefined && Number.isFinite(goldPlayStyleCount)) {
+      goldCount = Math.max(0, Math.min(8, Math.floor(goldPlayStyleCount)));
+    } else if (data.baseOvr >= 90) {
+      goldCount = 3;
+    } else if (data.baseOvr >= 80) {
+      goldCount = 2;
+    } else {
+      goldCount = 1;
+    }
+
     foundPlaystyles.forEach((ps, idx) => {
       if (idx < goldCount) {
         gold.push(ps.name + '+');
@@ -220,7 +256,9 @@ export function parseFutbinText(text: string, avatarUrl: string = '', futbinUrl:
       },
       ovr: { base: data.baseOvr, boost: 30, limit: 99 },
       playStyles: {
-        limits: { gold: 4, silver: 8 },
+        // A card that was told it has more PlayStyle+ than the usual ceiling still has them, so
+        // the limit follows rather than leaving the card in breach of its own cap.
+        limits: { gold: Math.max(4, gold.length), silver: 8 },
         base: {
           gold,
           silver

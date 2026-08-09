@@ -12,6 +12,9 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
   const [rawText, setRawText] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [futbinUrl, setFutbinUrl] = useState('');
+  // Futbin's copied text gives no way to tell a PlayStyle+ from a plain one — they are one list,
+  // plus ones first — so the count is asked for rather than guessed from OVR.
+  const [goldCount, setGoldCount] = useState('3');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +32,14 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
       return;
     }
 
-    const player = parseFutbinText(rawText, avatarUrl, futbinUrl);
+    // Left blank on purpose means "guess it from OVR", which is what the parser does without it.
+    const trimmed = goldCount.trim();
+    const player = parseFutbinText(
+      rawText,
+      avatarUrl,
+      futbinUrl,
+      trimmed === '' ? undefined : Number(trimmed)
+    );
     if (player) {
       onImport(player);
       onClose();
@@ -65,25 +75,43 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
             </p>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-300">
+              PlayStyle+ count
+              <span className="ml-2 text-xs font-normal text-gray-500">
+                how many of the listed PlayStyles are the gold ones — leave blank to guess from OVR
+              </span>
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={8}
+              value={goldCount}
+              onChange={(e) => setGoldCount(e.target.value)}
+              placeholder="3"
+              className="w-24 bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Avatar Image URL (Optional)</label>
-              <input 
-                type="text" 
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="e.g., https://cdn.futbin.com/..."
-                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
               <label className="text-sm font-medium text-gray-300">Futbin Player URL (Optional)</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={futbinUrl}
                 onChange={(e) => setFutbinUrl(e.target.value)}
                 placeholder="e.g., https://www.futbin.com/26/player/..."
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Avatar Image URL (Optional)</label>
+              <input
+                type="text"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="e.g., https://cdn.futbin.com/..."
                 className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50"
               />
             </div>
