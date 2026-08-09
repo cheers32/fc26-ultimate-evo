@@ -922,9 +922,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
           {/* Bottom Side: Available Pool */}
           <div className="flex flex-col shrink-0">
-            <div className="sticky top-0 z-20 p-3 pr-10 border-b border-gray-800 bg-[#1f211f]/95 backdrop-blur flex flex-wrap justify-between items-center gap-3">
-              <div className="flex items-center gap-4">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Available in Pool</h3>
+            <div className="sticky top-0 z-20 p-3 border-b border-gray-800 bg-[#1f211f]/95 backdrop-blur flex flex-col gap-3">
+              {/* Top Row: Title, Stats, Search */}
+              <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Available in Pool</h3>
                 <div className="hidden md:flex items-center gap-3 text-[11px] font-mono bg-gray-800/50 px-3 py-1 rounded-full border border-gray-700/50">
                   <div className="flex gap-1 items-center">
                     <span className="text-gray-500 font-bold">OVR</span>
@@ -955,10 +957,55 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       </div>
                     );
                   })}
+                  </div>
+                </div>
+                
+                {/* Search Input on the right (top row) */}
+                <div className="relative w-full xl:max-w-[250px]">
+                  <input 
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search EVOs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const filteredPool = poolWithStatus.filter(({ id, evo, posMatchScore }) => {
+                          if (!evo) return false;
+                          if (!showDisabled && disabledEvos.includes(id)) return false;
+                          if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                          if (filterNewRarity && !evo.rarityChange) return false;
+                          if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+                          if (filterNoRarity && evo.rarityChange) return false;
+                          if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
+                          if (filterFitPosition && posMatchScore === 0) return false;
+                          return true;
+                        });
+                        const topEligible = filteredPool.find(p => p.isEligible && !p.limitReached);
+                        if (topEligible) {
+                          handleAdd(topEligible.id);
+                        }
+                      }
+                    }}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-10 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-fcGreen/50 focus:ring-1 focus:ring-fcGreen/50"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-2 items-center flex-1 md:flex-none justify-end flex-wrap">
-                {/* Wraps: twelve orderings don't fit one line at most widths. */}
+
+              {/* Bottom Row: Sort & Filter Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex flex-wrap items-center gap-1 bg-[#121212] border border-gray-800 rounded-lg p-0.5">
                   <span className="text-[9px] font-bold uppercase tracking-wide text-gray-600 px-1">Sort</span>
                   {SORT_OPTIONS.map(({ mode, label, title }) => (
@@ -1026,36 +1073,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   Show Disabled
                 </button>
-                <div className="relative max-w-[250px] w-full">
-                <input 
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Search EVOs..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const filteredPool = poolWithStatus.filter(({ id, evo, posMatchScore }) => {
-                    if (!evo) return false;
-                    if (!showDisabled && disabledEvos.includes(id)) return false;
-                    if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-                    if (filterNewRarity && !evo.rarityChange) return false;
-                    if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
-                    if (filterNoRarity && evo.rarityChange) return false;
-                    if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
-                    if (filterFitPosition && posMatchScore === 0) return false;
-                    return true;
-});
-                      const topEligible = filteredPool.find(p => p.isEligible && !p.limitReached);
-                      if (topEligible) {
-                        handleAdd(topEligible.id);
-                      }
-                    }
-                  }}
-                  className="w-full bg-[#121212] border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:border-fcGreen focus:outline-none transition-colors"
-                />
-              </div>
               </div>
             </div>
             
