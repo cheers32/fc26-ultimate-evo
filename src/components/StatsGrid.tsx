@@ -67,10 +67,11 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Four columns at lg: the six stat cards flow through 1–3 and the aside is pinned to 4.
-          With only three declared, column 4 became an auto-sized implicit track that took the
-          whole width and collapsed the 1fr ones to 0. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4" id="stats-grid">
+      {/* The aside sits beside the grid rather than inside it. As a row-spanning grid item its
+          full height was dividing across the two rows, so every card stretched to ~370px when
+          Pace only needs ~105px. Out here the card rows size to their own content. */}
+      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+        <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 content-start" id="stats-grid">
       {Object.keys(baseStats).map((faceKey) => {
         const baseFaceData = baseStats[faceKey];
         const previewFaceData = previewStats[faceKey];
@@ -200,11 +201,13 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           </div>
         );
       })}
-      {aside && (
-        <div className="lg:col-start-4 lg:row-start-1 lg:row-span-2">
-          {aside}
         </div>
-      )}
+
+        {aside && (
+          <div className="lg:w-[260px] lg:shrink-0">
+            {aside}
+          </div>
+        )}
       </div>
     </div>
   );

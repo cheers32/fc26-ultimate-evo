@@ -461,7 +461,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
         {/* Row 3: Action Buttons */}
         <div className="flex items-start gap-x-5 gap-y-2 mt-1 w-full border-t border-gray-800/60 pt-3">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex gap-1 items-center relative">
+            {/* Wraps because the row is wider than a tablet viewport and was pushing the page
+                into horizontal scroll. */}
+            <div className="flex flex-wrap gap-1 items-center relative">
               {onChangePlayer && (
                 <button
                   onClick={onChangePlayer}
