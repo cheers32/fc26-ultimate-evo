@@ -30,6 +30,7 @@ export interface TeamState extends TeamSummary {
 }
 
 const ACTIVE_TEAM_KEY = 'futEvo_active_team';
+const ACTIVE_PLAYER_KEY = 'futEvo_active_player';
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -75,6 +76,28 @@ export function writeActiveTeamId(teamId: string | null): void {
     else localStorage.removeItem(ACTIVE_TEAM_KEY);
   } catch {
     // Private mode; the team list is one click away either way.
+  }
+}
+
+/**
+ * The card the browser was last looking at. Same standing as the active team: a convenience for
+ * this browser, not state the team owns — opening the app on another machine should not drag your
+ * workbench somewhere else.
+ */
+export function readActivePlayerId(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_PLAYER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function writeActivePlayerId(playerId: string | null): void {
+  try {
+    if (playerId) localStorage.setItem(ACTIVE_PLAYER_KEY, playerId);
+    else localStorage.removeItem(ACTIVE_PLAYER_KEY);
+  } catch {
+    // Private mode; the picker still opens on the default card.
   }
 }
 

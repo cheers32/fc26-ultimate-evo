@@ -18,7 +18,14 @@ import {
   canPickPlayStyles
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
-import { useLibrary, useTeam, readActiveTeamId, writeActiveTeamId } from './utils/teamStore';
+import {
+  useLibrary,
+  useTeam,
+  readActiveTeamId,
+  writeActiveTeamId,
+  readActivePlayerId,
+  writeActivePlayerId
+} from './utils/teamStore';
 import { TeamListPage } from './components/TeamListPage';
 import { EvolutionDefinition } from './types/player';
 import { PlayerSelectionModal } from './components/PlayerSelectionModal';
@@ -91,7 +98,8 @@ export default function App() {
 
   const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useLibrary<string[]>('deletedPlayers', []);
 
-  const [storedCustomPlayers, setCustomPlayers] = useLibrary<Record<string, PlayerData>>('customPlayers', {});
+  const [storedCustomPlayers, setCustomPlayers, customPlayersLoaded] =
+    useLibrary<Record<string, PlayerData>>('customPlayers', {});
   // Repair custom players that were saved without a full stat block, whatever they came from —
   // the shared copy arrives after mount, so this can't be a one-off at initialisation.
   const customPlayers = useMemo(() => {
@@ -343,8 +351,26 @@ export default function App() {
     return combined;
   }, [customPlayers, deletedDatabasePlayers]);
 
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>('rodri-91');
-  
+  // Opens on whichever card this browser was last working on.
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(() => readActivePlayerId() || 'rodri-91');
+
+  useEffect(() => {
+    writeActivePlayerId(selectedPlayerId);
+  }, [selectedPlayerId]);
+
+  /**
+   * An imported card arrives from the shared library after mount, so a remembered custom player is
+   * legitimately missing on the first render and must not be discarded then — only once the
+   * library has actually loaded and the card still isn't there, which means it was deleted (here
+   * or in another browser).
+   */
+  useEffect(() => {
+    if (!customPlayersLoaded) return;
+    if (allPlayersData[selectedPlayerId]) return;
+    setSelectedPlayerId(Object.keys(allPlayersData)[0] || 'rodri-91');
+  }, [customPlayersLoaded, allPlayersData, selectedPlayerId]);
+
+
   const currentPlayer = useMemo(() => allPlayersData[selectedPlayerId] || allPlayersData['rodri-91'], [selectedPlayerId, allPlayersData]);
   const playerBio = currentPlayer.bio;
   const initialOvrData = currentPlayer.ovr;
@@ -951,7 +977,11 @@ export default function App() {
     setLockedChem(null);
     setEvoPreview(false);
     setSelectionQueue([-1, -1]);
-    setOvr(playersDatabase[selectedPlayerId].ovr);
+    // Imported cards are not in playersDatabase, so reading the base OVR from there would throw
+    // for any custom player. Nothing calls handleReset today, so this is a latent fault rather
+    // than a live one — but the app can now open straight onto an imported card, which is exactly
+    // the state that would break it the moment anything wires this up.
+    setOvr((allPlayersData[selectedPlayerId] || playersDatabase['rodri-91']).ovr);
     setActivePathId(DEFAULT_PATH_ID);
     setEvosPool([]);
     setGeneratedPaths([]);
