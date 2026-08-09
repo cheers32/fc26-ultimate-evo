@@ -153,7 +153,12 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
         // Face Stat totals
         const activeBaseFaceVal = baseFaceData.baseFace;
         const effectiveFaceVal = previewFaceData.baseFace;
-        const showEvoFace = effectiveFaceVal !== activeBaseFaceVal;
+        
+        const anySubEvoFaceDiff = Object.keys(baseFaceData.subs).some(
+          subKey => baseFaceData.subs[subKey].base !== previewFaceData.subs[subKey].base
+        );
+        const showEvoFace = effectiveFaceVal !== activeBaseFaceVal || anySubEvoFaceDiff;
+        const faceIsZeroBoost = effectiveFaceVal === activeBaseFaceVal && anySubEvoFaceDiff;
 
         const faceBoost = Math.round(totalFaceValChem) - Math.round(totalFaceValBase);
         const newFaceVal = effectiveFaceVal + faceBoost;
@@ -174,8 +179,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
                 {anyEvoDiff && (
                   <>
-                    <span className={`w-3.5 shrink-0 text-center text-[9px] font-normal ${showEvoFace ? 'text-gray-500' : 'text-transparent'}`}>
-                      ➜
+                    <span className={`w-3.5 shrink-0 text-center text-[9px] font-normal ${showEvoFace ? 'text-gray-500' : 'text-transparent'} ${faceIsZeroBoost ? 'text-[8px] text-fcGreen font-bold' : ''}`}>
+                      {faceIsZeroBoost ? '+0' : '➜'}
                     </span>
                     <span className={`w-6 shrink-0 text-right ${showEvoFace ? getStatColorClass(effectiveFaceVal) : 'text-transparent'}`}>
                       {showEvoFace ? effectiveFaceVal : '00'}
