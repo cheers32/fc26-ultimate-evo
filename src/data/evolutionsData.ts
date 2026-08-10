@@ -95,6 +95,9 @@ import { tooBasic1205 } from './evolutions/tooBasic1205';
 import { postureCheck1206 } from './evolutions/postureCheck1206';
 import { sunnyInnit1211 } from './evolutions/sunnyInnit1211';
 import { fullbackForce1216 } from './evolutions/fullbackForce1216';
+import { passingTheTest1218 } from './evolutions/passingTheTest1218';
+import { strikerInstinct1219 } from './evolutions/strikerInstinct1219';
+import { everythingAtOnce1220 } from './evolutions/everythingAtOnce1220';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '974': theMainEvent974,
@@ -192,7 +195,10 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1205': tooBasic1205,
   '1206': postureCheck1206,
   '1211': sunnyInnit1211,
-  '1216': fullbackForce1216
+  '1216': fullbackForce1216,
+  '1218': passingTheTest1218,
+  '1219': strikerInstinct1219,
+  '1220': everythingAtOnce1220
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
