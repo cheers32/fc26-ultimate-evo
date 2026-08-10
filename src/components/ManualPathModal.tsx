@@ -1,13 +1,20 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp } from 'lucide-react';
+import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp, ChevronDown } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore } from '../utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
-import { getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
-import { FitBreakdown, controlModeFor, fitScore } from '../utils/fitScore';
+import {
+  getStatColorClass,
+  formatEvoTerms,
+  displayExcludedPositions,
+  AccelerateType,
+  ACCELERATE_TYPES,
+  ACCELERATE_SHORT
+} from '../utils/statUtils';
+import { FitBreakdown, controlModeFor, fitScore, accelerateOf } from '../utils/fitScore';
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
 // badged, which on a full pool marked most of the list and made the mark meaningless — so
@@ -232,6 +239,45 @@ const StatDisplay = ({ label, after, before }: { label: string, after: number, b
   );
 };
 
+/**
+ * The AcceleRATE the card ends up with. It reads as a plain chip while the archetype is unchanged
+ * and calls attention to itself the moment an evo moves it, because that is the only time it is
+ * news: AcceleRATE flips on sub-stat thresholds and height, none of which the card shows, so a
+ * pick that quietly turns an Explosive card Controlled otherwise looks like a pure gain.
+ */
+const AccelerateBadge = ({
+  after,
+  before,
+  size = 'md'
+}: {
+  after: AccelerateType;
+  before?: AccelerateType;
+  size?: 'sm' | 'md';
+}) => {
+  const changed = before !== undefined && before !== after;
+  return (
+    <div
+      title={changed ? `AcceleRATE: ${before} → ${after}` : `AcceleRATE: ${after}`}
+      className={`flex gap-1 items-center rounded border whitespace-nowrap ${
+        size === 'sm' ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
+      } ${
+        // Amber rather than green: a flipped archetype is a "look at this", not a gain — losing
+        // Explosive is a change too, and the green everything else on the card uses would read it
+        // as an improvement.
+        changed
+          ? 'bg-amber-950/40 border-amber-700/60'
+          : 'bg-gray-800/80 border-gray-600'
+      }`}
+    >
+      <span className={changed ? 'text-amber-300 font-bold' : 'text-white font-bold'}>RATE</span>
+      <span className={changed ? 'text-amber-200 font-bold' : 'text-gray-300 font-bold'}>
+        {changed && <span className="opacity-60 mr-0.5">{ACCELERATE_SHORT[before!]} →</span>}
+        {ACCELERATE_SHORT[after]}
+      </span>
+    </div>
+  );
+};
+
 const PlayStyleDiffDisplay = ({ before, after }: { before?: PlayStylesData, after: PlayStylesData }) => {
   if (!before) return null;
   const beforeGold = new Set([...before.base.gold, ...before.ev.gold]);
@@ -320,6 +366,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // card's *primary* position is a different proposition from one that only matches a secondary
   // one, and both are "eligible".
   const [filterFitPosition, setFilterFitPosition] = useState(false);
+  // Narrows the pool to the evos that leave the card on one chosen AcceleRATE archetype — the
+  // question "which of these keeps me Explosive" can't be answered from the face stats on the
+  // cards, since the archetype turns on acceleration/agility/strength and height.
+  const [filterAccelerate, setFilterAccelerate] = useState<AccelerateType | 'all'>('all');
   const [sortMode, setSortMode] = useState<SortMode>('default');
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -468,6 +518,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     ? fitScore({ stats: currentStats, playStyles: currentPlayStyles, bio: currentBio, mode: fitMode })
     : null;
 
+  // Unlike Fit, AcceleRATE isn't opt-in: it's a fact about the resulting card rather than a
+  // judgement of it, so every card shows it whether or not the profile is switched on.
+  const currentAccelerate = accelerateOf(currentStats, currentBio);
+
   const poolWithStatus = evosPool.map((id) => {
     const evo = availableEvolutions[id];
     const count = selectedChain.filter(eid => eid === id).length;
@@ -485,6 +539,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let recReasons: string[] = [];
     let recBlocked = false;
     let expectedFit: FitBreakdown | null = null;
+    let expectedAccelerate: AccelerateType | null = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -499,7 +554,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedStats = testRes.finalStats;
           expectedPlayStyles = testRes.finalPlayStyles;
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
-          
+          expectedAccelerate = accelerateOf(testRes.finalStats, testRes.finalBio);
+
           if (currentFit) {
             expectedFit = fitScore({
               stats: testRes.finalStats,
@@ -563,6 +619,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       recReasons,
       recBlocked,
       expectedFit,
+      expectedAccelerate,
       posMatchScore
     };
   });
@@ -664,6 +721,28 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     return b.expectedFaceStats - a.expectedFaceStats;
   });
 
+  // One predicate for the grid and for Enter-to-add both, so the evo Enter picks is always the
+  // first one in the list the user is actually looking at.
+  const matchesFilters = ({ id, evo, posMatchScore, expectedAccelerate }: typeof poolWithStatus[number]) => {
+    if (!evo) return false;
+    // Off, the grid is exactly the team's pool. On, it also shows what the pool leaves out, so an
+    // evo can still be picked by hand.
+    if (!showNotIncluded && !canRecommend.has(id)) return false;
+    if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterNewRarity && !evo.rarityChange) return false;
+    if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
+    if (filterNoRarity && evo.rarityChange) return false;
+    if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
+    if (filterFitPosition && posMatchScore === 0) return false;
+    // Only an addable evo has a resulting archetype at all: an ineligible or maxed-out card was
+    // never simulated, so asking for one archetype drops it from the list rather than listing it
+    // under a heading it can't answer to.
+    if (filterAccelerate !== 'all' && expectedAccelerate !== filterAccelerate) return false;
+    return true;
+  };
+
+  const visiblePool = poolWithStatus.filter(matchesFilters);
+
   const currentFaceStats = Object.values(currentStats).reduce((acc, f) => acc + f.baseFace, 0);
   const currentIgs = Object.values(currentStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
   const currentPsPlusCount = currentPlayStyles.base.gold.length + currentPlayStyles.ev.gold.length;
@@ -698,6 +777,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       <span className="text-white font-bold">IGS</span>
                       <span className="text-blue-400 font-bold">{Object.values(baseStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0)}</span>
                     </div>
+                    <AccelerateBadge after={accelerateOf(baseStats, baseBio)} size="sm" />
                   </div>
                   <div className="grid grid-cols-3 gap-0.5">
                     {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
@@ -847,6 +927,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                     <span className="text-blue-400 font-bold">{curIgs}</span>
                                   </div>
                                 </div>
+                                {/* Compared against the step before, so a chain shows exactly
+                                    where the archetype flipped. */}
+                                <AccelerateBadge
+                                  size="sm"
+                                  after={accelerateOf(stepResult.statsAfter, stepResult.bioAfter)}
+                                  before={accelerateOf(
+                                    prevStats,
+                                    idx === 0 ? baseBio : validationResult.result!.steps[idx - 1].bioAfter
+                                  )}
+                                />
                               </>
                             );
                           })()}
@@ -979,6 +1069,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     <span className="text-gray-500 font-bold">IGS</span>
                     <span className="text-blue-400 font-bold">{currentIgs}</span>
                   </div>
+                  {/* Where the chain stands now, so the archetype on each pool card reads as a
+                      change from something rather than a bare label. */}
+                  <div className="flex gap-1 items-center" title={`AcceleRATE: ${currentAccelerate}`}>
+                    <span className="text-gray-500 font-bold">RATE</span>
+                    <span className="text-gray-200 font-bold">{ACCELERATE_SHORT[currentAccelerate]}</span>
+                  </div>
                 </div>
                 <div className="hidden md:flex items-center gap-3 text-[11px] font-mono bg-gray-800/50 px-3 py-1 rounded-full border border-gray-700/50">
                   {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
@@ -1006,20 +1102,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        const filteredPool = poolWithStatus.filter(({ id, evo, posMatchScore }) => {
-                          if (!evo) return false;
-                          // Off, the grid is exactly the team's pool. On, it also shows what the
-                          // pool leaves out, so an evo can still be picked by hand.
-                          if (!showNotIncluded && !canRecommend.has(id)) return false;
-                          if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-                          if (filterNewRarity && !evo.rarityChange) return false;
-                          if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
-                          if (filterNoRarity && evo.rarityChange) return false;
-                          if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
-                          if (filterFitPosition && posMatchScore === 0) return false;
-                          return true;
-                        });
-                        const topEligible = filteredPool.find(p => p.isEligible && !p.limitReached);
+                        const topEligible = poolWithStatus
+                          .filter(matchesFilters)
+                          .find(p => p.isEligible && !p.limitReached);
                         if (topEligible) {
                           handleAdd(topEligible.id);
                         }
@@ -1101,6 +1186,31 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   Fit Position
                 </button>
+                {/* The one filter that isn't a yes/no: five archetypes, and picking one is a
+                    different question from picking another, so it gets a select rather than five
+                    more toggles in a row that is already long. */}
+                <div className="relative">
+                  <select
+                    value={filterAccelerate}
+                    onChange={e => setFilterAccelerate(e.target.value as AccelerateType | 'all')}
+                    title="Only evos that leave the card on this AcceleRATE archetype"
+                    className={`appearance-none rounded-lg border pl-2 pr-6 py-1.5 text-[10px] font-bold cursor-pointer focus:outline-none ${
+                      filterAccelerate !== 'all'
+                        ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
+                        : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                    }`}
+                  >
+                    <option value="all">Any AcceleRATE</option>
+                    {ACCELERATE_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className={`w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none ${
+                      filterAccelerate !== 'all' ? 'text-black/70' : 'text-gray-500'
+                    }`}
+                  />
+                </div>
                 <button
                   onClick={() => setShowNotIncluded(!showNotIncluded)}
                   title="Show or hide not included evos"
@@ -1187,24 +1297,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
             )}
 
             <div className="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {poolWithStatus.length === 0 ? (
-                <div className="text-center py-6 text-gray-600 text-sm">
-                  Your EVO pool is empty.
+              {visiblePool.length === 0 ? (
+                <div className="text-center py-6 text-gray-600 text-sm md:col-span-3 lg:col-span-4">
+                  {poolWithStatus.length === 0
+                    ? 'Your EVO pool is empty.'
+                    // An archetype is often simply out of reach — a 190cm card can never come out
+                    // Explosive — so an empty grid here has to say it was the filters, not the pool.
+                    : 'No evo in the pool matches these filters.'}
                 </div>
               ) : (
-                poolWithStatus
-                  .filter(({ id, evo, posMatchScore }) => {
-                    if (!evo) return false;
-                    if (!showNotIncluded && !canRecommend.has(id)) return false;
-                    if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-                    if (filterNewRarity && !evo.rarityChange) return false;
-                    if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
-                    if (filterNoRarity && evo.rarityChange) return false;
-                    if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
-                    if (filterFitPosition && posMatchScore === 0) return false;
-                    return true;
-})
-                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit }) => {
+                visiblePool
+                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate }) => {
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
@@ -1298,6 +1401,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                   <span className="text-blue-400 font-bold">{expectedIgs}</span>
                                 </div>
                               </div>
+                            )}
+                            {canAdd && expectedAccelerate && (
+                              <AccelerateBadge after={expectedAccelerate} before={currentAccelerate} />
                             )}
                             {canAdd && currentFit && expectedFit && (
                               <div

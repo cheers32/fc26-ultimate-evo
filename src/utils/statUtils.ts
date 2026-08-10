@@ -58,6 +58,27 @@ export type AccelerateType =
   | 'Mostly Lengthy'
   | 'Lengthy';
 
+export const ACCELERATE_TYPES: AccelerateType[] = [
+  'Explosive',
+  'Mostly Explosive',
+  'Controlled',
+  'Mostly Lengthy',
+  'Lengthy'
+];
+
+/**
+ * Abbreviations for the places an archetype has to sit inside a chip next to the stats — the full
+ * "Mostly Explosive" is wider than the whole card it would be printed on. Anywhere these are used
+ * the full name belongs in the title.
+ */
+export const ACCELERATE_SHORT: Record<AccelerateType, string> = {
+  'Explosive': 'EXPL',
+  'Mostly Explosive': 'M.EXPL',
+  'Controlled': 'CTRL',
+  'Mostly Lengthy': 'M.LEN',
+  'Lengthy': 'LEN'
+};
+
 /** Pulls the centimetres out of a bio height string like `190cm | 6'3"`. */
 export function parseHeightCm(height?: string): number | undefined {
   const cm = height?.match(/(\d{2,3})\s*cm/i);
