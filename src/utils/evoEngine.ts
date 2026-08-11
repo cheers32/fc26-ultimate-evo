@@ -255,15 +255,18 @@ function clonePlayStyles(ps: PlayStylesData): PlayStylesData {
 }
 
 /**
- * How many of a card's PlayStyles came off the card itself — its own plus everything an evo has
- * granted so far — as opposed to the player's free picks. This is what an evo's PlayStyle limit
- * is measured against.
+ * How many of a card's plain PlayStyles came off the card itself — its own plus everything an evo
+ * has granted so far — as opposed to the player's free picks. This is what an evo's plain
+ * PlayStyle limit is measured against.
  *
  * Free picks are dropped because the game does not count them there: van Dijk picking Quick Step+,
  * Block and Relentless still gets Leopard's Roar's Low Driven Shot, even though those picks put
  * his plain PlayStyles on that evo's limit of 8. Counting them made the app withhold it. The
  * Route One case that froze this budget in the first place is untouched — Rabiot's seven plain
  * PlayStyles were all off the card, so nothing is subtracted and the cap still bites.
+ *
+ * Plain PlayStyles only. The same exemption on the PlayStyle+ side is not evidenced and is what
+ * let a card end up with seven PS+, so that side counts everything.
  */
 function fromCardCount(held: string[], picks?: string[]): number {
   if (!picks || picks.length === 0) return held.length;
@@ -496,9 +499,15 @@ export function applyEvo(
 
       let upgraded = false;
       if (!hasGold) {
-        // Recounted per grant, unlike the plain budget: each PS+ this evo hands out really does
-        // take one of its slots, so they run out as they are used.
-        if (fromCardCount(currentPlayStyles.base.gold, freePicks?.gold) < goldLimit) {
+        // Every PlayStyle+ on the card counts here, free picks included — unlike the plain budget
+        // below, where the van Dijk case showed the game does not count them. Exempting picks on
+        // this side too was an extrapolation with nothing behind it, and it let an evo blow
+        // straight through its own cap: three picked PS+ were subtracted from the count, so
+        // Wind-Up Merchant measured its limit of 4 against 1 and handed out three more, leaving
+        // the card on seven.
+        //
+        // Recounted per grant, so the evo's own slots run out as it uses them.
+        if (currentPlayStyles.base.gold.length < goldLimit) {
           currentPlayStyles.base.gold.push(ps);
           upgraded = true;
         }
