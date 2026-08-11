@@ -51,17 +51,27 @@ export function calculateChip(
   };
 }
 
+/**
+ * FC 26 only shows three of these — a card reads simply "Explosive", "Controlled" or "Lengthy" —
+ * but the seven-way split the game used last year is what the thresholds actually compute, and it
+ * says far more about a card: "Controlled Lengthy" and "Lengthy" both display as Lengthy while
+ * feeling nothing alike. The finer names are kept for that reason.
+ */
 export type AccelerateType =
   | 'Explosive'
   | 'Mostly Explosive'
+  | 'Controlled Explosive'
   | 'Controlled'
+  | 'Controlled Lengthy'
   | 'Mostly Lengthy'
   | 'Lengthy';
 
 export const ACCELERATE_TYPES: AccelerateType[] = [
   'Explosive',
   'Mostly Explosive',
+  'Controlled Explosive',
   'Controlled',
+  'Controlled Lengthy',
   'Mostly Lengthy',
   'Lengthy'
 ];
@@ -74,7 +84,9 @@ export const ACCELERATE_TYPES: AccelerateType[] = [
 export const ACCELERATE_SHORT: Record<AccelerateType, string> = {
   'Explosive': 'EXPL',
   'Mostly Explosive': 'M.EXPL',
+  'Controlled Explosive': 'C.EXPL',
   'Controlled': 'CTRL',
+  'Controlled Lengthy': 'C.LEN',
   'Mostly Lengthy': 'M.LEN',
   'Lengthy': 'LEN'
 };
@@ -87,8 +99,13 @@ export function parseHeightCm(height?: string): number | undefined {
 
 /**
  * AcceleRATE archetype. Height is part of the real rule — a tall card cannot be Explosive however
- * agile it is — and the five-way split matters because the two ends want different PlayStyles
- * (Rapid belongs on a Lengthy card, Quick Step on an Explosive one).
+ * agile it is — and the split matters because the two ends want different PlayStyles (Rapid
+ * belongs on a Lengthy card, Quick Step on an Explosive one).
+ *
+ * The tiers are ordered by how far the card leans, and the gap of 4 between agility and strength
+ * is where the leaning starts. Leaving those two tiers out was wrong on real cards: Pogba at
+ * agility 95 / strength 99 / 191cm and Vieira on the same split both read Lengthy in game, and
+ * this returned Controlled for them because it asked for a gap of 12 before it would lean at all.
  *
  * Height is optional so a caller without a bio still gets a sane answer, but callers that have
  * one should pass it: without height every card collapses towards Controlled.
@@ -105,8 +122,10 @@ export function calculateAccelerateType(
 
   if (agiLead >= 20 && agi >= 80 && acc >= 80 && h <= 175) return 'Explosive';
   if (agiLead >= 12 && agi >= 70 && acc >= 80 && h <= 182) return 'Mostly Explosive';
+  if (agiLead >= 4 && agi >= 65 && acc >= 70 && h <= 182) return 'Controlled Explosive';
   if (strLead >= 20 && str >= 80 && acc >= 55 && h >= 188) return 'Lengthy';
   if (strLead >= 12 && str >= 70 && acc >= 55 && h >= 183) return 'Mostly Lengthy';
+  if (strLead >= 4 && str >= 65 && acc >= 40 && h >= 181) return 'Controlled Lengthy';
   return 'Controlled';
 }
 

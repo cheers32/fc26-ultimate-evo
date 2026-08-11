@@ -103,7 +103,10 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     axes: { pac: 0.8, dri: 0.2 },
     tier: 'core',
     gate: { acceleration: 82 },
-    accelerate: { prefers: ['Explosive', 'Mostly Explosive', 'Controlled'], penalty: 0.5 },
+    accelerate: {
+      prefers: ['Explosive', 'Mostly Explosive', 'Controlled Explosive', 'Controlled'],
+      penalty: 0.5
+    },
     overlaps: ['Rapid'],
     note: 'The acceleration half of the pace pair — wants an agile, explosive card.'
   },
@@ -111,7 +114,7 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     axes: { pac: 0.7, dri: 0.3 },
     tier: 'core',
     gate: { sprintSpeed: 85 },
-    accelerate: { prefers: ['Lengthy', 'Mostly Lengthy'], penalty: 0.55 },
+    accelerate: { prefers: ['Lengthy', 'Mostly Lengthy', 'Controlled Lengthy'], penalty: 0.55 },
     overlaps: ['Quick Step'],
     note: 'The top-speed half — wants a lengthy card that can actually run away from people.'
   },

@@ -306,7 +306,9 @@ export function bodyFit(accelerate: AccelerateType, bio: PlayerBio): number {
     const towardsExplosive: Record<AccelerateType, number> = {
       Explosive: 1,
       'Mostly Explosive': 0.7,
+      'Controlled Explosive': 0.5,
       Controlled: 0.3,
+      'Controlled Lengthy': 0.2,
       'Mostly Lengthy': 0.1,
       Lengthy: 0
     };
