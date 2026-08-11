@@ -529,7 +529,15 @@ export function applyEvo(
       const hasGold = currentPlayStyles.base.gold.some(g => g.replace('+', '').trim() === baseName);
       const hasSilver = currentPlayStyles.base.silver.some(s => s.replace('+', '').trim() === baseName);
 
-      if (!hasSilver && !hasGold && silverRemaining > 0) {
+      // The card's own capacity is the last word, on top of whatever the evo is allowed to hand
+      // out. Nothing enforced it before, and the free-pick exemption above is exactly what needs
+      // it: subtracting the picks from the count an evo's limit is measured against is right, but
+      // it must not let the card end up holding more PlayStyles than it has room for. A card that
+      // filled its last two slots by hand was being handed two more on top, ending on ten of
+      // eight — and the builder previewed those two as if they would arrive.
+      const hasRoom = currentPlayStyles.base.silver.length < currentPlayStyles.limits.silver;
+
+      if (!hasSilver && !hasGold && silverRemaining > 0 && hasRoom) {
         currentPlayStyles.base.silver.push(ps);
         silverRemaining--;
       }
