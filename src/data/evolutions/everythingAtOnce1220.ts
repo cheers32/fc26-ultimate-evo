@@ -28,10 +28,11 @@ export const everythingAtOnce1220: EvolutionDefinition = {
   weakFootBoost: 4,
   skillMovesBoost: 4,
   // Futbin prints no rarity line in this evo's upgrade list, but its own preview cards change
-  // design at Level 2 — base and Level 1 are 71_future_stars, Level 2 is 16_futties, the same
-  // card Wind-Up Merchant ends on. So it is the ordinary Futties Evo conversion, which matters
-  // beyond cosmetics: that rarity is what opens the free PlayStyle picker.
-  rarityChange: 'Futties Evo',
+  // design at Level 2 — base and Level 1 keep the player's own card, Level 2 is 16_futties, the
+  // same card Wind-Up Merchant ends on. Not merely cosmetic: that rarity is what opens the free
+  // PlayStyle picker. It is 'Futties', not the similarly named 'Futties Evo' that Blueprint I
+  // grants, which does not.
+  rarityChange: 'Futties',
   playStylesAdded: {
     gold: [],
     silver: []
@@ -47,7 +48,7 @@ export const everythingAtOnce1220: EvolutionDefinition = {
       name: 'Level 2',
       upgrades: [
         'Dribbling +3 (96)', 'Defending +2 (94)', 'Physical +4 (97)', 'Skills +4',
-        'Rarity: Futties Evo'
+        'Rarity: Futties'
       ]
     }
   ],

@@ -43,7 +43,7 @@ export const mrUndroppable1187: EvolutionDefinition = {
   },
   weakFootBoost: 4,
   skillMovesBoost: 3,
-  rarityChange: 'Futties Evo',
+  rarityChange: 'Futties',
   playStylesAdded: {
     gold: ['Intercept', 'Quick Step', 'Jockey', 'Bruiser'],
     silver: []

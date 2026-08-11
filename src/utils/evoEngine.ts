@@ -7,7 +7,15 @@ import { POSITION_WEIGHTS } from './positionWeights';
 // running another rarity-changing evo just overwrites the string for no extra benefit —
 // the perk doesn't stack, so a chain should carry at most one rarity-changing evo total.
 // Exported so the UI can gate the free-PlayStyle picker on the same list.
-export const FREE_PLAYSTYLE_RARITIES = ['Futties Evo', 'National Pride', 'Glory Hunters', 'FUT Birthday'];
+/**
+ * The rarities whose cards let the player pick PlayStyles themselves.
+ *
+ * 'Futties' and 'Futties Evo' are two different cards and only the first is on this list, however
+ * close the names are. Futbin draws them as 16_futties and 119_futties_evo, and this app used to
+ * call both of them 'Futties Evo' — which quietly promised a free PlayStyle picker on the back of
+ * FUTTIES Blueprint I, the one evo of the seven that grants the other card.
+ */
+export const FREE_PLAYSTYLE_RARITIES = ['Futties', 'National Pride', 'Glory Hunters', 'FUT Birthday'];
 
 // --- Path-ranking helpers used by analyzeEvolutions' search -----------------------------
 // Pulled out to module scope (rather than recreated as closures on every call) since they're
