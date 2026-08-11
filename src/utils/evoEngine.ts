@@ -247,27 +247,10 @@ function clonePlayStyles(ps: PlayStylesData): PlayStylesData {
   return {
     limits: { gold: ps.limits.gold, silver: ps.limits.silver },
     base: { gold: [...ps.base.gold], silver: [...ps.base.silver] },
-    ev: { gold: [...ps.ev.gold], silver: [...ps.ev.silver] },
-    ...(ps.freePicks
-      ? { freePicks: { gold: [...ps.freePicks.gold], silver: [...ps.freePicks.silver] } }
-      : {})
+    ev: { gold: [...ps.ev.gold], silver: [...ps.ev.silver] }
   };
 }
 
-/**
- * How many of a card's plain PlayStyles came off the card itself — its own plus everything an evo
- * has granted so far — as opposed to the player's free picks. This is what an evo's plain
- * PlayStyle limit is measured against.
- *
- * Free picks are dropped because the game does not count them there: van Dijk picking Quick Step+,
- * Block and Relentless still gets Leopard's Roar's Low Driven Shot, even though those picks put
- * his plain PlayStyles on that evo's limit of 8. Counting them made the app withhold it. The
- * Route One case that froze this budget in the first place is untouched — Rabiot's seven plain
- * PlayStyles were all off the card, so nothing is subtracted and the cap still bites.
- *
- * Plain PlayStyles only. The same exemption on the PlayStyle+ side is not evidenced and is what
- * let a card end up with seven PS+, so that side counts everything.
- */
 /**
  * How many plain PlayStyles a card can hold, for the purpose of refusing to add more.
  *
@@ -278,13 +261,6 @@ function clonePlayStyles(ps: PlayStylesData): PlayStylesData {
  */
 function effectiveSilverLimit(ps: PlayStylesData): number {
   return Math.max(ps.limits.silver, ps.base.silver.length);
-}
-
-function fromCardCount(held: string[], picks?: string[]): number {
-  if (!picks || picks.length === 0) return held.length;
-  // Only picks still in the list: an evo that promotes a picked PlayStyle to + takes it out of the
-  // plain list, and the + it left behind is the evo's doing, not the pick's.
-  return held.length - held.filter(name => picks.includes(name)).length;
 }
 
 /**
@@ -302,10 +278,6 @@ export function applyFreePlayStyles(
 
   const result = clonePlayStyles(playStyles);
   const baseName = (ps: string) => ps.replace('+', '').trim();
-  // Tracked so an evo's PlayStyle limit can tell a pick apart from what the card brought. Only the
-  // picks that actually landed are recorded; one refused for want of a slot never reaches `base`.
-  const picked = result.freePicks || { gold: [], silver: [] };
-  result.freePicks = picked;
 
   free.gold.forEach(ps => {
     const name = baseName(ps);
@@ -313,14 +285,8 @@ export function applyFreePlayStyles(
     // Only drop the plain version once the PS+ actually landed — same order as applyEvo. Removing
     // it regardless would delete a PlayStyle the card already had whenever the gold slots are full.
     const upgraded = hasGold || result.base.gold.length < result.limits.gold;
-    if (!hasGold && upgraded) {
-      result.base.gold.push(ps);
-      picked.gold.push(ps);
-    }
-    if (upgraded) {
-      result.base.silver = result.base.silver.filter(s => baseName(s) !== name);
-      picked.silver = picked.silver.filter(s => baseName(s) !== name);
-    }
+    if (!hasGold && upgraded) result.base.gold.push(ps);
+    if (upgraded) result.base.silver = result.base.silver.filter(s => baseName(s) !== name);
   });
 
   free.silver.forEach(ps => {
@@ -329,7 +295,6 @@ export function applyFreePlayStyles(
     const hasSilver = result.base.silver.some(s => baseName(s) === name);
     if (!hasGold && !hasSilver && result.base.silver.length < effectiveSilverLimit(result)) {
       result.base.silver.push(ps);
-      picked.silver.push(ps);
     }
   });
 
@@ -498,10 +463,17 @@ export function applyEvo(
     // already at the cap gains the promotion and nothing else. Counting as we went let a card
     // sitting at the limit pick up an extra PlayStyle it does not get in game — Route One on a
     // card with seven plain PlayStyles handed out Block on the slot Anticipate had just left.
-    const freePicks = currentPlayStyles.freePicks;
+    // Every plain PlayStyle on the card counts, the player's own picks included.
+    //
+    // For a while picks were exempted, on the strength of a single van Dijk chain that looked like
+    // it had been granted a PlayStyle it had no room for. That reading did not hold up, and the
+    // exemption was wrong three times over: it let an evo hand out PlayStyle+ past its cap, plain
+    // PlayStyles past the card's capacity, and — the one that finally pinned it — Let Me Cook add
+    // to a Petit already holding eight against that evo's limit of seven. Route One withholding
+    // Block from Rabiot at seven of seven is the same rule seen from the other side.
     const silverBudget = Math.max(
       0,
-      (evo.playStylesLimit?.silver ?? 99) - fromCardCount(currentPlayStyles.base.silver, freePicks?.silver)
+      (evo.playStylesLimit?.silver ?? 99) - currentPlayStyles.base.silver.length
     );
 
     const goldLimit = evo.playStylesLimit?.gold ?? 99;
@@ -511,13 +483,7 @@ export function applyEvo(
 
       let upgraded = false;
       if (!hasGold) {
-        // Every PlayStyle+ on the card counts here, free picks included — unlike the plain budget
-        // below, where the van Dijk case showed the game does not count them. Exempting picks on
-        // this side too was an extrapolation with nothing behind it, and it let an evo blow
-        // straight through its own cap: three picked PS+ were subtracted from the count, so
-        // Wind-Up Merchant measured its limit of 4 against 1 and handed out three more, leaving
-        // the card on seven.
-        //
+        // Every PlayStyle+ on the card counts, free picks included, exactly as on the plain side.
         // Recounted per grant, so the evo's own slots run out as it uses them.
         if (currentPlayStyles.base.gold.length < goldLimit) {
           currentPlayStyles.base.gold.push(ps);

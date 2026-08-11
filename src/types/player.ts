@@ -32,17 +32,6 @@ export interface PlayStylesData {
     gold: string[];
     silver: string[];
   };
-  /**
-   * Which of the names in `base` got there as the player's own free PlayStyle picks rather than
-   * off the card. A pick occupies a slot on the card like any other PlayStyle — it counts for
-   * display, for the card's own limits and for an evo's entry requirements — but it is not
-   * something an evo handed out, so it does not eat into what an evo's PlayStyle limit lets that
-   * evo grant. Simulation-only: a stored card never carries this.
-   */
-  freePicks?: {
-    gold: string[];
-    silver: string[];
-  };
 }
 
 export interface PlayerBio {
