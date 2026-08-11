@@ -256,9 +256,11 @@ export function parseFutbinText(
       },
       ovr: { base: data.baseOvr, boost: 30, limit: 99 },
       playStyles: {
-        // A card that was told it has more PlayStyle+ than the usual ceiling still has them, so
-        // the limit follows rather than leaving the card in breach of its own cap.
-        limits: { gold: Math.max(4, gold.length), silver: 8 },
+        // A card that was told it has more PlayStyles than the usual ceiling still has them, so
+        // the limit follows rather than leaving the card in breach of its own cap. The plain side
+        // was a flat 8 while only the PlayStyle+ side followed the card, which left Yamal — ten
+        // plain PlayStyles off the card — permanently over a limit of eight.
+        limits: { gold: Math.max(4, gold.length), silver: Math.max(8, silver.length) },
         base: {
           gold,
           silver

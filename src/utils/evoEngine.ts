@@ -268,6 +268,18 @@ function clonePlayStyles(ps: PlayStylesData): PlayStylesData {
  * Plain PlayStyles only. The same exemption on the PlayStyle+ side is not evidenced and is what
  * let a card end up with seven PS+, so that side counts everything.
  */
+/**
+ * How many plain PlayStyles a card can hold, for the purpose of refusing to add more.
+ *
+ * Normally its own limit, but never fewer than it already carries: Yamal comes off Futbin with ten
+ * plain PlayStyles against a stored limit of eight, and a card in breach of its own cap should be
+ * held where it is, not read as having negative room. Only the imports written since carry a limit
+ * that follows the card, so stored cards still need this.
+ */
+function effectiveSilverLimit(ps: PlayStylesData): number {
+  return Math.max(ps.limits.silver, ps.base.silver.length);
+}
+
 function fromCardCount(held: string[], picks?: string[]): number {
   if (!picks || picks.length === 0) return held.length;
   // Only picks still in the list: an evo that promotes a picked PlayStyle to + takes it out of the
@@ -315,7 +327,7 @@ export function applyFreePlayStyles(
     const name = baseName(ps);
     const hasGold = result.base.gold.some(g => baseName(g) === name);
     const hasSilver = result.base.silver.some(s => baseName(s) === name);
-    if (!hasGold && !hasSilver && result.base.silver.length < result.limits.silver) {
+    if (!hasGold && !hasSilver && result.base.silver.length < effectiveSilverLimit(result)) {
       result.base.silver.push(ps);
       picked.silver.push(ps);
     }
@@ -535,7 +547,10 @@ export function applyEvo(
       // it must not let the card end up holding more PlayStyles than it has room for. A card that
       // filled its last two slots by hand was being handed two more on top, ending on ten of
       // eight — and the builder previewed those two as if they would arrive.
-      const hasRoom = currentPlayStyles.base.silver.length < currentPlayStyles.limits.silver;
+      //
+      // Read through effectiveSilverLimit so a card that already carries more than its recorded
+      // cap is frozen where it is rather than grown further.
+      const hasRoom = currentPlayStyles.base.silver.length < effectiveSilverLimit(currentPlayStyles);
 
       if (!hasSilver && !hasGold && silverRemaining > 0 && hasRoom) {
         currentPlayStyles.base.silver.push(ps);
