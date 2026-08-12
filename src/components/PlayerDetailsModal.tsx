@@ -4,6 +4,7 @@ import { PlayerData } from '../types/player';
 import { StatsGrid } from './StatsGrid';
 import { PlayerSubInfo } from './PlayerSubInfo';
 import { calculateAccelerateType, parseHeightCm } from '../utils/statUtils';
+import { useModalEscape } from '../utils/modalStack';
 
 interface PlayerDetailsModalProps {
   player: PlayerData;
@@ -13,9 +14,10 @@ interface PlayerDetailsModalProps {
 }
 
 export function PlayerDetailsModal({ player, onClose, onSelect, onDelete }: PlayerDetailsModalProps) {
+  useModalEscape(true, onClose);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
       // Enter confirms. No "are you typing?" guard: this modal has no inputs of its own, and the
       // search box behind it keeps focus — the picker's own Enter handler already stands down
       // while this modal is open, so the keypress is ours to take.

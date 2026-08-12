@@ -3,6 +3,7 @@ import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, Sta
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
+import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil, Copy, Check } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
@@ -266,6 +267,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
       }
       // Also ignore if a modifier key is pressed
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // These act on the page behind an open modal — 'c' would clear the unstarred builds out from
+      // under the builder, and Escape would close the filter popover along with the modal.
+      if (isModalOpen()) return;
 
       const key = e.key.toLowerCase();
       if (key === 'p') {

@@ -15,6 +15,7 @@ import {
   ACCELERATE_SHORT
 } from '../utils/statUtils';
 import { FitBreakdown, controlModeFor, fitScore, accelerateOf } from '../utils/fitScore';
+import { useModalEscape } from '../utils/modalStack';
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
 // badged, which on a full pool marked most of the list and made the mark meaningless — so
@@ -374,6 +375,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  useModalEscape(isOpen, onClose);
+
   // Populate the builder with the path being edited (or reset for a fresh path) whenever the modal opens
   useEffect(() => {
     if (!isOpen) return;
@@ -382,12 +385,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     setSearchQuery('');
     
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Don't close the builder if the evo details modal is open on top of it
-        if (!document.getElementById('evo-details-modal')) {
-          onClose();
-        }
-      } else if (e.key === 'a' || e.key === 'A') {
+      if (e.key === 'a' || e.key === 'A') {
         const activeNodeName = document.activeElement?.nodeName;
         if (activeNodeName !== 'INPUT' && activeNodeName !== 'TEXTAREA') {
           e.preventDefault();
@@ -398,7 +396,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, editingPath, onClose, lockedPrefix]);
+  }, [isOpen, editingPath, lockedPrefix]);
 
   // Live simulation to check if the current chain is valid
   const validationResult = useMemo(() => {

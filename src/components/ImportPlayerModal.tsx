@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Upload, Info } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { parseFutbinText } from '../utils/futbinParser';
+import { useModalEscape } from '../utils/modalStack';
 
 interface ImportPlayerModalProps {
   onClose: () => void;
@@ -17,13 +18,7 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
   const [goldCount, setGoldCount] = useState('3');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
+  useModalEscape(true, onClose);
 
   const handleImport = () => {
     setError(null);

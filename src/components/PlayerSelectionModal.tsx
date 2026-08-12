@@ -3,6 +3,7 @@ import { X, Search, Upload, Edit2, Trash2 } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { PlayerDetailsModal } from './PlayerDetailsModal';
 import { EditPlayerModal } from './EditPlayerModal';
+import { useModalEscape } from '../utils/modalStack';
 
 interface PlayerSelectionModalProps {
   players: Record<string, PlayerData>;
@@ -29,11 +30,12 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
     );
   }, [playersList, searchQuery]);
 
+  // Escape is handled by the modal stack: the preview and the edit modal open on top of this one,
+  // so they take it first and this closes only once they're gone.
+  useModalEscape(true, onClose);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle escape if preview isn't open (preview has its own escape handler)
-      if (e.key === 'Escape' && !previewPlayerId) onClose();
-      
       // Select the first player on Enter
       if (e.key === 'Enter' && !previewPlayerId && filteredPlayers.length > 0) {
         onSelectPlayer(filteredPlayers[0].id);

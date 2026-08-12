@@ -10,6 +10,7 @@ import { ChemistryGrid } from './components/ChemistryGrid';
 import { PlayStylesSection } from './components/PlayStylesSection';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { calculateAccelerateType, parseHeightCm } from './utils/statUtils';
+import { isModalOpen } from './utils/modalStack';
 import {
   simulateEvoChain,
   isPlayStyleNodeId,
@@ -142,21 +143,26 @@ export default function App() {
         return;
       }
 
-      if ((e.key === '/' || e.code === 'Slash') && !isPlayerSelectionOpen && !isManualPathOpen) {
+      // A shortcut that opens a modal has no business firing while one is already open — it used
+      // to check only for the two it opens itself, so 'a' inside the evo pool or a details modal
+      // opened the builder underneath them.
+      if (isModalOpen()) return;
+
+      if (e.key === '/' || e.code === 'Slash') {
         e.preventDefault();
         setIsPlayerSelectionOpen(true);
       }
 
-      if ((e.key === 'a' || e.key === 'A') && !isPlayerSelectionOpen && !isManualPathOpen) {
+      if (e.key === 'a' || e.key === 'A') {
         e.preventDefault();
         setPickerMode('append');
         setIsManualPathOpen(true);
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlayerSelectionOpen, isManualPathOpen]);
+  }, []);
 
   const handleImportPlayer = (player: PlayerData) => {
     const newCustomPlayers = { ...customPlayers, [player.id]: player };

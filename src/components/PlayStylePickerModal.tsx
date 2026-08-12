@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Search, Star, Circle } from 'lucide-react';
 import { FC26_PLAYSTYLES, getPlayStyleIconUrl } from '../utils/playstyles';
+import { useModalEscape } from '../utils/modalStack';
 
 interface PlayStylePickerModalProps {
   isOpen: boolean;
@@ -51,14 +52,15 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
     onClose();
   }, [draftGold, draftSilver, onSave, onClose]);
 
+  useModalEscape(isOpen, onClose);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
       if (e.key === 'Enter' && document.activeElement?.tagName !== 'INPUT') handleSave();
     };
     if (isOpen) document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, handleSave]);
+  }, [isOpen, handleSave]);
 
   if (!isOpen) return null;
 

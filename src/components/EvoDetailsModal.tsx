@@ -2,20 +2,22 @@ import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
+import { useModalEscape } from '../utils/modalStack';
 
 import { Plus } from 'lucide-react';
 export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | null; onClose: () => void; onAddEvo?: (id: string) => void }) => {
+  useModalEscape(!!evoId, onClose);
+
   useEffect(() => {
     if (!evoId) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
       if (e.key === 'Enter' && onAddEvo) {
         onAddEvo(evoId);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [evoId, onClose, onAddEvo]);
+  }, [evoId, onAddEvo]);
 
   if (!evoId) return null;
   const evo = availableEvolutions[evoId];

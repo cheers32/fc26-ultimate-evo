@@ -3,6 +3,7 @@ import { X, Check, Ban, Star, Filter, Eye } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { displayExcludedPositions } from '../utils/statUtils';
 import { EvoDetailsModal } from './EvoDetailsModal';
+import { useModalEscape } from '../utils/modalStack';
 
 // 'required' | 'included' = ACTIVE, in pool
 // undefined (no key)      = ACTIVE, NOT in pool  (default)
@@ -30,6 +31,10 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [search, setSearch] = useState('');
   const [viewingEvo, setViewingEvo] = useState<string | null>(null);
+
+  // This modal had no key handling at all: Escape did nothing here, and did nothing but close the
+  // evo details opened from inside it.
+  useModalEscape(isOpen, onClose);
 
   // undefined = "active, not included" (default state)
   const getStatus = (id: string): EvoStatus | undefined => evoStatuses[id];
