@@ -15,36 +15,70 @@ export function parseFutbinText(
   try {
     const data: any = {};
 
-    // 1. Extract Name and OVR
-    // Format could have multiple lines before the OVR
-    const nameOvrMatch = text.match(/([A-Za-z\s.-]+)\n(\d{2})\n(?:CB|RB|LB|CDM|CM|CAM|RM|LM|RW|LW|ST|CF|GK|RWB|LWB)\n/);
-    if (nameOvrMatch) {
-      const nameParts = nameOvrMatch[1].trim().split('\n');
-      data.name = nameParts[nameParts.length - 1].trim();
-      data.baseOvr = parseInt(nameOvrMatch[2], 10);
-    } else {
-      data.name = "Imported Player";
-      data.baseOvr = 80;
-    }
+    // 1. Extract Name, OVR, positions, foot, skills and weak foot.
+    //
+    // These all come off the card widget, which prints as
+    //
+    //   93 / ST / ++ / LM / LW / R / 5 / 4 / 88.8 / Mbappé / 99 / PAC / …
+    //
+    // one line each: rating, positions with their role markers, foot, skill moves, weak foot, the
+    // FUTBIN rating, the short name, then the first face stat. Anchoring on the PAC that closes it
+    // is what makes this safe to find — a bare two-digit line followed by a position also describes
+    // half a dozen other blocks on the page (the "Best Ratings" table, the votes footer), and
+    // reading the line above the rating as the name is what used to make every accented player an
+    // "Imported Player" at OVR 80: the old pattern spelt the name [A-Za-z\s.-]+, so Mbappé and
+    // Fernández could not match it, and the fallback was a made-up card.
+    const POSITIONS = 'GK|CB|RB|LB|RWB|LWB|CDM|CM|CAM|RM|LM|RW|LW|CF|ST';
+    const cardMatch = text.match(new RegExp(
+      `\\n(\\d{2})\\n` +                                    // OVR
+      `((?:(?:${POSITIONS})\\n(?:\\+{1,2}\\n)?)+)` +        // positions, each with an optional +/++
+      `(?:([RL])\\n(\\d)\\n(\\d)\\n)?` +                    // foot, skill moves, weak foot
+      `(?:[\\d.]+\\n)?` +                                   // FUTBIN's own rating
+      `([^\\n]+)\\n\\d{1,3}\\nPAC\\n`                       // short name, then the first face stat
+    ));
 
-    // 1.5 Extract Nation, Club, League, Skills, Weak Foot
-    const extractNextLine = (label: string) => {
-      const match = text.match(new RegExp(`\\n${label}\\n([^\\n]+)`));
-      return match ? match[1].trim() : `Unknown ${label}`;
+    // The bio heading carries the full name where the card widget only has the surname.
+    const bioNameMatch = text.match(/\nPlayer Bio - ([^\n]+)\n/);
+    data.name = (bioNameMatch?.[1] || cardMatch?.[6] || 'Imported Player').trim();
+    data.baseOvr = cardMatch ? parseInt(cardMatch[1], 10) : 80;
+    data.cardPositions = cardMatch
+      ? [...cardMatch[2].matchAll(new RegExp(`(${POSITIONS})`, 'g'))].map(m => m[1])
+      : [];
+    data.foot = cardMatch?.[3] === 'L' ? 'Left' : cardMatch?.[3] === 'R' ? 'Right' : '';
+
+    // 1.5 Extract Club, Nation, League, Height, Skills, Weak Foot, Age and the card's version.
+    //
+    // The labelled ones are printed in caps ("SKILLS", "HEIGHT"); the match is case-insensitive so
+    // an older copy in title case still reads.
+    const labelled = (label: string) => {
+      const match = text.match(new RegExp(`\\n${label}\\n([^\\n]+)`, 'i'));
+      return match ? match[1].trim() : '';
     };
 
-    data.nation = extractNextLine('Nation');
-    data.club = extractNextLine('Club');
-    data.league = extractNextLine('League');
-    
-    const skillsMatch = text.match(/\nSkills\n(\d)/);
-    data.skills = skillsMatch ? parseInt(skillsMatch[1], 10) : 3;
-    
-    const wfMatch = text.match(/\nWeak Foot\n(\d)/);
-    data.wf = wfMatch ? parseInt(wfMatch[1], 10) : 3;
-    
-    const heightMatch = text.match(/\nHeight\n([^\n]+)/);
-    data.height = heightMatch ? heightMatch[1].trim() : 'Unknown Height';
+    // Club, nation and league are unlabelled where the card is, but the footer names them in that
+    // order. The bio sentence below it is the fallback, and reads them out in prose.
+    const fromMatch = text.match(/\nView other Players from:\n([^\n]+)\n([^\n]+)\n([^\n]+)\n/);
+    const bioSentence = text.match(/ from ([^.]+?)\. .*? who plays for (.+?) in (.+?)\./);
+    data.club = fromMatch?.[1] || labelled('Club') || bioSentence?.[2] || 'Unknown Club';
+    data.nation = fromMatch?.[2] || labelled('Nation') || bioSentence?.[1] || 'Unknown Nation';
+    data.league = fromMatch?.[3] || labelled('League') || bioSentence?.[3] || 'Unknown League';
+
+    const skills = labelled('SKILLS');
+    const weakFoot = labelled('WEAK FOOT');
+    data.skills = skills ? parseInt(skills, 10) : cardMatch?.[4] ? parseInt(cardMatch[4], 10) : 3;
+    data.wf = weakFoot ? parseInt(weakFoot, 10) : cardMatch?.[5] ? parseInt(cardMatch[5], 10) : 3;
+    data.height = labelled('HEIGHT') || 'Unknown Height';
+
+    const age = labelled('AGE').match(/\d+/)?.[0];
+    const foot = labelled('FOOT') || data.foot;
+    data.footAge = [foot, age && `${age} yrs`].filter(Boolean).join(' | ') || 'Unknown';
+
+    // The card's version — "UCL Road to the Finals", "Team of the Week". It is the rarity as far as
+    // an evo is concerned: several of them require one or rule one out, and every imported card
+    // used to call itself "Custom", which matches nothing and is ruled out by nothing.
+    const versionMatch = text.match(/\n[^\n]+ - (.+?) EA FC 26 Prices and Rating\n/)
+      || text.match(/\nFC 26 (.+?) - [^\n]+\n/);
+    data.rarity = versionMatch?.[1]?.trim() || 'Custom';
 
 
     // 2. Extract Stats
@@ -245,13 +279,19 @@ export function parseFutbinText(
         club: data.club,
         nation: data.nation,
         league: data.league,
-        title: 'Custom Import',
-        primaryPositions: Object.keys(roles).map(p => p.toUpperCase()).join(', ') || 'CB',
+        title: data.rarity,
+        // The roles section is the better source — it lists every position the card can play — but
+        // the card widget names them too, and falling back to it beats the flat 'CB' that a card
+        // whose roles didn't parse used to import as.
+        primaryPositions:
+          Object.keys(roles).map(p => p.toUpperCase()).join(', ')
+          || data.cardPositions.join(', ')
+          || 'CB',
         height: data.height,
-        footAge: 'Unknown',
+        footAge: data.footAge,
         weakFoot: data.wf,
         skillMoves: data.skills,
-        rarity: 'Custom',
+        rarity: data.rarity,
         roles: roles
       },
       ovr: { base: data.baseOvr, boost: 30, limit: 99 },
