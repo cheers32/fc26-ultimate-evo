@@ -11,7 +11,7 @@ interface PlayerSelectionModalProps {
   onSelectPlayer: (id: string) => void;
   onOpenImport: () => void;
   onDeletePlayer?: (id: string) => void;
-  onEditPlayerAvatar?: (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, gold: string[], silver: string[]) => void;
+  onEditPlayerAvatar?: (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, gold: string[], silver: string[], newOvr: number) => void;
 }
 
 export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenImport, onDeletePlayer, onEditPlayerAvatar }: PlayerSelectionModalProps) {
@@ -207,8 +207,8 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
         <EditPlayerModal
           player={players[editingPlayerId]}
           onClose={() => setEditingPlayerId(null)}
-          onSave={(id, url, name, futbinUrl, positions, gold, silver) => {
-            if (onEditPlayerAvatar) onEditPlayerAvatar(id, url, name, futbinUrl, positions, gold, silver);
+          onSave={(id, url, name, futbinUrl, positions, gold, silver, ovr) => {
+            if (onEditPlayerAvatar) onEditPlayerAvatar(id, url, name, futbinUrl, positions, gold, silver, ovr);
             setEditingPlayerId(null);
           }}
         />

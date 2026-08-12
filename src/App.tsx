@@ -187,7 +187,7 @@ export default function App() {
     }
   };
 
-  const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[]) => {
+  const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[], newOvr?: number) => {
     // If it's a built-in player, we create an override in customPlayers
     const targetPlayer = customPlayers[id] || playersDatabase[id];
     if (targetPlayer) {
@@ -195,6 +195,9 @@ export default function App() {
         ...targetPlayer,
         avatarUrl: newUrl || targetPlayer.avatarUrl,
         futbinLink: newFutbinUrl || targetPlayer.futbinLink,
+        // The OVR the card carries, and with it which evos will have it: an import that read the
+        // rating wrong is otherwise unusable, since every evo gates on it.
+        ovr: { ...targetPlayer.ovr, base: newOvr ?? targetPlayer.ovr.base },
         bio: {
           ...targetPlayer.bio,
           name: newName || targetPlayer.bio.name,

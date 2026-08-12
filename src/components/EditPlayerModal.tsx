@@ -7,7 +7,16 @@ import { useModal } from '../utils/modalStack';
 interface EditPlayerModalProps {
   player: PlayerData;
   onClose: () => void;
-  onSave: (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, gold: string[], silver: string[]) => void;
+  onSave: (
+    id: string,
+    newUrl: string,
+    newName: string,
+    newFutbinUrl: string,
+    newPositions: string,
+    gold: string[],
+    silver: string[],
+    newOvr: number
+  ) => void;
 }
 
 export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProps) {
@@ -15,6 +24,9 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
   const [playerName, setPlayerName] = useState(player.bio.name || '');
   const [positionsStr, setPositionsStr] = useState(player.bio.primaryPositions || '');
   const [futbinUrl, setFutbinUrl] = useState(player.futbinLink || '');
+  // Held as text so the field can be emptied while typing; an empty or unreadable one saves as
+  // the OVR the card already had.
+  const [ovr, setOvr] = useState(String(player.ovr.base));
 
   const [goldPs, setGoldPs] = useState<Set<string>>(new Set(player.playStyles.base.gold.map(p => p.replace('+', ''))));
   const [silverPs, setSilverPs] = useState<Set<string>>(new Set(player.playStyles.base.silver));
@@ -29,7 +41,8 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
       futbinUrl,
       positionsStr,
       Array.from(goldPs).map(ps => ps + '+'),
-      Array.from(silverPs)
+      Array.from(silverPs),
+      Number.isFinite(Number(ovr)) && Number(ovr) > 0 ? Number(ovr) : player.ovr.base
     );
     onClose();
   };
@@ -64,16 +77,32 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
         </div>
 
         <div className="p-6 flex flex-col gap-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
-          {/* Name */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-300">Name</label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Player Name"
-              className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
-            />
+          {/* Name and OVR. The rating is editable because an import can get it wrong — Futbin
+              prints it in a card widget whose shape moves — and a card claiming the wrong OVR is
+              eligible for the wrong evos, which is the one field you cannot work around. */}
+          <div className="flex gap-3">
+            <div className="flex flex-col gap-2 flex-1">
+              <label className="text-sm font-semibold text-gray-300">Name</label>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="Player Name"
+                className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
+              />
+            </div>
+            <div className="flex flex-col gap-2 w-24 shrink-0">
+              <label className="text-sm font-semibold text-gray-300">OVR</label>
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={ovr}
+                onChange={(e) => setOvr(e.target.value)}
+                placeholder={String(player.ovr.base)}
+                className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
+              />
+            </div>
           </div>
 
           {/* Futbin URL */}
