@@ -341,12 +341,13 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const positionList = (s: string) => s.split(',').map(p => p.trim()).filter(Boolean).join(',');
   const positionsChanged = !!rawPositions && positionList(bio.primaryPositions) !== positionList(rawPositions);
 
-  // The id is whatever follows /player/, however the rest of the URL is shaped: FUTBIN links come
-  // as .../player/20701/rodrigo-hernandez-cascante, .../player/20701, and — for a card that is
-  // already an evo of another — .../player/21177_1014/lionel-messi. Requiring a name slug behind
-  // the digits dropped the bare form, and stopping at the first underscore would have started the
-  // builder from a card the app isn't holding, so the whole id token is kept.
-  const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+(?:_\d+)*)/) : null;
+  // Only the leading digits are the player. FUTBIN links come as
+  // .../player/20701/rodrigo-hernandez-cascante, .../player/20701, and .../player/21177_1014 —
+  // where _1014 is an evo already applied to the card being viewed (1014 is Tiny Tim). What the
+  // app holds is the base card, and the chain it appends is its own, so the suffix is dropped:
+  // builder/21177_1014_990_… is a 404, builder/21177_990_… is the build on screen. Requiring a
+  // name slug behind the digits, as this used to, dropped every one of these but the first.
+  const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+)/) : null;
   const futbinPlayerId = playerIdMatch ? playerIdMatch[1] : '';
   // FUTBIN only knows about real evos, so PlayStyle steps are left out of the builder URL.
   const futbinChain = (path: EvolutionPath) => path.chainIds.filter(id => !isPlayStyleNodeId(id));
