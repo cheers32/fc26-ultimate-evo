@@ -341,12 +341,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const positionList = (s: string) => s.split(',').map(p => p.trim()).filter(Boolean).join(',');
   const positionsChanged = !!rawPositions && positionList(bio.primaryPositions) !== positionList(rawPositions);
 
-  const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+)\//) : null;
+  // The id is whatever follows /player/, however the rest of the URL is shaped: FUTBIN links come
+  // as .../player/20701/rodrigo-hernandez-cascante, .../player/20701, and — for a card that is
+  // already an evo of another — .../player/21177_1014/lionel-messi. Requiring a name slug behind
+  // the digits dropped the bare form, and stopping at the first underscore would have started the
+  // builder from a card the app isn't holding, so the whole id token is kept.
+  const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+(?:_\d+)*)/) : null;
   const futbinPlayerId = playerIdMatch ? playerIdMatch[1] : '';
   // FUTBIN only knows about real evos, so PlayStyle steps are left out of the builder URL.
   const futbinChain = (path: EvolutionPath) => path.chainIds.filter(id => !isPlayStyleNodeId(id));
-  const builderLink = futbinPlayerId && futbinChain(activePath).length > 0
-    ? `https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${futbinChain(activePath).join('_')}?includeExpired=false`
+  const builderLink = (path: EvolutionPath) => futbinPlayerId && futbinChain(path).length > 0
+    ? `https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${futbinChain(path).join('_')}?includeExpired=false`
     : null;
 
   return (
@@ -376,15 +381,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
             <h1 className="text-lg font-extrabold tracking-wide uppercase bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent whitespace-nowrap">
               {bio.name}
             </h1>
-            <a
-              href={futbinLink}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-1.5 py-0.5 flex items-center gap-1 transition-colors shadow-sm"
-              title="View on FUTBIN"
-            >
-              <ExternalLink className="w-3 h-3" />
-            </a>
+            {/* Only when there is somewhere to go — an imported card with no URL was still drawing
+                this chip, and clicking it reloaded the app. */}
+            {futbinLink && (
+              <a
+                href={futbinLink}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] bg-[#1f2937] hover:bg-[#374151] text-gray-300 hover:text-white border border-gray-600 rounded px-1.5 py-0.5 flex items-center gap-1 transition-colors shadow-sm"
+                title="View on FUTBIN"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
 
             {/* Main OVR Rating Badge */}
             <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-black px-2 py-0.5 rounded font-bold text-xs shadow-sm border border-yellow-300 flex items-center gap-1 whitespace-nowrap">
@@ -1184,15 +1193,45 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   );
                 })}
 
-                {futbinPlayerId && futbinChain(renderPath).length > 0 && (
-                  <a
-                    href={`https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${futbinChain(renderPath).join('_')}?includeExpired=false`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 ml-auto text-[10px] text-fcGreen hover:text-white flex items-center gap-1 bg-green-950/60 px-2 py-1 rounded border border-green-800/60 transition-colors"
-                  >
-                    Open in FUTBIN <ExternalLink className="w-3 h-3" />
-                  </a>
+                {/* Save and Open live on the row itself. They used to hang off the path chips,
+                    which are only drawn once there are two paths — so the common case of one
+                    build had nowhere to star it from and no link to follow. */}
+                {renderPath.chainIds.length > 0 && (
+                  <div className="shrink-0 ml-auto flex items-center gap-1.5 pl-2">
+                    {onToggleFavoritePath && (
+                      <button
+                        onClick={() => onToggleFavoritePath(renderPath)}
+                        title={renderPath.isFavorite
+                          ? 'Saved — click to unstar, and Clear Unstarred can drop it again'
+                          : 'Star this build so it survives Analyze and the page reload'}
+                        className={`text-[10px] flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
+                          renderPath.isFavorite
+                            ? 'bg-yellow-500 text-black border-yellow-400 hover:bg-yellow-400'
+                            : 'bg-[#1f211f] text-gray-400 border-gray-700 hover:border-yellow-600 hover:text-yellow-400'
+                        }`}
+                      >
+                        <Star className={`w-3 h-3 ${renderPath.isFavorite ? 'fill-black' : ''}`} />
+                        {renderPath.isFavorite ? 'Saved' : 'Save'}
+                      </button>
+                    )}
+                    {builderLink(renderPath) ? (
+                      <a
+                        href={builderLink(renderPath)!}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-fcGreen hover:text-white flex items-center gap-1 bg-green-950/60 px-2 py-1 rounded border border-green-800/60 transition-colors"
+                      >
+                        Open in FUTBIN <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : futbinChain(renderPath).length > 0 && (
+                      <span
+                        className="text-[10px] text-gray-600 flex items-center gap-1 bg-[#1f211f] px-2 py-1 rounded border border-gray-800 cursor-help"
+                        title="This card has no FUTBIN URL, so the builder link can't be addressed. Add one with Switch → the card's edit button → Futbin URL."
+                      >
+                        No FUTBIN URL <ExternalLink className="w-3 h-3" />
+                      </span>
+                    )}
+                  </div>
                 )}
                 </div>
               );
