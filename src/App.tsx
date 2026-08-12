@@ -484,7 +484,7 @@ export default function App() {
    * server can't look like a change and start a write loop.
    */
   const starredKey = (paths: EvolutionPath[]) =>
-    JSON.stringify(paths.map(p => [p.id, p.name, p.chainIds.join('>')]));
+    JSON.stringify(paths.map(p => [p.id, p.name, p.starTier ?? 1, p.chainIds.join('>')]));
 
   const starredForPlayer = useMemo(
     () => withoutSteps([...generatedPaths, ...manualPaths].filter(p => p.isFavorite)),
@@ -618,6 +618,28 @@ export default function App() {
     updateState({
       manualPaths: manualPaths.filter(p => p.id !== pathId),
       generatedPaths: generatedPaths.filter(p => p.id !== pathId)
+    });
+  };
+
+  /**
+   * Naming a build is an edit like any other, so an Analyze result becomes user-owned when it is
+   * renamed — otherwise the next run would replace generatedPaths wholesale and take the name with
+   * it. The id is kept, so whatever is pointing at this path (the active selection, a starred
+   * entry on the team) still is.
+   */
+  const handleRenamePath = (pathId: string, name: string) => {
+    const next = name.trim();
+    if (!next) return;
+    const generated = generatedPaths.find(p => p.id === pathId);
+    if (generated) {
+      updateState({
+        generatedPaths: generatedPaths.filter(p => p.id !== pathId),
+        manualPaths: [...manualPaths, { ...generated, name: next }]
+      });
+      return;
+    }
+    updateState({
+      manualPaths: manualPaths.map(p => (p.id === pathId ? { ...p, name: next } : p))
     });
   };
 
@@ -1195,21 +1217,30 @@ export default function App() {
           onDeletePath={handleDeletePath}
           onToggleFavoritePath={(path) => {
             if (path.chainIds.length === 0) return;
+            // The star cycles rather than toggles: unstarred → saved → marked out among the saved
+            // → unstarred. Both starred tiers are saves, so only the third click gives the build
+            // back to Clear Unstarred.
+            const next = !path.isFavorite
+              ? { isFavorite: true, starTier: 1 as const }
+              : (path.starTier ?? 1) === 1
+              ? { isFavorite: true, starTier: 2 as const }
+              : { isFavorite: false, starTier: undefined };
             const isManual = manualPaths.some(p => p.id === path.id);
             if (isManual) {
-              // Already manual: just flip the flag in place.
+              // Already manual: just move it along in place.
               updateState({
-                manualPaths: manualPaths.map(p => p.id === path.id ? { ...p, isFavorite: !p.isFavorite } : p)
+                manualPaths: manualPaths.map(p => p.id === path.id ? { ...p, ...next } : p)
               });
             } else {
               // Starring a generated path promotes it to manual so the next Analyze run
               // (which replaces generatedPaths wholesale) can't silently discard it.
               updateState({
                 generatedPaths: generatedPaths.filter(p => p.id !== path.id),
-                manualPaths: [...manualPaths, { ...path, isFavorite: true }]
+                manualPaths: [...manualPaths, { ...path, ...next }]
               });
             }
           }}
+          onRenamePath={handleRenamePath}
           onClearPaths={handleClearPaths}
           onViewEvo={(id) => setViewingEvoId(id)}
           baseIndex={safeBaseIndex}

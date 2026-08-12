@@ -141,6 +141,12 @@ export interface EvolutionPath {
   description: string;
   isRecommended?: boolean;
   isFavorite?: boolean;
+  /**
+   * How hard it is starred: 1 is the plain save, 2 the one marked out among them. Both are saves —
+   * `isFavorite` is what protects a build from Clear Unstarred and what puts it on the team — so a
+   * tier without it means nothing. Absent on a starred build reads as 1.
+   */
+  starTier?: 1 | 2;
   // Steps of the build in order: EVO ids e.g. ['1076', '1159'], plus at most one 'ps:...' entry
   // for the PlayStyles the player picked themselves (see PLAYSTYLE_NODE_PREFIX in evoEngine).
   chainIds: string[];

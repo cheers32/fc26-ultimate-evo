@@ -4,7 +4,7 @@ import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -71,6 +71,7 @@ interface HeaderCardProps {
   onChangePlayer?: () => void;
   onClearPaths?: () => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
+  onRenamePath?: (pathId: string, name: string) => void;
   onViewEvo?: (evoId: string) => void;
   // Index of the step new builds start from (-1 = raw card), and a setter for picking one.
   baseIndex?: number;
@@ -206,6 +207,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   playStyles,
   onDeletePath,
   onToggleFavoritePath,
+  onRenamePath,
   onChangePlayer,
   onClearPaths,
   onViewEvo,
@@ -218,6 +220,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
   const [showFilters, setShowFilters] = React.useState(false);
   const [draftFilters, setDraftFilters] = React.useState<EvoFilters>(evoFilters || {});
+  // Which name is being edited, and the name being typed. Held here rather than in the path so an
+  // abandoned edit leaves nothing behind. A build is renameable from two places — its chip and its
+  // row — so the key carries both the path and which of the two is open, or they would both put an
+  // autofocusing input on screen for the same path.
+  const [renamingKey, setRenamingKey] = React.useState<string | null>(null);
+  const [draftName, setDraftName] = React.useState('');
+  // Escape abandons the edit by way of a blur, and the blur is what commits. A ref rather than
+  // state because the blur runs before a state update from the same event would be visible.
+  const renameCancelled = React.useRef(false);
 
   React.useEffect(() => {
     if (showFilters) {
@@ -347,6 +358,53 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   // app holds is the base card, and the chain it appends is its own, so the suffix is dropped:
   // builder/21177_1014_990_… is a 404, builder/21177_990_… is the build on screen. Requiring a
   // name slug behind the digits, as this used to, dropped every one of these but the first.
+  /** Where a build's in-game stats total ends up — what a finished build is judged on. */
+  const pathIgs = (path: EvolutionPath) => {
+    const last = path.steps?.[path.steps.length - 1];
+    if (!last) return null;
+    return Object.values(last.statsAfter).reduce(
+      (acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0),
+      0
+    );
+  };
+
+  /** 0 unstarred, 1 saved, 2 saved and marked out. A starred build with no tier reads as 1. */
+  const starTier = (path: EvolutionPath) => (path.isFavorite ? path.starTier ?? 1 : 0);
+  const starTitle = (path: EvolutionPath) => [
+    'Star this build so it survives Analyze and the page reload',
+    'Saved — click again to mark it out in red, once more to unstar',
+    'Marked out — click again to unstar, and Clear Unstarred can drop it'
+  ][starTier(path)];
+
+  const startRename = (where: 'chip' | 'row', path: EvolutionPath) => {
+    setRenamingKey(`${where}:${path.id}`);
+    setDraftName(path.name);
+  };
+
+  /** The editor itself, shared by the chip and the path row. */
+  const nameInput = (path: EvolutionPath, className: string) => (
+    <input
+      autoFocus
+      value={draftName}
+      onChange={(e) => setDraftName(e.target.value)}
+      onBlur={() => {
+        const next = draftName.trim();
+        if (next && !renameCancelled.current && onRenamePath) onRenamePath(path.id, next);
+        renameCancelled.current = false;
+        setRenamingKey(null);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') {
+          renameCancelled.current = true;
+          e.currentTarget.blur();
+        }
+      }}
+      className={className}
+      placeholder={path.name}
+    />
+  );
+
   const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+)/) : null;
   const futbinPlayerId = playerIdMatch ? playerIdMatch[1] : '';
   // FUTBIN only knows about real evos, so PlayStyle steps are left out of the builder URL.
@@ -782,12 +840,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
     {/* Path Selection & Action Buttons */}
     <div className="flex flex-col gap-1 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-2 shadow-md">
-      {allPaths.length > 1 && (
+      {/* One chip per build, from the first build on — the row used to appear only once there were
+          two, which left a single saved build with nothing to carry its name and its total. */}
+      {allPaths.some(p => p.chainIds.length > 0) && (
         <div className="flex flex-wrap gap-1.5 mb-1">
           {allPaths.map((path) => (
             <div key={path.id} className="relative flex items-center group">
+              {renamingKey === `chip:${path.id}` ? (
+                nameInput(path, "w-32 bg-[#121212] border border-fcGreen rounded-lg px-2 py-1 text-[11px] font-bold text-white outline-none")
+              ) : (
               <button
                 onClick={() => onSelectPath(path.id)}
+                onDoubleClick={() => { if (onRenamePath && path.chainIds.length > 0) startRename('chip', path); }}
+                title={path.chainIds.length > 0 && onRenamePath ? 'Double-click to rename' : undefined}
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all border flex items-center gap-1.5 ${
                   expandedPathIds.includes(path.id)
                     ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
@@ -797,7 +862,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 }`}
               >
                 {path.name}
+                {/* What the build is worth, on the chip itself, so builds can be told apart
+                    without expanding them. */}
+                {pathIgs(path) !== null && (
+                  <span className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-black/40 border border-gray-700 text-blue-400">
+                    IGS {pathIgs(path)}
+                  </span>
+                )}
               </button>
+              )}
               {onSetComparePathId && activePathId !== path.id && (
                 <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <button
@@ -812,6 +885,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   </button>
                 </div>
               )}
+              {onRenamePath && path.chainIds.length > 0 && renamingKey !== `chip:${path.id}` && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); startRename('chip', path); }}
+                  className="absolute -bottom-1.5 -right-1.5 rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-400 hover:bg-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  title="Rename this build"
+                >
+                  <Pencil className="w-2.5 h-2.5" />
+                </button>
+              )}
               {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
                 <div className="absolute -top-3 -left-1.5 z-10">
                   <button
@@ -819,10 +901,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       e.stopPropagation();
                       onToggleFavoritePath(path);
                     }}
-                    className="rounded-full p-0.5 shadow-sm bg-yellow-500 text-black hover:bg-yellow-400"
-                    title="Unstar (allow deletion)"
+                    className={`rounded-full p-0.5 shadow-sm ${
+                      starTier(path) === 2
+                        ? 'bg-red-600 text-white hover:bg-red-500'
+                        : 'bg-yellow-500 text-black hover:bg-yellow-400'
+                    }`}
+                    title={starTitle(path)}
                   >
-                    <Star className="w-2.5 h-2.5 fill-black" />
+                    <Star className={`w-2.5 h-2.5 ${starTier(path) === 2 ? 'fill-white' : 'fill-black'}`} />
                   </button>
                 </div>
               )}
@@ -835,7 +921,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         onToggleFavoritePath(path);
                       }}
                       className="rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-500 hover:bg-yellow-500 hover:text-black"
-                      title="Star (keep permanently)"
+                      title={starTitle(path)}
                     >
                       <Star className="w-2.5 h-2.5" />
                     </button>
@@ -864,9 +950,31 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               const renderPath = allPaths.find(p => p.id === renderPathId);
               if (!renderPath) return null;
               
+              // A build too wide for the page wraps onto another line, starting back at the left.
+              // It used to scroll sideways instead, which put the end of a long chain behind a
+              // swipe that the browser reads as a back gesture.
               return (
-                <div key={renderPathId} className="flex flex-nowrap overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full p-1.5 items-center gap-1.5 bg-[#1a1c1a] rounded-lg border border-gray-800">
+                <div key={renderPathId} className="flex flex-wrap items-center gap-x-1.5 gap-y-2 p-1.5 bg-[#1a1c1a] rounded-lg border border-gray-800">
                   <Layers className="w-3.5 h-3.5 text-gray-500 mr-1 shrink-0" />
+
+                {/* The build's name, and where it gets renamed. On the row rather than only on the
+                    chips above, which appear once there are two paths — until now a lone build was
+                    both unnamed on screen and unrenameable. Empty paths are left out: the Default
+                    path isn't stored anywhere yet, so a name given to it would not survive. */}
+                {renderPath.chainIds.length > 0 && onRenamePath && (
+                  renamingKey === `row:${renderPath.id}` ? (
+                    nameInput(renderPath, "shrink-0 w-32 bg-[#121212] border border-fcGreen rounded px-1.5 py-1 text-[11px] font-bold text-white outline-none")
+                  ) : (
+                    <button
+                      onClick={() => startRename('row', renderPath)}
+                      title={`Rename "${renderPath.name}"`}
+                      className="shrink-0 max-w-32 flex items-center gap-1 px-1.5 py-1 rounded border border-transparent hover:border-gray-700 text-[11px] font-bold text-gray-400 hover:text-gray-200 transition-colors group/name"
+                    >
+                      <span className="truncate">{renderPath.name}</span>
+                      <Pencil className="w-2.5 h-2.5 shrink-0 opacity-0 group-hover/name:opacity-100 transition-opacity" />
+                    </button>
+                  )
+                )}
 
                 {/* Base Card Chip — always present, so an empty path still anchors on the raw card */}
                 <div className={`flex items-center gap-0.5 group/node shrink-0 relative ${
@@ -1202,17 +1310,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     {onToggleFavoritePath && (
                       <button
                         onClick={() => onToggleFavoritePath(renderPath)}
-                        title={renderPath.isFavorite
-                          ? 'Saved — click to unstar, and Clear Unstarred can drop it again'
-                          : 'Star this build so it survives Analyze and the page reload'}
+                        title={starTitle(renderPath)}
                         className={`text-[10px] flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
-                          renderPath.isFavorite
-                            ? 'bg-yellow-500 text-black border-yellow-400 hover:bg-yellow-400'
-                            : 'bg-[#1f211f] text-gray-400 border-gray-700 hover:border-yellow-600 hover:text-yellow-400'
+                          [
+                            'bg-[#1f211f] text-gray-400 border-gray-700 hover:border-yellow-600 hover:text-yellow-400',
+                            'bg-yellow-500 text-black border-yellow-400 hover:bg-yellow-400',
+                            'bg-red-600 text-white border-red-500 hover:bg-red-500'
+                          ][starTier(renderPath)]
                         }`}
                       >
-                        <Star className={`w-3 h-3 ${renderPath.isFavorite ? 'fill-black' : ''}`} />
-                        {renderPath.isFavorite ? 'Saved' : 'Save'}
+                        <Star className={`w-3 h-3 ${starTier(renderPath) === 1 ? 'fill-black' : starTier(renderPath) === 2 ? 'fill-white' : ''}`} />
+                        {starTier(renderPath) > 0 ? 'Saved' : 'Save'}
                       </button>
                     )}
                     {builderLink(renderPath) ? (
