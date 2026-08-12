@@ -4,7 +4,7 @@ import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil, Copy } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil, Copy, Check } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -78,6 +78,8 @@ interface HeaderCardProps {
   baseIndex?: number;
   onSetBase?: (pathId: string, index: number) => void;
   onRemoveNode?: (pathId: string, index: number) => void;
+  // Ticks off how far the build has been played: the index of the step just marked done.
+  onSetProgress?: (pathId: string, index: number) => void;
 }
 
 /**
@@ -93,7 +95,9 @@ const PlayStyleNode: React.FC<{
   onClick?: () => void;
   onEdit?: () => void;
   onRemove?: () => void;
-}> = ({ id, idx, step, isActive, onClick, onEdit, onRemove }) => {
+  isDone?: boolean;
+  onToggleDone?: () => void;
+}> = ({ id, idx, step, isActive, onClick, onEdit, onRemove, isDone, onToggleDone }) => {
   const picks = parsePlayStyleNodeId(id);
   const invalid = step ? !step.validation.eligible : false;
 
@@ -104,7 +108,9 @@ const PlayStyleNode: React.FC<{
     : 'border-yellow-800/70 hover:border-yellow-600';
 
   return (
-    <div className="flex items-center gap-0.5 group/node shrink-0 relative">
+    <div className={`flex items-center gap-0.5 group/node shrink-0 relative ${
+      isDone ? 'ring-1 ring-fcGreen/60 rounded' : ''
+    }`}>
       <button
         onClick={onClick}
         title={invalid
@@ -154,6 +160,19 @@ const PlayStyleNode: React.FC<{
           title="Remove this PlayStyle step"
         >
           <X className="w-2.5 h-2.5" />
+        </button>
+      )}
+      {onToggleDone && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleDone(); }}
+          className={`absolute -bottom-1.5 -left-1.5 p-0.5 rounded-full transition-opacity z-10 shadow-sm ${
+            isDone
+              ? 'bg-fcGreen text-black opacity-100'
+              : 'bg-gray-800 text-gray-500 hover:bg-fcGreen hover:text-black opacity-0 group-hover/node:opacity-100'
+          }`}
+          title={isDone ? 'Done in game — click to unmark' : 'Mark this step done in game'}
+        >
+          <Check className="w-2.5 h-2.5" strokeWidth={3.5} />
         </button>
       )}
     </div>
@@ -215,7 +234,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onViewEvo,
   baseIndex = -1,
   onSetBase,
-  onRemoveNode
+  onRemoveNode,
+  onSetProgress
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -871,6 +891,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     IGS {pathIgs(path)}
                   </span>
                 )}
+                {/* How far it's been played, on the chip too — a collapsed build should still
+                    answer "how much of this is left" without being opened. */}
+                {(path.doneUpTo ?? -1) >= 0 && (
+                  <span
+                    className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-green-950/50 border border-fcGreen/50 text-fcGreen flex items-center gap-0.5"
+                    title={`${Math.min(path.doneUpTo! + 1, path.chainIds.length)} of ${path.chainIds.length} steps done in game`}
+                  >
+                    <Check className="w-2 h-2" strokeWidth={4} />
+                    {Math.min(path.doneUpTo! + 1, path.chainIds.length)}/{path.chainIds.length}
+                  </span>
+                )}
               </button>
               )}
               {onSetComparePathId && activePathId !== path.id && (
@@ -1085,6 +1116,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           onClick={renderPath.id === activePathId ? () => onNodeClick(idx) : undefined}
                           onEdit={renderPath.id === activePathId && onOpenPlayStylePicker ? () => onOpenPlayStylePicker(idx) : undefined}
                           onRemove={onRemoveNode ? () => onRemoveNode(renderPath.id, idx) : undefined}
+                          isDone={idx <= (renderPath.doneUpTo ?? -1)}
+                          onToggleDone={onSetProgress ? () => onSetProgress(renderPath.id, idx) : undefined}
                         />
                         {idx < renderPath.chainIds.length - 1 && (
                           <span className="text-gray-600 text-[10px] shrink-0">➜</span>
@@ -1115,11 +1148,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   // Everything up to the chosen base is locked in as the starting point.
                   const isBase = renderPath.id === activePathId && idx === baseIndex;
                   const inBasePrefix = renderPath.id === activePathId && idx <= baseIndex;
+                  // Done in game, as ticked off by hand — a build is worked through in order, so
+                  // the marker on step n means every step up to n is behind you.
+                  const isDone = idx <= (renderPath.doneUpTo ?? -1);
+                  const isLastDone = idx === (renderPath.doneUpTo ?? -1);
 
                   return (
                     <React.Fragment key={`${id}-${idx}`}>
                       <div className={`flex items-center gap-0.5 group/node shrink-0 relative ${
-                        inBasePrefix ? 'ring-1 ring-purple-500/60 rounded' : ''
+                        inBasePrefix ? 'ring-1 ring-purple-500/60 rounded' : isDone ? 'ring-1 ring-fcGreen/60 rounded' : ''
                       }`}>
                         <button
                           onClick={() => onNodeClick(idx)}
@@ -1305,6 +1342,25 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               : 'Set as base for new auto/manual builds'}
                           >
                             <RefreshCw className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                        {/* Where the build stands in game. Stays visible once ticked — it's the
+                            answer to "where was I", which is wanted before hovering anything. */}
+                        {onSetProgress && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onSetProgress(renderPath.id, idx); }}
+                            className={`absolute -bottom-1.5 -left-1.5 p-0.5 rounded-full transition-opacity z-10 shadow-sm ${
+                              isDone
+                                ? 'bg-fcGreen text-black opacity-100'
+                                : 'bg-gray-800 text-gray-500 hover:bg-fcGreen hover:text-black opacity-0 group-hover/node:opacity-100'
+                            }`}
+                            title={isLastDone
+                              ? `Done up to ${evo.name} — click to unmark it`
+                              : isDone
+                              ? `Done in game — click to roll progress back to ${evo.name}`
+                              : `Mark done in game up to ${evo.name}`}
+                          >
+                            <Check className="w-2.5 h-2.5" strokeWidth={3.5} />
                           </button>
                         )}
                       </div>

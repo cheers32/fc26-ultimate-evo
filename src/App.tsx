@@ -484,7 +484,7 @@ export default function App() {
    * server can't look like a change and start a write loop.
    */
   const starredKey = (paths: EvolutionPath[]) =>
-    JSON.stringify(paths.map(p => [p.id, p.name, p.starTier ?? 1, p.chainIds.join('>')]));
+    JSON.stringify(paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>')]));
 
   const starredForPlayer = useMemo(
     () => withoutSteps([...generatedPaths, ...manualPaths].filter(p => p.isFavorite)),
@@ -681,6 +681,35 @@ export default function App() {
     });
   };
 
+  /**
+   * Mark how far the build has been played. `index` is the step just ticked: everything up to it
+   * counts as done, and ticking the last done step again clears it (and, by the same rule,
+   * everything after it — a step can't be done when the one before it isn't).
+   *
+   * Progress is the user's own note about a build, so recording it makes an Analyze result
+   * user-owned, exactly as renaming or editing one does.
+   */
+  const handleSetPathProgress = (pathId: string, index: number) => {
+    const path = allPaths.find(p => p.id === pathId);
+    if (!path) return;
+    const doneUpTo = (path.doneUpTo ?? -1) === index ? index - 1 : index;
+
+    const generated = generatedPaths.find(p => p.id === pathId);
+    if (generated) {
+      updateState({
+        generatedPaths: generatedPaths.filter(p => p.id !== pathId),
+        manualPaths: [...manualPaths, { ...generated, doneUpTo }]
+      });
+      return;
+    }
+    // The Default path is synthesised until something is added to it, so it may be in neither list.
+    updateState({
+      manualPaths: manualPaths.some(p => p.id === pathId)
+        ? manualPaths.map(p => (p.id === pathId ? { ...p, doneUpTo } : p))
+        : [...manualPaths, { ...path, doneUpTo }]
+    });
+  };
+
   const handleClearPaths = () => {
     updateState({
       generatedPaths: generatedPaths.filter(p => p.isFavorite),
@@ -703,17 +732,20 @@ export default function App() {
     
     // Auto paths become manual paths when edited
     const wasGenerated = currentState.generatedPaths.some(p => p.id === path.id);
-    const updated: EvolutionPath = { 
-      ...path, 
-      id: wasGenerated ? `custom-${Date.now()}` : path.id,
-      name: wasGenerated ? `${path.name} (Edited)` : path.name,
-      chainIds: newChainIds, 
-      steps 
-    };
-
-    // Removing a step shifts everything after it, so the base has to follow.
+    // Removing a step shifts everything after it, so the base and the progress marker have to
+    // follow — otherwise both would silently move onto a different evo.
     const currentBase = currentState.baseIndex ?? -1;
     const nextBase = index <= currentBase ? currentBase - 1 : currentBase;
+    const currentDone = path.doneUpTo ?? -1;
+
+    const updated: EvolutionPath = {
+      ...path,
+      id: wasGenerated ? `custom-${Date.now()}` : path.id,
+      name: wasGenerated ? `${path.name} (Edited)` : path.name,
+      doneUpTo: index <= currentDone ? currentDone - 1 : currentDone,
+      chainIds: newChainIds,
+      steps
+    };
 
     // Editing an Analyze result makes it user-owned, matching the manual-path save behaviour:
     // otherwise the next Analyze run would silently discard the edit.
@@ -757,12 +789,18 @@ export default function App() {
     }
 
     const steps = simulateEvoChain(newChainIds, playerBio, initialOvrData, statsData, playStylesData).steps;
-    const updated: EvolutionPath = { ...path, chainIds: newChainIds, steps };
 
-    // Adding or dropping a step shifts everything after it, so the base has to follow.
+    // Adding or dropping a step shifts everything after it, so the base and the progress marker
+    // have to follow.
     let nextBase = currentState.baseIndex ?? -1;
     if (removedAt !== null && removedAt <= nextBase) nextBase -= 1;
     if (insertedAt !== null && insertedAt <= nextBase) nextBase += 1;
+
+    let nextDone = path.doneUpTo ?? -1;
+    if (removedAt !== null && removedAt <= nextDone) nextDone -= 1;
+    if (insertedAt !== null && insertedAt <= nextDone) nextDone += 1;
+
+    const updated: EvolutionPath = { ...path, doneUpTo: nextDone, chainIds: newChainIds, steps };
 
     // The path may live in generatedPaths, in manualPaths, or in neither — the "Default" path is
     // synthesised on the fly and only joins manualPaths once something is added to it. Editing an
@@ -1254,6 +1292,7 @@ export default function App() {
           playStyles={previewPlayStyles}
           onDeletePath={handleDeletePath}
           onDuplicatePath={handleDuplicatePath}
+          onSetProgress={handleSetPathProgress}
           onToggleFavoritePath={(path) => {
             if (path.chainIds.length === 0) return;
             // The star cycles rather than toggles: unstarred → saved → marked out among the saved

@@ -147,6 +147,12 @@ export interface EvolutionPath {
    * tier without it means nothing. Absent on a starred build reads as 1.
    */
   starTier?: 1 | 2;
+  /**
+   * How far the build has actually been played in game: the index of the last step that's done, so
+   * -1 (or absent) is "not started". Evos are applied in chain order, so one pointer says it —
+   * everything up to it is done and everything after it isn't.
+   */
+  doneUpTo?: number;
   // Steps of the build in order: EVO ids e.g. ['1076', '1159'], plus at most one 'ps:...' entry
   // for the PlayStyles the player picked themselves (see PLAYSTYLE_NODE_PREFIX in evoEngine).
   chainIds: string[];
