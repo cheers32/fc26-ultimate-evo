@@ -40,7 +40,17 @@ export function parseFutbinText(
     // The bio heading carries the full name where the card widget only has the surname.
     const bioNameMatch = text.match(/\nPlayer Bio - ([^\n]+)\n/);
     data.name = (bioNameMatch?.[1] || cardMatch?.[6] || 'Imported Player').trim();
-    data.baseOvr = cardMatch ? parseInt(cardMatch[1], 10) : 80;
+
+    // The bio spells the rating out in prose — "his UCL Road to the Finals card is rated 93" — and
+    // prose survives a layout change that moves the card widget's line breaks around. Which does
+    // happen: the same page copied from a different browser glued labels to their values, and the
+    // widget stopped matching, so a real card imported at the made-up 80 again.
+    const ratedMatch = text.match(/card is rated (\d{2,3})/i);
+    data.baseOvr = cardMatch
+      ? parseInt(cardMatch[1], 10)
+      : ratedMatch
+      ? parseInt(ratedMatch[1], 10)
+      : 80;
     data.cardPositions = cardMatch
       ? [...cardMatch[2].matchAll(new RegExp(`(${POSITIONS})`, 'g'))].map(m => m[1])
       : [];
@@ -59,9 +69,12 @@ export function parseFutbinText(
     // order. The bio sentence below it is the fallback, and reads them out in prose.
     const fromMatch = text.match(/\nView other Players from:\n([^\n]+)\n([^\n]+)\n([^\n]+)\n/);
     const bioSentence = text.match(/ from ([^.]+?)\. .*? who plays for (.+?) in (.+?)\./);
-    data.club = fromMatch?.[1] || labelled('Club') || bioSentence?.[2] || 'Unknown Club';
-    data.nation = fromMatch?.[2] || labelled('Nation') || bioSentence?.[1] || 'Unknown Nation';
-    data.league = fromMatch?.[3] || labelled('League') || bioSentence?.[3] || 'Unknown League';
+    // Copied from some browsers the label comes along stuck to the front of its value, which is
+    // how a card ended up playing for "ClubReal Madrid".
+    const unlabel = (value?: string) => value?.replace(/^(Club|Nation|League)(?=\S)/, '').trim();
+    data.club = unlabel(fromMatch?.[1]) || labelled('Club') || bioSentence?.[2] || 'Unknown Club';
+    data.nation = unlabel(fromMatch?.[2]) || labelled('Nation') || bioSentence?.[1] || 'Unknown Nation';
+    data.league = unlabel(fromMatch?.[3]) || labelled('League') || bioSentence?.[3] || 'Unknown League';
 
     const skills = labelled('SKILLS');
     const weakFoot = labelled('WEAK FOOT');

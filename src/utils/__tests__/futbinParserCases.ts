@@ -596,3 +596,135 @@ check('van Dijk 90 Gold Rare', VAN_DIJK, 1, {
     'Aerial Fortress', 'Bruiser'
   ]
 });
+
+/**
+ * The same page copied from a different browser: the footer's labels come glued to their values,
+ * and the card widget's lines are joined, so nothing anchors the rating. This is the shape that
+ * imported Mbappé at OVR 80 a second time, after the first fix — the stat blocks and the bio read
+ * fine, which is why everything but the rating and the club looked right.
+ */
+const GLUED = `Home
+EA FC 26
+Players
+Kylian Mbappé UCL Road to the Finals
+MBAPPÉ - UCL Road to the Finals EA FC 26 Prices and Rating
+93 ST ++ LM LW R 5 4 88.8 Mbappé 99 PAC 93 SHO 86 PAS 95 DRI 42 DEF 80 PHY
+SKILLS
+5
+WEAK FOOT
+4
+HEIGHT
+182cm | 6'0"
+FOOT
+Right
+AGE
+27 years old
+Rapid
+ST
+Advanced Forward
+++
+LM
+Inside Forward
+++
+LW
+Inside Forward
+++
+Pace
+99
+Acceleration
+99
+Sprint Speed
+99
+Shooting
+93
+Att. Position
+94
+Finishing
+95
+Shot Power
+94
+Long Shots
+90
+Volleys
+90
+Penalties
+85
+Passing
+86
+Vision
+87
+Crossing
+82
+FK Acc.
+73
+Short Pass
+91
+Long Pass
+80
+Curve
+84
+Dribbling
+95
+Agility
+96
+Balance
+85
+Reactions
+94
+Ball Control
+96
+Dribbling
+95
+Composure
+91
+Defending
+42
+Interceptions
+43
+Heading Acc.
+88
+Def. Aware
+31
+Stand Tackle
+39
+Slide Tackle
+37
+Physical
+80
+Jumping
+93
+Stamina
+90
+Strength
+80
+Aggression
+65
+Player Bio - Kylian Mbappé
+
+Kylian Mbappé is a professional footballer from France. He is a 182cm | 6'0" tall, right-footed striker (ST) who plays for Real Madrid in LALIGA EA SPORTS. He was born on 20-12-1998 and he is now 27 years old.
+
+Kylian Mbappé's UCL Road to the Finals card is rated 93. He has a 4-star weak foot and 5-star skill moves.
+
+View other Players from:
+ClubReal Madrid
+NationFrance
+LeagueLALIGA EA SPORTS
+`;
+
+check('Mbappé 93, labels glued by the copy', GLUED, 1, {
+  name: 'Kylian Mbappé',
+  ovr: 93,
+  positions: 'ST, LM, LW',
+  rarity: 'UCL Road to the Finals',
+  club: 'Real Madrid',
+  nation: 'France',
+  league: 'LALIGA EA SPORTS',
+  height: `182cm | 6'0"`,
+  footAge: 'Right | 27 yrs',
+  skillMoves: 5,
+  weakFoot: 4,
+  faces: { pac: 99, sho: 93, pas: 86, dri: 95, def: 42, phy: 80 },
+  baseStats: 495,
+  igs: 2366,
+  playStyles: ['Rapid+']
+});
