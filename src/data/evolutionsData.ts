@@ -100,6 +100,7 @@ import { strikerInstinct1219 } from './evolutions/strikerInstinct1219';
 import { everythingAtOnce1220 } from './evolutions/everythingAtOnce1220';
 import { backShortly1221 } from './evolutions/backShortly1221';
 import { neverLosingIt1222 } from './evolutions/neverLosingIt1222';
+import { stillGotIt1223 } from './evolutions/stillGotIt1223';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '974': theMainEvent974,
@@ -202,7 +203,8 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1219': strikerInstinct1219,
   '1220': everythingAtOnce1220,
   '1221': backShortly1221,
-  '1222': neverLosingIt1222
+  '1222': neverLosingIt1222,
+  '1223': stillGotIt1223
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
