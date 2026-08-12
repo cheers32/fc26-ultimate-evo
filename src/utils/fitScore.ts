@@ -1,6 +1,13 @@
 import { PlayerBio, PlayStylesData, StatsData } from '../types/player';
 import { POSITION_WEIGHTS } from './positionWeights';
-import { AccelerateType, calculateAccelerateType, parseHeightCm } from './statUtils';
+import {
+  ACCELERATE_FAMILY,
+  AccelerateFamily,
+  AccelerateType,
+  calculateAccelerateType,
+  parseHeightCm
+} from './statUtils';
+import { chemStyles } from '../data/chemStyles';
 import {
   GATE_FLOOR,
   GATE_RAMP,
@@ -94,6 +101,36 @@ export function accelerateOf(stats: StatsData, bio: PlayerBio): AccelerateType {
     subValue(stats, 'strength') ?? 50,
     parseHeightCm(bio.height)
   );
+}
+
+/**
+ * How many chemistry styles leave the card in each of the three archetypes the game prints.
+ *
+ * AcceleRATE is decided by acceleration, agility and strength, and a chem style moves all three —
+ * so a card sitting one point from a threshold isn't one archetype, it's a choice between two or
+ * three, and which styles are still open matters more than the bare label. Every style counts as
+ * one, Basic included; the no-style card is the label already on the chip.
+ */
+export function accelerateSpread(stats: StatsData, bio: PlayerBio): Record<AccelerateFamily, number> {
+  const acc = subValue(stats, 'acceleration') ?? 50;
+  const agi = subValue(stats, 'agility') ?? 50;
+  const str = subValue(stats, 'strength') ?? 50;
+  const height = parseHeightCm(bio.height);
+  const spread: Record<AccelerateFamily, number> = { Explosive: 0, Controlled: 0, Lengthy: 0 };
+
+  for (const boosts of Object.values(chemStyles)) {
+    // Chem boosts stop at 99, the same ceiling the stat panel applies them under.
+    const capped = (base: number, key: string) => Math.min(99, base + (boosts[key] || 0));
+    const type = calculateAccelerateType(
+      capped(acc, 'acceleration'),
+      capped(agi, 'agility'),
+      capped(str, 'strength'),
+      height
+    );
+    spread[ACCELERATE_FAMILY[type]] += 1;
+  }
+
+  return spread;
 }
 
 /**

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp, ChevronDown } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
+import { StatsGrid } from './StatsGrid';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore } from '../utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
@@ -11,10 +12,11 @@ import {
   formatEvoTerms,
   displayExcludedPositions,
   AccelerateType,
+  AccelerateFamily,
   ACCELERATE_TYPES,
   ACCELERATE_SHORT
 } from '../utils/statUtils';
-import { FitBreakdown, controlModeFor, fitScore, accelerateOf } from '../utils/fitScore';
+import { FitBreakdown, controlModeFor, fitScore, accelerateOf, accelerateSpread } from '../utils/fitScore';
 import { useModal } from '../utils/modalStack';
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
@@ -279,6 +281,25 @@ const AccelerateBadge = ({
   );
 };
 
+/**
+ * What the chem styles would do to the archetype: `3L/5C/2E` is three styles that leave the card
+ * Lengthy, five Controlled, two Explosive. A card one point from a threshold reads the same on the
+ * RATE chip as one nowhere near it, and this is where the difference shows — an evo that hands you
+ * the archetype you want on every style is worth more than one where a single style reaches it.
+ */
+const AccelerateSpreadBadge = ({ spread }: { spread: Record<AccelerateFamily, number> }) => (
+  <div
+    title={`With a chemistry style applied: ${spread.Lengthy} Lengthy · ${spread.Controlled} Controlled · ${spread.Explosive} Explosive (of ${spread.Lengthy + spread.Controlled + spread.Explosive} styles, Basic included)`}
+    className="flex gap-1 items-center bg-gray-800/80 px-2 py-0.5 rounded border border-gray-600 text-[10px] font-mono font-bold whitespace-nowrap"
+  >
+    <span className={spread.Lengthy > 0 ? 'text-sky-300' : 'text-gray-600'}>{spread.Lengthy}L</span>
+    <span className="text-gray-600">/</span>
+    <span className={spread.Controlled > 0 ? 'text-gray-200' : 'text-gray-600'}>{spread.Controlled}C</span>
+    <span className="text-gray-600">/</span>
+    <span className={spread.Explosive > 0 ? 'text-orange-300' : 'text-gray-600'}>{spread.Explosive}E</span>
+  </div>
+);
+
 const PlayStyleDiffDisplay = ({ before, after }: { before?: PlayStylesData, after: PlayStylesData }) => {
   if (!before) return null;
   const beforeGold = new Set([...before.base.gold, ...before.ev.gold]);
@@ -526,6 +547,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let recBlocked = false;
     let expectedFit: FitBreakdown | null = null;
     let expectedAccelerate: AccelerateType | null = null;
+    let expectedSpread: Record<AccelerateFamily, number> | null = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -541,6 +563,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedPlayStyles = testRes.finalPlayStyles;
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
           expectedAccelerate = accelerateOf(testRes.finalStats, testRes.finalBio);
+          expectedSpread = accelerateSpread(testRes.finalStats, testRes.finalBio);
 
           if (currentFit) {
             expectedFit = fitScore({
@@ -606,6 +629,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       recBlocked,
       expectedFit,
       expectedAccelerate,
+      expectedSpread,
       posMatchScore
     };
   });
@@ -1033,6 +1057,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
             </div>
           )}
 
+          {/* The sub-stats of the chain as it stands. The chain above shows the six face values,
+              but an evo is chosen on the sub-stats under them — agility against strength decides
+              the archetype, and a face value can sit still while the stat you came for moves. No
+              deltas here: the chips on the chain already say what each step added, and this is the
+              answer to "where is the card now". */}
+          <div className="p-3 border-b border-gray-800 bg-[#121212] shrink-0">
+            <StatsGrid baseStats={currentStats} previewStats={currentStats} activeChemBoosts={{}} />
+          </div>
+
           {/* Bottom Side: Available Pool */}
           <div className="flex flex-col shrink-0">
             <div className="sticky top-0 z-20 p-3 border-b border-gray-800 bg-[#1f211f]/95 backdrop-blur flex flex-col gap-3">
@@ -1294,7 +1327,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               ) : (
                 visiblePool
-                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate, expectedSpread }) => {
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
@@ -1391,6 +1424,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             )}
                             {canAdd && expectedAccelerate && (
                               <AccelerateBadge after={expectedAccelerate} before={currentAccelerate} />
+                            )}
+                            {canAdd && expectedSpread && (
+                              <AccelerateSpreadBadge spread={expectedSpread} />
                             )}
                             {canAdd && currentFit && expectedFit && (
                               <div

@@ -91,6 +91,19 @@ export const ACCELERATE_SHORT: Record<AccelerateType, string> = {
   'Lengthy': 'LEN'
 };
 
+/** The three the card itself prints, which is what the seven-way split collapses to in game. */
+export type AccelerateFamily = 'Explosive' | 'Controlled' | 'Lengthy';
+
+export const ACCELERATE_FAMILY: Record<AccelerateType, AccelerateFamily> = {
+  'Explosive': 'Explosive',
+  'Mostly Explosive': 'Explosive',
+  'Controlled Explosive': 'Explosive',
+  'Controlled': 'Controlled',
+  'Controlled Lengthy': 'Lengthy',
+  'Mostly Lengthy': 'Lengthy',
+  'Lengthy': 'Lengthy'
+};
+
 /** Pulls the centimetres out of a bio height string like `190cm | 6'3"`. */
 export function parseHeightCm(height?: string): number | undefined {
   const cm = height?.match(/(\d{2,3})\s*cm/i);
