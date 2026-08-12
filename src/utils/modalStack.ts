@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { RefObject, useEffect, useRef } from 'react';
 
 /**
  * Which modals are on screen, innermost last.
@@ -18,17 +18,31 @@ const stack: object[] = [];
 /** Whether any modal is on screen — for page-level shortcuts, which shouldn't fire underneath one. */
 export const isModalOpen = () => stack.length > 0;
 
+interface ModalOptions {
+  onClose: () => void;
+  /**
+   * The field the modal opens into — its search box, or whatever it exists to be typed in. A modal
+   * you reached by typing is one you are still typing into.
+   */
+  focusRef?: RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  /**
+   * The key that opens this modal, which inside it puts the caret back in that field — so the key
+   * that got you here means the same thing once you have arrived. Only read with `focusRef`.
+   */
+  focusKey?: string;
+}
+
 /**
- * Close this modal on Escape, but only while it is the top one.
+ * Register a modal: Escape closes it while it is the top one, and its search box takes focus.
  *
  * `isOpen` is for modals that stay mounted while closed; ones that are only rendered when open can
- * pass true. `onClose` is read at keypress time, so it doesn't have to be stable — a new identity
- * each render would otherwise re-register the modal and send it to the top of the stack.
+ * pass true. The options are read at keypress time, so they don't have to be stable — a new
+ * identity each render would otherwise re-register the modal and send it to the top of the stack.
  */
-export function useModalEscape(isOpen: boolean, onClose: () => void) {
-  const close = useRef(onClose);
+export function useModal(isOpen: boolean, options: ModalOptions) {
+  const latest = useRef(options);
   useEffect(() => {
-    close.current = onClose;
+    latest.current = options;
   });
 
   useEffect(() => {
@@ -36,12 +50,32 @@ export function useModalEscape(isOpen: boolean, onClose: () => void) {
 
     const token = {};
     stack.push(token);
+    const isTop = () => stack[stack.length - 1] === token;
+
+    const field = latest.current.focusRef?.current;
+    field?.focus();
+    field?.select();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (stack[stack.length - 1] !== token) return;
+      if (!isTop()) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        latest.current.onClose();
+        return;
+      }
+
+      const { focusKey, focusRef } = latest.current;
+      if (!focusKey || !focusRef?.current) return;
+      if (e.key.toLowerCase() !== focusKey.toLowerCase()) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Typing the key into the box it would focus should type it, not re-focus.
+      const typing = document.activeElement?.tagName;
+      if (typing === 'INPUT' || typing === 'TEXTAREA') return;
+
       e.preventDefault();
-      close.current();
+      focusRef.current.focus();
+      focusRef.current.select();
     };
 
     document.addEventListener('keydown', handleKeyDown);

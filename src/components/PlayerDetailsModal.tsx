@@ -4,7 +4,7 @@ import { PlayerData } from '../types/player';
 import { StatsGrid } from './StatsGrid';
 import { PlayerSubInfo } from './PlayerSubInfo';
 import { calculateAccelerateType, parseHeightCm } from '../utils/statUtils';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 interface PlayerDetailsModalProps {
   player: PlayerData;
@@ -14,7 +14,7 @@ interface PlayerDetailsModalProps {
 }
 
 export function PlayerDetailsModal({ player, onClose, onSelect, onDelete }: PlayerDetailsModalProps) {
-  useModalEscape(true, onClose);
+  useModal(true, { onClose });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

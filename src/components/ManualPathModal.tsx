@@ -15,7 +15,7 @@ import {
   ACCELERATE_SHORT
 } from '../utils/statUtils';
 import { FitBreakdown, controlModeFor, fitScore, accelerateOf } from '../utils/fitScore';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
 // badged, which on a full pool marked most of the list and made the mark meaningless — so
@@ -375,7 +375,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useModalEscape(isOpen, onClose);
+  // 'a' is what opens the builder, so inside it the same key returns to the search box.
+  useModal(isOpen, { onClose, focusRef: searchInputRef, focusKey: 'a' });
 
   // Populate the builder with the path being edited (or reset for a fresh path) whenever the modal opens
   useEffect(() => {
@@ -383,19 +384,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
     setSelectedChain(editingPath ? [...editingPath.chainIds] : [...lockedPrefix]);
     setSearchQuery('');
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'a' || e.key === 'A') {
-        const activeNodeName = document.activeElement?.nodeName;
-        if (activeNodeName !== 'INPUT' && activeNodeName !== 'TEXTAREA') {
-          e.preventDefault();
-          searchInputRef.current?.focus();
-          searchInputRef.current?.select();
-        }
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, editingPath, lockedPrefix]);
 
   // Live simulation to check if the current chain is valid
@@ -1099,7 +1087,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     placeholder="Search EVOs..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         const topEligible = poolWithStatus

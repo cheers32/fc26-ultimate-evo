@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 import { Plus } from 'lucide-react';
 export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | null; onClose: () => void; onAddEvo?: (id: string) => void }) => {
-  useModalEscape(!!evoId, onClose);
+  useModal(!!evoId, { onClose });
 
   useEffect(() => {
     if (!evoId) return;

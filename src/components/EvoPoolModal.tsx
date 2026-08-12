@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { X, Check, Ban, Star, Filter, Eye } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { displayExcludedPositions } from '../utils/statUtils';
 import { EvoDetailsModal } from './EvoDetailsModal';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 // 'required' | 'included' = ACTIVE, in pool
 // undefined (no key)      = ACTIVE, NOT in pool  (default)
@@ -32,9 +32,12 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   const [search, setSearch] = useState('');
   const [viewingEvo, setViewingEvo] = useState<string | null>(null);
 
+  const searchRef = useRef<HTMLInputElement>(null);
+
   // This modal had no key handling at all: Escape did nothing here, and did nothing but close the
-  // evo details opened from inside it.
-  useModalEscape(isOpen, onClose);
+  // evo details opened from inside it. 'p' is what opens it, so inside it the same key returns to
+  // the search box.
+  useModal(isOpen, { onClose, focusRef: searchRef, focusKey: 'p' });
 
   // undefined = "active, not included" (default state)
   const getStatus = (id: string): EvoStatus | undefined => evoStatuses[id];
@@ -375,6 +378,7 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
           {/* Search bar */}
           <div className="mt-3">
             <input
+              ref={searchRef}
               type="text"
               placeholder="Search EVOs..."
               value={search}
@@ -383,18 +387,6 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
             />
           </div>
 
-          {/* Search in DISABLED tab */}
-          {tabMode === 'disabled' && (
-            <div className="mt-3">
-              <input
-                type="text"
-                placeholder="Search disabled EVOs..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-[#121212] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-gray-500/40 transition-colors"
-              />
-            </div>
-          )}
         </div>
 
         {/* Content */}

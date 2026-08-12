@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { FC26_PLAYSTYLES, getPlayStyleIconUrl } from '../utils/playstyles';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 interface EditPlayerModalProps {
   player: PlayerData;
@@ -19,7 +19,7 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
   const [goldPs, setGoldPs] = useState<Set<string>>(new Set(player.playStyles.base.gold.map(p => p.replace('+', ''))));
   const [silverPs, setSilverPs] = useState<Set<string>>(new Set(player.playStyles.base.silver));
 
-  useModalEscape(true, onClose);
+  useModal(true, { onClose });
 
   const handleSave = () => {
     onSave(

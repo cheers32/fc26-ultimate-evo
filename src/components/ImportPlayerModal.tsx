@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Upload, Info } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { parseFutbinText } from '../utils/futbinParser';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 interface ImportPlayerModalProps {
   onClose: () => void;
@@ -17,8 +17,10 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
   // plus ones first — so the count is asked for rather than guessed from OVR.
   const [goldCount, setGoldCount] = useState('3');
   const [error, setError] = useState<string | null>(null);
+  const pasteRef = useRef<HTMLTextAreaElement>(null);
 
-  useModalEscape(true, onClose);
+  // Pasting is the whole point of this modal, so it opens with the caret already in the paste box.
+  useModal(true, { onClose, focusRef: pasteRef });
 
   const handleImport = () => {
     setError(null);
@@ -115,6 +117,7 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">Futbin Raw Text</label>
             <textarea
+              ref={pasteRef}
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
               placeholder="Paste the copied text here..."

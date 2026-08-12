@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Search, Upload, Edit2, Trash2 } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { PlayerDetailsModal } from './PlayerDetailsModal';
 import { EditPlayerModal } from './EditPlayerModal';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 interface PlayerSelectionModalProps {
   players: Record<string, PlayerData>;
@@ -30,9 +30,12 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
     );
   }, [playersList, searchQuery]);
 
+  const searchRef = useRef<HTMLInputElement>(null);
+
   // Escape is handled by the modal stack: the preview and the edit modal open on top of this one,
-  // so they take it first and this closes only once they're gone.
-  useModalEscape(true, onClose);
+  // so they take it first and this closes only once they're gone. '/' is what opens this, so
+  // inside it the same key returns to the search box.
+  useModal(true, { onClose, focusRef: searchRef, focusKey: '/' });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -80,8 +83,9 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input 
-                  type="text" 
+                <input
+                  ref={searchRef}
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
@@ -91,7 +95,6 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
                     }
                   }}
                   placeholder="Search players..."
-                  autoFocus
                   className="pl-9 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-fuchsia-500 w-64"
                 />
               </div>

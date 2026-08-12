@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Search, Star, Circle } from 'lucide-react';
 import { FC26_PLAYSTYLES, getPlayStyleIconUrl } from '../utils/playstyles';
-import { useModalEscape } from '../utils/modalStack';
+import { useModal } from '../utils/modalStack';
 
 interface PlayStylePickerModalProps {
   isOpen: boolean;
@@ -32,6 +32,7 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [draftGold, setDraftGold] = useState<string[]>([]);
   const [draftSilver, setDraftSilver] = useState<string[]>([]);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Seed the draft from the saved picks when the modal opens, and only then — the parent rebuilds
   // this object on every render, so watching `picks` here would reset the user's in-progress
@@ -52,7 +53,8 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
     onClose();
   }, [draftGold, draftSilver, onSave, onClose]);
 
-  useModalEscape(isOpen, onClose);
+  // 's' is what opens the picker, so inside it the same key returns to the search box.
+  useModal(isOpen, { onClose, focusRef: searchRef, focusKey: 's' });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -114,6 +116,7 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
           <div className="relative flex-1 max-w-xs">
             <Search className="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
+              ref={searchRef}
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
