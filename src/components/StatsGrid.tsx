@@ -9,6 +9,12 @@ interface StatsGridProps {
   activeEvo?: EvolutionDefinition | null;
   // Rendered as a 4th grid column spanning both stat rows, e.g. the chemistry style picker.
   aside?: React.ReactNode;
+  /**
+   * All six panels on one row, tightened to fit. For the builder, where the grid is a reference
+   * held next to the work rather than the page's own subject and every row it takes is a row of
+   * the evo pool pushed off screen.
+   */
+  dense?: boolean;
 }
 
 export const StatsGrid: React.FC<StatsGridProps> = ({
@@ -16,7 +22,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   previewStats,
   activeChemBoosts,
   activeEvo,
-  aside
+  aside,
+  dense = false
 }) => {
   // Calculate Utilization stats if a specific EVO is selected
   let totalAllowedBoost = 0;
@@ -71,7 +78,14 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           full height was dividing across the two rows, so every card stretched to ~370px when
           Pace only needs ~105px. Out here the card rows size to their own content. */}
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-        <div className="flex-1 min-w-0 max-w-[740px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 content-start" id="stats-grid">
+        <div
+          className={`flex-1 min-w-0 grid content-start ${
+            dense
+              ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2'
+              : 'max-w-[740px] grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'
+          }`}
+          id="stats-grid"
+        >
       {Object.keys(baseStats).map((faceKey) => {
         const baseFaceData = baseStats[faceKey];
         const previewFaceData = previewStats[faceKey];
@@ -111,7 +125,9 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           }
 
           return (
-            <div key={subKey} className="flex justify-between items-center text-[11px] text-fcTextDim my-[1.5px] hover:text-white transition-colors">
+            <div key={subKey} className={`flex justify-between items-center text-fcTextDim hover:text-white transition-colors ${
+              dense ? 'text-[10px] my-0' : 'text-[11px] my-[1.5px]'
+            }`}>
               <div className="flex items-center gap-1 min-w-0">
                 <span className="truncate">{subDataBase.label}</span>
                 {utilChip && (
@@ -166,15 +182,19 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
         return (
           <div
             key={faceKey}
-            className="bg-[#1f211f] p-2.5 rounded-lg border border-gray-800/90 hover:border-gray-700 transition-all shadow-md group"
+            className={`bg-[#1f211f] rounded-lg border border-gray-800/90 hover:border-gray-700 transition-all shadow-md group ${
+              dense ? 'p-1.5' : 'p-2.5'
+            }`}
           >
             {/* Title left, totals right — same column widths as the sub rows below */}
-            <div className="flex items-center justify-between gap-1.5 mb-1.5">
-              <h3 className="font-bold text-sm text-white group-hover:text-fcGreen transition-colors truncate">
+            <div className={`flex items-center justify-between gap-1.5 ${dense ? 'mb-1' : 'mb-1.5'}`}>
+              <h3 className={`font-bold text-white group-hover:text-fcGreen transition-colors truncate ${
+                dense ? 'text-[11px]' : 'text-sm'
+              }`}>
                 {baseFaceData.label}
               </h3>
 
-              <div className="text-[15px] text-gray-200 flex items-center font-mono shrink-0">
+              <div className={`text-gray-200 flex items-center font-mono shrink-0 ${dense ? 'text-[12px]' : 'text-[15px]'}`}>
                 <span className={`w-6 shrink-0 text-right ${getStatColorClass(activeBaseFaceVal)}`}>{activeBaseFaceVal}</span>
 
                 {anyEvoDiff && (
@@ -202,7 +222,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
               </div>
             </div>
 
-            <div className="space-y-0.5 border-t border-gray-800/60 pt-1.5">{subRows}</div>
+            <div className={`border-t border-gray-800/60 ${dense ? 'pt-1' : 'space-y-0.5 pt-1.5'}`}>{subRows}</div>
           </div>
         );
       })}

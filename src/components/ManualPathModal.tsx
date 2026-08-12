@@ -1063,7 +1063,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               deltas here: the chips on the chain already say what each step added, and this is the
               answer to "where is the card now". */}
           <div className="p-3 border-b border-gray-800 bg-[#121212] shrink-0">
-            <StatsGrid baseStats={currentStats} previewStats={currentStats} activeChemBoosts={{}} />
+            <StatsGrid baseStats={currentStats} previewStats={currentStats} activeChemBoosts={{}} dense />
           </div>
 
           {/* Bottom Side: Available Pool */}
