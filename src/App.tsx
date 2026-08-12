@@ -622,6 +622,44 @@ export default function App() {
   };
 
   /**
+   * Copy a build so a variant can be tried without losing the original — the usual way a build gets
+   * made is "this one, but with that step swapped out".
+   *
+   * The copy is always a manual path, whatever the original was: it's user-owned from the moment it
+   * exists, so the next Analyze run (which replaces generatedPaths wholesale) can't take it away.
+   * It is never starred either — starring is the team-level save, and a copy made to be edited
+   * shouldn't write itself onto the team before it's worth keeping. Steps carry over as they are;
+   * the chain is identical, so they were simulated against this same card.
+   */
+  const handleDuplicatePath = (pathId: string) => {
+    const path = allPaths.find(p => p.id === pathId);
+    if (!path || path.chainIds.length === 0) return;
+
+    // "Foo (Copy)", then "Foo (Copy 2)" — copying the same build twice shouldn't produce two chips
+    // with the same name on them.
+    const taken = new Set(allPaths.map(p => p.name));
+    let name = `${path.name} (Copy)`;
+    for (let n = 2; taken.has(name); n++) name = `${path.name} (Copy ${n})`;
+
+    const copy: EvolutionPath = {
+      ...path,
+      id: `custom-${Date.now()}`,
+      name,
+      isFavorite: false,
+      starTier: undefined,
+      chainIds: [...path.chainIds]
+    };
+
+    updateState({
+      manualPaths: [...manualPaths, copy],
+      activePathId: copy.id,
+      expandedPathIds: currentState.expandedPathIds.includes(copy.id)
+        ? currentState.expandedPathIds
+        : [...currentState.expandedPathIds, copy.id]
+    });
+  };
+
+  /**
    * Naming a build is an edit like any other, so an Analyze result becomes user-owned when it is
    * renamed — otherwise the next run would replace generatedPaths wholesale and take the name with
    * it. The id is kept, so whatever is pointing at this path (the active selection, a starred
@@ -1215,6 +1253,7 @@ export default function App() {
           onNodeClick={handleNodeClick}
           playStyles={previewPlayStyles}
           onDeletePath={handleDeletePath}
+          onDuplicatePath={handleDuplicatePath}
           onToggleFavoritePath={(path) => {
             if (path.chainIds.length === 0) return;
             // The star cycles rather than toggles: unstarred → saved → marked out among the saved

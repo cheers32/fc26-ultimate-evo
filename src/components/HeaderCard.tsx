@@ -4,7 +4,7 @@ import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil, Copy } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -68,6 +68,7 @@ interface HeaderCardProps {
   onNodeClick: (nodeIndex: number) => void;
   playStyles: import('../types/player').PlayStylesData;
   onDeletePath?: (pathId: string) => void;
+  onDuplicatePath?: (pathId: string) => void;
   onChangePlayer?: () => void;
   onClearPaths?: () => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
@@ -206,6 +207,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onNodeClick,
   playStyles,
   onDeletePath,
+  onDuplicatePath,
   onToggleFavoritePath,
   onRenamePath,
   onChangePlayer,
@@ -892,6 +894,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   title="Rename this build"
                 >
                   <Pencil className="w-2.5 h-2.5" />
+                </button>
+              )}
+              {/* Copying is how a variant gets started: the copy opens as the active build, so the
+                  next edit lands on it and not on the build it came from. */}
+              {onDuplicatePath && path.chainIds.length > 0 && renamingKey !== `chip:${path.id}` && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDuplicatePath(path.id); }}
+                  className="absolute -bottom-1.5 -left-1.5 rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-400 hover:bg-blue-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  title={`Duplicate "${path.name}"`}
+                >
+                  <Copy className="w-2.5 h-2.5" />
                 </button>
               )}
               {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
