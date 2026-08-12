@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Squad } from '../types/player';
+import { EvolutionPath, Squad } from '../types/player';
 import { EvoStatuses } from '../components/EvoPoolModal';
 
 /**
@@ -27,6 +27,15 @@ export interface TeamSummary {
 export interface TeamState extends TeamSummary {
   evoStatuses: EvoStatuses;
   squads: Squad[];
+  /**
+   * Starred builds, keyed by player. Starring a path is the save: it already lifts the path out of
+   * the generated list so an Analyze run can't discard it, and now it survives the page too.
+   *
+   * Team-scoped rather than global because whether a build is even legal depends on the evos this
+   * team has in its pool. Stored without `steps` — that is most of the bytes and all of it is
+   * recomputed from chainIds when the player is opened.
+   */
+  savedPaths?: Record<string, EvolutionPath[]>;
 }
 
 const ACTIVE_TEAM_KEY = 'futEvo_active_team';
@@ -187,6 +196,24 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
+  /** Replaces one player's starred builds; the rest of the team's saves are left alone. */
+  const setSavedPathsForPlayer = useCallback(
+    (playerId: string, paths: EvolutionPath[]) => {
+      if (!teamId) return;
+      setTeam(prev => {
+        if (!prev) return prev;
+        const savedPaths = { ...(prev.savedPaths || {}) };
+        if (paths.length > 0) savedPaths[playerId] = paths;
+        else delete savedPaths[playerId];
+        teamApi
+          .patch(teamId, { savedPaths })
+          .catch(err => console.error('Failed to save paths:', err));
+        return { ...prev, savedPaths };
+      });
+    },
+    [teamId]
+  );
+
   const saveSquad = useCallback(
     (squad: Squad) => {
       if (!teamId) return;
@@ -223,5 +250,5 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
-  return { team, loading, error, setEvoStatuses, saveSquad, deleteSquad, rename };
+  return { team, loading, error, setEvoStatuses, setSavedPathsForPlayer, saveSquad, deleteSquad, rename };
 }

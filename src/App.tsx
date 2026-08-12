@@ -40,6 +40,17 @@ import { Trophy, RefreshCw, LayoutGrid, Layers, Upload, Users } from 'lucide-rea
 import { Squad, SquadMember, PlayerEvoState } from './types/player';
 
 const DEFAULT_PATH_ID = 'default-path';
+
+/** A player nobody has touched yet. A factory, so no two players share a mutable filters object. */
+const emptyPlayerState = (): PlayerEvoState => ({
+  activePathId: DEFAULT_PATH_ID,
+  expandedPathIds: [DEFAULT_PATH_ID],
+  comparePathId: null,
+  evosPool: [],
+  generatedPaths: [],
+  manualPaths: [],
+  evoFilters: { ovr: { max: 99 } }
+});
 // Stable identity so the picker's "no picks yet" prop doesn't change on every render.
 const EMPTY_PICKS = { gold: [], silver: [] };
 
@@ -87,6 +98,7 @@ export default function App() {
     loading: teamLoading,
     error: teamError,
     setEvoStatuses: setTeamEvoStatuses,
+    setSavedPathsForPlayer,
     saveSquad: persistSquad,
     deleteSquad: removeSquadFromTeam
   } = useTeam(activeTeamId);
@@ -386,26 +398,14 @@ export default function App() {
   const [playerStates, setPlayerStates] = useState<Record<string, PlayerEvoState>>({});
 
   const currentState = {
-    activePathId: DEFAULT_PATH_ID,
-    expandedPathIds: [DEFAULT_PATH_ID],
-    comparePathId: null,
-    evosPool: [],
-    generatedPaths: [],
-    manualPaths: [],
-    evoFilters: { ovr: { max: 99 } },
+    ...emptyPlayerState(),
     ...(playerStates[selectedPlayerId] as Partial<PlayerEvoState> || {})
   };
 
   const updateState = (updates: Partial<PlayerEvoState>) => {
     setPlayerStates(prev => {
       const current = {
-        activePathId: DEFAULT_PATH_ID,
-        expandedPathIds: [DEFAULT_PATH_ID],
-        comparePathId: null,
-        evosPool: [],
-        generatedPaths: [],
-        manualPaths: [],
-        evoFilters: { ovr: { max: 99 } },
+        ...emptyPlayerState(),
         ...(prev[selectedPlayerId] as Partial<PlayerEvoState> || {})
       };
       
@@ -472,6 +472,73 @@ export default function App() {
   );
   const generatedPaths = currentState.generatedPaths;
   const manualPaths = currentState.manualPaths;
+
+  // --- Starred builds, saved on the team ------------------------------------------------
+  //
+  // Starring is the save. It already lifts a path out of the generated list so an Analyze run
+  // can't discard it; the two effects below make that outlive the page.
+
+  /**
+   * Identity of a player's starred set, for deciding whether a write is needed. Compares what
+   * actually gets stored rather than object identity, so a re-render or a round trip through the
+   * server can't look like a change and start a write loop.
+   */
+  const starredKey = (paths: EvolutionPath[]) =>
+    JSON.stringify(paths.map(p => [p.id, p.name, p.chainIds.join('>')]));
+
+  const starredForPlayer = useMemo(
+    () => withoutSteps([...generatedPaths, ...manualPaths].filter(p => p.isFavorite)),
+    [generatedPaths, manualPaths]
+  );
+
+  /**
+   * Which players have had the team's saves folded into their workbench. The persist effect below
+   * refuses to write for a player that isn't in here: before hydration the workbench is empty, and
+   * writing that emptiness back would delete the very builds still being loaded.
+   */
+  const hydratedPlayers = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    hydratedPlayers.current = new Set();
+  }, [activeTeamId]);
+
+  useEffect(() => {
+    // Opening a squad member restores its own build; let that land first rather than racing it.
+    if (!team || pendingRestore) return;
+    if (hydratedPlayers.current.has(selectedPlayerId)) return;
+    hydratedPlayers.current.add(selectedPlayerId);
+
+    const saved = team.savedPaths?.[selectedPlayerId];
+    if (!saved || saved.length === 0) return;
+
+    setPlayerStates(prev => {
+      const current = prev[selectedPlayerId];
+      const existing = current?.manualPaths || [];
+      const known = new Set(existing.map(p => p.id));
+      const restored = saved
+        .filter(p => !known.has(p.id))
+        .map(p => ({
+          ...p,
+          isFavorite: true,
+          // steps are dropped on the way out and rebuilt here, against this card's own stats.
+          steps: simulateEvoChain(p.chainIds, playerBio, initialOvrData, statsData, playStylesData).steps
+        }));
+      if (restored.length === 0) return prev;
+      return {
+        ...prev,
+        [selectedPlayerId]: {
+          ...(current || emptyPlayerState()),
+          manualPaths: [...existing, ...restored]
+        }
+      };
+    });
+  }, [team, selectedPlayerId, pendingRestore, playerBio, initialOvrData, statsData, playStylesData]);
+
+  useEffect(() => {
+    if (!team || !hydratedPlayers.current.has(selectedPlayerId)) return;
+    const stored = team.savedPaths?.[selectedPlayerId] || [];
+    if (starredKey(stored) === starredKey(starredForPlayer)) return;
+    setSavedPathsForPlayer(selectedPlayerId, starredForPlayer);
+  }, [team, selectedPlayerId, starredForPlayer, setSavedPathsForPlayer]);
   // The must-haves come from the team's pool, not from this player's filters — "required" is a
   // statement about the team's cards, and it has to mean the same thing on every player screen.
   const evoFilters = useMemo(
