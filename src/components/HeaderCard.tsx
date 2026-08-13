@@ -5,7 +5,7 @@ import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositi
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil, Copy, Check } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -74,6 +74,8 @@ interface HeaderCardProps {
   onClearPaths?: () => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
   onRenamePath?: (pathId: string, name: string) => void;
+  /** The link that reopens this build on someone else's screen. */
+  shareUrlFor?: (path: EvolutionPath) => string;
   onViewEvo?: (evoId: string) => void;
   // Index of the step new builds start from (-1 = raw card), and a setter for picking one.
   baseIndex?: number;
@@ -230,6 +232,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onDuplicatePath,
   onToggleFavoritePath,
   onRenamePath,
+  shareUrlFor,
   onChangePlayer,
   onClearPaths,
   onViewEvo,
@@ -252,6 +255,23 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   // Escape abandons the edit by way of a blur, and the blur is what commits. A ref rather than
   // state because the blur runs before a state update from the same event would be visible.
   const renameCancelled = React.useRef(false);
+  // Which build's link was just copied, so the button can say so for a moment.
+  const [copiedPathId, setCopiedPathId] = React.useState<string | null>(null);
+
+  const copyShareLink = async (path: EvolutionPath) => {
+    if (!shareUrlFor) return;
+    const url = shareUrlFor(path);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard access can be refused (an insecure origin, or a browser that asks first).
+      // Falling back to a prompt still lets the link be copied by hand rather than lost.
+      window.prompt('Copy this link', url);
+      return;
+    }
+    setCopiedPathId(path.id);
+    window.setTimeout(() => setCopiedPathId(current => (current === path.id ? null : current)), 2000);
+  };
 
   React.useEffect(() => {
     if (showFilters) {
@@ -1394,6 +1414,20 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       >
                         <Star className={`w-3 h-3 ${starTier(renderPath) === 1 ? 'fill-black' : starTier(renderPath) === 2 ? 'fill-white' : ''}`} />
                         {starTier(renderPath) > 0 ? 'Saved' : 'Save'}
+                      </button>
+                    )}
+                    {shareUrlFor && (
+                      <button
+                        onClick={() => copyShareLink(renderPath)}
+                        title="Copy a link that opens this build on someone else's screen"
+                        className={`text-[10px] flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
+                          copiedPathId === renderPath.id
+                            ? 'bg-blue-600 text-white border-blue-500'
+                            : 'bg-[#1f211f] text-gray-400 border-gray-700 hover:border-blue-500 hover:text-blue-300'
+                        }`}
+                      >
+                        <Link2 className="w-3 h-3" />
+                        {copiedPathId === renderPath.id ? 'Copied' : 'Share'}
                       </button>
                     )}
                     {builderLink(renderPath) ? (

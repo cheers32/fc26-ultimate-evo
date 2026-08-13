@@ -19,6 +19,7 @@ import {
   canPickPlayStyles
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
+import { buildShareUrl, clearShareParam, parseShareUrl } from './utils/shareLink';
 import {
   useLibrary,
   useTeam,
@@ -41,6 +42,8 @@ import { Trophy, RefreshCw, LayoutGrid, Layers, Upload, Users } from 'lucide-rea
 import { Squad, SquadMember, PlayerEvoState } from './types/player';
 
 const DEFAULT_PATH_ID = 'default-path';
+/** The build a `?path=` link opens into. Fixed, so following the same link twice doesn't stack. */
+const SHARED_PATH_ID = 'shared-path';
 
 /** A player nobody has touched yet. A factory, so no two players share a mutable filters object. */
 const emptyPlayerState = (): PlayerEvoState => ({
@@ -430,6 +433,45 @@ export default function App() {
   // Set when opening a squad member, so the effect below restores that snapshot
   // instead of the player's own save.
   const [pendingRestore, setPendingRestore] = useState<{ playerId: string; state: PlayerEvoState } | null>(null);
+
+  // --- Shared builds -------------------------------------------------------------------------
+  //
+  // A `?path=` link carries a card and a chain. Read once at mount: the parameter is cleared as
+  // soon as it has been used, and re-reading it later would find nothing.
+  const [sharedBuild] = useState(() => parseShareUrl(window.location.search));
+  const sharedBuildUsed = useRef(false);
+
+  useEffect(() => {
+    if (!sharedBuild || sharedBuildUsed.current) return;
+    // A visitor with no team open lands on the team list first; hold the link until they pick one,
+    // and until the shared library has arrived, or an imported card would look deleted.
+    if (!activeTeamId || !customPlayersLoaded) return;
+
+    sharedBuildUsed.current = true;
+    clearShareParam();
+    if (!allPlayersData[sharedBuild.playerId]) return;
+
+    // Rides the same path as opening a squad member: switch card, then let the restore effect
+    // rebuild the steps against that card's own stats.
+    setPendingRestore({
+      playerId: sharedBuild.playerId,
+      state: {
+        ...emptyPlayerState(),
+        activePathId: SHARED_PATH_ID,
+        expandedPathIds: [SHARED_PATH_ID],
+        manualPaths: [
+          {
+            id: SHARED_PATH_ID,
+            name: 'Shared build',
+            description: 'Opened from a shared link.',
+            chainIds: sharedBuild.chainIds
+          }
+        ]
+      }
+    });
+    setSelectedPlayerId(sharedBuild.playerId);
+    setActiveTab('workbench');
+  }, [sharedBuild, activeTeamId, customPlayersLoaded, allPlayersData]);
 
   const openSquadMember = (member: SquadMember) => {
     setPendingRestore({ playerId: member.playerId, state: member.playerState });
@@ -1328,6 +1370,7 @@ export default function App() {
             }
           }}
           onRenamePath={handleRenamePath}
+          shareUrlFor={(path) => buildShareUrl(selectedPlayerId, path.chainIds)}
           onClearPaths={handleClearPaths}
           onViewEvo={(id) => setViewingEvoId(id)}
           baseIndex={safeBaseIndex}
