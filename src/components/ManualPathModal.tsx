@@ -395,6 +395,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const [sortMode, setSortMode] = useState<SortMode>('default');
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  /**
+   * The two steps the stat panel is comparing, as indices in the chain — -1 is the base card, and
+   * both the same means nothing is being compared, so it shows the card as it stands. Clicking a
+   * step pushes it in and drops the older of the two, which is how the workbench's chain reads
+   * too: click one node, then another, and the panel spans them.
+   */
+  const [comparedNodes, setComparedNodes] = useState<[number, number]>([-1, -1]);
+  const compareNode = (idx: number) => setComparedNodes(([, previous]) => [previous, idx]);
 
   // 'a' is what opens the builder, so inside it the same key returns to the search box.
   useModal(isOpen, { onClose, focusRef: searchInputRef, focusKey: 'a' });
@@ -405,6 +413,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
     setSelectedChain(editingPath ? [...editingPath.chainIds] : [...lockedPrefix]);
     setSearchQuery('');
+    setComparedNodes([-1, -1]);
   }, [isOpen, editingPath, lockedPrefix]);
 
   // Live simulation to check if the current chain is valid
@@ -528,6 +537,28 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // Unlike Fit, AcceleRATE isn't opt-in: it's a fact about the resulting card rather than a
   // judgement of it, so every card shows it whether or not the profile is switched on.
   const currentAccelerate = accelerateOf(currentStats, currentBio);
+
+  /**
+   * The card as it stood after a given step, and what the step is called. Indices are clamped
+   * because a step can be removed while it is one of the two being compared.
+   */
+  const lastNode = selectedChain.length - 1;
+  const nodeAt = (idx: number) => Math.max(-1, Math.min(idx, lastNode));
+  const statsAt = (idx: number) =>
+    idx < 0 ? baseStats : validationResult.result?.steps[idx]?.statsAfter ?? currentStats;
+  const nodeName = (idx: number) => {
+    if (idx < 0) return 'Base Card';
+    const id = selectedChain[idx];
+    if (id === undefined) return 'Base Card';
+    return isPlayStyleNodeId(id) ? 'PlayStyle Pick' : availableEvolutions[id]?.name ?? id;
+  };
+
+  const [comparedFrom, comparedTo] = [nodeAt(comparedNodes[0]), nodeAt(comparedNodes[1])].sort((a, b) => a - b);
+  const isComparing = comparedFrom !== comparedTo;
+  // Not comparing anything is the card as it stands, on both sides, which is what leaves the panel
+  // showing plain values with no arrows.
+  const panelFrom = isComparing ? statsAt(comparedFrom) : currentStats;
+  const panelTo = isComparing ? statsAt(comparedTo) : currentStats;
 
   const poolWithStatus = evosPool.map((id) => {
     const evo = availableEvolutions[id];
@@ -773,7 +804,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               <div className="flex flex-wrap pt-2 pl-2 pb-2 items-center gap-x-1.5 gap-y-2">
                 
                 {/* Base Card Chip */}
-                <div className="bg-[#1f211f] text-gray-200 border-gray-700 border p-1.5 rounded font-bold flex flex-col shadow gap-1 shrink-0">
+                <div
+                  onClick={() => compareNode(-1)}
+                  title="Compare from here"
+                  className={`bg-[#1f211f] text-gray-200 border p-1.5 rounded font-bold flex flex-col shadow gap-1 shrink-0 cursor-pointer transition-all ${
+                    isComparing && (comparedFrom === -1 || comparedTo === -1)
+                      ? 'border-[#EBB626] ring-1 ring-[#EBB626]'
+                      : 'border-gray-700 hover:border-gray-500'
+                  }`}
+                >
                   <div className="flex items-center gap-1.5 px-1">
                     <span className="font-mono tracking-tight font-extrabold opacity-80 text-[10.5px]">
                       {baseOvr.base}/{basePlayStyles.base.gold.length + (basePlayStyles.ev?.gold?.length || 0)}
@@ -831,9 +870,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     return (
                       <React.Fragment key={`${id}-${idx}`}>
                         <div
-                          title={invalid ? validationResult.result!.steps[idx].validation.reasons.join(' · ') : 'PlayStyle Pick'}
-                          className={`shrink-0 flex items-center gap-1.5 p-1.5 rounded border font-bold text-[10.5px] bg-yellow-950/25 text-yellow-300 ${
-                            invalid ? 'border-red-600 ring-1 ring-red-700/60' : 'border-yellow-800/70'
+                          onClick={() => compareNode(idx)}
+                          title={invalid ? validationResult.result!.steps[idx].validation.reasons.join(' · ') : 'PlayStyle Pick — click to compare from here'}
+                          className={`shrink-0 flex items-center gap-1.5 p-1.5 rounded border font-bold text-[10.5px] bg-yellow-950/25 text-yellow-300 cursor-pointer transition-all ${
+                            invalid
+                              ? 'border-red-600 ring-1 ring-red-700/60'
+                              : isComparing && (comparedFrom === idx || comparedTo === idx)
+                              ? 'border-[#EBB626] ring-1 ring-[#EBB626]'
+                              : 'border-yellow-800/70 hover:border-yellow-600'
                           }`}
                         >
                           <Wand2 className="w-3 h-3 shrink-0" />
@@ -861,7 +905,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   
                   return (
                     <React.Fragment key={`${id}-${idx}`}>
-                      <div className="group/node relative bg-[#1f211f] text-gray-200 border-gray-700 border p-1.5 rounded font-bold flex flex-col shadow gap-1 shrink-0">
+                      <div
+                        onClick={() => compareNode(idx)}
+                        title={`${evo.name} — click to compare from here`}
+                        className={`group/node relative bg-[#1f211f] text-gray-200 border p-1.5 rounded font-bold flex flex-col shadow gap-1 shrink-0 cursor-pointer transition-all ${
+                          isComparing && (comparedFrom === idx || comparedTo === idx)
+                            ? 'border-[#EBB626] ring-1 ring-[#EBB626]'
+                            : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                      >
                         <div className="flex items-center gap-1.5 px-1">
                           <span className="font-mono tracking-tight font-extrabold opacity-80 text-[10.5px]">
                             {(() => {
@@ -1062,8 +1114,22 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               the archetype, and a face value can sit still while the stat you came for moves. No
               deltas here: the chips on the chain already say what each step added, and this is the
               answer to "where is the card now". */}
-          <div className="p-3 border-b border-gray-800 bg-[#121212] shrink-0">
-            <StatsGrid baseStats={currentStats} previewStats={currentStats} activeChemBoosts={{}} dense />
+          <div className="p-3 border-b border-gray-800 bg-[#121212] shrink-0 flex flex-col gap-2">
+            {isComparing && (
+              <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                <span className="text-gray-500 uppercase tracking-wider font-semibold">Comparing</span>
+                <span className="font-bold text-gray-200">{nodeName(comparedFrom)}</span>
+                <span className="text-gray-600">➜</span>
+                <span className="font-bold text-gray-200">{nodeName(comparedTo)}</span>
+                <button
+                  onClick={() => setComparedNodes([-1, -1])}
+                  className="text-gray-500 hover:text-white border border-gray-700 hover:border-gray-500 rounded px-1.5 py-0.5 transition-colors"
+                >
+                  Show current
+                </button>
+              </div>
+            )}
+            <StatsGrid baseStats={panelFrom} previewStats={panelTo} activeChemBoosts={{}} dense />
           </div>
 
           {/* Bottom Side: Available Pool */}
