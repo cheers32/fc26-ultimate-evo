@@ -101,8 +101,10 @@ import { everythingAtOnce1220 } from './evolutions/everythingAtOnce1220';
 import { backShortly1221 } from './evolutions/backShortly1221';
 import { neverLosingIt1222 } from './evolutions/neverLosingIt1222';
 import { stillGotIt1223 } from './evolutions/stillGotIt1223';
+import { crunchTime748 } from './evolutions/crunchTime748';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
+  '748': crunchTime748,
   '974': theMainEvent974,
   '979': goldStandard979,
   '983': relentlessRise983,
