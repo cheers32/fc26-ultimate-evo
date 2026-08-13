@@ -102,6 +102,14 @@ import { backShortly1221 } from './evolutions/backShortly1221';
 import { neverLosingIt1222 } from './evolutions/neverLosingIt1222';
 import { stillGotIt1223 } from './evolutions/stillGotIt1223';
 import { crunchTime748 } from './evolutions/crunchTime748';
+import { counterCulture1239 } from './evolutions/counterCulture1239';
+import { twoWayTitan1240 } from './evolutions/twoWayTitan1240';
+import { vaVaVoom1241 } from './evolutions/vaVaVoom1241';
+import { hardYards1243 } from './evolutions/hardYards1243';
+import { carpetFootball1244 } from './evolutions/carpetFootball1244';
+import { thePivotPoint1245 } from './evolutions/thePivotPoint1245';
+import { faceValue1246 } from './evolutions/faceValue1246';
+import { apexAttacker1247 } from './evolutions/apexAttacker1247';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '748': crunchTime748,
@@ -206,7 +214,15 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1220': everythingAtOnce1220,
   '1221': backShortly1221,
   '1222': neverLosingIt1222,
-  '1223': stillGotIt1223
+  '1223': stillGotIt1223,
+  '1239': counterCulture1239,
+  '1240': twoWayTitan1240,
+  '1241': vaVaVoom1241,
+  '1243': hardYards1243,
+  '1244': carpetFootball1244,
+  '1245': thePivotPoint1245,
+  '1246': faceValue1246,
+  '1247': apexAttacker1247
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
