@@ -1,7 +1,8 @@
 import React from 'react';
 import { ChemStylesData, StatsData } from '../types/player';
 import {
-  ACCELERATE_FAMILY,
+  ACCELERATE_FAMILIES,
+  ACCELERATE_TIERS_BY_FAMILY,
   ACCELERATE_TYPES,
   AccelerateType,
   accelerateLean,
@@ -77,27 +78,35 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
 
   return (
     <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full flex flex-col gap-2 pl-0 lg:pl-2">
-      {Object.keys(groupedChems).map((group) => {
+      {/* Both groupings at once, nested rather than picked between: the outer heading is the word
+          the game prints and collects exactly the styles the game collects, and the tiers inside it
+          are the finer split, which is the part that says whether a style is comfortably in that
+          archetype or one point from leaving it. */}
+      {ACCELERATE_FAMILIES.map(family => {
+        const tiers = ACCELERATE_TIERS_BY_FAMILY[family].filter(t => groupedChems[t]?.length > 0);
+        if (tiers.length === 0) return null;
+        const total = tiers.reduce((sum, t) => sum + groupedChems[t].length, 0);
+
+        return (
+          <div key={family} className="flex flex-col gap-1">
+            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide flex items-baseline gap-1.5">
+              {family}
+              <span className="text-gray-700 font-mono text-[9px]">{total}</span>
+            </h4>
+            {tiers.map(group => {
         const items = groupedChems[group];
-        if (!items || items.length === 0) return null;
 
         // Sort items by highest total face stat boost
         items.sort((a, b) => getFaceBoost(b) - getFaceBoost(a));
+        const lean = accelerateLean(group as AccelerateType);
 
         return (
-          <div key={group} className="flex flex-col gap-1">
-            {/* The word the game prints first, then how far this tier leans within it. Heading a
-                group "Controlled Lengthy" put a name on screen that no card in FC 26 shows, and
-                against the game's own grouping it read as a different archetype rather than a
-                finer reading of Lengthy. */}
-            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
-              {ACCELERATE_FAMILY[group as AccelerateType]}
-              {accelerateLean(group as AccelerateType) && (
-                <span className="text-gray-600 normal-case font-semibold">
-                  {' '}· {accelerateLean(group as AccelerateType)}
-                </span>
-              )}
-            </h4>
+          <div key={group} className="flex flex-col gap-0.5">
+            {lean && (
+              <span className="text-[9px] font-semibold text-gray-600 tracking-wide pl-0.5">
+                · {lean}
+              </span>
+            )}
             {/* No gaps: the styles are a dense lookup table, and the gutters were costing more
                 vertical space than the rows themselves. Borders collapse into a shared grid. */}
             <div className="grid grid-cols-3 rounded-lg overflow-hidden border border-[#4b5563]/40">
@@ -128,6 +137,9 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
                 );
               })}
             </div>
+          </div>
+        );
+            })}
           </div>
         );
       })}
