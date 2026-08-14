@@ -1230,9 +1230,26 @@ export default function App() {
         if (analyzeHandle.current !== handle) return; // superseded by a newer run
         analyzeHandle.current = null;
         setIsAnalyzing(false);
-        setGeneratedPaths(results);
-        if (results.length > 0) {
-          setActivePathId(results[0].id);
+
+        // A recommendation you already have is not a recommendation. Anything the search comes back
+        // with that matches a build already on the card is dropped, so the list is what Analyze
+        // found *on top of* what is there rather than a second copy of it.
+        //
+        // Only the manual paths — starred saves and hand-built drafts alike — are compared against:
+        // they are what survives a run. The previous run's results are being replaced by this one,
+        // so matching against those would delete a build instead of deduplicating it.
+        const already = new Set(currentState.manualPaths.map(p => p.chainIds.join('>')));
+        const fresh: EvolutionPath[] = [];
+        results.forEach(path => {
+          const key = path.chainIds.join('>');
+          if (already.has(key)) return;
+          already.add(key);
+          fresh.push(path);
+        });
+
+        setGeneratedPaths(fresh);
+        if (fresh.length > 0) {
+          setActivePathId(fresh[0].id);
           if (!evoPreview) setEvoPreview(true);
         }
       })
