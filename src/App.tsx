@@ -25,6 +25,7 @@ import { ImportBuildModal } from './components/ImportBuildModal';
 import {
   useLibrary,
   useTeam,
+  purgePlayerFromOtherTeams,
   readActiveTeamId,
   writeActiveTeamId,
   readActivePlayerId,
@@ -107,6 +108,7 @@ export default function App() {
     loading: teamLoading,
     error: teamError,
     setEvoStatuses: setTeamEvoStatuses,
+    setHiddenPlayers,
     setSavedPathsForPlayer,
     addSavedPaths,
     saveSquad: persistSquad,
@@ -179,19 +181,46 @@ export default function App() {
     setSelectedPlayerId(player.id);
   };
 
-  const handleDeletePlayer = (id: string) => {
+  /** Move off a card that is about to stop being available here. */
+  const leaveCard = (id: string) => {
+    if (selectedPlayerId !== id) return;
+    const availableIds = Object.keys(allPlayersData).filter(pId => pId !== id);
+    setSelectedPlayerId(availableIds.length > 0 ? availableIds[0] : 'rodri-91');
+  };
+
+  /**
+   * "I'm not using this card." A statement about this team, like a disabled evo — the card stays in
+   * the shared library for everyone else, and this team's builds for it are left alone, so the only
+   * thing undoing it costs is putting the card back on the pitch.
+   */
+  const hidePlayerForTeam = (id: string) => {
+    if (hiddenPlayers.includes(id)) return;
+    setHiddenPlayers([...hiddenPlayers, id]);
+    leaveCard(id);
+  };
+
+  const unhidePlayerForTeam = (id: string) => {
+    setHiddenPlayers(hiddenPlayers.filter(pId => pId !== id));
+  };
+
+  /**
+   * The card leaves the shared library — for a bad import or a duplicate, not for "I'm done with
+   * it". Every team loses it, so every team's builds and squad slots for it have to go too: they
+   * name a card that no longer exists, and nothing can open them again.
+   */
+  const deletePlayerFromLibrary = (id: string) => {
     if (id.startsWith('custom-') || customPlayers[id]) {
       const newCustomPlayers = { ...customPlayers };
       delete newCustomPlayers[id];
       setCustomPlayers(newCustomPlayers);
     } else {
-      const newDeleted = [...deletedDatabasePlayers, id];
-      setDeletedDatabasePlayers(newDeleted);
+      setDeletedDatabasePlayers([...deletedDatabasePlayers, id]);
     }
 
-    // Builds belong to the player, so they go with them — and so does every slot pointing at one.
-    // Left behind they would be unreachable: there is no card to open them against.
+    // This team goes through the hook that owns it; the rest are patched directly, since nothing
+    // on screen is showing them.
     setSavedPathsForPlayer(id, []);
+    if (hiddenPlayers.includes(id)) setHiddenPlayers(hiddenPlayers.filter(pId => pId !== id));
     saveSquads(
       squads.map(squad => {
         const slots = Object.fromEntries(
@@ -200,12 +229,11 @@ export default function App() {
         return { ...squad, slots };
       })
     );
+    purgePlayerFromOtherTeams(id, activeTeamId).catch(err =>
+      console.error('Failed to clear the deleted card from the other teams:', err)
+    );
 
-    if (selectedPlayerId === id) {
-      // Find another available player to select
-      const availableIds = Object.keys(allPlayersData).filter(pId => pId !== id);
-      setSelectedPlayerId(availableIds.length > 0 ? availableIds[0] : 'rodri-91');
-    }
+    leaveCard(id);
   };
 
   const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[], newOvr?: number) => {
@@ -282,11 +310,21 @@ export default function App() {
 
   // Squads belong to the team, and they are the only place a finished build lives: a path that
   // isn't in a squad is a draft, and drafts don't survive leaving the page.
-  const allPlayersData = useMemo(() => {
+  /** The whole shared catalogue, before this team's own opinion of it. */
+  const libraryPlayers = useMemo(() => {
     const combined = { ...playersDatabase, ...customPlayers };
     deletedDatabasePlayers.forEach(id => delete combined[id]);
     return combined;
   }, [customPlayers, deletedDatabasePlayers]);
+
+  const hiddenPlayers = useMemo(() => team?.hiddenPlayers || [], [team?.hiddenPlayers]);
+
+  /** The cards this team actually uses — everything the app works from. */
+  const allPlayersData = useMemo(() => {
+    const visible = { ...libraryPlayers };
+    hiddenPlayers.forEach(id => delete visible[id]);
+    return visible;
+  }, [libraryPlayers, hiddenPlayers]);
 
   /**
    * A squad is its pitch and nothing else: eleven on it, twelve beside it, twenty-three slots each
@@ -1762,7 +1800,11 @@ export default function App() {
             setOvr(ovrData);
           }}
           onOpenImport={() => setIsImportModalOpen(true)}
-          onDeletePlayer={handleDeletePlayer}
+          libraryPlayers={libraryPlayers}
+          hiddenPlayerIds={hiddenPlayers}
+          onHidePlayer={hidePlayerForTeam}
+          onUnhidePlayer={unhidePlayerForTeam}
+          onDeletePlayer={deletePlayerFromLibrary}
           onEditPlayerAvatar={handleEditPlayerAvatar}
         />
       )}

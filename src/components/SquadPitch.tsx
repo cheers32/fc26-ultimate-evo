@@ -47,11 +47,17 @@ export const RESERVE_SLOTS: string[] = Array.from({ length: 12 }, (_, i) => `res
 /** Every slot on the pitch and beside it. A squad is exactly these and nothing else. */
 export const ALL_SLOT_IDS: string[] = [...FORMATION_4231.map(s => s.id), ...RESERVE_SLOTS];
 
-/** Positions that play the same role closely enough not to be worth a warning. */
+/**
+ * Positions that play the same role closely enough not to be worth a warning.
+ *
+ * The band behind the striker is three CAM slots that happen to be drawn wide, narrow and wide —
+ * a 4-2-3-1 fields three attacking midfielders. So a CAM in the left or right of that band is
+ * where he is supposed to be, not out of position.
+ */
 const INTERCHANGEABLE: Record<string, string[]> = {
-  LM: ['LW', 'LM'],
-  RM: ['RW', 'RM'],
-  CAM: ['CAM', 'CF'],
+  LM: ['LW', 'LM', 'CAM', 'CF'],
+  RM: ['RW', 'RM', 'CAM', 'CF'],
+  CAM: ['CAM', 'CF', 'LW', 'RW', 'LM', 'RM'],
   CDM: ['CDM', 'CM'],
   ST: ['ST', 'CF'],
   CB: ['CB'],

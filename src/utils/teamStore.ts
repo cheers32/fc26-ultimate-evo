@@ -36,6 +36,14 @@ export interface TeamState extends TeamSummary {
    * recomputed from chainIds when the player is opened.
    */
   savedPaths?: Record<string, EvolutionPath[]>;
+  /**
+   * Cards this team doesn't use, by id.
+   *
+   * The player catalogue is global — one import serves everybody — so "I'm not using this card" is
+   * a statement about a team, not about the card, exactly as a disabled evo is. Hiding keeps the
+   * team's builds for that card untouched, so it can be undone.
+   */
+  hiddenPlayers?: string[];
 }
 
 const ACTIVE_TEAM_KEY = 'futEvo_active_team';
@@ -71,6 +79,42 @@ export const teamApi = {
 };
 
 /** The team the browser was last looking at — a convenience, not state that belongs to the team. */
+/**
+ * Erase every trace of a card from every team but one.
+ *
+ * Only for the case where a card leaves the shared library for good — a bad import, a duplicate.
+ * The card is global, so it can be referenced by teams this browser isn't looking at, and a build
+ * or a squad slot naming a card that no longer exists is unreachable: there is nothing left to open
+ * it against. The team currently on screen is skipped because the hook that owns it cleans it up
+ * itself, and going behind that would leave the two disagreeing.
+ */
+export async function purgePlayerFromOtherTeams(playerId: string, exceptTeamId: string | null) {
+  const teams = await teamApi.list();
+  for (const summary of teams) {
+    if (summary.id === exceptTeamId) continue;
+    const team = await teamApi.get(summary.id);
+
+    const savedPaths = { ...(team.savedPaths || {}) };
+    const hiddenPlayers = (team.hiddenPlayers || []).filter(id => id !== playerId);
+    const patch: Partial<Omit<TeamState, 'squads'>> = {};
+    if (savedPaths[playerId]) {
+      delete savedPaths[playerId];
+      patch.savedPaths = savedPaths;
+    }
+    if (hiddenPlayers.length !== (team.hiddenPlayers || []).length) patch.hiddenPlayers = hiddenPlayers;
+    if (Object.keys(patch).length > 0) await teamApi.patch(summary.id, patch);
+
+    for (const squad of team.squads || []) {
+      const slots = Object.fromEntries(
+        Object.entries(squad.slots || {}).filter(([, entry]) => entry?.playerId !== playerId)
+      );
+      if (Object.keys(slots).length !== Object.keys(squad.slots || {}).length) {
+        await teamApi.saveSquad(summary.id, { ...squad, slots });
+      }
+    }
+  }
+}
+
 export function readActiveTeamId(): string | null {
   try {
     return localStorage.getItem(ACTIVE_TEAM_KEY);
@@ -222,6 +266,17 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
+  const setHiddenPlayers = useCallback(
+    (hiddenPlayers: string[]) => {
+      if (!teamId) return;
+      setTeam(prev => (prev ? { ...prev, hiddenPlayers } : prev));
+      teamApi
+        .patch(teamId, { hiddenPlayers })
+        .catch(err => console.error('Failed to save hidden players:', err));
+    },
+    [teamId]
+  );
+
   /** Replaces one player's starred builds; the rest of the team's saves are left alone. */
   const setSavedPathsForPlayer = useCallback(
     (playerId: string, paths: EvolutionPath[]) => {
@@ -276,5 +331,5 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
-  return { team, loading, error, setEvoStatuses, setSavedPathsForPlayer, addSavedPaths, saveSquad, deleteSquad, rename };
+  return { team, loading, error, setEvoStatuses, setHiddenPlayers, setSavedPathsForPlayer, addSavedPaths, saveSquad, deleteSquad, rename };
 }

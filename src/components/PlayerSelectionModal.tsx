@@ -1,25 +1,55 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, Upload, Edit2, Trash2 } from 'lucide-react';
+import { X, Search, Upload, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { EditPlayerModal } from './EditPlayerModal';
 import { useModal } from '../utils/modalStack';
 
 interface PlayerSelectionModalProps {
+  /** The cards this team uses. */
   players: Record<string, PlayerData>;
+  /** The whole shared catalogue, so hidden cards can still be looked at and brought back. */
+  libraryPlayers?: Record<string, PlayerData>;
+  hiddenPlayerIds?: string[];
   onClose: () => void;
   onSelectPlayer: (id: string) => void;
   onOpenImport: () => void;
+  /** Stop using a card in this team. Nothing is deleted, and it can be undone. */
+  onHidePlayer?: (id: string) => void;
+  onUnhidePlayer?: (id: string) => void;
+  /** Take a card out of the shared library, for every team. Not reversible. */
   onDeletePlayer?: (id: string) => void;
   onEditPlayerAvatar?: (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, gold: string[], silver: string[], newOvr: number) => void;
 }
 
-export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenImport, onDeletePlayer, onEditPlayerAvatar }: PlayerSelectionModalProps) {
+export function PlayerSelectionModal({
+  players,
+  libraryPlayers,
+  hiddenPlayerIds = [],
+  onClose,
+  onSelectPlayer,
+  onOpenImport,
+  onHidePlayer,
+  onUnhidePlayer,
+  onDeletePlayer,
+  onEditPlayerAvatar
+}: PlayerSelectionModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
 
+  /**
+   * Derived rather than stored, because the shelf can empty while you are looking at it: bring the
+   * last hidden card back and the toggle out of this view goes with it, leaving nowhere to go.
+   */
+  const viewingHidden = showHidden && hiddenPlayerIds.length > 0;
 
-
-  const playersList = useMemo(() => Object.values(players), [players]);
+  const playersList = useMemo(() => {
+    if (!viewingHidden) return Object.values(players);
+    // The hidden ones are exactly what this team's list has been cut down from, so they have to be
+    // read off the shared catalogue rather than out of `players`.
+    const shelf = libraryPlayers || players;
+    return hiddenPlayerIds.map(id => shelf[id]).filter(Boolean);
+  }, [players, libraryPlayers, hiddenPlayerIds, viewingHidden]);
 
   const filteredPlayers = useMemo(() => {
     return playersList.filter(p => 
@@ -51,6 +81,9 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
    * view, so a preview in front of it was only ever a step to click through.
    */
   const selectPlayer = (id: string) => {
+    // A hidden card isn't one this team uses, so picking it would open something the rest of the
+    // app has already filtered away. The eye button is the way back.
+    if (viewingHidden) return;
     onSelectPlayer(id);
     onClose();
   };
@@ -77,11 +110,30 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-gray-950/50">
             <div>
-              <h2 className="text-2xl font-bold text-white mb-1">Player Warehouse</h2>
-              <p className="text-sm text-gray-400">Select a player to begin evolution</p>
+              <h2 className="text-2xl font-bold text-white mb-1">
+                {viewingHidden ? 'Not used by this team' : 'Player Warehouse'}
+              </h2>
+              <p className="text-sm text-gray-400">
+                {viewingHidden
+                  ? 'These cards are still in the shared library, and their builds are still saved'
+                  : 'Select a player to begin evolution'}
+              </p>
             </div>
-            
+
             <div className="flex items-center gap-4">
+              {hiddenPlayerIds.length > 0 && (
+                <button
+                  onClick={() => setShowHidden(v => !v)}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap ${
+                    viewingHidden
+                      ? 'bg-gray-800 border-gray-600 text-white'
+                      : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <EyeOff className="w-4 h-4" />
+                  Hidden ({hiddenPlayerIds.length})
+                </button>
+              )}
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
@@ -137,16 +189,47 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                     )}
+                    {viewingHidden
+                      ? onUnhidePlayer && (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              onUnhidePlayer(player.id);
+                            }}
+                            className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-fcGreen hover:bg-black border border-fcGreen/30"
+                            title="Use this card in this team again"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        )
+                      : onHidePlayer && (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              onHidePlayer(player.id);
+                            }}
+                            className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-gray-300 hover:text-white hover:bg-black border border-white/10"
+                            title="Stop using this card in this team — its builds are kept, and other teams keep the card"
+                          >
+                            <EyeOff className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                     {onDeletePlayer && (
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (window.confirm(`Delete ${player.bio.name}?`)) {
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Spelled out because it is not the everyday action: hiding is.
+                          if (window.confirm(
+                            `Delete ${player.bio.name} from the shared library?\n\n` +
+                            'Every team loses this card, and every build saved on it goes too. ' +
+                            'This cannot be undone.\n\n' +
+                            'To stop using it in this team only, close this and use the hide button instead.'
+                          )) {
                             onDeletePlayer(player.id);
                           }
-                        }} 
+                        }}
                         className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-red-400 hover:text-red-500 hover:bg-black border border-red-500/20"
-                        title="Delete Player"
+                        title="Delete from the shared library — every team loses this card"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
