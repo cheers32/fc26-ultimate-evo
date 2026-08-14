@@ -1266,6 +1266,16 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   const isDone = idx <= (renderPath.doneUpTo ?? -1);
                   const isLastDone = idx === (renderPath.doneUpTo ?? -1);
 
+                  // A repeatable evo can appear several times in one chain, and on a path the
+                  // useful part isn't that it repeats but which run this is and how many are left —
+                  // the same card twice over is otherwise two identical steps with no way to tell
+                  // whether a third is available.
+                  const maxRepeat = evo.maxRepeatable ?? 1;
+                  const repeatUse =
+                    maxRepeat > 1
+                      ? renderPath.chainIds.slice(0, idx + 1).filter(cid => cid === id).length
+                      : 0;
+
                   return (
                     <React.Fragment key={`${id}-${idx}`}>
                       <div className={`flex items-center gap-0.5 group/node shrink-0 relative ${
@@ -1294,6 +1304,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               requirement/rarity/position badges the pool and picker use, so a
                               finished chain shows it without opening them. */}
                           {(evo.rarityChange
+                            || maxRepeat > 1
                             || (evo.positionsAdded && evo.positionsAdded.length > 0)
                             || (evo.requirements.positions && evo.requirements.positions.length > 0)
                             || displayExcludedPositions(evo).length > 0) && (
@@ -1316,6 +1327,20 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               {evo.positionsAdded && evo.positionsAdded.length > 0 && (
                                 <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
                                   + Pos: {evo.positionsAdded.join(', ')}
+                                </span>
+                              )}
+                              {maxRepeat > 1 && (
+                                <span
+                                  title={`Repeatable — this is run ${repeatUse} of ${maxRepeat}${
+                                    repeatUse < maxRepeat ? `, ${maxRepeat - repeatUse} still available` : ', none left'
+                                  }`}
+                                  className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold tracking-wide border ${
+                                    repeatUse < maxRepeat
+                                      ? 'bg-fcGold/15 text-fcGold border-fcGold/40'
+                                      : 'bg-gray-800 text-gray-500 border-gray-700'
+                                  }`}
+                                >
+                                  ↻ {repeatUse}/{maxRepeat}
                                 </span>
                               )}
                             </div>
