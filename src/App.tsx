@@ -565,8 +565,20 @@ export default function App() {
    * writing that emptiness back would delete the very builds still being loaded.
    */
   const hydratedPlayers = useRef<Set<string>>(new Set());
+
+  /**
+   * Changing team empties the workbench.
+   *
+   * Builds are the team's, so the ones on screen mean nothing under the next one. Leaving them
+   * there didn't only show the wrong paths: hydration merged the new team's saves alongside them,
+   * and the effect below then wrote the union back — so every card visited across a team switch
+   * copied its builds into whichever team was opened next.
+   */
   useEffect(() => {
     hydratedPlayers.current = new Set();
+    setPlayerStates({});
+    setPendingOpen(null);
+    setActiveSquadId(null);
   }, [activeTeamId]);
 
   useEffect(() => {
@@ -650,9 +662,24 @@ export default function App() {
     chainIds: []
   }), []);
 
-  // Provide stable sorted paths
+  /**
+   * The paths, sorted, with their steps worked out against the card as it is right now.
+   *
+   * `steps` used to be whatever was cached on the path when it was built, and the card underneath
+   * can move: a PlayStyle pick, an edit, a changed rarity. Evos gate on those — `maxPlayStyles`,
+   * `maxOvr`, position — so a chain that was legal when it was generated may not be any more, and
+   * the row would keep showing the numbers from back then while the stat panel, which recomputes,
+   * showed the truth. Recomputing here means there is one answer instead of two.
+   */
   const allPaths = useMemo(() => {
-    const saved = [...currentState.generatedPaths, ...currentState.manualPaths].sort((a, b) => {
+    const withFreshSteps = (path: EvolutionPath): EvolutionPath => ({
+      ...path,
+      steps: simulateEvoChain(path.chainIds, playerBio, initialOvrData, statsData, playStylesData).steps
+    });
+
+    const saved = [...currentState.generatedPaths, ...currentState.manualPaths]
+      .map(withFreshSteps)
+      .sort((a, b) => {
       // First sort by target ovr
       const aOvr = a.steps?.[a.steps.length - 1]?.ovrAfter || 0;
       const bOvr = b.steps?.[b.steps.length - 1]?.ovrAfter || 0;
@@ -665,7 +692,15 @@ export default function App() {
       return bReq - aReq;
     });
     return saved.some(p => p.id === DEFAULT_PATH_ID) ? saved : [defaultPath, ...saved];
-  }, [currentState.generatedPaths, currentState.manualPaths, defaultPath]);
+  }, [
+    currentState.generatedPaths,
+    currentState.manualPaths,
+    defaultPath,
+    playerBio,
+    initialOvrData,
+    statsData,
+    playStylesData
+  ]);
 
   const activePath = useMemo(() => {
     return allPaths.find(p => p.id === activePathId) || defaultPath;
