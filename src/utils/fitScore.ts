@@ -111,26 +111,41 @@ export function accelerateOf(stats: StatsData, bio: PlayerBio): AccelerateType {
  * three, and which styles are still open matters more than the bare label. Every style counts as
  * one, Basic included; the no-style card is the label already on the chip.
  */
-export function accelerateSpread(stats: StatsData, bio: PlayerBio): Record<AccelerateFamily, number> {
+function accelerateUnderEachChemStyle(stats: StatsData, bio: PlayerBio): AccelerateType[] {
   const acc = subValue(stats, 'acceleration') ?? 50;
   const agi = subValue(stats, 'agility') ?? 50;
   const str = subValue(stats, 'strength') ?? 50;
   const height = parseHeightCm(bio.height);
-  const spread: Record<AccelerateFamily, number> = { Explosive: 0, Controlled: 0, Lengthy: 0 };
 
-  for (const boosts of Object.values(chemStyles)) {
+  return Object.values(chemStyles).map(boosts => {
     // Chem boosts stop at 99, the same ceiling the stat panel applies them under.
     const capped = (base: number, key: string) => Math.min(99, base + (boosts[key] || 0));
-    const type = calculateAccelerateType(
+    return calculateAccelerateType(
       capped(acc, 'acceleration'),
       capped(agi, 'agility'),
       capped(str, 'strength'),
       height
     );
-    spread[ACCELERATE_FAMILY[type]] += 1;
-  }
+  });
+}
 
+export function accelerateSpread(stats: StatsData, bio: PlayerBio): Record<AccelerateFamily, number> {
+  const spread: Record<AccelerateFamily, number> = { Explosive: 0, Controlled: 0, Lengthy: 0 };
+  for (const type of accelerateUnderEachChemStyle(stats, bio)) spread[ACCELERATE_FAMILY[type]] += 1;
   return spread;
+}
+
+/**
+ * Every AcceleRATE the card could be made to read, one entry per chemistry style.
+ *
+ * What a build *can* reach is the useful question, because the style is a free choice at the point
+ * of use: a build that reads Controlled bare but Mostly Explosive under Catalyst is a Mostly
+ * Explosive build to anyone who intends to run Catalyst on it. Basic is in here too, and since it
+ * moves agility and strength by the same 3 it leaves the lead between them untouched — so it stands
+ * in for the bare card, and the no-style case needs no separate entry.
+ */
+export function achievableAccelerates(stats: StatsData, bio: PlayerBio): Set<AccelerateType> {
+  return new Set(accelerateUnderEachChemStyle(stats, bio));
 }
 
 /**

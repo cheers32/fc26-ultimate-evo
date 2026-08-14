@@ -1,6 +1,6 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
-import { controlModeFor, fitForPosition, fitScore } from './fitScore';
+import { achievableAccelerates, controlModeFor, fitForPosition, fitScore } from './fitScore';
 import { POSITION_WEIGHTS } from './positionWeights';
 
 // Rarities that unlock free PlayStyle assignment in-game. Once a card is one of these,
@@ -779,6 +779,13 @@ export function analyzeEvolutions(
 if (filters.blockedEvos && filters.blockedEvos.length > 0) {
           const hasBlocked = filters.blockedEvos.some(evoId => currentChainIds.includes(evoId));
           if (hasBlocked) passesFilters = false;
+        }
+
+        // Not a prune: AcceleRATE moves both ways as a chain goes on, so a branch that misses the
+        // wanted archetype now can still land on it later.
+        if (filters.accelerate && filters.accelerate.length > 0) {
+          const reachable = achievableAccelerates(state.stats, state.bio);
+          if (!filters.accelerate.some(type => reachable.has(type))) passesFilters = false;
         }
 
         if (filters.newRarity && state.bio.rarity === baseBio.rarity) {

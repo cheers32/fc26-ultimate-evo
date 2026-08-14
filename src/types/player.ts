@@ -201,6 +201,14 @@ export interface EvoFilters {
    * Off by default: it changes what every recommendation in the app means, so it is opt-in.
    */
   playstyleWeighting?: boolean;
+  /**
+   * Keep only builds that can be made to read one of these AcceleRATEs.
+   *
+   * "Can be made to" is the point: a chemistry style is a free choice at the point of use and moves
+   * all three stats the archetype is decided by, so a build counts if *any* style — Basic included
+   * — lands it on one of these. Empty or absent means any archetype will do.
+   */
+  accelerate?: import('../utils/statUtils').AccelerateType[];
   /** Who drives this card. Decides which half of the PlayStyle weights applies. */
   controlMode?: 'manual' | 'ai';
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
@@ -335,6 +335,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.newPosition) count++;
     if (evoFilters.noRarityChange) count++;
     if (evoFilters.noPositionChange) count++;
+    // One narrowing, however many archetypes are ticked — the badge counts filters, not values.
+    if (evoFilters.accelerate && evoFilters.accelerate.length > 0) count++;
 
     // Check stats
     const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy', 'ovr'];
@@ -703,6 +705,58 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           Keep Positions
                         </label>
                       </div>
+                    </div>
+
+                    {/* AcceleRATE is not a stat you can put a floor under — it is one of seven
+                        archetypes, decided by acceleration, agility, strength and height. A build
+                        counts if any chemistry style, Basic included, lands it on one you picked,
+                        since the style is a free choice at the point of use. */}
+                    <div className="mb-4 pb-3 border-b border-gray-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                          AcceleRATE
+                        </span>
+                        {(draftFilters.accelerate?.length || 0) > 0 && (
+                          <button
+                            onClick={() => setDraftFilters({ ...draftFilters, accelerate: [] })}
+                            className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold"
+                          >
+                            Any
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ACCELERATE_TYPES.map(type => {
+                          const picked = draftFilters.accelerate?.includes(type) || false;
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => {
+                                const current = draftFilters.accelerate || [];
+                                setDraftFilters({
+                                  ...draftFilters,
+                                  accelerate: picked
+                                    ? current.filter(t => t !== type)
+                                    : [...current, type]
+                                });
+                              }}
+                              title={type}
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${
+                                picked
+                                  ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
+                                  : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151] hover:text-white'
+                              }`}
+                            >
+                              {ACCELERATE_SHORT[type]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[10px] text-gray-600 mt-1.5 leading-snug">
+                        {(draftFilters.accelerate?.length || 0) === 0
+                          ? 'Any archetype'
+                          : 'Kept if some chem style — Basic included — reaches one of these'}
+                      </p>
                     </div>
 
                     {['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy', 'psPlus', 'ps'].map(stat => {
