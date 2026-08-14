@@ -5,6 +5,7 @@ import {
   AccelerateFamily,
   AccelerateType,
   calculateAccelerateType,
+  calculateAccelerateFamily,
   parseHeightCm
 } from './statUtils';
 import { chemStyles } from '../data/chemStyles';
@@ -111,7 +112,12 @@ export function accelerateOf(stats: StatsData, bio: PlayerBio): AccelerateType {
  * three, and which styles are still open matters more than the bare label. Every style counts as
  * one, Basic included; the no-style card is the label already on the chip.
  */
-function accelerateUnderEachChemStyle(stats: StatsData, bio: PlayerBio): AccelerateType[] {
+/** Runs a reading of the card once per chemistry style, capped where the game caps it. */
+function underEachChemStyle<T>(
+  stats: StatsData,
+  bio: PlayerBio,
+  read: (acc: number, agi: number, str: number, height?: number) => T
+): T[] {
   const acc = subValue(stats, 'acceleration') ?? 50;
   const agi = subValue(stats, 'agility') ?? 50;
   const str = subValue(stats, 'strength') ?? 50;
@@ -120,7 +126,7 @@ function accelerateUnderEachChemStyle(stats: StatsData, bio: PlayerBio): Acceler
   return Object.values(chemStyles).map(boosts => {
     // Chem boosts stop at 99, the same ceiling the stat panel applies them under.
     const capped = (base: number, key: string) => Math.min(99, base + (boosts[key] || 0));
-    return calculateAccelerateType(
+    return read(
       capped(acc, 'acceleration'),
       capped(agi, 'agility'),
       capped(str, 'strength'),
@@ -129,10 +135,25 @@ function accelerateUnderEachChemStyle(stats: StatsData, bio: PlayerBio): Acceler
   });
 }
 
+/** The archetype the game prints, for this card as it stands. */
+export function accelerateFamilyOf(stats: StatsData, bio: PlayerBio): AccelerateFamily {
+  return calculateAccelerateFamily(
+    subValue(stats, 'acceleration') ?? 50,
+    subValue(stats, 'agility') ?? 50,
+    subValue(stats, 'strength') ?? 50,
+    parseHeightCm(bio.height)
+  );
+}
+
 export function accelerateSpread(stats: StatsData, bio: PlayerBio): Record<AccelerateFamily, number> {
   const spread: Record<AccelerateFamily, number> = { Explosive: 0, Controlled: 0, Lengthy: 0 };
-  for (const type of accelerateUnderEachChemStyle(stats, bio)) spread[ACCELERATE_FAMILY[type]] += 1;
+  for (const family of underEachChemStyle(stats, bio, calculateAccelerateFamily)) spread[family] += 1;
   return spread;
+}
+
+/** Every archetype the game would print for this card under some chemistry style. */
+export function achievableAccelerateFamilies(stats: StatsData, bio: PlayerBio): Set<AccelerateFamily> {
+  return new Set(underEachChemStyle(stats, bio, calculateAccelerateFamily));
 }
 
 /**
@@ -145,7 +166,7 @@ export function accelerateSpread(stats: StatsData, bio: PlayerBio): Record<Accel
  * in for the bare card, and the no-style case needs no separate entry.
  */
 export function achievableAccelerates(stats: StatsData, bio: PlayerBio): Set<AccelerateType> {
-  return new Set(accelerateUnderEachChemStyle(stats, bio));
+  return new Set(underEachChemStyle(stats, bio, calculateAccelerateType));
 }
 
 /**

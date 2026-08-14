@@ -5,7 +5,7 @@ import {
   ACCELERATE_TIERS_BY_FAMILY,
   ACCELERATE_TYPES,
   AccelerateType,
-  accelerateLean,
+  calculateAccelerateFamily,
   calculateAccelerateType
 } from '../utils/statUtils';
 
@@ -39,6 +39,11 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     ACCELERATE_TYPES.map(type => [type, [] as string[]])
   );
 
+  // The same styles grouped twice over, because the two systems genuinely disagree — a card can be
+  // Controlled in game and Controlled Explosive by the seven-way thresholds, and neither reading
+  // is the other's summary.
+  const groupedByFamily: Record<string, string[]> = { Explosive: [], Controlled: [], Lengthy: [] };
+
   names.forEach(name => {
     const boost = chemStyles[name] || {};
     const accBase = previewStats?.pac?.subs?.acceleration?.base || 50;
@@ -52,6 +57,8 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     const type = calculateAccelerateType(acc, agi, str, heightCm);
     if (!groupedChems[type]) groupedChems[type] = [];
     groupedChems[type].push(name);
+
+    groupedByFamily[calculateAccelerateFamily(acc, agi, str, heightCm)].push(name);
   });
 
   const getFaceBoost = (chemName: string) => {
@@ -76,73 +83,77 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     return totalFaceBoost;
   };
 
-  return (
-    <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full flex flex-col gap-2 pl-0 lg:pl-2">
-      {/* Both groupings at once, nested rather than picked between: the outer heading is the word
-          the game prints and collects exactly the styles the game collects, and the tiers inside it
-          are the finer split, which is the part that says whether a style is comfortably in that
-          archetype or one point from leaving it. */}
-      {ACCELERATE_FAMILIES.map(family => {
-        const tiers = ACCELERATE_TIERS_BY_FAMILY[family].filter(t => groupedChems[t]?.length > 0);
-        if (tiers.length === 0) return null;
-        const total = tiers.reduce((sum, t) => sum + groupedChems[t].length, 0);
-
+  /** One dense lookup grid of styles; shared by both groupings. */
+  const styleGrid = (items: string[]) => (
+    <div className="grid grid-cols-3 rounded-lg overflow-hidden border border-[#4b5563]/40">
+      {[...items].sort((a, b) => getFaceBoost(b) - getFaceBoost(a)).map((name) => {
+        const isLocked = name === lockedChem;
+        const isHovered = name === hoveredChem;
         return (
-          <div key={family} className="flex flex-col gap-1">
-            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide flex items-baseline gap-1.5">
-              {family}
-              <span className="text-gray-700 font-mono text-[9px]">{total}</span>
-            </h4>
-            {tiers.map(group => {
-        const items = groupedChems[group];
-
-        // Sort items by highest total face stat boost
-        items.sort((a, b) => getFaceBoost(b) - getFaceBoost(a));
-        const lean = accelerateLean(group as AccelerateType);
-
-        return (
-          <div key={group} className="flex flex-col gap-0.5">
-            {lean && (
-              <span className="text-[9px] font-semibold text-gray-600 tracking-wide pl-0.5">
-                · {lean}
-              </span>
-            )}
-            {/* No gaps: the styles are a dense lookup table, and the gutters were costing more
-                vertical space than the rows themselves. Borders collapse into a shared grid. */}
-            <div className="grid grid-cols-3 rounded-lg overflow-hidden border border-[#4b5563]/40">
-              {items.map((name) => {
-                const isLocked = name === lockedChem;
-                const isHovered = name === hoveredChem;
-
-                return (
-                  <button
-                    key={name}
-                    onMouseEnter={() => onHoverChem(name)}
-                    onMouseLeave={() => onHoverChem(null)}
-                    onClick={() => onLockChem(name)}
-                    className={`
-                      relative transition-colors text-[10.5px] font-semibold py-1 px-1 cursor-pointer text-center select-none flex items-center justify-center
-                      border-r border-b border-[#4b5563]/25 last:border-r-0
-                      ${
-                        isLocked
-                          ? 'bg-[#1ED760]/25 text-[#1ED760] ring-1 ring-inset ring-[#1ED760]'
-                          : isHovered
-                          ? 'bg-[#374151] text-white'
-                          : 'bg-[#1f2937]/50 text-gray-300 hover:bg-[#374151] hover:text-white'
-                      }
-                    `}
-                  >
-                    {name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-            })}
-          </div>
+          <button
+            key={name}
+            onMouseEnter={() => onHoverChem(name)}
+            onMouseLeave={() => onHoverChem(null)}
+            onClick={() => onLockChem(name)}
+            className={`
+              relative transition-colors text-[10.5px] font-semibold py-1 px-1 cursor-pointer text-center select-none flex items-center justify-center
+              border-r border-b border-[#4b5563]/25 last:border-r-0
+              ${
+                isLocked
+                  ? 'bg-[#1ED760]/25 text-[#1ED760] ring-1 ring-inset ring-[#1ED760]'
+                  : isHovered
+                  ? 'bg-[#374151] text-white'
+                  : 'bg-[#1f2937]/50 text-gray-300 hover:bg-[#374151] hover:text-white'
+              }
+            `}
+          >
+            {name}
+          </button>
         );
       })}
+    </div>
+  );
+
+  const heading = (text: string, count: number) => (
+    <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide flex items-baseline gap-1.5">
+      {text}
+      <span className="text-gray-700 font-mono text-[9px]">{count}</span>
+    </h4>
+  );
+
+  return (
+    <div className="border-t border-gray-800 pt-3 lg:border-t-0 lg:pt-0 lg:h-full flex flex-col gap-3 pl-0 lg:pl-2">
+      {/* Two lists, not one nested in the other, because the two systems disagree about where the
+          line falls rather than one being a refinement of the other: the game turns Explosive on at
+          an agility lead of 10, while the seven-way thresholds lean Explosive from 4. Nesting would
+          have to pick one of them to be the outer truth. */}
+      <div className="flex flex-col gap-1.5">
+        <div className="text-[9px] font-bold uppercase tracking-wider text-fcGreen/70">In game · FC 26</div>
+        {ACCELERATE_FAMILIES.map(family => {
+          const items = groupedByFamily[family];
+          if (!items || items.length === 0) return null;
+          return (
+            <div key={family} className="flex flex-col gap-0.5">
+              {heading(family, items.length)}
+              {styleGrid(items)}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="text-[9px] font-bold uppercase tracking-wider text-gray-600">Detailed · seven tiers</div>
+        {ACCELERATE_TYPES.map(type => {
+          const items = groupedChems[type];
+          if (!items || items.length === 0) return null;
+          return (
+            <div key={type} className="flex flex-col gap-0.5">
+              {heading(type, items.length)}
+              {styleGrid(items)}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

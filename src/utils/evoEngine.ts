@@ -1,6 +1,6 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
-import { achievableAccelerates, controlModeFor, fitForPosition, fitScore } from './fitScore';
+import { achievableAccelerates, achievableAccelerateFamilies, controlModeFor, fitForPosition, fitScore } from './fitScore';
 import { POSITION_WEIGHTS } from './positionWeights';
 
 // Rarities that unlock free PlayStyle assignment in-game. Once a card is one of these,
@@ -786,6 +786,11 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
         if (filters.accelerate && filters.accelerate.length > 0) {
           const reachable = achievableAccelerates(state.stats, state.bio);
           if (!filters.accelerate.some(type => reachable.has(type))) passesFilters = false;
+        }
+
+        if (filters.accelerateFamily && filters.accelerateFamily.length > 0) {
+          const reachable = achievableAccelerateFamilies(state.stats, state.bio);
+          if (!filters.accelerateFamily.some(f => reachable.has(f))) passesFilters = false;
         }
 
         if (filters.newRarity && state.bio.rarity === baseBio.rarity) {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, ACCELERATE_TIERS_BY_FAMILY, ACCELERATE_FAMILY } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
@@ -334,11 +334,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     (evoFilters.requiredEvos || []).forEach(id =>
       parts.push(`must include ${availableEvolutions[id]?.name || id}`)
     );
+    if (evoFilters.accelerateFamily && evoFilters.accelerateFamily.length > 0) {
+      parts.push(`AcceleRATE ${evoFilters.accelerateFamily.join(' or ')} in game`);
+    }
     if (evoFilters.accelerate && evoFilters.accelerate.length > 0) {
-      const families = [...new Set(evoFilters.accelerate.map(t => ACCELERATE_FAMILY[t]))];
-      // The printed word carries it when a whole family is ticked; otherwise name the tiers.
-      const whole = families.every(f => ACCELERATE_TIERS_BY_FAMILY[f].every(t => evoFilters.accelerate!.includes(t)));
-      parts.push(`AcceleRATE ${(whole ? families : evoFilters.accelerate).join(' or ')}`);
+      parts.push(`AcceleRATE ${evoFilters.accelerate.join(' or ')}`);
     }
     if (evoFilters.newRarity) parts.push('a new rarity');
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
@@ -366,6 +366,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.noPositionChange) count++;
     // One narrowing, however many archetypes are ticked — the badge counts filters, not values.
     if (evoFilters.accelerate && evoFilters.accelerate.length > 0) count++;
+    if (evoFilters.accelerateFamily && evoFilters.accelerateFamily.length > 0) count++;
 
     // Check stats
     const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy', 'ovr'];
@@ -745,41 +746,38 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                           AcceleRATE <span className="text-gray-600 normal-case">· in game / detailed</span>
                         </span>
-                        {(draftFilters.accelerate?.length || 0) > 0 && (
+                        {((draftFilters.accelerate?.length || 0) + (draftFilters.accelerateFamily?.length || 0)) > 0 && (
                           <button
-                            onClick={() => setDraftFilters({ ...draftFilters, accelerate: [] })}
+                            onClick={() => setDraftFilters({ ...draftFilters, accelerate: [], accelerateFamily: [] })}
                             className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold"
                           >
                             Any
                           </button>
                         )}
                       </div>
-                      {/* The three the game prints, then the seven the thresholds actually
-                          compute. Picking a printed one takes its tiers with it, so the two rows
-                          are the same filter said at two levels of detail. */}
+                      {/* Two filters, not one said twice: the game turns Explosive on at an
+                          agility lead of 10 while the seven-way thresholds lean Explosive from 4,
+                          so ticking a printed archetype cannot just tick its tiers. Set both and
+                          a build has to satisfy both. */}
                       <div className="flex gap-1.5 mb-1.5">
                         {ACCELERATE_FAMILIES.map(family => {
-                          const tiers = ACCELERATE_TIERS_BY_FAMILY[family];
-                          const picked = draftFilters.accelerate || [];
-                          const all = tiers.every(t => picked.includes(t));
-                          const some = !all && tiers.some(t => picked.includes(t));
+                          const picked = draftFilters.accelerateFamily?.includes(family) || false;
                           return (
                             <button
                               key={family}
-                              onClick={() =>
+                              onClick={() => {
+                                const current = draftFilters.accelerateFamily || [];
                                 setDraftFilters({
                                   ...draftFilters,
-                                  accelerate: all
-                                    ? picked.filter(t => !tiers.includes(t))
-                                    : [...picked.filter(t => !tiers.includes(t)), ...tiers]
-                                })
-                              }
-                              title={`${family} — every tier that reads ${family} in game`}
+                                  accelerateFamily: picked
+                                    ? current.filter(f => f !== family)
+                                    : [...current, family]
+                                });
+                              }}
+                              title={`${family} — as the card reads it in FC 26`}
                               className={`flex-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${
-                                all
+                                picked
                                   ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
-                                  : some
-                                  ? 'bg-fcGreen/20 text-fcGreen border-fcGreen/40'
                                   : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151] hover:text-white'
                               }`}
                             >
@@ -816,7 +814,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         })}
                       </div>
                       <p className="text-[10px] text-gray-600 mt-1.5 leading-snug">
-                        {(draftFilters.accelerate?.length || 0) === 0
+                        {((draftFilters.accelerate?.length || 0) + (draftFilters.accelerateFamily?.length || 0)) === 0
                           ? 'Any archetype'
                           : 'Kept if some chem style — Basic included — reaches one of these'}
                       </p>

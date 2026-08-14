@@ -209,6 +209,12 @@ export interface EvoFilters {
    * — lands it on one of these. Empty or absent means any archetype will do.
    */
   accelerate?: import('../utils/statUtils').AccelerateType[];
+  /**
+   * The same idea under the archetype the game prints. Kept apart from `accelerate` rather than
+   * derived from it because the two systems disagree about where the line falls — a card can be
+   * Controlled in game and Controlled Explosive by the seven-way thresholds.
+   */
+  accelerateFamily?: import('../utils/statUtils').AccelerateFamily[];
   /** Who drives this card. Decides which half of the PlayStyle weights applies. */
   controlMode?: 'manual' | 'ai';
 }

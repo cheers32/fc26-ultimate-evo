@@ -106,6 +106,38 @@ export const ACCELERATE_FAMILY: Record<AccelerateType, AccelerateFamily> = {
 
 export const ACCELERATE_FAMILIES: AccelerateFamily[] = ['Explosive', 'Controlled', 'Lengthy'];
 
+/**
+ * The archetype FC 26 actually prints, which is *not* the seven-way split collapsed.
+ *
+ * Measured against FUTBIN rather than derived. Their page renders the same grouping at all three
+ * chemistry levels, and a style's boost scales with the level, so one card gives a ladder of leads
+ * either side of the cut. Ronaldinho (180cm, agility 89 / strength 81) pins the Explosive one:
+ *
+ *   Engine   +1 → lead  9 → Controlled      (chem 1)
+ *   Finisher +2 → lead 10 → Explosive       (chem 1)
+ *   Engine   +2 → lead 10 → Explosive       (chem 2)
+ *
+ * A cut of 9 would make Engine explosive at chem 1 and a cut of 11 would make Finisher controlled
+ * there, so it is exactly 10. Ronaldo under Counter Culture (187cm) pins the other the same way:
+ * Backbone at a strength lead of 3 is Controlled and 4 is Lengthy.
+ *
+ * The two sides do not meet in the middle — leaning Lengthy is cheap and leaning Explosive is dear
+ * — and the seven-way rule enters "Controlled Explosive" at a lead of 4, so it calls cards
+ * Explosive that the game calls Controlled. Hence a separate function: the systems genuinely
+ * disagree, and the app shows both.
+ */
+export function calculateAccelerateFamily(
+  acc: number,
+  agi: number,
+  str: number,
+  heightCm?: number
+): AccelerateFamily {
+  const h = heightCm ?? 180;
+  if (agi - str >= 10 && agi >= 65 && acc >= 70 && h <= 182) return 'Explosive';
+  if (str - agi >= 4 && str >= 65 && acc >= 40 && h >= 181) return 'Lengthy';
+  return 'Controlled';
+}
+
 /** The finer tiers that each printed archetype is made of, in the order they lean. */
 export const ACCELERATE_TIERS_BY_FAMILY: Record<AccelerateFamily, AccelerateType[]> = {
   Explosive: ['Explosive', 'Mostly Explosive', 'Controlled Explosive'],
