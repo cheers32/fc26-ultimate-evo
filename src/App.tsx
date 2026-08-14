@@ -20,6 +20,7 @@ import {
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
 import { buildShareUrl, clearShareParam, parseShareUrl, SharedBuild } from './utils/shareLink';
+import { appUrlFor, currentUrl, readAppUrl } from './utils/appUrl';
 import { ImportBuildModal } from './components/ImportBuildModal';
 import {
   useLibrary,
@@ -96,7 +97,11 @@ function migratePlayStylePicks(
 export default function App() {
   // Which team's state the app is looking at. The team owns its EVO pool and its squads; the
   // player and EVO libraries below are global, so a card imported by anyone shows up for everyone.
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(() => readActiveTeamId());
+  // The address wins over the remembered team: a link someone sent, or a Back press, is a
+  // statement about which team to open, and the last one this browser used is only a fallback.
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(
+    () => readAppUrl().teamId ?? readActiveTeamId()
+  );
   const {
     team,
     loading: teamLoading,
@@ -401,11 +406,58 @@ export default function App() {
   };
 
   // Opens on whichever card this browser was last working on.
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(() => readActivePlayerId() || 'rodri-91');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(
+    () => readAppUrl().playerId || readActivePlayerId() || 'rodri-91'
+  );
 
   useEffect(() => {
     writeActivePlayerId(selectedPlayerId);
   }, [selectedPlayerId]);
+
+  // --- Back and Forward ----------------------------------------------------------------------
+  //
+  // The team and the card are what make one screen a different screen from another, so those two
+  // are what the history is made of. Everything else — which path is active, which modal is open —
+  // is somewhere you are *within* a screen, and Escape is already the way out of those.
+
+  /** True once the address has been reconciled with where the app actually opened. */
+  const urlSynced = useRef(false);
+  /** Set while a Back/Forward press is being applied, so following it isn't recorded as a move. */
+  const navigatingBack = useRef(false);
+
+  useEffect(() => {
+    const target = appUrlFor({ teamId: activeTeamId, playerId: selectedPlayerId });
+    if (target === currentUrl()) {
+      urlSynced.current = true;
+      navigatingBack.current = false;
+      return;
+    }
+
+    // The first paint only writes down where the app already was — that is not a move, and
+    // stacking an entry for it would leave a Back press that goes nowhere.
+    if (!urlSynced.current || navigatingBack.current) {
+      window.history.replaceState(null, '', target);
+    } else {
+      window.history.pushState(null, '', target);
+    }
+    urlSynced.current = true;
+    navigatingBack.current = false;
+  }, [activeTeamId, selectedPlayerId]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const { teamId, playerId } = readAppUrl();
+      navigatingBack.current = true;
+      setActiveTeamId(teamId);
+      writeActiveTeamId(teamId);
+      if (playerId) {
+        setSelectedPlayerId(playerId);
+        writeActivePlayerId(playerId);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   /**
    * An imported card arrives from the shared library after mount, so a remembered custom player is
