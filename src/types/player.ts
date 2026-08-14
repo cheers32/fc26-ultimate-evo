@@ -219,29 +219,24 @@ export interface PlayerEvoState {
   baseIndex?: number;
 }
 
-export interface SquadMember {
-  // Unique per entry, not per player — the same player can be stored several times
-  // in one squad under different evolution paths.
-  id: string;
+/**
+ * Who stands in one slot.
+ *
+ * A build belongs to its player — it is saved by starring it, and lives in the team's `savedPaths`
+ * under that player's id. So a slot doesn't store a build, it points at one: this player, this
+ * chain. Clearing a slot takes the card off the pitch and leaves the build where it was.
+ */
+export interface SquadSlot {
   playerId: string;
-  playerState: PlayerEvoState;
-  // The evolved player as it looked when added — the squad shows this, not the raw card.
-  snapshot: {
-    name: string;
-    pathName: string;
-    chainIds: string[];
-    baseOvr: number;
-    evoOvr: number;
-  };
+  chainIds: string[];
 }
 
 export interface Squad {
   id: string;
   name: string;
-  members: SquadMember[];
   createdAt: number;
   /** Which formation the pitch draws. Only 4-2-3-1 exists so far. */
   formation?: string;
-  /** Slot id -> member id. Members not in here are on the bench. */
-  slots?: Record<string, string>;
+  /** Slot id -> who stands there. Twenty-three of them, and they are the whole squad. */
+  slots: Record<string, SquadSlot>;
 }

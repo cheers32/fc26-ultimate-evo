@@ -7,8 +7,8 @@ import { HeaderCard } from './components/HeaderCard';
 import { PlayerSubInfo } from './components/PlayerSubInfo';
 import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
-import { PlayStylesSection } from './components/PlayStylesSection';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
+import { EvoLabModal } from './components/EvoLabModal';
 import { calculateAccelerateType, parseHeightCm } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
 import {
@@ -19,7 +19,8 @@ import {
   canPickPlayStyles
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
-import { buildShareUrl, clearShareParam, parseShareUrl } from './utils/shareLink';
+import { buildShareUrl, clearShareParam, parseShareUrl, SharedBuild } from './utils/shareLink';
+import { ImportBuildModal } from './components/ImportBuildModal';
 import {
   useLibrary,
   useTeam,
@@ -35,11 +36,10 @@ import { EvoPoolModal, EvoStatuses } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { PlayStylePickerModal } from './components/PlayStylePickerModal';
-import { SquadPanel } from './components/SquadPanel';
-import { SquadPitch } from './components/SquadPitch';
+import { SquadPitch, ALL_SLOT_IDS } from './components/SquadPitch';
 import { ImportPlayerModal } from './components/ImportPlayerModal';
-import { Trophy, RefreshCw, LayoutGrid, Layers, Upload, Users } from 'lucide-react';
-import { Squad, SquadMember, PlayerEvoState } from './types/player';
+import { Trophy, Layers } from 'lucide-react';
+import { Squad, SquadSlot, PlayerEvoState } from './types/player';
 
 const DEFAULT_PATH_ID = 'default-path';
 /** The build a `?path=` link opens into. Fixed, so following the same link twice doesn't stack. */
@@ -103,6 +103,7 @@ export default function App() {
     error: teamError,
     setEvoStatuses: setTeamEvoStatuses,
     setSavedPathsForPlayer,
+    addSavedPaths,
     saveSquad: persistSquad,
     deleteSquad: removeSquadFromTeam
   } = useTeam(activeTeamId);
@@ -182,7 +183,19 @@ export default function App() {
       const newDeleted = [...deletedDatabasePlayers, id];
       setDeletedDatabasePlayers(newDeleted);
     }
-    
+
+    // Builds belong to the player, so they go with them — and so does every slot pointing at one.
+    // Left behind they would be unreachable: there is no card to open them against.
+    setSavedPathsForPlayer(id, []);
+    saveSquads(
+      squads.map(squad => {
+        const slots = Object.fromEntries(
+          Object.entries(squad.slots).filter(([, entry]) => entry.playerId !== id)
+        );
+        return { ...squad, slots };
+      })
+    );
+
     if (selectedPlayerId === id) {
       // Find another available player to select
       const availableIds = Object.keys(allPlayersData).filter(pId => pId !== id);
@@ -264,13 +277,31 @@ export default function App() {
 
   // Squads belong to the team, and they are the only place a finished build lives: a path that
   // isn't in a squad is a draft, and drafts don't survive leaving the page.
+  const allPlayersData = useMemo(() => {
+    const combined = { ...playersDatabase, ...customPlayers };
+    deletedDatabasePlayers.forEach(id => delete combined[id]);
+    return combined;
+  }, [customPlayers, deletedDatabasePlayers]);
+
+  /**
+   * A squad is its pitch and nothing else: eleven on it, twelve beside it, twenty-three slots each
+   * naming a player and one of that player's builds. It is a set of shortcuts — the builds
+   * themselves belong to the players, in `savedPaths`.
+   *
+   * Anything that isn't a slot in this shape is dropped on read: a slot id the formation doesn't
+   * have, and a slot naming a player who has since been deleted. Both are empty slots.
+   */
   const squads = useMemo(
-    () => (team?.squads || []).map(squad => ({
-      ...squad,
-      // Members predating per-entry ids need one before they can be removed individually.
-      members: (squad.members || []).map((m, i) => (m.id ? m : { ...m, id: `${m.playerId}-${i}` }))
-    })),
-    [team?.squads]
+    () => (team?.squads || []).map(squad => {
+      const slots: Record<string, SquadSlot> = {};
+      Object.entries(squad.slots || {}).forEach(([slotId, entry]) => {
+        if (!ALL_SLOT_IDS.includes(slotId)) return;
+        if (!entry || typeof entry !== 'object' || !allPlayersData[entry.playerId]) return;
+        slots[slotId] = { playerId: entry.playerId, chainIds: entry.chainIds || [] };
+      });
+      return { id: squad.id, name: squad.name, createdAt: squad.createdAt, formation: squad.formation, slots };
+    }),
+    [team?.squads, allPlayersData]
   );
 
   /** Every squad write goes through here so one changed squad is one request. */
@@ -284,12 +315,7 @@ export default function App() {
   };
 
   const createSquad = (name: string): string => {
-    const newSquad: Squad = {
-      id: Date.now().toString(),
-      name,
-      members: [],
-      createdAt: Date.now()
-    };
+    const newSquad: Squad = { id: Date.now().toString(), name, slots: {}, createdAt: Date.now() };
     saveSquads([...squads, newSquad]);
     return newSquad.id;
   };
@@ -314,66 +340,65 @@ export default function App() {
     return value;
   };
 
-  const addPlayerToSquad = (squadId: string, playerId: string, rawState: PlayerEvoState, rawSnapshot: SquadMember['snapshot']) => {
-    const playerState = withoutSteps(rawState);
-    const snapshot = withoutSteps(rawSnapshot);
-    const updatedSquads = squads.map(squad => {
-      if (squad.id === squadId) {
-        // A player may appear several times under different paths, so entries are keyed
-        // by player + chain. Re-adding the same chain refreshes it instead of duplicating.
-        const chainKey = snapshot.chainIds.join('>');
-        const existingIndex = squad.members.findIndex(
-          m => m.playerId === playerId && m.snapshot.chainIds.join('>') === chainKey
-        );
-        if (existingIndex >= 0) {
-          const newMembers = [...squad.members];
-          newMembers[existingIndex] = { ...newMembers[existingIndex], playerState, snapshot };
-          return { ...squad, members: newMembers };
-        }
-        const member: SquadMember = {
-          id: `${playerId}-${Date.now()}`,
-          playerId,
-          playerState,
-          snapshot
-        };
-        return { ...squad, members: [...squad.members, member] };
-      }
-      return squad;
-    });
-    saveSquads(updatedSquads);
-  };
-
-  /** Puts a build in a slot, or clears one. A member can only stand in one place at a time. */
-  const assignSquadSlot = (squadId: string, slotId: string, memberId: string | null) => {
+  /** Two slots trade occupants. Either may be empty, which makes this "move" as well as "swap". */
+  const swapSquadSlots = (squadId: string, fromSlotId: string, toSlotId: string) => {
     saveSquads(
       squads.map(squad => {
         if (squad.id !== squadId) return squad;
         const slots = { ...(squad.slots || {}) };
-        Object.keys(slots).forEach(key => {
-          if (memberId && slots[key] === memberId) delete slots[key];
-        });
-        if (memberId) slots[slotId] = memberId;
-        else delete slots[slotId];
+        const from = slots[fromSlotId];
+        const to = slots[toSlotId];
+        if (to) slots[fromSlotId] = to;
+        else delete slots[fromSlotId];
+        if (from) slots[toSlotId] = from;
+        else delete slots[toSlotId];
         return { ...squad, slots };
       })
     );
   };
 
-  const removeSquadMember = (squadId: string, memberId: string) => {
-    const updatedSquads = squads.map(squad => {
-      if (squad.id === squadId) {
-        return { ...squad, members: squad.members.filter(m => m.id !== memberId) };
-      }
-      return squad;
+  /**
+   * The pitch's one-click add: the build on screen goes into the slot that was clicked.
+   *
+   * It is starred on the way in. The slot only points at the build, so the build has to be one the
+   * player actually keeps — otherwise the pointer would dangle the moment the page was left.
+   */
+  const addCurrentPlayerToSlot = (squadId: string | null, slotId: string) => {
+    starActivePath();
+
+    let target = squads.find(s => s.id === (squadId || activeSquadId)) || squads[0] || null;
+    let next = squads;
+    if (!target) {
+      // Clicking a slot with no squad at all is still a clear instruction — make one and use it.
+      target = { id: Date.now().toString(), name: 'Main Squad', slots: {}, createdAt: Date.now(), formation: undefined };
+      next = [...squads, target];
+      setActiveSquadId(target.id);
+    }
+
+    const entry: SquadSlot = { playerId: selectedPlayerId, chainIds: activePath.chainIds };
+    const key = `${entry.playerId}|${entry.chainIds.join('>')}`;
+    const slots = { ...target.slots };
+    // One build stands in one place at a time, so leaving the old slot is part of arriving here.
+    Object.keys(slots).forEach(id => {
+      if (`${slots[id].playerId}|${slots[id].chainIds.join('>')}` === key) delete slots[id];
     });
-    saveSquads(updatedSquads);
+    slots[slotId] = entry;
+
+    const targetId = target.id;
+    saveSquads(next.map(s => (s.id === targetId ? { ...s, slots } : s)));
   };
 
-  const allPlayersData = useMemo(() => {
-    const combined = { ...playersDatabase, ...customPlayers };
-    deletedDatabasePlayers.forEach(id => delete combined[id]);
-    return combined;
-  }, [customPlayers, deletedDatabasePlayers]);
+  /** Takes the card off the pitch. The build it pointed at stays saved on its player. */
+  const clearSquadSlot = (squadId: string, slotId: string) => {
+    saveSquads(
+      squads.map(squad => {
+        if (squad.id !== squadId) return squad;
+        const slots = { ...squad.slots };
+        delete slots[slotId];
+        return { ...squad, slots };
+      })
+    );
+  };
 
   // Opens on whichever card this browser was last working on.
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>(() => readActivePlayerId() || 'rodri-91');
@@ -430,9 +455,12 @@ export default function App() {
     });
   };
 
-  // Set when opening a squad member, so the effect below restores that snapshot
-  // instead of the player's own save.
+  // Set when a shared link drops a whole workbench state in; the effect below installs it once the
+  // card it belongs to is on screen.
   const [pendingRestore, setPendingRestore] = useState<{ playerId: string; state: PlayerEvoState } | null>(null);
+
+  // Set when a card on the pitch is clicked: which player, and which of their builds to open.
+  const [pendingOpen, setPendingOpen] = useState<{ playerId: string; chainIds: string[] } | null>(null);
 
   // --- Shared builds -------------------------------------------------------------------------
   //
@@ -470,22 +498,11 @@ export default function App() {
       }
     });
     setSelectedPlayerId(sharedBuild.playerId);
-    setActiveTab('workbench');
   }, [sharedBuild, activeTeamId, customPlayersLoaded, allPlayersData]);
 
-  const openSquadMember = (member: SquadMember) => {
-    setPendingRestore({ playerId: member.playerId, state: member.playerState });
-    setSelectedPlayerId(member.playerId);
-    setEvoPreview(true);
-    setActiveTab('workbench');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Load persistence data when player changes
+  // Install a shared build once its card is on screen.
   useEffect(() => {
     if (pendingRestore && pendingRestore.playerId === selectedPlayerId) {
-      // Opening a squad member loads that build into the workbench, which is the only way a
-      // saved build comes back — there is no per-player save behind it any more.
       const withSteps = (paths: EvolutionPath[] = []) =>
         paths.map(path =>
           path.steps
@@ -617,7 +634,8 @@ export default function App() {
   const [playStylePickerTarget, setPlayStylePickerTarget] = useState<number | 'new' | null>(null);
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'workbench' | 'card' | 'evos'>('workbench');
+  const [isEvoLabOpen, setIsEvoLabOpen] = useState(false);
+  const [isImportBuildOpen, setIsImportBuildOpen] = useState(false);
   // Which squad the pitch is showing. Defaults to the team's first, which is the one every team
   // is created with.
   const [activeSquadId, setActiveSquadId] = useState<string | null>(null);
@@ -652,6 +670,125 @@ export default function App() {
   const activePath = useMemo(() => {
     return allPaths.find(p => p.id === activePathId) || defaultPath;
   }, [allPaths, activePathId, defaultPath]);
+
+  /**
+   * Star the build on screen, which is what saving is: it lifts the path out of the generated list
+   * so an Analyze run can't discard it, and the effect above writes it to the player's saves.
+   * Putting a card on the pitch goes through here, because a slot is only a pointer at a save.
+   */
+  const starActivePath = () => {
+    const path = activePath;
+    if (path.chainIds.length === 0 || path.isFavorite) return;
+    const starred = { ...path, isFavorite: true, starTier: 1 as const };
+    if (manualPaths.some(p => p.id === path.id)) {
+      updateState({ manualPaths: manualPaths.map(p => (p.id === path.id ? starred : p)) });
+    } else {
+      updateState({
+        generatedPaths: generatedPaths.filter(p => p.id !== path.id),
+        manualPaths: [...manualPaths, starred]
+      });
+    }
+  };
+
+  /**
+   * Take builds off share links and save them to the players they name.
+   *
+   * The card on screen is the exception: while a player is open the workbench owns their starred
+   * set and writes it back wholesale, so an import that went straight to the store would be
+   * overwritten by the next render. That one goes in through the workbench instead.
+   */
+  const importSharedBuilds = (builds: SharedBuild[]) => {
+    const byPlayer = new Map<string, string[][]>();
+    builds.forEach(build => {
+      if (!allPlayersData[build.playerId]) return;
+      const chains = byPlayer.get(build.playerId) || [];
+      const key = build.chainIds.join('>');
+      if (chains.some(c => c.join('>') === key)) return;
+      chains.push(build.chainIds);
+      byPlayer.set(build.playerId, chains);
+    });
+
+    const additions: Record<string, EvolutionPath[]> = {};
+    const forOpenCard: EvolutionPath[] = [];
+
+    byPlayer.forEach((chains, playerId) => {
+      const known = new Set(
+        (playerId === selectedPlayerId
+          ? allPaths
+          : team?.savedPaths?.[playerId] || []
+        ).map(p => p.chainIds.join('>'))
+      );
+      const fresh = chains
+        .filter(chain => !known.has(chain.join('>')))
+        .map((chain, i) => ({
+          id: `import-${Date.now()}-${playerId}-${i}`,
+          name: 'Imported build',
+          description: '',
+          isFavorite: true,
+          starTier: 1 as const,
+          chainIds: chain
+        }));
+      if (fresh.length === 0) return;
+
+      if (playerId === selectedPlayerId) {
+        forOpenCard.push(
+          ...fresh.map(path => ({
+            ...path,
+            steps: simulateEvoChain(path.chainIds, playerBio, initialOvrData, statsData, playStylesData).steps
+          }))
+        );
+      } else {
+        additions[playerId] = fresh;
+      }
+    });
+
+    if (Object.keys(additions).length > 0) addSavedPaths(additions);
+    if (forOpenCard.length > 0) updateState({ manualPaths: [...manualPaths, ...forOpenCard] });
+  };
+
+  /**
+   * Open the build a slot points at. The build is the player's, so it comes back from their saves —
+   * the slot only says which player and which chain.
+   */
+  const openSquadSlot = (entry: SquadSlot) => {
+    setPendingOpen({ playerId: entry.playerId, chainIds: entry.chainIds });
+    setSelectedPlayerId(entry.playerId);
+    setEvoPreview(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (!pendingOpen || pendingOpen.playerId !== selectedPlayerId) return;
+    const key = pendingOpen.chainIds.join('>');
+    const found = allPaths.find(p => p.chainIds.join('>') === key);
+    if (found) {
+      updateState({ activePathId: found.id, expandedPathIds: [found.id] });
+      setPendingOpen(null);
+      return;
+    }
+    // Still on its way in from the player's saves — wait for the hydration effect rather than
+    // standing up a second copy of the same chain.
+    if ((team?.savedPaths?.[selectedPlayerId] || []).some(p => p.chainIds.join('>') === key)) return;
+
+    const id = `slot-${Date.now()}`;
+    updateState({
+      activePathId: id,
+      expandedPathIds: [id],
+      manualPaths: [
+        ...manualPaths,
+        {
+          id,
+          name: 'From the pitch',
+          description: '',
+          isFavorite: true,
+          starTier: 1,
+          chainIds: pendingOpen.chainIds,
+          steps: simulateEvoChain(pendingOpen.chainIds, playerBio, initialOvrData, statsData, playStylesData).steps
+        }
+      ]
+    });
+    setPendingOpen(null);
+  }, [pendingOpen, selectedPlayerId, allPaths, team, manualPaths, playerBio, initialOvrData, statsData, playStylesData]);
 
   const evoLocked = evoPreview; // Derived state for components that need to know if we are in preview mode
 
@@ -988,19 +1125,6 @@ export default function App() {
     return () => analyzeHandle.current?.cancel();
   }, [selectedPlayerId]);
 
-  const currentSnapshot = useMemo<SquadMember['snapshot']>(() => {
-    const lastStep = chainResult.steps[chainResult.steps.length - 1];
-    return {
-      name: playerBio.name,
-      pathName: activePath.name,
-      chainIds: activePath.chainIds,
-      generatedPaths: currentState.generatedPaths,
-      manualPaths: currentState.manualPaths,
-      baseOvr: initialOvrData.base,
-      evoOvr: lastStep ? lastStep.ovrAfter : initialOvrData.base
-    };
-  }, [chainResult, playerBio.name, activePath.name, activePath.chainIds, initialOvrData.base]);
-
   const { activeBaseStats, previewStats, activeBaseOvr, previewOvr, activePlayStyles, previewPlayStyles, previewBio } = useMemo(() => {
     let aBaseStats = statsData;
     let aBaseOvr = initialOvrData.base;
@@ -1260,20 +1384,6 @@ export default function App() {
     return evosPool.filter(id => disabledEvos.includes(id)).length;
   }, [evosPool, disabledEvos]);
 
-  const handleAddToSquad = () => {
-    let targetSquadId: string | null = activeSquadId;
-    if (!targetSquadId && squads.length > 0) {
-      targetSquadId = squads[0].id;
-    }
-    if (!targetSquadId) {
-      targetSquadId = createSquad('Main Squad');
-      setActiveSquadId(targetSquadId);
-    }
-    if (targetSquadId) {
-      addPlayerToSquad(targetSquadId, selectedPlayerId, currentState, currentSnapshot);
-    }
-  };
-
   // The team list is the way in: without one there is no pool and no squads to show.
   if (!activeTeamId || (!team && !teamLoading)) {
     return <TeamListPage onOpenTeam={openTeam} activeTeamId={activeTeamId} />;
@@ -1313,7 +1423,7 @@ export default function App() {
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
-          onAddToSquad={handleAddToSquad}
+          onOpenImportBuild={() => setIsImportBuildOpen(true)}
           canPickFreePlayStyles={canAddPlayStylePick}
           onOpenPlayStylePicker={(target) => setPlayStylePickerTarget(target)}
           rawBaseOvr={initialOvrData.base}
@@ -1383,8 +1493,7 @@ export default function App() {
           onRemoveNode={handleRemoveNode}
         />
 
-        {activeTab === 'workbench' && (
-          <>
+        <>
 
             <div className="flex flex-wrap items-center gap-3 mb-2 px-1">
               <span className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800">
@@ -1420,81 +1529,40 @@ export default function App() {
                   squads={squads}
                   activeSquadId={activeSquadId}
                   onSelectSquad={setActiveSquadId}
-                  onOpenMember={openSquadMember}
-                  onRemoveMember={removeSquadMember}
-                  onAssignSlot={assignSquadSlot}
+                  onOpenSlot={openSquadSlot}
+                  onClearSlot={clearSquadSlot}
+                  onCreateSquad={createSquad}
+                  onDeleteSquad={deleteSquad}
+                  onAddCurrentToSlot={addCurrentPlayerToSlot}
+                  onSwapSlots={swapSquadSlots}
+                  currentName={playerBio.name}
                   playersById={allPlayersData}
-                >
-                  <ChemistryGrid
-                    chemStyles={chemStyles}
-                    previewStats={previewStats}
-                    hoveredChem={hoveredChem}
-                    lockedChem={lockedChem}
-                    heightCm={parseHeightCm(playerBio.height)}
-                    onHoverChem={setHoveredChem}
-                    onLockChem={(name) => {
-                      setLockedChem(lockedChem === name ? null : name);
-                    }}
-                  />
-                </SquadPitch>
+                />
+              }
+              below={
+                <ChemistryGrid
+                  chemStyles={chemStyles}
+                  previewStats={previewStats}
+                  hoveredChem={hoveredChem}
+                  lockedChem={lockedChem}
+                  heightCm={parseHeightCm(playerBio.height)}
+                  onHoverChem={setHoveredChem}
+                  onLockChem={(name) => {
+                    setLockedChem(lockedChem === name ? null : name);
+                  }}
+                />
               }
             />
-
-            <PlayStylesSection roles={playerBio.roles} />
-          </>
-        )}
-
-        {activeTab === 'evos' && (
-          <EvolutionChainWorkbench
-            bio={playerBio}
-            ovr={initialOvrData}
-            stats={statsData}
-            playStyles={playStylesData}
-            disabledEvos={disabledEvos}
-            onToggleDisabled={toggleEvoDisabled}
-          />
-        )}
+        </>
 
         <div className="flex justify-center mt-6 mb-2">
-          {/* Tab Navigation */}
-          <div className="flex bg-[#121212] p-1 rounded-lg border border-gray-800/80 text-sm">
-            <button
-              onClick={() => setActiveTab('workbench')}
-              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
-                activeTab === 'workbench'
-                  ? 'bg-[#1ED760] text-black shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Stats Workbench
-            </button>
-            <button
-              onClick={() => setActiveTab('evos')}
-              className={`px-4 py-1.5 rounded-md font-bold flex items-center gap-2 transition-all ${
-                activeTab === 'evos'
-                  ? 'bg-[#1ED760] text-black shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-[#2A2D2A]'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              EVO Chain Lab
-            </button>
-          </div>
-        </div>
-
-        <div className="my-6">
-          <SquadPanel
-            squads={squads}
-            onCreateSquad={createSquad}
-            onDeleteSquad={deleteSquad}
-            onAddPlayerToSquad={addPlayerToSquad}
-            onRemoveMember={removeSquadMember}
-            onOpenMember={openSquadMember}
-            currentPlayerState={currentState}
-            currentPlayerId={selectedPlayerId}
-            currentSnapshot={currentSnapshot}
-          />
+          <button
+            onClick={() => setIsEvoLabOpen(true)}
+            className="px-4 py-1.5 bg-[#121212] border border-gray-800/80 rounded-lg text-sm font-bold text-gray-400 hover:text-white hover:border-gray-600 flex items-center gap-2 transition-all"
+          >
+            <Layers className="w-4 h-4" />
+            EVO Chain Lab
+          </button>
         </div>
 
         <div className="mt-12 pt-4 border-t border-gray-800/80 text-center text-xs text-fcTextDim flex items-center justify-between flex-wrap gap-2">
@@ -1505,6 +1573,37 @@ export default function App() {
         </div>
 
       </div>
+
+      {/* The lab is a reference you consult, not a place you work — so it opens over the
+          workbench instead of replacing it. */}
+      {isEvoLabOpen && (
+        <EvoLabModal onClose={() => setIsEvoLabOpen(false)}>
+          <EvolutionChainWorkbench
+            bio={playerBio}
+            ovr={initialOvrData}
+            stats={statsData}
+            playStyles={playStylesData}
+            disabledEvos={disabledEvos}
+            onToggleDisabled={toggleEvoDisabled}
+          />
+        </EvoLabModal>
+      )}
+
+      {isImportBuildOpen && (
+        <ImportBuildModal
+          onClose={() => setIsImportBuildOpen(false)}
+          playersById={allPlayersData}
+          existingChainsByPlayer={Object.fromEntries(
+            Object.entries(team?.savedPaths || {}).map(([playerId, paths]) => [
+              playerId,
+              // The open card's saves live in the workbench until they're written back.
+              (playerId === selectedPlayerId ? allPaths : paths).map(p => p.chainIds.join('>'))
+            ])
+          )}
+          onImport={importSharedBuilds}
+        />
+      )}
+
       <EvoPoolModal
         isOpen={isEvoPoolOpen}
         onClose={() => setIsEvoPoolOpen(false)}

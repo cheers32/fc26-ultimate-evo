@@ -196,6 +196,32 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
+  /**
+   * Adds builds to several players at once, as one write.
+   *
+   * Importing a handful of links would otherwise be a handful of `setSavedPathsForPlayer` calls,
+   * each PATCHing the whole map — and whichever request happened to land last would decide what
+   * the team ends up with.
+   */
+  const addSavedPaths = useCallback(
+    (additions: Record<string, EvolutionPath[]>) => {
+      if (!teamId) return;
+      setTeam(prev => {
+        if (!prev) return prev;
+        const savedPaths = { ...(prev.savedPaths || {}) };
+        Object.entries(additions).forEach(([playerId, paths]) => {
+          if (paths.length === 0) return;
+          savedPaths[playerId] = [...(savedPaths[playerId] || []), ...paths];
+        });
+        teamApi
+          .patch(teamId, { savedPaths })
+          .catch(err => console.error('Failed to save imported paths:', err));
+        return { ...prev, savedPaths };
+      });
+    },
+    [teamId]
+  );
+
   /** Replaces one player's starred builds; the rest of the team's saves are left alone. */
   const setSavedPathsForPlayer = useCallback(
     (playerId: string, paths: EvolutionPath[]) => {
@@ -250,5 +276,5 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
-  return { team, loading, error, setEvoStatuses, setSavedPathsForPlayer, saveSquad, deleteSquad, rename };
+  return { team, loading, error, setEvoStatuses, setSavedPathsForPlayer, addSavedPaths, saveSquad, deleteSquad, rename };
 }

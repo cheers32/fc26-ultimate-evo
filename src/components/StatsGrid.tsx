@@ -7,8 +7,10 @@ interface StatsGridProps {
   previewStats: StatsData;
   activeChemBoosts: Record<string, number>;
   activeEvo?: EvolutionDefinition | null;
-  // Rendered as a 4th grid column spanning both stat rows, e.g. the chemistry style picker.
+  // Rendered beside the grid, spanning its full height — e.g. the squad pitch.
   aside?: React.ReactNode;
+  /** Rendered under the stat cards, in their column — e.g. the chemistry style picker. */
+  below?: React.ReactNode;
   /**
    * All six panels on one row, tightened to fit. For the builder, where the grid is a reference
    * held next to the work rather than the page's own subject and every row it takes is a row of
@@ -23,6 +25,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   activeChemBoosts,
   activeEvo,
   aside,
+  below,
   dense = false
 }) => {
   // Calculate Utilization stats if a specific EVO is selected
@@ -78,11 +81,14 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           full height was dividing across the two rows, so every card stretched to ~370px when
           Pace only needs ~105px. Out here the card rows size to their own content. */}
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+        {/* The stats and whatever reads with them share a column, so `below` lines up with the
+            cards rather than running the width of the page. */}
+        <div className={`flex-1 min-w-0 flex flex-col gap-3 ${dense ? '' : 'max-w-[740px]'}`}>
         <div
-          className={`flex-1 min-w-0 grid content-start ${
+          className={`grid content-start ${
             dense
               ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2'
-              : 'max-w-[740px] grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'
+              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'
           }`}
           id="stats-grid"
         >
@@ -227,9 +233,11 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
         );
       })}
         </div>
+          {below}
+        </div>
 
         {aside && (
-          <div className="lg:w-[300px] lg:shrink-0">
+          <div className="lg:shrink-0">
             {aside}
           </div>
         )}

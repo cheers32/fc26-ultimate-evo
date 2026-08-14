@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Search, Upload, Edit2, Trash2 } from 'lucide-react';
 import { PlayerData } from '../types/player';
-import { PlayerDetailsModal } from './PlayerDetailsModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { useModal } from '../utils/modalStack';
 
@@ -16,7 +15,6 @@ interface PlayerSelectionModalProps {
 
 export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenImport, onDeletePlayer, onEditPlayerAvatar }: PlayerSelectionModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [previewPlayerId, setPreviewPlayerId] = useState<string | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
 
 
@@ -40,16 +38,19 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Select the first player on Enter
-      if (e.key === 'Enter' && !previewPlayerId && filteredPlayers.length > 0) {
-        onSelectPlayer(filteredPlayers[0].id);
-        onClose();
+      if (e.key === 'Enter' && filteredPlayers.length > 0) {
+        selectPlayer(filteredPlayers[0].id);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, previewPlayerId, filteredPlayers, onSelectPlayer]);
+  }, [onClose, filteredPlayers, onSelectPlayer]);
 
-  const handleSelectPreview = (id: string) => {
+  /**
+   * Picking a card is the whole interaction — the workbench behind this is the player's detail
+   * view, so a preview in front of it was only ever a step to click through.
+   */
+  const selectPlayer = (id: string) => {
     onSelectPlayer(id);
     onClose();
   };
@@ -89,9 +90,8 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !previewPlayerId && filteredPlayers.length > 0) {
-                      onSelectPlayer(filteredPlayers[0].id);
-                      onClose();
+                    if (e.key === 'Enter' && filteredPlayers.length > 0) {
+                      selectPlayer(filteredPlayers[0].id);
                     }
                   }}
                   placeholder="Search players..."
@@ -120,7 +120,7 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
               {filteredPlayers.map(player => (
                 <button
                   key={player.id}
-                  onClick={() => setPreviewPlayerId(player.id)}
+                  onClick={() => selectPlayer(player.id)}
                   className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden hover:border-fuchsia-500/50 hover:shadow-lg hover:shadow-fuchsia-500/10 transition-all text-left flex flex-col group relative"
                 >
                   {/* Action Buttons */}
@@ -211,19 +211,6 @@ export function PlayerSelectionModal({ players, onClose, onSelectPlayer, onOpenI
             if (onEditPlayerAvatar) onEditPlayerAvatar(id, url, name, futbinUrl, positions, gold, silver, ovr);
             setEditingPlayerId(null);
           }}
-        />
-      )}
-
-      {/* Preview Modal */}
-      {previewPlayerId && players[previewPlayerId] && (
-        <PlayerDetailsModal 
-          player={players[previewPlayerId]}
-          onClose={() => setPreviewPlayerId(null)}
-          onSelect={handleSelectPreview}
-          onDelete={onDeletePlayer ? (id) => {
-            onDeletePlayer(id);
-            setPreviewPlayerId(null);
-          } : undefined}
         />
       )}
     </>

@@ -5,7 +5,7 @@ import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositi
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, UserPlus, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -26,7 +26,8 @@ interface HeaderCardProps {
   onOpenEvoPool: () => void;
   onOpenManualPath: () => void;
   onBranchFromBase?: () => void;
-  onAddToSquad?: () => void;
+  /** Opens the "paste a share link" importer — the only way a build crosses between teams. */
+  onOpenImportBuild?: () => void;
   // True when the build's current end is one of the rarities that unlock free PlayStyle
   // assignment in-game, so another pick can be made right now.
   canPickFreePlayStyles?: boolean;
@@ -200,7 +201,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenEvoPool,
   onOpenManualPath,
   onBranchFromBase,
-  onAddToSquad,
+  onOpenImportBuild,
   canPickFreePlayStyles,
   onOpenPlayStylePicker,
   originalIgs,
@@ -827,13 +828,13 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               <button onClick={onOpenManualPath} className="px-2.5 py-1 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1">
                 <Plus className="w-3.5 h-3.5" /> Add EVO <kbd className="ml-0.5 px-1 bg-black/40 border border-gray-700 rounded text-[9px] text-gray-400 font-mono">a</kbd>
               </button>
-              {onAddToSquad && (
+              {onOpenImportBuild && (
                 <button
-                  onClick={onAddToSquad}
-                  title="Add this build to your active squad"
-                  className="px-2.5 py-1 bg-green-950/40 hover:bg-green-900/60 border border-green-700/60 rounded-lg text-green-400 text-xs flex items-center gap-1 font-bold shadow-[0_0_10px_rgba(34,197,94,0.15)] transition-colors"
+                  onClick={onOpenImportBuild}
+                  title="Paste share links to bring builds in from another team"
+                  className="px-2.5 py-1 bg-[#1f2937] hover:bg-[#374151] border border-gray-600 rounded-lg text-gray-300 text-xs flex items-center gap-1"
                 >
-                  <UserPlus className="w-3.5 h-3.5" /> Add to Squad
+                  <Link2 className="w-3.5 h-3.5" /> Import
                 </button>
               )}
               {onBranchFromBase && (
