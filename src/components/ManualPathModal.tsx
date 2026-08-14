@@ -402,6 +402,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
    * too: click one node, then another, and the panel spans them.
    */
   const [comparedNodes, setComparedNodes] = useState<[number, number]>([-1, -1]);
+  /** The card the cursor is over, whose result the stat panel previews. */
+  const [hoveredEvoId, setHoveredEvoId] = useState<string | null>(null);
   const compareNode = (idx: number) => setComparedNodes(([, previous]) => [previous, idx]);
 
   // 'a' is what opens the builder, so inside it the same key returns to the search box.
@@ -555,10 +557,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
   const [comparedFrom, comparedTo] = [nodeAt(comparedNodes[0]), nodeAt(comparedNodes[1])].sort((a, b) => a - b);
   const isComparing = comparedFrom !== comparedTo;
-  // Not comparing anything is the card as it stands, on both sides, which is what leaves the panel
-  // showing plain values with no arrows.
-  const panelFrom = isComparing ? statsAt(comparedFrom) : currentStats;
-  const panelTo = isComparing ? statsAt(comparedTo) : currentStats;
 
   const poolWithStatus = evosPool.map((id) => {
     const evo = availableEvolutions[id];
@@ -664,6 +662,24 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       posMatchScore
     };
   });
+
+  /**
+   * What the stat panel is showing.
+   *
+   * Hovering a card in the pool answers the question you hovered it to ask — what this evo would do
+   * to the card — by pointing the panel at the state that picking it would produce. Every card has
+   * already worked that state out for its own summary, so this is only choosing which one to read.
+   *
+   * Hover wins over a pinned comparison because it is the transient thing: let go and the pinned
+   * one is still there. A card that can't be picked has no such state, and the panel doesn't move.
+   */
+  const hoveredExpected =
+    (hoveredEvoId ? poolWithStatus.find(p => p.id === hoveredEvoId)?.expectedStats : null) || null;
+
+  // Not comparing anything is the card as it stands, on both sides, which is what leaves the panel
+  // showing plain values with no arrows.
+  const panelFrom = hoveredExpected ? currentStats : isComparing ? statsAt(comparedFrom) : currentStats;
+  const panelTo = hoveredExpected || (isComparing ? statsAt(comparedTo) : currentStats);
 
   // What the recommendations are currently aiming at, spelled out next to them — otherwise a
   // shortlist narrowed by a filter set in another modal just looks arbitrary.
@@ -1411,6 +1427,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       key={id}
                       className={`relative group bg-[#161816] border rounded-xl p-3.5 pb-11 shadow-md overflow-hidden flex flex-col justify-between transition-all duration-200 cursor-pointer ${canAdd ? 'border-gray-800 hover:border-blue-500/50 hover:bg-[#1a1d1a] hover:-translate-y-0.5' : 'border-gray-800/30 opacity-70 grayscale-[0.2]'} ${isRec ? 'ring-1 ring-fcGreen/30' : ''} ${isOutOfPool ? 'opacity-50 grayscale' : ''}`}
                       onClick={() => setLocalViewingEvo(id)}
+                      onMouseEnter={() => setHoveredEvoId(id)}
+                      onMouseLeave={() => setHoveredEvoId(prev => (prev === id ? null : prev))}
                     >
                       <div className="flex justify-between items-start w-full">
                         <div className="flex-1 min-w-0">
