@@ -104,6 +104,27 @@ export const ACCELERATE_FAMILY: Record<AccelerateType, AccelerateFamily> = {
   'Lengthy': 'Lengthy'
 };
 
+export const ACCELERATE_FAMILIES: AccelerateFamily[] = ['Explosive', 'Controlled', 'Lengthy'];
+
+/** The finer tiers that each printed archetype is made of, in the order they lean. */
+export const ACCELERATE_TIERS_BY_FAMILY: Record<AccelerateFamily, AccelerateType[]> = {
+  Explosive: ['Explosive', 'Mostly Explosive', 'Controlled Explosive'],
+  Controlled: ['Controlled'],
+  Lengthy: ['Controlled Lengthy', 'Mostly Lengthy', 'Lengthy']
+};
+
+/**
+ * How far a tier leans, said on its own — for showing the two systems together without repeating
+ * the family beside itself. "Mostly Explosive" reads as Explosive · Mostly, and plain "Explosive"
+ * as Explosive · Full. `Controlled` is the whole of its family and has nothing to add.
+ */
+export function accelerateLean(type: AccelerateType): string | null {
+  const family = ACCELERATE_FAMILY[type];
+  if (family === 'Controlled') return null;
+  if (type === family) return 'Full';
+  return type.startsWith('Mostly') ? 'Mostly' : 'Controlled';
+}
+
 /** Pulls the centimetres out of a bio height string like `190cm | 6'3"`. */
 export function parseHeightCm(height?: string): number | undefined {
   const cm = height?.match(/(\d{2,3})\s*cm/i);

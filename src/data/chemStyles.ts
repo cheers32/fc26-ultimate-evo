@@ -17,7 +17,7 @@ export const chemStyles: ChemStylesData = {
   Artist: { vision: 3, crossing: 6, shortPass: 3, longPass: 6, curve: 9, agility: 9, reactions: 6, dribbling: 3, composure: 3 },
   Architect: { vision: 6, freekick: 3, shortPass: 9, longPass: 3, curve: 6, stamina: 6, strength: 9, aggression: 3 },
   Powerhouse: { vision: 9, shortPass: 6, longPass: 6, curve: 3, interceptions: 6, defAwareness: 3, standTackle: 9, slideTackle: 3 },
-  Maestro: { positioning: 3, shotPower: 6, longShots: 6, vision: 3, freekick: 3, shortPass: 3, longPass: 6, reactions: 3, ballControl: 6, dribbling: 6, composure: 3 },
+  Maestro: { positioning: 3, shotPower: 3, longShots: 6, vision: 3, freekick: 6, shortPass: 3, longPass: 6, reactions: 3, ballControl: 6, dribbling: 3, composure: 3 },
   Engine: { acceleration: 3, sprintSpeed: 3, vision: 3, crossing: 6, shortPass: 3, longPass: 3, curve: 6, agility: 3, balance: 6, dribbling: 6 },
   Sentinel: { interceptions: 6, headingAcc: 6, defAwareness: 9, standTackle: 3, slideTackle: 3, jumping: 9, strength: 3, aggression: 6 },
   Guardian: { agility: 6, reactions: 3, ballControl: 3, dribbling: 6, composure: 3, interceptions: 3, defAwareness: 6, standTackle: 9, slideTackle: 6 },

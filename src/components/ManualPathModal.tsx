@@ -14,7 +14,8 @@ import {
   AccelerateType,
   AccelerateFamily,
   ACCELERATE_TYPES,
-  ACCELERATE_SHORT
+  ACCELERATE_SHORT,
+  ACCELERATE_FAMILY
 } from '../utils/statUtils';
 import { FitBreakdown, controlModeFor, fitScore, accelerateOf, accelerateSpread } from '../utils/fitScore';
 import { useModal } from '../utils/modalStack';
@@ -260,7 +261,11 @@ const AccelerateBadge = ({
   const changed = before !== undefined && before !== after;
   return (
     <div
-      title={changed ? `AcceleRATE: ${before} → ${after}` : `AcceleRATE: ${after}`}
+      title={
+        changed
+          ? `AcceleRATE: ${before} → ${after}\nIn game: ${ACCELERATE_FAMILY[before!]} → ${ACCELERATE_FAMILY[after]}`
+          : `AcceleRATE: ${after}\nIn game: ${ACCELERATE_FAMILY[after]}`
+      }
       className={`flex gap-1 items-center rounded border whitespace-nowrap ${
         size === 'sm' ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
       } ${

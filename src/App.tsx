@@ -9,7 +9,7 @@ import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
-import { calculateAccelerateType, parseHeightCm } from './utils/statUtils';
+import { calculateAccelerateType, parseHeightCm, ACCELERATE_FAMILY, accelerateLean } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
 import {
   simulateEvoChain,
@@ -1638,8 +1638,18 @@ export default function App() {
         <>
 
             <div className="flex flex-wrap items-center gap-3 mb-2 px-1">
-              <span className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800">
-                {accelerateType}
+              {/* Both systems at once: the word the card prints in game, then how far it leans
+                  within it — the two read the same on a card and feel nothing alike in a match. */}
+              <span
+                className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800"
+                title={`AcceleRATE: ${ACCELERATE_FAMILY[accelerateType]} in game · ${accelerateType} by the thresholds`}
+              >
+                {ACCELERATE_FAMILY[accelerateType]}
+                {accelerateLean(accelerateType) && (
+                  <span className="text-gray-500 font-medium ml-1.5">
+                    · {accelerateLean(accelerateType)}
+                  </span>
+                )}
               </span>
 
               <div className="font-medium flex items-center font-mono text-[13px] text-gray-300 bg-gray-900/60 px-3 py-1 rounded border border-gray-800">

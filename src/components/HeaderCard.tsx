@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, ACCELERATE_TIERS_BY_FAMILY } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
@@ -714,7 +714,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     <div className="mb-4 pb-3 border-b border-gray-800">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                          AcceleRATE
+                          AcceleRATE <span className="text-gray-600 normal-case">· in game / detailed</span>
                         </span>
                         {(draftFilters.accelerate?.length || 0) > 0 && (
                           <button
@@ -724,6 +724,40 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             Any
                           </button>
                         )}
+                      </div>
+                      {/* The three the game prints, then the seven the thresholds actually
+                          compute. Picking a printed one takes its tiers with it, so the two rows
+                          are the same filter said at two levels of detail. */}
+                      <div className="flex gap-1.5 mb-1.5">
+                        {ACCELERATE_FAMILIES.map(family => {
+                          const tiers = ACCELERATE_TIERS_BY_FAMILY[family];
+                          const picked = draftFilters.accelerate || [];
+                          const all = tiers.every(t => picked.includes(t));
+                          const some = !all && tiers.some(t => picked.includes(t));
+                          return (
+                            <button
+                              key={family}
+                              onClick={() =>
+                                setDraftFilters({
+                                  ...draftFilters,
+                                  accelerate: all
+                                    ? picked.filter(t => !tiers.includes(t))
+                                    : [...picked.filter(t => !tiers.includes(t)), ...tiers]
+                                })
+                              }
+                              title={`${family} — every tier that reads ${family} in game`}
+                              className={`flex-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${
+                                all
+                                  ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
+                                  : some
+                                  ? 'bg-fcGreen/20 text-fcGreen border-fcGreen/40'
+                                  : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151] hover:text-white'
+                              }`}
+                            >
+                              {family.toUpperCase()}
+                            </button>
+                          );
+                        })}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {ACCELERATE_TYPES.map(type => {
