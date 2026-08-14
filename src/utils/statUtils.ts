@@ -157,6 +157,24 @@ export function accelerateLean(type: AccelerateType): string | null {
   return type.startsWith('Mostly') ? 'Mostly' : 'Controlled';
 }
 
+/**
+ * The colours a starred build can wear.
+ *
+ * Two of these were a toggle — saved, then marked out in red — but a star is really the only
+ * grouping a card's builds have, and telling five shortlists apart by name means reading five
+ * names. So the tier is a colour and nothing more: the app treats every tier alike, and what each
+ * one means is the player's own business. Clicking cycles through them and then off.
+ */
+export const STAR_TIERS: { name: string; dot: string; fill: string; button: string }[] = [
+  { name: 'Gold', dot: 'bg-yellow-500 text-black hover:bg-yellow-400', fill: 'fill-black', button: 'bg-yellow-500 text-black border-yellow-400 hover:bg-yellow-400' },
+  { name: 'Red', dot: 'bg-red-600 text-white hover:bg-red-500', fill: 'fill-white', button: 'bg-red-600 text-white border-red-500 hover:bg-red-500' },
+  { name: 'Blue', dot: 'bg-sky-500 text-white hover:bg-sky-400', fill: 'fill-white', button: 'bg-sky-500 text-white border-sky-400 hover:bg-sky-400' },
+  { name: 'Green', dot: 'bg-emerald-500 text-black hover:bg-emerald-400', fill: 'fill-black', button: 'bg-emerald-500 text-black border-emerald-400 hover:bg-emerald-400' },
+  { name: 'Purple', dot: 'bg-fuchsia-600 text-white hover:bg-fuchsia-500', fill: 'fill-white', button: 'bg-fuchsia-600 text-white border-fuchsia-500 hover:bg-fuchsia-500' }
+];
+
+export const STAR_TIER_COUNT = STAR_TIERS.length;
+
 /** Pulls the centimetres out of a bio height string like `190cm | 6'3"`. */
 export function parseHeightCm(height?: string): number | undefined {
   const cm = height?.match(/(\d{2,3})\s*cm/i);

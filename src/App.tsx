@@ -9,7 +9,7 @@ import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
-import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean } from './utils/statUtils';
+import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
 import {
   simulateEvoChain,
@@ -1608,14 +1608,15 @@ export default function App() {
           onSetProgress={handleSetPathProgress}
           onToggleFavoritePath={(path) => {
             if (path.chainIds.length === 0) return;
-            // The star cycles rather than toggles: unstarred → saved → marked out among the saved
-            // → unstarred. Both starred tiers are saves, so only the third click gives the build
-            // back to Clear Unstarred.
-            const next = !path.isFavorite
-              ? { isFavorite: true, starTier: 1 as const }
-              : (path.starTier ?? 1) === 1
-              ? { isFavorite: true, starTier: 2 as const }
-              : { isFavorite: false, starTier: undefined };
+            // The star cycles rather than toggles: unstarred, then each colour in turn, then off again.
+            // Every colour is a save, so only the last click gives the build back to Clear Unstarred.
+            const tier = path.isFavorite ? path.starTier ?? 1 : 0;
+            const next =
+              tier === 0
+                ? { isFavorite: true, starTier: 1 as const }
+                : tier >= STAR_TIER_COUNT
+                ? { isFavorite: false, starTier: undefined }
+                : { isFavorite: true, starTier: (tier + 1) as NonNullable<EvolutionPath['starTier']> };
             const isManual = manualPaths.some(p => p.id === path.id);
             if (isManual) {
               // Already manual: just move it along in place.

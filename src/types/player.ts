@@ -142,11 +142,11 @@ export interface EvolutionPath {
   isRecommended?: boolean;
   isFavorite?: boolean;
   /**
-   * How hard it is starred: 1 is the plain save, 2 the one marked out among them. Both are saves —
-   * `isFavorite` is what protects a build from Clear Unstarred and what puts it on the team — so a
-   * tier without it means nothing. Absent on a starred build reads as 1.
+   * Which colour the star wears — a shortlist marker, not a ranking. Every tier is equally a save:
+   * `isFavorite` is what protects a build from Clear Unstarred and what puts it on the team, so a
+   * tier without it means nothing. Absent on a starred build reads as the first colour.
    */
-  starTier?: 1 | 2;
+  starTier?: 1 | 2 | 3 | 4 | 5;
   /**
    * How far the build has actually been played in game: the index of the last step that's done, so
    * -1 (or absent) is "not started". Evos are applied in chain order, so one pointer says it —

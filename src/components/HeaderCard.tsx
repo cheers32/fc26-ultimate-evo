@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
@@ -447,13 +447,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     );
   };
 
-  /** 0 unstarred, 1 saved, 2 saved and marked out. A starred build with no tier reads as 1. */
+  /** 0 unstarred, otherwise which colour. A starred build with no tier reads as the first. */
   const starTier = (path: EvolutionPath) => (path.isFavorite ? path.starTier ?? 1 : 0);
-  const starTitle = (path: EvolutionPath) => [
-    'Star this build so it survives Analyze and the page reload',
-    'Saved — click again to mark it out in red, once more to unstar',
-    'Marked out — click again to unstar, and Clear Unstarred can drop it'
-  ][starTier(path)];
+  const starTitle = (path: EvolutionPath) => {
+    const tier = starTier(path);
+    if (tier === 0) return 'Star this build so it survives Analyze and the page reload';
+    const next = tier >= STAR_TIER_COUNT ? 'unstars it' : `turns it ${STAR_TIERS[tier]!.name}`;
+    return `Saved · ${STAR_TIERS[tier - 1].name} (${tier}/${STAR_TIER_COUNT}) — clicking ${next}`;
+  };
 
   const startRename = (where: 'chip' | 'row', path: EvolutionPath) => {
     setRenamingKey(`${where}:${path.id}`);
@@ -1101,14 +1102,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       e.stopPropagation();
                       onToggleFavoritePath(path);
                     }}
-                    className={`rounded-full p-0.5 shadow-sm ${
-                      starTier(path) === 2
-                        ? 'bg-red-600 text-white hover:bg-red-500'
-                        : 'bg-yellow-500 text-black hover:bg-yellow-400'
-                    }`}
+                    className={`rounded-full p-0.5 shadow-sm ${STAR_TIERS[starTier(path) - 1].dot}`}
                     title={starTitle(path)}
                   >
-                    <Star className={`w-2.5 h-2.5 ${starTier(path) === 2 ? 'fill-white' : 'fill-black'}`} />
+                    <Star className={`w-2.5 h-2.5 ${STAR_TIERS[starTier(path) - 1].fill}`} />
                   </button>
                 </div>
               )}
@@ -1562,14 +1559,12 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         onClick={() => onToggleFavoritePath(renderPath)}
                         title={starTitle(renderPath)}
                         className={`text-[10px] flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
-                          [
-                            'bg-[#1f211f] text-gray-400 border-gray-700 hover:border-yellow-600 hover:text-yellow-400',
-                            'bg-yellow-500 text-black border-yellow-400 hover:bg-yellow-400',
-                            'bg-red-600 text-white border-red-500 hover:bg-red-500'
-                          ][starTier(renderPath)]
+                          starTier(renderPath) === 0
+                            ? 'bg-[#1f211f] text-gray-400 border-gray-700 hover:border-yellow-600 hover:text-yellow-400'
+                            : STAR_TIERS[starTier(renderPath) - 1].button
                         }`}
                       >
-                        <Star className={`w-3 h-3 ${starTier(renderPath) === 1 ? 'fill-black' : starTier(renderPath) === 2 ? 'fill-white' : ''}`} />
+                        <Star className={`w-3 h-3 ${starTier(renderPath) === 0 ? '' : STAR_TIERS[starTier(renderPath) - 1].fill}`} />
                         {starTier(renderPath) > 0 ? 'Saved' : 'Save'}
                       </button>
                     )}
