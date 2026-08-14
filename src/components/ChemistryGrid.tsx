@@ -1,6 +1,12 @@
 import React from 'react';
 import { ChemStylesData, StatsData } from '../types/player';
-import { calculateAccelerateType } from '../utils/statUtils';
+import {
+  ACCELERATE_FAMILY,
+  ACCELERATE_TYPES,
+  AccelerateType,
+  accelerateLean,
+  calculateAccelerateType
+} from '../utils/statUtils';
 
 interface ChemistryGridProps {
   chemStyles: ChemStylesData;
@@ -25,15 +31,12 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
 }) => {
   const names = Object.keys(chemStyles);
 
-  // Laid out fastest-to-slowest so the two "mostly" archetypes sit next to the ones they shade
-  // into, rather than appearing as surprise extra groups at the end.
-  const groupedChems: Record<string, string[]> = {
-    Explosive: [],
-    'Mostly Explosive': [],
-    Controlled: [],
-    'Mostly Lengthy': [],
-    Lengthy: []
-  };
+  // Fastest to slowest, and all seven: the two "controlled" tiers used to be missing from this
+  // list and got appended as they turned up, which put them after Lengthy instead of beside the
+  // archetype they shade into.
+  const groupedChems: Record<string, string[]> = Object.fromEntries(
+    ACCELERATE_TYPES.map(type => [type, [] as string[]])
+  );
 
   names.forEach(name => {
     const boost = chemStyles[name] || {};
@@ -83,7 +86,18 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
 
         return (
           <div key={group} className="flex flex-col gap-1">
-            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{group}</h4>
+            {/* The word the game prints first, then how far this tier leans within it. Heading a
+                group "Controlled Lengthy" put a name on screen that no card in FC 26 shows, and
+                against the game's own grouping it read as a different archetype rather than a
+                finer reading of Lengthy. */}
+            <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+              {ACCELERATE_FAMILY[group as AccelerateType]}
+              {accelerateLean(group as AccelerateType) && (
+                <span className="text-gray-600 normal-case font-semibold">
+                  {' '}· {accelerateLean(group as AccelerateType)}
+                </span>
+              )}
+            </h4>
             {/* No gaps: the styles are a dense lookup table, and the gutters were costing more
                 vertical space than the rows themselves. Borders collapse into a shared grid. */}
             <div className="grid grid-cols-3 rounded-lg overflow-hidden border border-[#4b5563]/40">
