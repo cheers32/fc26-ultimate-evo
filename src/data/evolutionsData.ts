@@ -110,6 +110,11 @@ import { carpetFootball1244 } from './evolutions/carpetFootball1244';
 import { thePivotPoint1245 } from './evolutions/thePivotPoint1245';
 import { faceValue1246 } from './evolutions/faceValue1246';
 import { apexAttacker1247 } from './evolutions/apexAttacker1247';
+import { ninetySevenTimes1250 } from './evolutions/ninetySevenTimes1250';
+import { passingFocus1251 } from './evolutions/passingFocus1251';
+import { pocketInspector1252 } from './evolutions/pocketInspector1252';
+import { creativeLicense1253 } from './evolutions/creativeLicense1253';
+import { classOnGrass1254 } from './evolutions/classOnGrass1254';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '748': crunchTime748,
@@ -222,7 +227,12 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1244': carpetFootball1244,
   '1245': thePivotPoint1245,
   '1246': faceValue1246,
-  '1247': apexAttacker1247
+  '1247': apexAttacker1247,
+  '1250': ninetySevenTimes1250,
+  '1251': passingFocus1251,
+  '1252': pocketInspector1252,
+  '1253': creativeLicense1253,
+  '1254': classOnGrass1254
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
