@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, ACCELERATE_TIERS_BY_FAMILY } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, ACCELERATE_TIERS_BY_FAMILY, ACCELERATE_FAMILY } from '../utils/statUtils';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
@@ -41,6 +41,8 @@ interface HeaderCardProps {
   onEvoFiltersChange: (val: EvoFilters) => void;
   onAnalyze: () => void;
   isAnalyzing?: boolean;
+  /** The last Analyze run came back with nothing that passed the filters. */
+  analyzeFoundNothing?: boolean;
   analyzeProgress?: number;
   onCancelAnalyze?: () => void;
   rawBaseOvr: number;
@@ -212,6 +214,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onEvoFiltersChange,
   onAnalyze,
   isAnalyzing = false,
+  analyzeFoundNothing = false,
   analyzeProgress = 0,
   onCancelAnalyze,
   rawBaseOvr,
@@ -323,6 +326,32 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [showFilters, onOpenEvoPool, onOpenManualPath, onBranchFromBase, canPickFreePlayStyles, onOpenPlayStylePicker, onAnalyze, onClearPaths, onChangePlayer, evosPool]);
+
+  /** The filters in force, in words, for the "nothing matched" note. */
+  const activeFilterSummary = React.useMemo(() => {
+    if (!evoFilters) return [];
+    const parts: string[] = [];
+    (evoFilters.requiredEvos || []).forEach(id =>
+      parts.push(`must include ${availableEvolutions[id]?.name || id}`)
+    );
+    if (evoFilters.accelerate && evoFilters.accelerate.length > 0) {
+      const families = [...new Set(evoFilters.accelerate.map(t => ACCELERATE_FAMILY[t]))];
+      // The printed word carries it when a whole family is ticked; otherwise name the tiers.
+      const whole = families.every(f => ACCELERATE_TIERS_BY_FAMILY[f].every(t => evoFilters.accelerate!.includes(t)));
+      parts.push(`AcceleRATE ${(whole ? families : evoFilters.accelerate).join(' or ')}`);
+    }
+    if (evoFilters.newRarity) parts.push('a new rarity');
+    if (evoFilters.noRarityChange) parts.push('rarity unchanged');
+    if (evoFilters.newPosition) parts.push('a new position');
+    if (evoFilters.noPositionChange) parts.push('positions unchanged');
+    (['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).forEach(stat => {
+      const f = evoFilters[stat];
+      if (!f) return;
+      if (f.min !== undefined) parts.push(`${stat.toUpperCase()} ≥ ${f.min}`);
+      if (f.max !== undefined && !(stat === 'ovr' && f.max >= 99)) parts.push(`${stat.toUpperCase()} ≤ ${f.max}`);
+    });
+    return parts;
+  }, [evoFilters]);
 
   const activeFiltersCount = React.useMemo(() => {
     if (!evoFilters) return 0;
@@ -975,6 +1004,22 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
     {/* Path Selection & Action Buttons */}
     <div className="flex flex-col gap-1 w-full bg-[#1A1C1A] border border-gray-800 rounded-xl p-2 shadow-md">
+      {/* A search that finds nothing used to leave the screen exactly as it was, which reads as a
+          broken button rather than an answer. Filters can genuinely rule everything out — an evo
+          that has to be in the chain can be the very thing that costs the card the AcceleRATE the
+          chain is being filtered on — so say so, and say what is doing the ruling out. */}
+      {analyzeFoundNothing && !isAnalyzing && (
+        <div className="mb-1 px-3 py-2 rounded-lg bg-amber-950/30 border border-amber-800/50 text-[11px] text-amber-200/90 leading-snug">
+          <span className="font-bold">Analyze found no build that satisfies the filters.</span>
+          {activeFilterSummary.length > 0 && (
+            <span className="text-amber-200/60"> Currently asking for: {activeFilterSummary.join(' · ')}.</span>
+          )}
+          <span className="text-amber-200/60">
+            {' '}They can rule each other out — a required evo may cost the card the very thing the
+            rest of the filter is asking for. Loosen them in Filters, or build by hand with Add EVO.
+          </span>
+        </div>
+      )}
       {/* One chip per build, from the first build on — the row used to appear only once there were
           two, which left a single saved build with nothing to carry its name and its total. */}
       {allPaths.some(p => p.chainIds.length > 0) && (

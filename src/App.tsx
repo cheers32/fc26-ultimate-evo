@@ -737,6 +737,7 @@ export default function App() {
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [isEvoLabOpen, setIsEvoLabOpen] = useState(false);
+  const [analyzeFoundNothing, setAnalyzeFoundNothing] = useState(false);
   const [isImportBuildOpen, setIsImportBuildOpen] = useState(false);
   // Which squad the pitch is showing. Defaults to the team's first, which is the one every team
   // is created with.
@@ -1208,6 +1209,7 @@ export default function App() {
   const runAnalyze = () => {
     analyzeHandle.current?.cancel();
     setIsAnalyzing(true);
+    setAnalyzeFoundNothing(false);
     setAnalyzeProgress(0);
 
     const handle = runEvoSearch(
@@ -1248,6 +1250,9 @@ export default function App() {
         });
 
         setGeneratedPaths(fresh);
+        // Nothing came back, or everything that did was already on the card — either way the
+        // screen is about to look untouched, and that needs saying rather than showing.
+        setAnalyzeFoundNothing(results.length === 0);
         if (fresh.length > 0) {
           setActivePathId(fresh[0].id);
           if (!evoPreview) setEvoPreview(true);
@@ -1581,6 +1586,7 @@ export default function App() {
           onEvoFiltersChange={setEvoFilters}
           onAnalyze={runAnalyze}
           isAnalyzing={isAnalyzing}
+          analyzeFoundNothing={analyzeFoundNothing}
           analyzeProgress={analyzeProgress}
           onCancelAnalyze={cancelAnalyze}
           evosPool={effectiveEvosPool}
