@@ -115,6 +115,7 @@ import { passingFocus1251 } from './evolutions/passingFocus1251';
 import { pocketInspector1252 } from './evolutions/pocketInspector1252';
 import { creativeLicense1253 } from './evolutions/creativeLicense1253';
 import { classOnGrass1254 } from './evolutions/classOnGrass1254';
+import { fidgetSpinner1255 } from './evolutions/fidgetSpinner1255';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '748': crunchTime748,
@@ -232,7 +233,8 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1251': passingFocus1251,
   '1252': pocketInspector1252,
   '1253': creativeLicense1253,
-  '1254': classOnGrass1254
+  '1254': classOnGrass1254,
+  '1255': fidgetSpinner1255
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
