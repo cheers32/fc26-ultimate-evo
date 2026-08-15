@@ -121,6 +121,21 @@ export const ACCELERATE_FAMILIES: AccelerateFamily[] = ['Explosive', 'Controlled
  * there, so it is exactly 10. Ronaldo under Counter Culture (187cm) pins the other the same way:
  * Backbone at a strength lead of 3 is Controlled and 4 is Lengthy.
  *
+ * The height gates are measured the same way, off FUTBIN's own player list — its rows carry both
+ * the height and the archetype, so a few hundred cards settle it at a glance. Lengthy first appears
+ * at 185cm and Explosive last appears at 182cm:
+ *
+ *   182cm  8 Controlled,  0 Lengthy      176-182cm  Explosive throughout
+ *   183cm 16 Controlled,  0 Lengthy      183cm      0 Explosive
+ *   184cm  7 Controlled,  0 Lengthy      184cm      0 Explosive
+ *   185cm  3 Controlled,  8 Lengthy
+ *
+ * Confirmed card by card at the line: Marquinhos and Cubarsí at 183cm read Controlled on a
+ * strength lead of 7, and Aparecido da Silva at 185cm reads Lengthy on the same lead of 7. Height
+ * is doing the work, not the lead. Note 185 is not one of the seven-way rule's gates either — that
+ * one opens Lengthy at 181, which is what had Zambrotta at 181cm reading Lengthy here and
+ * Controlled in game.
+ *
  * The two sides do not meet in the middle — leaning Lengthy is cheap and leaning Explosive is dear
  * — and the seven-way rule enters "Controlled Explosive" at a lead of 4, so it calls cards
  * Explosive that the game calls Controlled. Hence a separate function: the systems genuinely
@@ -134,7 +149,7 @@ export function calculateAccelerateFamily(
 ): AccelerateFamily {
   const h = heightCm ?? 180;
   if (agi - str >= 10 && agi >= 65 && acc >= 70 && h <= 182) return 'Explosive';
-  if (str - agi >= 4 && str >= 65 && acc >= 40 && h >= 181) return 'Lengthy';
+  if (str - agi >= 4 && str >= 65 && acc >= 40 && h >= 185) return 'Lengthy';
   return 'Controlled';
 }
 
