@@ -768,9 +768,21 @@ export default function App() {
       steps: simulateEvoChain(path.chainIds, playerBio, initialOvrData, statsData, playStylesData).steps
     });
 
+    // A ranked shortlist has to be shown in its own order, or the number on the chip is the only
+    // thing carrying it and the row reads as shuffled. Only V2's `#n` names match this.
+    const rankOf = (p: EvolutionPath) => {
+      const m = /^#(\d+)$/.exec(p.name);
+      return m ? Number(m[1]) : null;
+    };
+
     const saved = [...currentState.generatedPaths, ...currentState.manualPaths]
       .map(withFreshSteps)
       .sort((a, b) => {
+        const ra = rankOf(a);
+        const rb = rankOf(b);
+        if (ra !== null && rb !== null) return ra - rb;
+        if (ra !== null) return -1;
+        if (rb !== null) return 1;
       // First sort by target ovr
       const aOvr = a.steps?.[a.steps.length - 1]?.ovrAfter || 0;
       const bOvr = b.steps?.[b.steps.length - 1]?.ovrAfter || 0;
@@ -1206,7 +1218,7 @@ export default function App() {
     setAnalyzeProgress(0);
   };
 
-  const runAnalyze = () => {
+  const runAnalyze = (version: 1 | 2 = 1) => {
     analyzeHandle.current?.cancel();
     setIsAnalyzing(true);
     setAnalyzeFoundNothing(false);
@@ -1221,7 +1233,8 @@ export default function App() {
         stats: statsData,
         playStyles: playStylesData,
         filters: evoFilters,
-        prefixChainIds: basePrefix
+        prefixChainIds: basePrefix,
+        version
       },
       nodes => setAnalyzeProgress(nodes)
     );
@@ -1588,7 +1601,8 @@ export default function App() {
           excludedCount={excludedCount}
           extraCount={extraCount}
           onEvoFiltersChange={setEvoFilters}
-          onAnalyze={runAnalyze}
+          onAnalyze={() => runAnalyze(1)}
+          onAnalyzeV2={() => runAnalyze(2)}
           isAnalyzing={isAnalyzing}
           analyzeFoundNothing={analyzeFoundNothing}
           analyzeProgress={analyzeProgress}

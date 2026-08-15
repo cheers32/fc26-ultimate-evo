@@ -1,4 +1,5 @@
 import { analyzeEvolutions } from './evoEngine';
+import { analyzeEvolutionsV2 } from './analyzeV2';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters } from '../types/player';
 
 export interface EvoSearchRequest {
@@ -10,6 +11,8 @@ export interface EvoSearchRequest {
   playStyles: PlayStylesData;
   filters?: EvoFilters;
   prefixChainIds: string[];
+  /** Which ranking to run. V2 scores the weak link; see analyzeV2.ts. */
+  version?: 1 | 2;
 }
 
 export type EvoSearchResponse =
@@ -22,20 +25,34 @@ export type EvoSearchResponse =
 self.onmessage = (e: MessageEvent<EvoSearchRequest>) => {
   const req = e.data;
   try {
-    const paths = analyzeEvolutions(
-      req.poolIds,
-      req.maxDepth,
-      req.bio,
-      req.ovr,
-      req.stats,
-      req.playStyles,
-      req.filters,
-      req.prefixChainIds,
-      nodesVisited => {
-        const msg: EvoSearchResponse = { type: 'progress', nodesVisited };
-        self.postMessage(msg);
-      }
-    );
+    const onProgress = (nodesVisited: number) => {
+      const msg: EvoSearchResponse = { type: 'progress', nodesVisited };
+      self.postMessage(msg);
+    };
+    const paths =
+      req.version === 2
+        ? analyzeEvolutionsV2({
+            poolIds: req.poolIds,
+            maxDepth: req.maxDepth,
+            baseBio: req.bio,
+            baseOvr: req.ovr,
+            baseStats: req.stats,
+            basePlayStyles: req.playStyles,
+            filters: req.filters,
+            prefixChainIds: req.prefixChainIds,
+            onProgress
+          })
+        : analyzeEvolutions(
+            req.poolIds,
+            req.maxDepth,
+            req.bio,
+            req.ovr,
+            req.stats,
+            req.playStyles,
+            req.filters,
+            req.prefixChainIds,
+            onProgress
+          );
     const msg: EvoSearchResponse = { type: 'done', paths };
     self.postMessage(msg);
   } catch (err) {

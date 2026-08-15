@@ -40,6 +40,8 @@ interface HeaderCardProps {
   extraCount: number;
   onEvoFiltersChange: (val: EvoFilters) => void;
   onAnalyze: () => void;
+  /** The weak-link ranking. Kept beside the original rather than replacing it. */
+  onAnalyzeV2?: () => void;
   isAnalyzing?: boolean;
   /** The last Analyze run came back with nothing that passed the filters. */
   analyzeFoundNothing?: boolean;
@@ -213,6 +215,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   extraCount,
   onEvoFiltersChange,
   onAnalyze,
+  onAnalyzeV2,
   isAnalyzing = false,
   analyzeFoundNothing = false,
   analyzeProgress = 0,
@@ -987,6 +990,22 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   <Zap className="w-3.5 h-3.5" /> Analyze
                 </button>
               )}
+              {/* Beside the original, not instead of it: the two rank on different questions and
+                  which one is right depends on whether the card is being finished or started. */}
+              {onAnalyzeV2 && !isAnalyzing && (
+                <button
+                  onClick={() => { setShowFilters(false); onAnalyzeV2(); }}
+                  disabled={!evosPool || evosPool.length === 0}
+                  title="Ranks on the weakest sub-stat the position runs on, not the total — so a build with a hole in it loses to a balanced one. Shortlists per position and per stat, with the reason on every row."
+                  className={`px-2.5 py-1 border rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${
+                    (evosPool?.length || 0) > 0
+                      ? 'border-fuchsia-600 hover:border-fuchsia-500 bg-fuchsia-900/20 hover:bg-fuchsia-900/40 text-fuchsia-300 hover:text-fuchsia-200 shadow-[0_0_10px_rgba(192,38,211,0.2)]'
+                      : 'bg-[#1f211f] text-gray-600 border-gray-800'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" /> Analyze V2
+                </button>
+              )}
               {onClearPaths && (
                 <button
                   onClick={onClearPaths}
@@ -1031,7 +1050,13 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               <button
                 onClick={() => onSelectPath(path.id)}
                 onDoubleClick={() => { if (onRenamePath && path.chainIds.length > 0) startRename('chip', path); }}
-                title={path.chainIds.length > 0 && onRenamePath ? 'Double-click to rename' : undefined}
+                title={
+                  // The reason a build was recommended belongs where the build is, not in a
+                  // release note — a shortlist you have to take on faith is one you check by hand.
+                  [path.description, path.chainIds.length > 0 && onRenamePath ? 'Double-click to rename' : '']
+                    .filter(Boolean)
+                    .join('\n\n') || undefined
+                }
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all border flex items-center gap-1.5 ${
                   expandedPathIds.includes(path.id)
                     ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
@@ -1151,7 +1176,16 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               // It used to scroll sideways instead, which put the end of a long chain behind a
               // swipe that the browser reads as a back gesture.
               return (
-                <div key={renderPathId} className="flex flex-wrap items-center gap-x-1.5 gap-y-2 p-1.5 bg-[#1a1c1a] rounded-lg border border-gray-800">
+                <div key={renderPathId} className="flex flex-col gap-1">
+                {/* Why this build is on the list, spelled out where the build is. V2 writes a full
+                    line here — how it scores at the position, what its weakest key stat is, what
+                    AcceleRATE it lands on — so a shortlist can be read rather than re-derived. */}
+                {renderPath.isRecommended && renderPath.description && (
+                  <div className="text-[10px] text-gray-500 leading-snug px-1.5">
+                    {renderPath.description}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 p-1.5 bg-[#1a1c1a] rounded-lg border border-gray-800">
                   <Layers className="w-3.5 h-3.5 text-gray-500 mr-1 shrink-0" />
 
                 {/* The build's name, and where it gets renamed. On the row rather than only on the
@@ -1601,6 +1635,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     )}
                   </div>
                 )}
+                </div>
                 </div>
               );
             })}

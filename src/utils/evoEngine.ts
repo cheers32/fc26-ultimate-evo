@@ -629,75 +629,47 @@ export function simulateEvoChain(
   };
 }
 
-export function analyzeEvolutions(
-  poolIds: string[],
-  maxDepth: number,
-  baseBio: PlayerBio,
-  baseOvr: OvrData,
-  baseStats: StatsData,
-  basePlayStyles: PlayStylesData,
-  filters?: EvoFilters,
-  // Evos already locked in ahead of the search. The DFS starts seeded with these so repeat
-  // limits and eligibility account for them, and returned chains stay applicable to the raw card.
-  prefixChainIds: string[] = [],
-  // Called every few thousand nodes. Returning false aborts the search and returns whatever
-  // has been found so far, which is what lets the worker be cancelled mid-run.
-  onProgress?: (nodesVisited: number) => boolean | void
-): EvolutionPath[] {
-  // Only the primitives needed for ranking are kept per candidate. Holding the whole
-  // ChainState for every hit would pin hundreds of thousands of stat objects in memory,
-  // so the position scores are computed here and the stats themselves are dropped.
-  type Candidate = {
-    chainIds: string[];
-    ovr: number;
-    igs: number;
-    posScores: number[];
-    nearCap: number;
-    /** Blended-position fit, only computed when the profile ranking is switched on. */
-    fit: number;
-    // Steps that re-changed an already free-PlayStyle rarity. Carried down the recursion rather
-    // than recomputed per hit, and only ever used to break a tie (see `rank`).
-    redundantRarity: number;
-  };
+/** What a chain search needs to know about the card, the pool and the user's filters. */
+export interface ChainSearchInput {
+  poolIds: string[];
+  maxDepth: number;
+  baseBio: PlayerBio;
+  baseOvr: OvrData;
+  baseStats: StatsData;
+  basePlayStyles: PlayStylesData;
+  filters?: EvoFilters;
+  /** Evos already locked in ahead of the search, so repeat limits and eligibility account for them. */
+  prefixChainIds?: string[];
+  /** Called every few thousand nodes; returning false aborts and keeps whatever was found. */
+  onProgress?: (nodesVisited: number) => boolean | void;
+}
 
-  const rankPositions = baseBio.primaryPositions
-    .split(',')
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
-
-  // With the profile switched on, every shortlist is ranked by what the build is worth to this
-  // player rather than by raw totals — otherwise "Max IGS" would keep winning with stats the
-  // player's positions and PlayStyles make no use of.
-  const useFit = filters?.playstyleWeighting === true;
-  const fitMode = controlModeFor(baseBio, filters?.controlMode);
-  const fitOf = (state: ChainState, pos?: string) => {
-    const ctx = { stats: state.stats, playStyles: state.playStyles, bio: state.bio, mode: fitMode };
-    return pos ? fitForPosition(ctx, pos) : fitScore(ctx).total;
-  };
-
-  // Only the best few per ranking are ever returned, so nothing else is retained. Without
-  // this the search kept every hit and ran the tab out of memory at the depths the app uses.
-  const topByIgs: Candidate[] = [];
-  const topByPosition: Candidate[][] = rankPositions.map(() => []);
-
-  const offer = (list: Candidate[], cand: Candidate, score: (c: Candidate) => number) => {
-    // Same set of evos in a different order isn't a meaningfully different option — without
-    // this, "Max IGS 1/2/3" often ended up as the identical 5 evos shuffled three ways.
-    const candKey = canonicalKey(cand.chainIds);
-    if (list.some(c => canonicalKey(c.chainIds) === candKey)) return;
-
-    if (list.length >= TOP_N && rank(cand, list[list.length - 1], score) <= 0) return;
-    let i = list.length;
-    while (i > 0 && rank(list[i - 1], cand, score) < 0) i--;
-    list.splice(i, 0, cand);
-    if (list.length > TOP_N) list.length = TOP_N;
-  };
-
-  const igsOf = (stats: StatsData) =>
-    Object.values(stats).reduce(
-      (acc, f) => acc + Object.values(f.subs).reduce((sum, s) => sum + s.base, 0),
-      0
-    );
+/**
+ * Walks every legal chain from the card and hands each one that clears the filters to `visit`.
+ *
+ * The walk and the filters live here, once, because two rankings sit on top of them — the original
+ * Analyze and V2 — and the two must agree on what is *legal* even where they disagree entirely on
+ * what is *good*. A second copy of these rules would drift, and it would drift silently, since a
+ * filter that quietly stops applying looks like a search that found more.
+ *
+ * `state` is handed over live and is mutated as the walk continues, so a visitor that wants to keep
+ * anything must copy it now — the arrays and stat objects it points at do not survive the callback.
+ */
+export function forEachChain(
+  input: ChainSearchInput,
+  visit: (chainIds: string[], state: ChainState, redundantRarity: number) => void
+): void {
+  const {
+    poolIds,
+    maxDepth,
+    baseBio,
+    baseOvr,
+    baseStats,
+    basePlayStyles,
+    filters,
+    prefixChainIds = [],
+    onProgress
+  } = input;
 
   const PROGRESS_INTERVAL = 20000;
   let nodesVisited = 0;
@@ -813,19 +785,7 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
       }
 
       if (passesFilters) {
-        const cand: Candidate = {
-          chainIds: [...currentChainIds],
-          ovr: state.ovr,
-          igs: igsOf(state.stats),
-          posScores: rankPositions.map(pos =>
-            useFit ? fitOf(state, pos) : getPositionScore(state.stats, pos)
-          ),
-          nearCap: nearCapBonus(state.stats),
-          redundantRarity,
-          fit: useFit ? fitOf(state) : 0
-        };
-        offer(topByIgs, cand, c => (useFit ? c.fit : c.igs));
-        topByPosition.forEach((list, i) => offer(list, cand, c => c.posScores[i]));
+        visit(currentChainIds, state, redundantRarity);
       }
     }
 
@@ -876,6 +836,107 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
   }
 
   dfs([...prefixChainIds], seedState, 0);
+}
+
+export function analyzeEvolutions(
+  poolIds: string[],
+  maxDepth: number,
+  baseBio: PlayerBio,
+  baseOvr: OvrData,
+  baseStats: StatsData,
+  basePlayStyles: PlayStylesData,
+  filters?: EvoFilters,
+  // Evos already locked in ahead of the search. The DFS starts seeded with these so repeat
+  // limits and eligibility account for them, and returned chains stay applicable to the raw card.
+  prefixChainIds: string[] = [],
+  // Called every few thousand nodes. Returning false aborts the search and returns whatever
+  // has been found so far, which is what lets the worker be cancelled mid-run.
+  onProgress?: (nodesVisited: number) => boolean | void
+): EvolutionPath[] {
+  // Only the primitives needed for ranking are kept per candidate. Holding the whole
+  // ChainState for every hit would pin hundreds of thousands of stat objects in memory,
+  // so the position scores are computed here and the stats themselves are dropped.
+  type Candidate = {
+    chainIds: string[];
+    ovr: number;
+    igs: number;
+    posScores: number[];
+    nearCap: number;
+    /** Blended-position fit, only computed when the profile ranking is switched on. */
+    fit: number;
+    // Steps that re-changed an already free-PlayStyle rarity. Carried down the recursion rather
+    // than recomputed per hit, and only ever used to break a tie (see `rank`).
+    redundantRarity: number;
+  };
+
+  const rankPositions = baseBio.primaryPositions
+    .split(',')
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  // With the profile switched on, every shortlist is ranked by what the build is worth to this
+  // player rather than by raw totals — otherwise "Max IGS" would keep winning with stats the
+  // player's positions and PlayStyles make no use of.
+  const useFit = filters?.playstyleWeighting === true;
+  const fitMode = controlModeFor(baseBio, filters?.controlMode);
+  const fitOf = (state: ChainState, pos?: string) => {
+    const ctx = { stats: state.stats, playStyles: state.playStyles, bio: state.bio, mode: fitMode };
+    return pos ? fitForPosition(ctx, pos) : fitScore(ctx).total;
+  };
+
+  // Only the best few per ranking are ever returned, so nothing else is retained. Without
+  // this the search kept every hit and ran the tab out of memory at the depths the app uses.
+  const topByIgs: Candidate[] = [];
+  const topByPosition: Candidate[][] = rankPositions.map(() => []);
+
+  const offer = (list: Candidate[], cand: Candidate, score: (c: Candidate) => number) => {
+    // Same set of evos in a different order isn't a meaningfully different option — without
+    // this, "Max IGS 1/2/3" often ended up as the identical 5 evos shuffled three ways.
+    const candKey = canonicalKey(cand.chainIds);
+    if (list.some(c => canonicalKey(c.chainIds) === candKey)) return;
+
+    if (list.length >= TOP_N && rank(cand, list[list.length - 1], score) <= 0) return;
+    let i = list.length;
+    while (i > 0 && rank(list[i - 1], cand, score) < 0) i--;
+    list.splice(i, 0, cand);
+    if (list.length > TOP_N) list.length = TOP_N;
+  };
+
+  const igsOf = (stats: StatsData) =>
+    Object.values(stats).reduce(
+      (acc, f) => acc + Object.values(f.subs).reduce((sum, s) => sum + s.base, 0),
+      0
+    );
+
+  forEachChain(
+    {
+      poolIds,
+      maxDepth,
+      baseBio,
+      baseOvr,
+      baseStats,
+      basePlayStyles,
+      filters,
+      prefixChainIds,
+      onProgress
+    },
+    (currentChainIds, state, redundantRarity) => {
+      const cand: Candidate = {
+        chainIds: [...currentChainIds],
+        ovr: state.ovr,
+        igs: igsOf(state.stats),
+        posScores: rankPositions.map(pos =>
+          useFit ? fitOf(state, pos) : getPositionScore(state.stats, pos)
+        ),
+        nearCap: nearCapBonus(state.stats),
+        redundantRarity,
+        fit: useFit ? fitOf(state) : 0
+      };
+      offer(topByIgs, cand, c => (useFit ? c.fit : c.igs));
+      topByPosition.forEach((list, i) => offer(list, cand, c => c.posScores[i]));
+    }
+  );
+
 
   // Canonical (order-independent) key for a candidate. The IGS ranking and each position
   // ranking run their own independent search bookkeeping, so it's routine for two of them to
