@@ -393,6 +393,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // card's *primary* position is a different proposition from one that only matches a secondary
   // one, and both are "eligible".
   const [filterFitPosition, setFilterFitPosition] = useState(false);
+  const [filterRepeatable, setFilterRepeatable] = useState(false);
   // Narrows the pool to the evos that leave the card on one chosen AcceleRATE archetype — the
   // question "which of these keeps me Explosive" can't be answered from the face stats on the
   // cards, since the archetype turns on acceleration/agility/strength and height.
@@ -796,6 +797,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (filterNoRarity && evo.rarityChange) return false;
     if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
     if (filterFitPosition && posMatchScore === 0) return false;
+    // An evo you can run more than once is a different kind of pick — the same card again rather
+    // than a new one — so it is worth being able to see only those.
+    if (filterRepeatable && (evo.maxRepeatable ?? 1) <= 1) return false;
     // Only an addable evo has a resulting archetype at all: an ineligible or maxed-out card was
     // never simulated, so asking for one archetype drops it from the list rather than listing it
     // under a heading it can't answer to.
@@ -1292,6 +1296,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   }`}
                 >
                   Fit Position
+                </button>
+                <button
+                  onClick={() => setFilterRepeatable(!filterRepeatable)}
+                  title="Only evos that can be run more than once on the same card"
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterRepeatable ? 'bg-fcGold text-black border-fcGold/80 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  ↻ Repeatable
                 </button>
                 {/* The one filter that isn't a yes/no: five archetypes, and picking one is a
                     different question from picking another, so it gets a select rather than five
