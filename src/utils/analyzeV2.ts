@@ -1,58 +1,83 @@
-import { EvolutionPath, StatsData } from '../types/player';
+import { EvolutionDefinition, EvolutionPath, PlayerBio, StatsData } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ChainSearchInput, forEachChain, simulateEvoChain } from './evoEngine';
-import { DEFAULT_SUBSTAT_WEIGHT, SUBSTAT_WEIGHTS } from './playstyleProfile';
-import { POSITION_WEIGHTS } from './positionWeights';
-import {
-  AccelerateFamily,
-  calculateAccelerateFamily,
-  parseHeightCm
-} from './statUtils';
-import { achievableAccelerateFamilies } from './fitScore';
+import { chemStyles } from '../data/chemStyles';
+import { ChainSearchInput, forEachChain, simulateEvoChain, validateRequirement } from './evoEngine';
+import { BuildTemplate, templatesFor } from '../data/buildTemplates';
+import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './statUtils';
 
 /**
- * Analyze V2 — ranked on what the card is missing rather than on what it adds up to.
+ * Analyze V2 — builds toward a finished card, not toward a bigger number.
  *
- * The original ranking maximises a total: raw IGS, or the face stats weighted by position. A total
- * hides a hole. A winger build can carry the best position-weighted score in the search and still
- * be unusable because it left agility at 78, and the only way to find that out was to open each
- * build and read the sub-stats — which is the manual checking this is meant to remove.
+ * The original ranking maximises a total: raw IGS, or face stats weighted by position. Two things
+ * go wrong with a total, and both cost an evening of checking by hand.
  *
- * So V2 scores the weak link. For each position it takes the sub-stats that position actually runs
- * on, and charges the build for however far its worst one falls short of end-game. A build with no
- * hole beats a build with a bigger total and a hole, which is the ranking a finished team wants.
+ * A total hides a hole. It will put a build with 78 agility at the top of a winger's list, because
+ * the other nine sub-stats carried the average, and the only way to find out is to open every
+ * result and read it.
  *
- * PlayStyles are deliberately not part of any of this — only stats and AcceleRATE, as asked. That
- * also keeps the ranking legible: every number in a V2 reason can be checked on the stat panel.
+ * Worse, a total treats every point as a gain, and some points are a loss. Strength on a 180cm
+ * playmaker is the clearest case: AcceleRATE turns on agility minus strength, so past a certain
+ * point every point of strength is destroying the Explosive burst that is the reason to use the
+ * card at all — while still adding to PHY, to IGS, and so to the build's rank. That is how a
+ * shortlist ends up full of cards nobody would field.
+ *
+ * So V2 does not hand back a ranked pile. It builds toward **templates** — an Explosive CAM, a
+ * Lengthy CDM — where the archetype is a requirement rather than a footnote. Everything under
+ * "Explosive CAM" is Explosive, so a strength-heavy chain is not ranked lower, it is not there.
+ * Inside a template the ranking is the weak link: a build is charged for however far the worst
+ * sub-stat that position runs on falls short, measured against what this card can actually reach,
+ * so the top of each list has no hole in it and no bar it was never able to clear.
+ *
+ * Three further rules come from how the game is played rather than from the numbers, and they are
+ * the ones a total can never express:
+ *
+ * Controlled is not a destination. Explosive and Lengthy are what you build toward; Controlled is
+ * where a card lands when it misses both. So a template is defined by one of the two, and a
+ * Controlled build only ever appears under a template that allows it, labelled as the fallback.
+ *
+ * Floors, not gradients. A build under a template's floor on a stat the plan runs on is not a worse
+ * version of that plan, it is a different card — the 78-agility winger that a weighted mean will
+ * happily rank first because nine other sub-stats covered for it. Those builds are cut, and if
+ * nothing clears the floors the list says so rather than quietly promoting the best of a bad set.
+ *
+ * PlayStyles are deliberately absent — only stats and AcceleRATE, as asked — which also means
+ * every number in a reason can be checked against the stat panel rather than taken on faith.
  */
 
-/** What a sub-stat has to reach before it stops being the thing holding a card back. */
+/**
+ * The end-game zero. At this stage of the game 90 is not a good number, it is the pass mark: a card
+ * is measured by what it has *above* 90, and anything below is a fail rather than a low score.
+ */
 const ENDGAME_TARGET = 90;
 
-/** How much a point of shortfall costs. Tuned so a 78 on a key stat sinks a build ~6 points. */
-const SHORTFALL_COST = 0.5;
+/**
+ * What a point of shortfall costs, in the same unit as a point of gain. Symmetric on purpose —
+ * one point under the bar is worth exactly as much as one point over it is, and the floors do the
+ * rest of the work by cutting a failing build out of the clean list entirely.
+ */
+const SHORTFALL_COST = 1;
+
+/** What a point of a stat the plan is hurt by costs, once it is past end-game. */
+const AVOID_COST = 0.25;
+
+/** Kept per template during the search — wide, so the choosing is done on a real set. */
+const SEARCH_KEEP = 30;
+
+/** Shown per template. Small on purpose — a template is a decision, not a catalogue. */
+const OUT_PER_TEMPLATE = 4;
+
+/** Two builds within this on every stat the plan runs on are the same build. Only one is shown. */
+const SAME_BUILD = 2;
 
 /**
- * A sub-stat is "key" for a position when the position leans on it. The weights are per position
- * and sum to about 1 across a listed set of ten or so, so a tenth is roughly "a full share".
+ * What a point of a stat is worth to a plan, counted from the pass mark rather than from zero.
+ *
+ * This is the difference between an end-game ranking and a spreadsheet. Scored from zero, 97 and 98
+ * are within one percent of each other and the ranking barely notices; scored from 90 they are 7
+ * and 8, and the second card is an eighth better at the thing it is for. Nothing is credited below
+ * the pass mark, so a build cannot make up a failing stat by piling points onto a passing one.
  */
-const KEY_WEIGHT = 0.08;
-
-const FACE_KEYS = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
-type FaceKey = (typeof FACE_KEYS)[number];
-
-const FACE_LABEL: Record<FaceKey, string> = {
-  pac: 'PAC',
-  sho: 'SHO',
-  pas: 'PAS',
-  dri: 'DRI',
-  def: 'DEF',
-  phy: 'PHY'
-};
-
-/** Only the best few per shortlist are kept; the rest of the search is thrown away as it goes. */
-const PER_POSITION = 5;
-const PER_EMPHASIS = 3;
+const valueOf = (v: number) => Math.max(0, v - ENDGAME_TARGET);
 
 const subValues = (stats: StatsData): Record<string, number> => {
   const out: Record<string, number> = {};
@@ -62,210 +87,378 @@ const subValues = (stats: StatsData): Record<string, number> => {
   return out;
 };
 
-const keySubStatsFor = (pos: string): string[] => {
-  const weights = SUBSTAT_WEIGHTS[pos.toUpperCase()];
-  if (!weights) return [];
-  return Object.entries(weights)
-    .filter(([, w]) => w >= KEY_WEIGHT)
-    .map(([k]) => k);
-};
-
 const prettySub = (key: string) =>
-  key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, c => c.toUpperCase())
-    .replace('Def Awareness', 'Def. Aware')
-    .replace('Heading Acc', 'Heading')
-    .trim();
+  key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())
+    .replace('Def Awareness', 'Def. Aware').replace('Heading Acc', 'Heading').trim();
 
-interface Scored {
-  /** Sub-stat weighted score for the position, 0-99, before the weak link is charged for. */
-  raw: number;
-  /** What the build is worth once its worst key sub-stat is paid for. */
-  score: number;
-  weakestKey: string;
-  weakestValue: number;
+/**
+ * Which chemistry styles leave the card on each archetype. The style is a free choice at the point
+ * of use, so "can be made Explosive" is the question a template asks — and naming the styles that
+ * do it is the difference between a claim and an instruction.
+ */
+function archetypesByChem(
+  subs: Record<string, number>,
+  heightCm?: number
+): Map<AccelerateFamily, string[]> {
+  const out = new Map<AccelerateFamily, string[]>();
+  const acc = subs.acceleration ?? 50;
+  const agi = subs.agility ?? 50;
+  const str = subs.strength ?? 50;
+
+  for (const [name, boosts] of Object.entries(chemStyles)) {
+    const cap = (base: number, key: string) => Math.min(99, base + (boosts[key] || 0));
+    const fam = calculateAccelerateFamily(
+      cap(acc, 'acceleration'), cap(agi, 'agility'), cap(str, 'strength'), heightCm
+    );
+    const list = out.get(fam) || [];
+    list.push(name);
+    out.set(fam, list);
+  }
+  return out;
 }
 
-/** What one position makes of a finished card. */
-function scoreForPosition(subs: Record<string, number>, pos: string): Scored {
-  const P = pos.toUpperCase();
-  const weights = SUBSTAT_WEIGHTS[P];
+/**
+ * Whether a card can read an archetype at all, before any stat or style is considered. Height is the
+ * one input no evo can change: below 185 a card will never be Lengthy, above 182 it will never be
+ * Explosive. This is what stops a 180cm icon being handed a Lengthy destroyer plan that quietly
+ * demoted itself to Controlled — a plan the card cannot carry out is not a fallback, it is the
+ * wrong plan, and printing it is how a shortlist fills up with strength on a playmaker.
+ */
+function archetypePossible(fam: AccelerateFamily, heightCm?: number): boolean {
+  if (heightCm === undefined) return true;
+  if (fam === 'Lengthy') return heightCm >= 185;
+  if (fam === 'Explosive') return heightCm <= 182;
+  return true;
+}
 
-  let raw = 0;
-  if (weights) {
-    // Normalised by the weights actually listed: the tables were written to rank cards against
-    // each other at one position, so they sum to roughly — but not exactly — one, and an
-    // un-normalised total reads as 109 out of 99. Dividing makes the number a stat again, and
-    // makes two positions' scores comparable.
-    let total = 0;
-    for (const [key, w] of Object.entries(weights)) {
-      raw += (subs[key] ?? 0) * w;
-      total += w;
-    }
-    if (total > 0) raw /= total;
-  } else {
-    // No table for this position: fall back to a flat read so it still ranks rather than ties.
-    const vals = Object.values(subs);
-    raw = vals.reduce((a, b) => a + b, 0) / Math.max(1, vals.length);
+/** What a chain costs, in the terms that matter when one pool has to dress a whole team. */
+function costOf(chainIds: string[]): string {
+  let paid = 0;
+  const kinds = new Set<string>();
+  for (const id of chainIds) {
+    const cost = (availableEvolutions[id] as EvolutionDefinition | undefined)?.cost || '';
+    if (!cost || /free/i.test(cost)) continue;
+    paid += 1;
+    if (/token/i.test(cost)) kinds.add('tokens');
+    else if (/point|coin/i.test(cost)) kinds.add('paid');
+    else kinds.add('objective');
   }
+  return `${chainIds.length} evos${paid > 0 ? ` · ${paid} ${[...kinds].join('+')}` : ' · all free'}`;
+}
 
-  let weakestKey = '';
-  let weakestValue = 99;
-  for (const key of keySubStatsFor(P)) {
-    const v = subs[key] ?? 0;
-    if (v < weakestValue) {
-      weakestValue = v;
-      weakestKey = key;
-    }
-  }
-  if (!weakestKey) weakestValue = ENDGAME_TARGET;
-
-  const shortfall = Math.max(0, ENDGAME_TARGET - weakestValue);
-  return { raw, score: raw - shortfall * SHORTFALL_COST, weakestKey, weakestValue };
+interface Scored {
+  score: number;
+  /** Floors the build is under, worst first. Empty means every stat the plan needs passes. */
+  under: { key: string; value: number; floor: number }[];
+  /** The most this build gives up against what some chain in the pool actually reached. */
+  left: { key: string; value: number; reach: number } | null;
 }
 
 interface Candidate {
   chainIds: string[];
   ovr: number;
   igs: number;
-  faces: Record<FaceKey, number>;
-  /** Per requested position, in the order they were asked for. */
-  perPosition: Scored[];
-  accelerate: AccelerateFamily;
-  reachable: AccelerateFamily[];
+  subs: Record<string, number>;
+  /** The archetypes this build can be made to read, and by which styles. */
+  byChem: Map<AccelerateFamily, string[]>;
+  bare: AccelerateFamily;
+  positions: string[];
+}
+
+/** A build under a template, with the archetype it would actually be played on. */
+interface Entry {
+  cand: Candidate;
+  arch: AccelerateFamily;
+  /** True when the card could not reach the template's archetype and landed on Controlled. */
+  fallback: boolean;
 }
 
 const canonical = (ids: string[]) => [...ids].sort().join(',');
 
-/**
- * Keeps the best `limit` by `score`, deduped on the set of evos — the same evos in a different
- * order are the same build to anyone reading the list.
- */
-function offer(list: Candidate[], cand: Candidate, limit: number, score: (c: Candidate) => number) {
-  const key = canonical(cand.chainIds);
-  const at = list.findIndex(c => canonical(c.chainIds) === key);
-  if (at >= 0) {
-    if (score(cand) <= score(list[at])) return;
-    list.splice(at, 1);
-  }
-  if (list.length >= limit && score(cand) <= score(list[list.length - 1])) return;
-  let i = list.length;
-  while (i > 0 && score(list[i - 1]) < score(cand)) i--;
-  list.splice(i, 0, cand);
-  if (list.length > limit) list.length = limit;
-}
-
 export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
-  const { baseBio, baseOvr, baseStats, basePlayStyles } = input;
-
-  const positions = baseBio.primaryPositions
-    .split(',')
-    .map(p => p.trim())
-    .filter(Boolean);
-  const rankPositions = positions.length > 0 ? positions : ['ST'];
+  const { baseBio, baseOvr, baseStats, basePlayStyles, poolIds } = input;
   const height = parseHeightCm(baseBio.height);
 
-  const byPosition: Candidate[][] = rankPositions.map(() => []);
-  const byEmphasis: Record<FaceKey, Candidate[]> = {
-    pac: [],
-    sho: [],
-    pas: [],
-    dri: [],
-    def: [],
-    phy: []
+  const positions = baseBio.primaryPositions.split(',').map(p => p.trim()).filter(Boolean);
+  const rankPositions = (positions.length > 0 ? positions : ['ST']).map(p => p.toUpperCase());
+  const basePositions = new Set(rankPositions);
+
+  /** The best each sub-stat ever reached — the bar the weak link is measured against. */
+  const achievable: Record<string, number> = {};
+
+  /** Shortlists keyed `templateId|tier`; see `tierOf`. */
+  const shortlists = new Map<string, Entry[]>();
+
+  /**
+   * Which pile a build belongs in. Clearing the floors outranks reaching the archetype: a plan the
+   * card can actually carry out on Controlled is a more useful thing to be told than a plan it
+   * technically reads Explosive for while sitting 10 under on agility.
+   */
+  const tierOf = (clean: boolean, fallback: boolean) => `${clean ? 'a' : 'b'}${fallback ? '2' : '1'}`;
+  const TIERS = ['a1', 'a2', 'b1', 'b2'];
+
+  /** What a template makes of a finished card: what it is worth, and what it is short of. */
+  const scoreForTemplate = (
+    subs: Record<string, number>,
+    t: BuildTemplate,
+    reach: (key: string) => number
+  ): Scored => {
+    // A plan's own floor outranks the general end-game bar where it is higher, and neither is worth
+    // charging for beyond what this card could ever reach.
+    const targetFor = (key: string) => Math.min(Math.max(ENDGAME_TARGET, t.floors[key] ?? 0), reach(key));
+    let raw = 0;
+    let total = 0;
+    for (const [key, w] of Object.entries(t.maximise)) {
+      raw += valueOf(subs[key] ?? 0) * w;
+      total += w;
+    }
+    if (total > 0) raw /= total;
+
+    // Stats the plan is hurt by. Charged rather than ignored, because a total cannot tell the
+    // difference between a point that helps and a point that spends the archetype.
+    for (const key of t.avoid || []) {
+      const over = Math.max(0, (subs[key] ?? 0) - ENDGAME_TARGET);
+      raw -= over * AVOID_COST;
+    }
+
+    const under = Object.entries(t.floors)
+      .map(([key, floor]) => ({ key, floor, value: subs[key] ?? 0 }))
+      .filter(x => x.value < x.floor)
+      .sort((a, b) => (b.floor - b.value) - (a.floor - a.value));
+
+    // Two different questions, and conflating them is how a shortlist reads as fine when it is not.
+    // First: does every stat the plan needs pass? That is what the build is charged for.
+    let worst = 0;
+    for (const key of t.must) {
+      worst = Math.max(worst, targetFor(key) - (subs[key] ?? 0));
+    }
+
+    // Second: of the stats that pass, which one is this build giving up the most of — measured not
+    // against 90 but against what some chain in this pool actually reached. At end game the choice
+    // is between 97 and 99, and a build should have to say which one it settled for.
+    let left: Scored['left'] = null;
+    for (const key of t.must) {
+      const v = subs[key] ?? 0;
+      const gap = reach(key) - v;
+      if (gap > 0 && (!left || gap > left.reach - left.value)) left = { key, value: v, reach: reach(key) };
+    }
+
+    return { score: raw - worst * SHORTFALL_COST, under, left };
   };
 
+  const offer = (key: string, entry: Entry, score: (c: Candidate) => number) => {
+    const list = shortlists.get(key) || [];
+    const ck = canonical(entry.cand.chainIds);
+    const at = list.findIndex(e => canonical(e.cand.chainIds) === ck);
+    if (at >= 0) {
+      if (score(entry.cand) <= score(list[at].cand)) return;
+      list.splice(at, 1);
+    }
+    if (list.length >= SEARCH_KEEP && score(entry.cand) <= score(list[list.length - 1].cand)) {
+      shortlists.set(key, list);
+      return;
+    }
+    let i = list.length;
+    while (i > 0 && score(list[i - 1].cand) < score(entry.cand)) i--;
+    list.splice(i, 0, entry);
+    if (list.length > SEARCH_KEEP) list.length = SEARCH_KEEP;
+    shortlists.set(key, list);
+  };
+
+  // Only the plans this card could actually be: the right positions, and an archetype its frame
+  // allows. A CB has no business on the winger list, and a 180cm card has none on a Lengthy one.
+  const canFallBack = (t: BuildTemplate) => t.controlledFallback === true && t.archetype === 'Explosive';
+  const templates = templatesFor(rankPositions)
+    .filter(t => archetypePossible(t.archetype, height) || canFallBack(t));
+
+  // Pass one: fill the shortlists. A build is admitted to a template only if it can be made to read
+  // that template's archetype — or Controlled, where the template says that is a real card too.
   forEachChain(input, (chainIds, state) => {
     const subs = subValues(state.stats);
-    const faces = FACE_KEYS.reduce((acc, k) => {
-      acc[k] = state.stats[k]?.baseFace ?? 0;
-      return acc;
-    }, {} as Record<FaceKey, number>);
+    for (const [k, v] of Object.entries(subs)) if (v > (achievable[k] ?? 0)) achievable[k] = v;
 
+    const byChem = archetypesByChem(subs, height);
     const cand: Candidate = {
       chainIds: [...chainIds],
       ovr: state.ovr,
       igs: Object.values(subs).reduce((a, b) => a + b, 0),
-      faces,
-      perPosition: rankPositions.map(pos => scoreForPosition(subs, pos)),
-      accelerate: calculateAccelerateFamily(
-        subs.acceleration ?? 50,
-        subs.agility ?? 50,
-        subs.strength ?? 50,
-        height
-      ),
-      reachable: [...achievableAccelerateFamilies(state.stats, state.bio)]
+      subs,
+      byChem,
+      bare: calculateAccelerateFamily(subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height),
+      positions: state.bio.primaryPositions.split(',').map(p => p.trim().toUpperCase()).filter(Boolean)
     };
 
-    byPosition.forEach((list, i) => offer(list, cand, PER_POSITION, c => c.perPosition[i].score));
+    for (const t of templates) {
+      let arch: AccelerateFamily | null = null;
+      let fallback = false;
+      if (byChem.has(t.archetype)) arch = t.archetype;
+      else if (canFallBack(t) && byChem.has('Controlled')) {
+        arch = 'Controlled';
+        fallback = true;
+      }
+      if (!arch) continue; // the requirement, not a preference
 
-    // The emphasis shortlists answer "make this stat as big as you can" — so they rank on the
-    // stat itself, and the weak link is reported rather than charged for. Asking for maximum
-    // Passing and being handed the build with the best *balance* would not be an answer.
-    FACE_KEYS.forEach(k =>
-      offer(byEmphasis[k], cand, PER_EMPHASIS, c => c.faces[k] * 100 + c.perPosition[0].score)
-    );
+      const provisional = scoreForTemplate(subs, t, () => ENDGAME_TARGET);
+      const tier = tierOf(provisional.under.length === 0, fallback);
+      offer(`${t.id}|${tier}`, { cand, arch, fallback }, () => provisional.score);
+    }
   });
 
-  // Merge, keeping every label a build earned: one build is often both "best at CAM" and "most
-  // Passing", and saying so is more useful than showing it twice.
-  const merged: { cand: Candidate; labels: string[] }[] = [];
-  const add = (cand: Candidate, label: string) => {
-    const key = canonical(cand.chainIds);
-    const existing = merged.find(m => canonical(m.cand.chainIds) === key);
-    if (existing) {
-      if (!existing.labels.includes(label)) existing.labels.push(label);
-    } else {
-      merged.push({ cand, labels: [label] });
+  // Pass two: re-score against what this card turned out to be able to reach. Charging a build for
+  // missing 90 agility when nothing in the pool takes it past 84 is noise — the weak link should
+  // mean "left on the table", not "below a line the card was never going to clear".
+  const reach = (key: string) => achievable[key] ?? ENDGAME_TARGET;
+
+  /**
+   * How many of the remaining pool evos the finished card is still eligible for. Evos cap the cards
+   * they accept, so a build that ends 4 OVR lower with one more upgrade still open is often the
+   * better card — and that is invisible in any score of the stats alone.
+   */
+  const headroomOf = (chainIds: string[], full: ReturnType<typeof simulateEvoChain>) => {
+    const used = new Set(chainIds);
+    let open = 0;
+    for (const id of poolIds) {
+      if (used.has(id)) continue;
+      const evo = availableEvolutions[id];
+      if (!evo) continue;
+      if (validateRequirement(evo, full.finalOvr, full.finalStats, full.finalPlayStyles, full.finalBio).eligible) {
+        open += 1;
+      }
     }
+    return open;
   };
 
-  rankPositions.forEach((pos, i) => {
-    byPosition[i].forEach((cand, n) => add(cand, `${pos}${n + 1}`));
-  });
-  FACE_KEYS.forEach(k => {
-    // A stat this position does not use is noise — nobody wants "max DEF" on a winger.
-    const weight = POSITION_WEIGHTS[rankPositions[0].toUpperCase()]?.[k] ?? 0;
-    if (weight < 0.1) return;
-    byEmphasis[k].forEach((cand, n) => add(cand, `Max ${FACE_LABEL[k]}${n > 0 ? n + 1 : ''}`));
-  });
+  /** One template's answer: its frontier of real choices, best first. */
+  interface Answer {
+    t: BuildTemplate;
+    rows: { e: Entry; s: Scored }[];
+  }
 
-  // The order they are handed back in is the recommendation: by what the card's own first position
-  // makes of them, weak link and all.
-  merged.sort((a, b) => b.cand.perPosition[0].score - a.cand.perPosition[0].score);
+  const answers: Answer[] = [];
 
-  return merged.map(({ cand, labels }, idx) => {
-    const full = simulateEvoChain(cand.chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
-    const primary = cand.perPosition[0];
+  for (const t of templates) {
+    // Builds that clear the plan's floors come first, then the rest — rather than one pile winning
+    // outright. Picking only the clean pile would let a single build that scrapes over a floor hide
+    // four better ones, and picking only the best pile would bury the fact that a card cannot reach
+    // the bar at all. Every row says which side of it that build is on.
+    const scored = TIERS.flatMap((tier, tierIdx) =>
+      (shortlists.get(`${t.id}|${tier}`) || []).map(e => ({
+        e,
+        tierIdx,
+        s: scoreForTemplate(e.cand.subs, t, reach)
+      }))
+    ).sort((a, b) => a.tierIdx - b.tierIdx || b.s.score - a.s.score);
+    if (scored.length === 0) continue;
 
-    const faceLine = FACE_KEYS.filter(k => (POSITION_WEIGHTS[rankPositions[0].toUpperCase()]?.[k] ?? 0) >= 0.15)
-      .map(k => `${FACE_LABEL[k]} ${cand.faces[k]}`)
-      .join(' ');
+    // Inside a template, drop anything another build beats outright — same or better on every
+    // stat the plan is built on, and no more evos. What is left is a set of real choices.
+    const axes = Object.keys(t.maximise);
+    const axesOf = (c: Candidate) => axes.map(k => c.subs[k] ?? 0);
+    const frontier = scored.filter(({ e, tierIdx }) =>
+      !scored.some(({ e: o, tierIdx: oTier }) => {
+        // A build that misses a floor never knocks out one that clears it, however good its numbers
+        // on the axes look — that is the whole point of having a floor.
+        if (o.cand === e.cand || oTier > tierIdx) return false;
+        const a = axesOf(o.cand);
+        const b = axesOf(e.cand);
+        const pairs: [number, number][] = [
+          ...a.map((v, i) => [v, b[i]] as [number, number]),
+          [e.cand.chainIds.length, o.cand.chainIds.length]
+        ];
+        return pairs.every(([x, y]) => x >= y) && pairs.some(([x, y]) => x > y);
+      })
+    );
 
-    const weak =
-      primary.weakestValue >= ENDGAME_TARGET
-        ? `no key stat under ${ENDGAME_TARGET}`
-        : `weakest ${prettySub(primary.weakestKey)} ${primary.weakestValue}`;
+    // Then thin it to choices a person would actually weigh. Two builds a point apart on every axis
+    // are one build shown twice, and a shortlist of those is the thing that wastes an evening.
+    const rows: { e: Entry; s: Scored }[] = [];
+    for (const row of frontier) {
+      const mine = axesOf(row.e.cand);
+      const dup = rows.some(kept => {
+        const theirs = axesOf(kept.e.cand);
+        return mine.every((v, i) => Math.abs(v - theirs[i]) <= SAME_BUILD)
+          && kept.e.cand.chainIds.length === row.e.cand.chainIds.length;
+      });
+      if (dup) continue;
+      rows.push(row);
+      if (rows.length >= OUT_PER_TEMPLATE) break;
+    }
 
-    const others = cand.reachable.filter(f => f !== cand.accelerate);
-    const rate = others.length > 0
-      ? `${cand.accelerate} (${others.join('/')} on chem)`
-      : cand.accelerate;
+    if (rows.length > 0) answers.push({ t, rows });
+  }
 
-    const evoNames = cand.chainIds.map(id => availableEvolutions[id]?.name || id).join(' ➜ ');
+  // Best plan first, so #1 is the best card this pool can build and not merely the first template
+  // in the file. A chain that answers two plans is listed under both — being the best playmaker and
+  // the best CAM is two different things to know, and hiding the second is how the CAM list ends up
+  // empty for a card that is obviously a CAM.
+  answers.sort((a, b) => (b.rows[0]?.s.score ?? 0) - (a.rows[0]?.s.score ?? 0));
 
-    return {
-      id: `v2-path-${Date.now()}-${idx}`,
-      // Just the rank. The chip is a tab in a row of twenty, so it has room for a position in the
-      // order and nothing else — everything a build earned is in the reason line below it.
-      name: `#${idx + 1}`,
-      // The reason, in the order it is worth reading: what it is best at, how good it is there,
-      // what is missing, what it ends up as, then how it was built.
-      description: `${labels.join(' · ')} — ${rankPositions[0]} ${primary.score.toFixed(1)} · ${weak} · OVR ${cand.ovr} · ${faceLine} · ${rate} · ${cand.chainIds.length} evos — ${evoNames}`,
-      isRecommended: true,
-      chainIds: [...cand.chainIds],
-      steps: full.steps
-    };
-  });
+  const out: EvolutionPath[] = [];
+  let rank = 0;
+
+  for (const { t, rows } of answers) {
+    const best = rows[0]?.e.cand;
+
+    for (const { e, s } of rows) {
+      const cand = e.cand;
+      rank += 1;
+      const full = simulateEvoChain(cand.chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+      const styles = cand.byChem.get(e.arch) || [];
+      const how = cand.bare === e.arch
+        ? 'bare'
+        : `via ${styles.slice(0, 3).join('/')}${styles.length > 3 ? `+${styles.length - 3}` : ''}`;
+      // How much room is left before the archetype breaks. On an Explosive card every point of
+      // strength eats this margin, which is the thing a stat total can never tell you.
+      const agi = cand.subs.agility ?? 0;
+      const str = cand.subs.strength ?? 0;
+      const margin =
+        e.arch === 'Explosive' ? ` · agi ${agi} − str ${str} = +${agi - str}`
+        : e.arch === 'Lengthy' ? ` · str ${str} − agi ${agi} = +${str - agi}`
+        : '';
+      const archNote =
+        (e.fallback ? `${e.arch} ${how} (no ${t.archetype} on this card)` : `${e.arch} ${how}`) + margin;
+
+      const topStats = Object.keys(t.maximise).slice(0, 5);
+      // Stamina is printed on every row whether or not the plan leans on it, because it is the one
+      // gate that applies to all of them and "clears the bar" should never have to be taken on trust.
+      const shown = topStats.includes('stamina') ? topStats : [...topStats, 'stamina'];
+      const statLine = shown.map(k => `${prettySub(k)} ${cand.subs[k] ?? 0}`).join(' · ');
+
+      const delta = best && cand !== best
+        ? topStats
+            .map(k => ({ k, d: (cand.subs[k] ?? 0) - (best.subs[k] ?? 0) }))
+            .filter(x => x.d !== 0)
+            .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))
+            .slice(0, 3)
+            .map(x => `${x.d > 0 ? '+' : ''}${x.d} ${prettySub(x.k)}`)
+            .join(', ')
+        : '';
+
+      const verdict = s.under.length > 0
+        ? `FAILS ${s.under.slice(0, 3).map(u => `${prettySub(u.key)} ${u.value}/${u.floor}`).join(', ')}`
+        : s.left
+          ? `all pass · gives up ${prettySub(s.left.key)} ${s.left.value} (${s.left.reach} reachable)`
+          : 'all pass · nothing left on the table';
+
+      const gained = cand.positions.filter(p => !basePositions.has(p));
+      const open = headroomOf(cand.chainIds, full);
+      const evoNames = cand.chainIds.map(id => availableEvolutions[id]?.name || id).join(' ➜ ');
+
+      out.push({
+        id: `v2-path-${Date.now()}-${rank}`,
+        name: `#${rank}`,
+        description:
+          `${t.name} · +${s.score.toFixed(1)} over 90 · ${verdict}` +
+          `${delta ? ` · ${delta} vs best` : ''}` +
+          ` · ${archNote} · OVR ${cand.ovr} · IGS ${cand.igs} · ${statLine}` +
+          `${gained.length > 0 ? ` · +${gained.join('/')}` : ''}` +
+          ` · ${costOf(cand.chainIds)} · ${open} more evos still open — ${evoNames}`,
+        isRecommended: true,
+        chainIds: [...cand.chainIds],
+        steps: full.steps
+      });
+    }
+  }
+
+  return out;
 }
