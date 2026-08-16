@@ -14,6 +14,7 @@ import { EvoLabModal } from './components/EvoLabModal';
 import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
 import { bestScore } from './utils/positionScore';
+import { playStyleScoreAt } from './utils/playStyleScore';
 import { DEFAULT_PATH_ID, IN_GAME_STAR_TIER, isInGamePath } from './utils/paths';
 import {
   simulateEvoChain,
@@ -1449,6 +1450,9 @@ export default function App() {
     };
   }, [baseNode, previewNode, evoPreview, chainResult, compareChainResult, statsData, initialOvrData, playStylesData, playerBio]);
 
+  /** The previewed card scored where it plays — both header badges then read the same position. */
+  const previewScore = useMemo(() => bestScore(previewStats, previewBio), [previewStats, previewBio]);
+
   // Calculate IGS & Face Stats Summary
   const { igs, faceSum, accelerateType, accelerateFamily } = useMemo(() => {
     let currentActiveBaseIgs = 0;
@@ -1676,7 +1680,16 @@ export default function App() {
           accelerateType={accelerateType}
           // The card on screen scored where it plays — the same number the evo cards show a delta
           // of, so the two always agree about what the build is worth.
-          score={bestScore(previewStats, previewBio)}
+          score={previewScore}
+          // Kept apart from the stat score on purpose: one says the card's numbers are right for
+          // the position, the other says its PlayStyles are — and they want opposite next steps.
+          // Read at the same position as the stat score, or the two badges beside each other would
+          // quietly be talking about different positions.
+          psScore={
+            previewScore
+              ? playStyleScoreAt(previewStats, previewPlayStyles, previewBio, previewScore.position)
+              : null
+          }
           igs={igs}
           faceSum={faceSum}
           activeEvo={activeEvo}

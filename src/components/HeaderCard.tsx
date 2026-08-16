@@ -9,6 +9,7 @@ import { FEEDBACK_REASONS } from '../types/player';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
+import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ThumbsUp, ThumbsDown, ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
@@ -99,6 +100,8 @@ interface HeaderCardProps {
   onSetProgress?: (pathId: string, index: number) => void;
   /** What the card on screen is worth where it plays — computed by the page, shown beside OVR. */
   score?: PositionScore | null;
+  /** The same for its PlayStyles, scored separately because it is a separate question. */
+  psScore?: PlayStyleScore | null;
 }
 
 /**
@@ -260,7 +263,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onSetBase,
   onRemoveNode,
   onSetProgress,
-  score
+  score,
+  psScore
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -496,6 +500,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
    * position, so the numbers down a row answer one question instead of each answering its own.
    */
   const baseScore = React.useMemo(() => bestScore(rawStats, bio), [rawStats, bio]);
+  const basePs = React.useMemo(
+    () => (baseScore ? playStyleScoreAt(rawStats, rawPlayStyles, bio, baseScore.position) : null),
+    [baseScore, rawStats, rawPlayStyles, bio]
+  );
 
   /** What the build is worth where it ends up playing — the chip's second number. */
   const pathScore = (path: EvolutionPath) => {
@@ -613,6 +621,24 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <span className={getStatColorClass(score.score)}>
                   {score.score.toFixed(1)}
                 </span>
+              </div>
+            )}
+
+            {/* The PlayStyles, scored apart from the stats: a card can be right on one and wrong on
+                the other, and the two want opposite next steps. */}
+            {psScore && (
+              <div
+                className="bg-gray-800/80 text-gray-200 px-2 py-0.5 rounded font-bold text-xs shadow-sm border border-gray-600 flex items-center gap-1 whitespace-nowrap"
+                title={
+                  `PlayStyles ${psScore.score.toFixed(1)}/100 at ${psScore.position}` +
+                  (psScore.detail.length > 0
+                    ? ` · best: ${psScore.detail.slice(0, 3).map(d => `${d.name}${d.gold ? '+' : ''}`).join(', ')}`
+                    : ' · none that this position uses') +
+                  (psScore.missing.length > 0 ? ` · missing: ${psScore.missing.join(', ')}` : '')
+                }
+              >
+                <span className="text-gray-500 text-[9px] font-semibold tracking-wider">PS</span>
+                <span className={getStatColorClass(psScore.score)}>{psScore.score.toFixed(1)}</span>
               </div>
             )}
 
@@ -1551,6 +1577,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           <span className={getStatColorClass(baseScore.score)}>{baseScore.score.toFixed(1)}</span>
                         </div>
                       )}
+                      {basePs && (
+                        <div
+                          className="flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] bg-gray-800/80 border-gray-600"
+                          title={`PlayStyles ${basePs.score.toFixed(1)}/100 at ${basePs.position}`}
+                        >
+                          <span className="text-white font-bold">PS</span>
+                          <span className={getStatColorClass(basePs.score)}>{basePs.score.toFixed(1)}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-3 gap-0.5">
                       {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
@@ -1786,6 +1821,40 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                             title={`${now.position} score ${now.score.toFixed(1)}/100 as ${now.plan.name} · ${now.style ? `on ${now.style}` : 'bare'}`}
                                           >
                                             <span className="text-white font-bold">{now.position}</span>
+                                            <div className="flex items-baseline gap-0.5">
+                                              {Math.abs(diff) >= 0.05 && (
+                                                <span className={`font-bold text-[7.5px] ${diff > 0 ? 'text-fcGreen' : 'text-red-400'}`}>
+                                                  {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+                                                </span>
+                                              )}
+                                              <span className={getStatColorClass(now.score)}>{now.score.toFixed(1)}</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+                                      {(() => {
+                                        if (!baseScore) return null;
+                                        const now = playStyleScoreAt(stepResult.statsAfter, stepResult.playStylesAfter, stepResult.bioAfter, baseScore.position);
+                                        const before = idx === 0
+                                          ? basePs
+                                          : playStyleScoreAt(
+                                              renderPath.steps![idx - 1].statsAfter,
+                                              renderPath.steps![idx - 1].playStylesAfter,
+                                              renderPath.steps![idx - 1].bioAfter,
+                                              baseScore.position
+                                            );
+                                        const diff = before ? now.score - before.score : 0;
+                                        return (
+                                          <div
+                                            className="flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] bg-gray-800/80 border-gray-600"
+                                            title={
+                                              `PlayStyles ${now.score.toFixed(1)}/100 at ${now.position}` +
+                                              (now.detail.length > 0
+                                                ? ` · best: ${now.detail.slice(0, 3).map(d => `${d.name}${d.gold ? '+' : ''}`).join(', ')}`
+                                                : '')
+                                            }
+                                          >
+                                            <span className="text-white font-bold">PS</span>
                                             <div className="flex items-baseline gap-0.5">
                                               {Math.abs(diff) >= 0.05 && (
                                                 <span className={`font-bold text-[7.5px] ${diff > 0 ? 'text-fcGreen' : 'text-red-400'}`}>

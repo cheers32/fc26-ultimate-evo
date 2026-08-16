@@ -19,6 +19,7 @@ import {
 } from '../utils/statUtils';
 import { FitBreakdown, controlModeFor, fitScore, accelerateOf, accelerateSpread } from '../utils/fitScore';
 import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
+import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { useModal } from '../utils/modalStack';
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
@@ -341,6 +342,38 @@ const ScoreBadge = ({ before, after }: { before: PositionScore; after?: Position
   );
 };
 
+/**
+ * The PlayStyles the card would be carrying, scored apart from the stats. An evo that hands over a
+ * PlayStyle+ the position actually uses moves this and not the other one; an evo that only pushes
+ * numbers moves the other one and not this.
+ */
+const PsBadge = ({ before, after }: { before: PlayStyleScore; after?: PlayStyleScore | null }) => {
+  const delta = after ? after.score - before.score : 0;
+  const shown = after ?? before;
+  return (
+    <div
+      title={
+        `PlayStyles ${shown.score.toFixed(1)}/100 at ${shown.position}` +
+        (shown.detail.length > 0
+          ? ` · best: ${shown.detail.slice(0, 3).map(d => `${d.name}${d.gold ? '+' : ''}`).join(', ')}`
+          : ' · none that this position uses') +
+        (shown.missing.length > 0 ? ` · missing: ${shown.missing.join(', ')}` : '')
+      }
+      className="flex gap-1 items-center bg-gray-800/80 px-2 py-0.5 rounded border border-gray-600 text-[10px] whitespace-nowrap"
+    >
+      <span className="text-white font-bold">PS</span>
+      <div className="flex items-baseline gap-0.5">
+        {after && Math.abs(delta) >= 0.05 && (
+          <span className={`font-bold text-[8px] ${delta > 0 ? 'text-fcGreen' : 'text-red-400'}`}>
+            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+          </span>
+        )}
+        <span className={getStatColorClass(shown.score)}>{shown.score.toFixed(1)}</span>
+      </div>
+    </div>
+  );
+};
+
 const PlayStyleDiffDisplay = ({ before, after }: { before?: PlayStylesData, after: PlayStylesData }) => {
   if (!before) return null;
   const beforeGold = new Set([...before.base.gold, ...before.ev.gold]);
@@ -591,6 +624,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // What the card is worth at the position it is best at, out of 100 — and the position every evo
   // in the pool is then measured at, so the deltas on the cards are all answering one question.
   const currentScore = bestScore(currentStats, currentBio);
+  // The PlayStyles are scored at the same position, and kept as their own number: an evo can be
+  // worth a lot of one and none of the other, which is the whole reason to show both.
+  const currentPs = currentScore
+    ? playStyleScoreAt(currentStats, currentPlayStyles, currentBio, currentScore.position)
+    : null;
 
   /**
    * The card as it stood after a given step, and what the step is called. Indices are clamped
@@ -630,6 +668,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let expectedAccelerate: AccelerateType | null = null;
     let expectedSpread: Record<AccelerateFamily, number> | null = null;
     let expectedScore: PositionScore | null = null;
+    let expectedPs: PlayStyleScore | null = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -648,6 +687,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedSpread = accelerateSpread(testRes.finalStats, testRes.finalBio);
           expectedScore = currentScore
             ? scoreAtPosition(testRes.finalStats, testRes.finalBio, currentScore.position)
+            : null;
+          expectedPs = currentScore
+            ? playStyleScoreAt(testRes.finalStats, testRes.finalPlayStyles, testRes.finalBio, currentScore.position)
             : null;
 
           if (currentFit) {
@@ -716,6 +758,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       expectedAccelerate,
       expectedSpread,
       expectedScore,
+      expectedPs,
       posMatchScore
     };
   });
@@ -1256,6 +1299,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       <span className={getStatColorClass(currentScore.score)}>{currentScore.score.toFixed(1)}</span>
                     </div>
                   )}
+                  {currentPs && (
+                    <div
+                      className="flex gap-1 items-center"
+                      title={
+                        `PlayStyles ${currentPs.score.toFixed(1)}/100 at ${currentPs.position}` +
+                        (currentPs.missing.length > 0 ? ` · missing: ${currentPs.missing.join(', ')}` : '')
+                      }
+                    >
+                      <span className="text-gray-500 font-bold">PS</span>
+                      <span className={getStatColorClass(currentPs.score)}>{currentPs.score.toFixed(1)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="hidden md:flex items-center gap-3 text-[11px] font-mono bg-gray-800/50 px-3 py-1 rounded-full border border-gray-700/50">
                   {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
@@ -1496,7 +1551,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               ) : (
                 visiblePool
-                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate, expectedSpread, expectedScore }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate, expectedSpread, expectedScore, expectedPs }) => {
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
@@ -1601,6 +1656,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             )}
                             {canAdd && currentScore && (
                               <ScoreBadge before={currentScore} after={expectedScore} />
+                            )}
+                            {canAdd && currentPs && (
+                              <PsBadge before={currentPs} after={expectedPs} />
                             )}
                             {canAdd && currentFit && expectedFit && (
                               <div
