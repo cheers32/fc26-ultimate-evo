@@ -235,17 +235,27 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       .sort((a, b) => (b.floor - b.value) - (a.floor - a.value));
 
     // Two different questions, and conflating them is how a shortlist reads as fine when it is not.
-    // First: does every stat the plan needs pass? That is what the build is charged for.
+    // First: does every stat the plan needs pass? That is what the build is charged for. Measured
+    // over the floors rather than over `must`, so a gate the plan never thought to list — stamina
+    // on a centre-back — still costs a build that misses it.
+    const gated = Object.keys(floors);
     let worst = 0;
-    for (const key of t.must) {
+    for (const key of gated) {
       worst = Math.max(worst, targetFor(key) - (subs[key] ?? 0));
     }
 
     // Second: of the stats that pass, which one is this build giving up the most of — measured not
     // against 90 but against what some chain in this pool actually reached. At end game the choice
     // is between 97 and 99, and a build should have to say which one it settled for.
+    //
+    // Only over what the plan is actually for. A gate the plan does not otherwise care about is
+    // pass or fail, not a regret: a card clearing stamina at 94 has given up nothing, and reporting
+    // it as a shortfall on every row is how the one genuinely useful line — the composure it
+    // settled for at 96 when the pool reaches 99 — gets crowded out.
+    const cares = new Set([...t.must, ...Object.keys(t.maximise)]);
     let left: Scored['left'] = null;
-    for (const key of t.must) {
+    for (const key of gated) {
+      if (!cares.has(key)) continue;
       const v = subs[key] ?? 0;
       const gap = reach(key) - v;
       if (gap > 0 && (!left || gap > left.reach - left.value)) left = { key, value: v, reach: reach(key) };

@@ -18,9 +18,10 @@ import { AccelerateFamily, calculateAccelerateFamily } from '../utils/statUtils'
  * Controlled is where a card lands when it misses both. So every template names one of the two, and
  * Controlled appears only as a marked fallback where the plan survives it.
  *
- * At end game 90 is the pass mark, not a good score. Every stat a plan runs on has to pass, stamina
- * at 92, and below that a build is not a worse version of the plan — it is a different card. That
- * is what `must` means here, and why floors are derived from it rather than tuned per stat.
+ * At end game 90 is the pass mark, not a good score. Every stat a plan runs on has to pass, and
+ * below that a build is not a worse version of the plan — it is a different card. That is what
+ * `must` means here, and why floors are derived from it rather than tuned per stat. Stamina passes
+ * at 94 on every plan, listed or not.
  *
  * Reactions and composure are on every plan, lightly. They are the two stats that change how a card
  * feels everywhere on the pitch, and a plan that never asks for them will happily hand back a
@@ -62,12 +63,23 @@ export interface BuildTemplate {
 /** The end-game pass mark. Below this a stat is a fail, not a low score. */
 export const PASS_MARK = 90;
 
-/** Stamina's own, higher, pass mark: a card that cannot last ninety minutes is not one you build. */
-export const STAMINA_PASS = 92;
+/**
+ * Stamina's own, higher pass mark. A card that cannot last ninety minutes is not one you build,
+ * whatever else the chain gave it — so this is not a stat a plan gets to weigh against others, it
+ * is a gate every plan is behind.
+ */
+export const STAMINA_PASS = 94;
 
-/** What each stat a plan runs on has to reach. Derived, so a new template cannot forget one. */
+/**
+ * What each stat a plan runs on has to reach.
+ *
+ * Derived rather than written per template, so a plan cannot forget one — and stamina is added
+ * whether or not the plan lists it, which is the bug this closes: ten of these plans never named
+ * stamina in `must`, so a centre-back or a striker could be recommended at any stamina at all and
+ * nothing in the model objected.
+ */
 export function floorsOf(t: BuildTemplate): Record<string, number> {
-  const out: Record<string, number> = {};
+  const out: Record<string, number> = { stamina: STAMINA_PASS };
   for (const key of t.must) out[key] = key === 'stamina' ? STAMINA_PASS : PASS_MARK;
   for (const [key, v] of Object.entries(t.floorOverrides || {})) out[key] = Math.max(out[key] ?? 0, v);
   return out;
@@ -127,7 +139,6 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     archetype: 'Explosive',
     maximise: { acceleration: 0.17, sprintSpeed: 0.15, stamina: 0.14, crossing: 0.12, agility: 0.1, dribbling: 0.1, standTackle: 0.1, ...SHARP },
     must: ['acceleration', 'sprintSpeed', 'stamina', 'crossing', 'standTackle'],
-    floorOverrides: { stamina: 94 },
     roles: ['Attacking Wingback', 'Wingback'],
     blurb: 'Ninety minutes of touchline. Attacks first, defends second.'
   },
@@ -148,7 +159,6 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     archetype: 'Lengthy',
     maximise: { sprintSpeed: 0.18, stamina: 0.16, strength: 0.13, crossing: 0.12, standTackle: 0.12, defAwareness: 0.11, acceleration: 0.1, ...SHARP },
     must: ['sprintSpeed', 'stamina', 'standTackle', 'defAwareness', 'strength'],
-    floorOverrides: { stamina: 94 },
     roles: ['Wingback', 'Attacking Wingback'],
     blurb: 'Long strides, and gets back every time.'
   },
@@ -171,7 +181,6 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     archetype: 'Explosive',
     maximise: { interceptions: 0.18, standTackle: 0.17, defAwareness: 0.15, stamina: 0.13, agility: 0.11, acceleration: 0.11, shortPass: 0.07, ...SHARP },
     must: ['interceptions', 'standTackle', 'defAwareness', 'stamina', 'agility'],
-    floorOverrides: { stamina: 94 },
     avoid: ['strength'],
     roles: ['Holding', 'Box-To-Box'],
     blurb: 'Hunts it down. Second to the ball is never his problem.'
@@ -197,7 +206,6 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     archetype: 'Lengthy',
     maximise: { stamina: 0.17, strength: 0.13, shortPass: 0.12, standTackle: 0.12, sprintSpeed: 0.11, dribbling: 0.1, interceptions: 0.1, longShots: 0.03, ...SHARP },
     must: ['stamina', 'shortPass', 'standTackle', 'strength', 'composure'],
-    floorOverrides: { stamina: 94 },
     roles: ['Box-To-Box'],
     blurb: 'Covers both boxes and is still there at ninety.'
   },
@@ -208,7 +216,6 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     archetype: 'Explosive',
     maximise: { stamina: 0.17, acceleration: 0.13, dribbling: 0.13, shortPass: 0.13, agility: 0.11, standTackle: 0.11, ballControl: 0.1, ...SHARP },
     must: ['stamina', 'acceleration', 'shortPass', 'dribbling', 'standTackle'],
-    floorOverrides: { stamina: 94 },
     avoid: ['strength'],
     roles: ['Box-To-Box', 'Playmaker'],
     blurb: 'Small, quick, everywhere. Turns out of trouble instead of holding it off.'
