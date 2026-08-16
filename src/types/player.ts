@@ -271,6 +271,20 @@ export interface EvoFilters {
   accelerateFamily?: import('../utils/statUtils').AccelerateFamily[];
   /** Who drives this card. Decides which half of the PlayStyle weights applies. */
   controlMode?: 'manual' | 'ai';
+  /**
+   * Use each evo at most once, whatever its repeat limit says. On by default: a chain that spends
+   * two of its steps on the same card is usually the search finding the same idea twice, and the
+   * second run is worth a fraction of the first once the caps have bitten.
+   *
+   * Absent means on — these were added after builds were already saved, and an old state should
+   * behave the way the app does now.
+   */
+  oneUsePerEvo?: boolean;
+  /**
+   * Use at most one evo per rarity it grants. On by default: rarity does not stack, so a second
+   * evo granting the rarity a step already gave is spending a step on nothing.
+   */
+  oneEvoPerRarity?: boolean;
 }
 
 export interface PlayerEvoState {

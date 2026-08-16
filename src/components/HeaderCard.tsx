@@ -395,6 +395,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     }
     if (evoFilters.newRarity) parts.push('a new rarity');
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
+    if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
+    if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
     if (evoFilters.newPosition) parts.push('a new position');
     if (evoFilters.noPositionChange) parts.push('positions unchanged');
     (['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).forEach(stat => {
@@ -852,6 +854,31 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           Keep Positions
+                        </label>
+                      </div>
+                      {/* How a chain may spend its steps. Both on unless you say otherwise, because
+                          both rule out chains that spend a step on nothing: the same evo twice is
+                          usually the search finding one idea twice, and rarity does not stack. */}
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
+                               title="Use each evo at most once, whatever its repeat limit allows">
+                          <input
+                            type="checkbox"
+                            checked={draftFilters.oneUsePerEvo !== false}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, oneUsePerEvo: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          One use per EVO
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
+                               title="At most one evo granting any given rarity — a second one grants nothing">
+                          <input
+                            type="checkbox"
+                            checked={draftFilters.oneEvoPerRarity !== false}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, oneEvoPerRarity: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          One EVO per rarity
                         </label>
                       </div>
                     </div>

@@ -804,9 +804,26 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
       for (let i = 0; i < currentChainIds.length; i++) {
         if (currentChainIds[i] === evoId) count++;
       }
-      const maxAllowed = evo.maxRepeatable || 1;
+      // Absent reads as on: both were added after builds were saved, and an old filter set should
+      // behave the way the app behaves now.
+      const oneUse = filters?.oneUsePerEvo !== false;
+      const maxAllowed = oneUse ? 1 : evo.maxRepeatable || 1;
 
       if (count >= maxAllowed) continue;
+
+      // Rarity does not stack — a second evo granting a rarity the chain already granted spends a
+      // step on nothing. Only the rarity each evo *gives* is compared; two evos that both turn the
+      // card Futties are the same evo as far as the card is concerned.
+      if (filters?.oneEvoPerRarity !== false && evo.rarityChange) {
+        let rarityTaken = false;
+        for (let i = 0; i < currentChainIds.length; i++) {
+          if (availableEvolutions[currentChainIds[i]]?.rarityChange === evo.rarityChange) {
+            rarityTaken = true;
+            break;
+          }
+        }
+        if (rarityTaken) continue;
+      }
 
       // Cheap gate first — validateRequirement does no cloning, applyEvo does.
       const validation = validateRequirement(evo, state.ovr, state.stats, state.playStyles, state.bio);
