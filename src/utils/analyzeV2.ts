@@ -96,6 +96,47 @@ const prettySub = (key: string) =>
  * of use, so "can be made Explosive" is the question a template asks — and naming the styles that
  * do it is the difference between a claim and an instruction.
  */
+/**
+ * Every style, plus playing the card bare, as the options a finished build is chosen between. Bare
+ * is in the list because a style is a choice and occasionally the wrong one: the styles that would
+ * lift a stat may be the same ones that spend the archetype.
+ */
+const STYLE_OPTIONS: [string | null, Record<string, number>][] = [
+  [null, {}],
+  ...Object.entries(chemStyles)
+];
+
+/** The card as it reads with a style on, capped where the game caps it. */
+function withStyle(subs: Record<string, number>, boosts: Record<string, number>): Record<string, number> {
+  const out: Record<string, number> = { ...subs };
+  for (const [key, boost] of Object.entries(boosts)) out[key] = Math.min(99, (subs[key] ?? 0) + boost);
+  return out;
+}
+
+/** The most any single style adds to a stat. */
+const BEST_BOOST: Record<string, number> = (() => {
+  const out: Record<string, number> = {};
+  for (const boosts of Object.values(chemStyles)) {
+    for (const [key, boost] of Object.entries(boosts)) out[key] = Math.max(out[key] ?? 0, boost);
+  }
+  return out;
+})();
+
+/**
+ * The best case stat by stat — more than any one style can deliver at once, and deliberately so.
+ * Used while searching, where the cost of being optimistic is a build kept one pass too long and
+ * the cost of being exact is a build cut before anyone weighed it. Stats the plan is hurt by are
+ * left bare: the best case there is the style that doesn't touch them.
+ */
+function optimistic(subs: Record<string, number>, avoid: string[] = []): Record<string, number> {
+  const out: Record<string, number> = { ...subs };
+  const leave = new Set(avoid);
+  for (const [key, value] of Object.entries(subs)) {
+    if (!leave.has(key)) out[key] = Math.min(99, value + (BEST_BOOST[key] ?? 0));
+  }
+  return out;
+}
+
 function archetypesByChem(
   subs: Record<string, number>,
   heightCm?: number
@@ -304,7 +345,10 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
   // that template's archetype — or Controlled, where the template says that is a real card too.
   forEachChain(input, (chainIds, state) => {
     const subs = subValues(state.stats);
-    for (const [k, v] of Object.entries(subs)) if (v > (achievable[k] ?? 0)) achievable[k] = v;
+    // What the pool reaches is measured with a style on, because that is how the card gets played:
+    // 96 and 99 are the same number once a +3 style is on it, and a bar set at the bare 99 charges
+    // every build for a gap that does not exist on the pitch.
+    for (const [k, v] of Object.entries(optimistic(subs))) if (v > (achievable[k] ?? 0)) achievable[k] = v;
 
     // A build you have already turned down for this card does not come back.
     const ck = canonical(chainIds);
@@ -331,7 +375,10 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       }
       if (!arch) continue; // the requirement, not a preference
 
-      const provisional = scoreForTemplate(subs, t, () => ENDGAME_TARGET);
+      // Scored at its best case here, not at its bare value: the shortlist decides what survives to
+      // be weighed properly, and a build that a style would carry over a floor must not be binned
+      // before anything has looked at which style. The exact choice is made in pass two.
+      const provisional = scoreForTemplate(optimistic(subs, t.avoid), t, () => ENDGAME_TARGET);
       const tier = tierOf(provisional.under.length === 0, fallback);
       const entry: Entry = { cand, arch, fallback };
       if (upVoted.has(ck) && !liked.has(`${t.id}|${ck}`)) liked.set(`${t.id}|${ck}`, entry);
@@ -363,10 +410,55 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     return open;
   };
 
+  /**
+   * The style this plan would be played with, and the card as it reads under it.
+   *
+   * The archetype was always judged with a style on — "can be made Explosive" is what a template
+   * asks. The stats were judged bare, and the two together are a contradiction: the same style that
+   * earns the card its archetype is not allowed to have raised the stamina it is failed on. So the
+   * style is chosen once, here, and everything after this — floors, ranking, weak link, the numbers
+   * printed on the row — reads the card as it would actually be fielded.
+   *
+   * Only styles that still read the plan's archetype are eligible, so a style can never buy points
+   * by spending the burst the plan is built on.
+   */
+  const playedAs = (cand: Candidate, t: BuildTemplate, arch: AccelerateFamily) => {
+    let best: { style: string | null; subs: Record<string, number>; s: Scored } | null = null;
+    for (const [style, boosts] of STYLE_OPTIONS) {
+      const subs = style === null ? cand.subs : withStyle(cand.subs, boosts);
+      const fam = calculateAccelerateFamily(
+        subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height
+      );
+      if (fam !== arch) continue;
+      const s = scoreForTemplate(subs, t, reach);
+      // Clearing the plan's floors beats scoring well under them, the same way it does between
+      // builds: a style that carries the card over a gate is the style it would be played with,
+      // even where another one reads better on the stats the plan is trying to maximise.
+      const better =
+        !best ||
+        (s.under.length === 0) !== (best.s.under.length === 0)
+          ? !best || s.under.length === 0
+          : s.score > best.s.score;
+      if (better) best = { style, subs, s };
+    }
+    // Every entry reached its archetype on some style — that is how it was admitted — but a card
+    // whose stats moved under it is better shown bare than dropped.
+    return best ?? { style: null, subs: cand.subs, s: scoreForTemplate(cand.subs, t, reach) };
+  };
+
+  interface Row {
+    e: Entry;
+    s: Scored;
+    /** The style the row is scored and printed under; null is bare. */
+    style: string | null;
+    /** The card under that style — what the row's numbers are. */
+    subs: Record<string, number>;
+  }
+
   /** One template's answer: its frontier of real choices, best first. */
   interface Answer {
     t: BuildTemplate;
-    rows: { e: Entry; s: Scored }[];
+    rows: Row[];
   }
 
   const answers: Answer[] = [];
@@ -376,26 +468,35 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     // outright. Picking only the clean pile would let a single build that scrapes over a floor hide
     // four better ones, and picking only the best pile would bury the fact that a card cannot reach
     // the bar at all. Every row says which side of it that build is on.
-    const scored = TIERS.flatMap((tier, tierIdx) =>
-      (shortlists.get(`${t.id}|${tier}`) || []).map(e => ({
-        e,
-        tierIdx,
-        s: scoreForTemplate(e.cand.subs, t, reach)
-      }))
-    ).sort((a, b) => a.tierIdx - b.tierIdx || b.s.score - a.s.score);
+    //
+    // The tier is settled here rather than at shortlist time: the search bucketed builds by their
+    // best case, and which side of the floors a build is really on is only known once its style is
+    // chosen.
+    const scored = TIERS.flatMap(tier => shortlists.get(`${t.id}|${tier}`) || [])
+      .map(e => {
+        const played = playedAs(e.cand, t, e.arch);
+        return {
+          e,
+          s: played.s,
+          style: played.style,
+          subs: played.subs,
+          tierIdx: TIERS.indexOf(tierOf(played.s.under.length === 0, e.fallback))
+        };
+      })
+      .sort((a, b) => a.tierIdx - b.tierIdx || b.s.score - a.s.score);
     if (scored.length === 0) continue;
 
     // Inside a template, drop anything another build beats outright — same or better on every
     // stat the plan is built on, and no more evos. What is left is a set of real choices.
     const axes = Object.keys(t.maximise);
-    const axesOf = (c: Candidate) => axes.map(k => c.subs[k] ?? 0);
-    const frontier = scored.filter(({ e, tierIdx }) =>
-      !scored.some(({ e: o, tierIdx: oTier }) => {
+    const axesOf = (subs: Record<string, number>) => axes.map(k => subs[k] ?? 0);
+    const frontier = scored.filter(({ e, tierIdx, subs }) =>
+      !scored.some(({ e: o, tierIdx: oTier, subs: oSubs }) => {
         // A build that misses a floor never knocks out one that clears it, however good its numbers
         // on the axes look — that is the whole point of having a floor.
         if (o.cand === e.cand || oTier > tierIdx) return false;
-        const a = axesOf(o.cand);
-        const b = axesOf(e.cand);
+        const a = axesOf(oSubs);
+        const b = axesOf(subs);
         const pairs: [number, number][] = [
           ...a.map((v, i) => [v, b[i]] as [number, number]),
           [e.cand.chainIds.length, o.cand.chainIds.length]
@@ -406,11 +507,11 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
 
     // Then thin it to choices a person would actually weigh. Two builds a point apart on every axis
     // are one build shown twice, and a shortlist of those is the thing that wastes an evening.
-    const rows: { e: Entry; s: Scored }[] = [];
+    const rows: Row[] = [];
     for (const row of frontier) {
-      const mine = axesOf(row.e.cand);
+      const mine = axesOf(row.subs);
       const dup = rows.some(kept => {
-        const theirs = axesOf(kept.e.cand);
+        const theirs = axesOf(kept.subs);
         return mine.every((v, i) => Math.abs(v - theirs[i]) <= SAME_BUILD)
           && kept.e.cand.chainIds.length === row.e.cand.chainIds.length;
       });
@@ -423,7 +524,8 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     for (const [key, entry] of liked) {
       if (!key.startsWith(`${t.id}|`)) continue;
       if (rows.some(r => r.e.cand === entry.cand)) continue;
-      rows.push({ e: entry, s: scoreForTemplate(entry.cand.subs, t, reach) });
+      const played = playedAs(entry.cand, t, entry.arch);
+      rows.push({ e: entry, s: played.s, style: played.style, subs: played.subs });
     }
 
     if (rows.length > 0) answers.push({ t, rows });
@@ -439,20 +541,19 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
   let rank = 0;
 
   for (const { t, rows } of answers) {
-    const best = rows[0]?.e.cand;
+    const best = rows[0];
 
-    for (const { e, s } of rows) {
+    for (const { e, s, style, subs } of rows) {
       const cand = e.cand;
       rank += 1;
       const full = simulateEvoChain(cand.chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
-      const styles = cand.byChem.get(e.arch) || [];
-      const how = cand.bare === e.arch
-        ? 'bare'
-        : `via ${styles.slice(0, 3).join('/')}${styles.length > 3 ? `+${styles.length - 3}` : ''}`;
+      // The style the row is scored under, named — it is an instruction, not a footnote: the same
+      // build read bare is a different card, and often a failing one.
+      const how = style === null ? 'bare' : `on ${style}`;
       // How much room is left before the archetype breaks. On an Explosive card every point of
       // strength eats this margin, which is the thing a stat total can never tell you.
-      const agi = cand.subs.agility ?? 0;
-      const str = cand.subs.strength ?? 0;
+      const agi = subs.agility ?? 0;
+      const str = subs.strength ?? 0;
       const margin =
         e.arch === 'Explosive' ? ` · agi ${agi} − str ${str} = +${agi - str}`
         : e.arch === 'Lengthy' ? ` · str ${str} − agi ${agi} = +${str - agi}`
@@ -464,11 +565,11 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       // Stamina is printed on every row whether or not the plan leans on it, because it is the one
       // gate that applies to all of them and "clears the bar" should never have to be taken on trust.
       const shown = topStats.includes('stamina') ? topStats : [...topStats, 'stamina'];
-      const statLine = shown.map(k => `${prettySub(k)} ${cand.subs[k] ?? 0}`).join(' · ');
+      const statLine = shown.map(k => `${prettySub(k)} ${subs[k] ?? 0}`).join(' · ');
 
-      const delta = best && cand !== best
+      const delta = best && cand !== best.e.cand
         ? topStats
-            .map(k => ({ k, d: (cand.subs[k] ?? 0) - (best.subs[k] ?? 0) }))
+            .map(k => ({ k, d: (subs[k] ?? 0) - (best.subs[k] ?? 0) }))
             .filter(x => x.d !== 0)
             .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))
             .slice(0, 3)
