@@ -160,6 +160,7 @@ export function scoreAtPosition(
 
   const subs = subValues(stats);
   let best: PositionScore | null = null;
+  let bestIgs = -Infinity;
 
   for (const plan of plans) {
     for (const [style, boosts] of assumeChem ? STYLE_OPTIONS : BARE_ONLY) {
@@ -174,8 +175,13 @@ export function scoreAtPosition(
       if (fallback && archetype !== 'Controlled') continue;
 
       const { score, under } = scoreAgainst(styled, plan);
-      if (!best || score > best.score) {
+      // Ties go to the reading that leaves more card. Two styles a plan scores identically are not
+      // the same style, and two plans a card scores identically are not the same plan — first past
+      // the post made the answer depend on the order of the tables rather than on the card.
+      const igs = Object.values(styled).reduce((a, b) => a + b, 0);
+      if (!best || score > best.score || (score === best.score && igs > bestIgs)) {
         best = { score, position: pos, plan, style, archetype, fallback, under };
+        bestIgs = igs;
       }
     }
   }

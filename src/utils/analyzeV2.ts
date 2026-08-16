@@ -94,6 +94,16 @@ const OUT_PER_TEMPLATE = 4;
 const SAME_BUILD = 2;
 
 /**
+ * ...and within this on everything else as well.
+ *
+ * Closeness on the axes a plan maximises is not closeness. Across the library, builds that sit
+ * within two points of each other on every stat their plan runs on are a median of forty IGS apart
+ * — a whole evo's worth of card, in stats the plan does not weigh but the player still gets. One of
+ * those was being thinned away as a duplicate of the other.
+ */
+const SAME_IGS = 12;
+
+/**
  * What a full complement of the right PlayStyles is worth, in the same points as the stat score.
  *
  * The two are on different scales — the stat score counts points above 90 and a good build lands
@@ -130,6 +140,9 @@ const SAME_PS = 5;
  * the pass mark, so a build cannot make up a failing stat by piling points onto a passing one.
  */
 const valueOf = (v: number) => Math.max(0, v - ENDGAME_TARGET);
+
+/** Everything the card has, added up — what a plan's own axes cannot see. */
+const igsOf = (subs: Record<string, number>) => Object.values(subs).reduce((a, b) => a + b, 0);
 
 const subValues = (stats: StatsData): Record<string, number> => {
   const out: Record<string, number> = {};
@@ -503,11 +516,17 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       // Clearing the plan's floors beats scoring well under them, the same way it does between
       // builds: a style that carries the card over a gate is the style it would be played with,
       // even where another one reads better on the stats the plan is trying to maximise.
+      // Floors first, then the plan's score, then the card: two styles the plan scores identically
+      // are not the same style, and one of them can be worth another 48 points of stats the plan
+      // never looks at. Left as a first-past-the-post tie, which style you were told to put on
+      // depended on the order of the table.
       const better =
         !best ||
-        (s.under.length === 0) !== (best.s.under.length === 0)
-          ? !best || s.under.length === 0
-          : s.score > best.s.score;
+        ((s.under.length === 0) !== (best.s.under.length === 0)
+          ? s.under.length === 0
+          : s.score !== best.s.score
+            ? s.score > best.s.score
+            : igsOf(subs) > igsOf(best.subs));
       if (better) best = { style, subs, s };
     }
     // Every entry reached its archetype on some style — that is how it was admitted — but a card
@@ -658,6 +677,19 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
   const TRIM_EPS = 0.3;
   const MORE_EPS = 0.5;
 
+  /**
+   * How much card a step may quietly be adding before "the plan would not miss it" stops being a
+   * reason to drop it.
+   *
+   * The trim exists because an evo is a card you do not get back, and a step taken for stats a later
+   * one caps out anyway is one you should not spend. But it was reading "the plan does not miss it"
+   * as "it does nothing", and those are different: across the library, steps the plan would not miss
+   * were still worth a median of 24 IGS to the card, and as much as 426. Below this a step really is
+   * doing nothing; above it, the step stays and the row says what it is and is not buying, because
+   * whether that trade is worth an evo token is not a question the plan can answer.
+   */
+  const TRIM_IGS = 8;
+
   const subsOfChain = (chainIds: string[]) => {
     const sim = simOfChain(chainIds);
     if (!sim) return null;
@@ -684,6 +716,8 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     let ids = [...chainIds];
     let best = scoreChain(ids, t, arch)?.total ?? -Infinity;
     const dropped: string[] = [];
+    /** Steps kept because they earn the plan nothing but are not doing nothing. */
+    const offPlan: { name: string; igs: number }[] = [];
 
     // Greedy, and repeated: dropping one step can make a second one redundant too.
     //
@@ -699,7 +733,17 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         if (shorter.length === 0) continue;
         const scored = scoreChain(shorter, t, arch);
         if (!scored || scored.total < best - TRIM_EPS) continue;
-        dropped.push(availableEvolutions[ids[i]]?.name || ids[i]);
+
+        // The plan would not miss it. Would the card?
+        const whole = subsOfChain(ids);
+        const cost = whole ? igsOf(whole.subs) - igsOf(scored.subs) : 0;
+        const name = availableEvolutions[ids[i]]?.name || ids[i];
+        if (cost > TRIM_IGS) {
+          if (!offPlan.some(x => x.name === name)) offPlan.push({ name, igs: cost });
+          continue;
+        }
+
+        dropped.push(name);
         ids = shorter;
         best = scored.total;
         removedOne = true;
@@ -793,7 +837,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       }
     }
 
-    return { ids, dropped, more, swappable, psFix };
+    return { ids, dropped, offPlan, more, swappable, psFix };
   };
 
   /** One template's answer: its frontier of real choices, best first. */
@@ -834,7 +878,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       // played short. Under a fieldable floor is not a build at all: a card that cannot run, cannot
       // last the game or cannot keep the ball is not recommended with a note, it is not recommended.
       .filter(row => !row.s.under.some(u => u.key in FIELDABLE_FLOORS))
-      .sort((a, b) => a.tierIdx - b.tierIdx || b.total - a.total);
+      // The same tie-break again, one level up: two builds the plan scores identically are ordered
+      // by which leaves more card behind.
+      .sort((a, b) => a.tierIdx - b.tierIdx || b.total - a.total || igsOf(b.subs) - igsOf(a.subs));
     if (scored.length === 0) continue;
 
     // Inside a template, drop anything another build beats outright — same or better on every
@@ -875,6 +921,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       const dup = rows.some(kept => {
         const theirs = axesOf(kept.subs);
         return mine.every((v, i) => Math.abs(v - theirs[i]) <= SAME_BUILD)
+          && Math.abs(igsOf(kept.subs) - igsOf(row.subs)) <= SAME_IGS
           && (!usePs || Math.abs(kept.ps.score - row.ps.score) <= SAME_PS)
           && kept.e.cand.chainIds.length === row.e.cand.chainIds.length;
       });
@@ -1063,6 +1110,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           ` · ${archNote} · OVR ${cand.ovr} · IGS ${cand.igs} · ${statLine}` +
           `${gained.length > 0 ? ` · +${gained.join('/')}` : ''}` +
           `${checked.dropped.length > 0 ? ` · dropped ${checked.dropped.join(', ')} (worth nothing here)` : ''}` +
+          `${checked.offPlan.length > 0
+            ? ` · ${checked.offPlan.map(x => `${x.name} adds nothing this plan uses (+${x.igs} elsewhere)`).join(', ')}`
+            : ''}` +
           `${checked.more ? ` · one more worth +${checked.more.gain.toFixed(1)}: ${checked.more.name}` : ''}` +
           `${checked.swappable.length > 0
             ? ` · either order: ${checked.swappable.map(([a, b]) => `${a} ⇄ ${b}`).join(', ')}`
