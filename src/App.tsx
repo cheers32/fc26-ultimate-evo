@@ -878,17 +878,27 @@ export default function App() {
       return (m[1] === '#' ? 0 : 1000) + Number(m[2]);
     };
 
+    // Which side of the line a build is on is decided by the list it is in, not the name it wears.
+    // Star a recommendation and it keeps its `#2`; it is yours from that moment and belongs up with
+    // the rest of what you keep.
+    const fresh = new Set(currentState.generatedPaths.map(p => p.id));
+
     const saved = [...currentState.generatedPaths, ...currentState.manualPaths]
       .map(withFreshSteps)
       .sort((a, b) => {
         // Your builds first, then this run's results as a block at the end — they are replaced
         // wholesale by the next run, and threading them through the builds you keep is what made a
         // fresh Analyze read as the row having been shuffled.
-        const ra = rankOf(a);
-        const rb = rankOf(b);
-        if (ra !== null && rb !== null) return ra - rb;
-        if (ra !== null) return 1;
-        if (rb !== null) return -1;
+        const fa = fresh.has(a.id);
+        const fb = fresh.has(b.id);
+        if (fa !== fb) return fa ? 1 : -1;
+        if (fa && fb) {
+          const ra = rankOf(a);
+          const rb = rankOf(b);
+          if (ra !== null && rb !== null) return ra - rb;
+          if (ra !== null) return -1;
+          if (rb !== null) return 1;
+        }
       // First sort by target ovr
       const aOvr = a.steps?.[a.steps.length - 1]?.ovrAfter || 0;
       const bOvr = b.steps?.[b.steps.length - 1]?.ovrAfter || 0;
@@ -926,6 +936,23 @@ export default function App() {
   const activePath = useMemo(() => {
     return allPaths.find(p => p.id === activePathId) || defaultPath;
   }, [allPaths, activePathId, defaultPath]);
+
+  /**
+   * What a recommendation is called once you keep it.
+   *
+   * `#2` is a rank in a list that is about to be replaced, so it stops being a name the moment the
+   * build is yours. The plan it was ranked under is on the front of its own description, and that
+   * is what it is: a Rock CB, a Cafu Full-Back. Names already taken get a number so two saves never
+   * read the same. Anything you renamed yourself is left alone.
+   */
+  const keeperName = (path: EvolutionPath) => {
+    if (!/^(#|C)\d+$/.test(path.name)) return path.name;
+    const plan = BUILD_TEMPLATES.find(t => (path.description || '').includes(t.name))?.name;
+    const base = plan || 'Saved build';
+    const taken = new Set(allPaths.map(p => p.name));
+    if (!taken.has(base)) return base;
+    for (let n = 2; ; n++) if (!taken.has(`${base} ${n}`)) return `${base} ${n}`;
+  };
 
   /**
    * Star the build on screen, which is what saving is: it lifts the path out of the generated list
@@ -1778,6 +1805,7 @@ export default function App() {
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
+          freshPathIds={generatedPaths.map(p => p.id)}
           assumeChemStyle={assumeChemStyle}
           onSetAssumeChemStyle={setAssumeChemStyle}
           pathFeedback={playerFeedback.byChain}
@@ -1845,9 +1873,13 @@ export default function App() {
             } else {
               // Starring a generated path promotes it to manual so the next Analyze run
               // (which replaces generatedPaths wholesale) can't silently discard it.
+              //
+              // It is also renamed, because `#2` was a position in a list that no longer contains
+              // it — and the next run will produce a `#2` of its own. The plan it was ranked under
+              // is the name that keeps meaning something, numbered only if you already have one.
               updateState({
                 generatedPaths: generatedPaths.filter(p => p.id !== path.id),
-                manualPaths: [...manualPaths, { ...path, ...next }]
+                manualPaths: [...manualPaths, { ...path, ...next, name: keeperName(path) }]
               });
             }
           }}

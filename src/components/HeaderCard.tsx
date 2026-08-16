@@ -102,6 +102,8 @@ interface HeaderCardProps {
   onRemoveNode?: (pathId: string, index: number) => void;
   // Ticks off how far the build has been played: the index of the step just marked done.
   onSetProgress?: (pathId: string, index: number) => void;
+  /** Ids of the builds this Analyze run produced — the ones the next run replaces. */
+  freshPathIds?: string[];
   /**
    * Whether every score on screen is read with the best legal chemistry style on.
    *
@@ -281,6 +283,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onSetBase,
   onRemoveNode,
   onSetProgress,
+  freshPathIds = [],
   assumeChemStyle = false,
   onSetAssumeChemStyle,
   score,
@@ -567,11 +570,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   /**
    * A build this Analyze run produced, as opposed to one you keep.
    *
-   * The two ranked lists name themselves — `#n` bare, `Cn` with a chemistry style — and they are
-   * replaced wholesale by the next run, so they belong under a line of their own rather than mixed
-   * in among the builds that survive it.
+   * Asked of the list a build is actually in rather than of the name on it. A recommendation you
+   * star keeps its `#3`, so testing the name left saved builds sitting under the line with the ones
+   * the next run is about to throw away — which is the opposite of what starring one means.
    */
-  const isFresh = (path?: EvolutionPath) => !!path && /^(#|C)\d+$/.test(path.name);
+  const isFresh = (path?: EvolutionPath) => !!path && freshPathIds.includes(path.id);
 
   /** 0 unstarred, otherwise which colour. A starred build with no tier reads as the first. */
   const starTier = (path: EvolutionPath) =>
@@ -1418,10 +1421,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     {(() => {
                       const s = pathScore(path);
                       if (!s) return null;
+                      // The position is said rather than implied: the same build is worth different
+                      // numbers at CB and at CDM, and a bare 98.7 does not say which one it is.
                       return (
-                        <span className={getStatColorClass(s.score)}>
-                          {s.score.toFixed(1)}
-                        </span>
+                        <>
+                          <span className="text-gray-500">{s.position}</span>
+                          <span className={getStatColorClass(s.score)}>
+                            {s.score.toFixed(1)}
+                          </span>
+                        </>
                       );
                     })()}
                   </span>
