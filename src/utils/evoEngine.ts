@@ -2,6 +2,7 @@ import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesDat
 import { availableEvolutions } from '../data/evolutionsData';
 import { achievableAccelerates, achievableAccelerateFamilies, controlModeFor, fitForPosition, fitScore } from './fitScore';
 import { POSITION_WEIGHTS } from './positionWeights';
+import { faceWeight } from './statUtils';
 
 // Rarities that unlock free PlayStyle assignment in-game. Once a card is one of these,
 // running another rarity-changing evo just overwrites the string for no extra benefit —
@@ -394,7 +395,9 @@ export function applyEvo(
 
           const weightedFace = () => {
             let sum = 0;
-            Object.values(faceData.subs).forEach((s: any) => { sum += s.base * s.w; });
+            Object.entries(faceData.subs).forEach(([subKey, s]: any) => {
+              sum += s.base * faceWeight(faceKey, subKey, s.w);
+            });
             return sum;
           };
 
@@ -434,8 +437,8 @@ export function applyEvo(
 
       // Calculate the new weighted average of the updated sub-stats
       let calculatedFace = 0;
-      Object.values(faceData.subs).forEach((s: any) => {
-        calculatedFace += s.base * s.w;
+      Object.entries(faceData.subs).forEach(([subKey, s]: any) => {
+        calculatedFace += s.base * faceWeight(faceKey, subKey, s.w);
       });
       calculatedFace = Math.round(calculatedFace);
 

@@ -3,6 +3,7 @@ import { PlayerBio, StatsData, EvolutionPath } from '../types/player';
 import { Shield, Sparkles } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { isPlayStyleNodeId } from '../utils/evoEngine';
+import { faceWeight } from '../utils/statUtils';
 
 interface FcCardPreviewProps {
   bio: PlayerBio;
@@ -38,8 +39,9 @@ export const FcCardPreview: React.FC<FcCardPreviewProps> = ({
       const effectiveVal = subData.base;
       const finalVal = Math.min(99, effectiveVal + boost);
 
-      totalBase += effectiveVal * subData.w;
-      totalChem += finalVal * subData.w;
+      const weight = faceWeight(faceKey, subKey, subData.w);
+      totalBase += effectiveVal * weight;
+      totalChem += finalVal * weight;
     });
 
     const effectiveFaceVal = faceData.baseFace;

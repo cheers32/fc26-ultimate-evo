@@ -22,7 +22,9 @@ export const immovableObject1110: EvolutionDefinition = {
     reactions: { boost: 5, limit: 97 },
     composure: { boost: 5, limit: 97 },
     shortPass: { boost: 5, limit: 95 },
-    longPass: { boost: 5, limit: 95 },
+    // 96 rather than the 95 first recorded: a van Dijk built with Leopard's Roar into this reads
+    // 96 long pass in game, and every other stat of that card matches to the point.
+    longPass: { boost: 5, limit: 96 },
     interceptions: { boost: 6, limit: 96 },
     headingAcc: { boost: 6, limit: 97 },
     defAwareness: { boost: 6, limit: 95 },

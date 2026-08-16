@@ -191,10 +191,10 @@ export function parseFutbinText(
     if (pas) stats.pas = { label: 'Passing', baseFace: pas.face, evFace: pas.face, subs: pas.subs };
 
     const dri = readBlock(DRIBBLING, [
-      ['agility', ['Agility'], 25, 99, 0.09],
+      ['agility', ['Agility'], 25, 99, 0.10],
       ['balance', ['Balance'], 30, 99, 0.05],
-      ['reactions', ['Reactions'], 25, 99, 0.03],
-      ['ballControl', ['Ball Control'], 30, 99, 0.33],
+      ['reactions', ['Reactions'], 25, 99, 0.05],
+      ['ballControl', ['Ball Control'], 30, 99, 0.30],
       ['dribbling', ['Dribbling', 'Drib.'], 30, 99, 0.45],
       ['composure', ['Composure'], 30, 99, 0.05]
     ], DEFENDING);

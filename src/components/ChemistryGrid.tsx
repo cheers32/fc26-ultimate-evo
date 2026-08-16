@@ -6,8 +6,7 @@ import {
   ACCELERATE_TYPES,
   AccelerateType,
   calculateAccelerateFamily,
-  calculateAccelerateType
-} from '../utils/statUtils';
+  calculateAccelerateType, faceWeight } from '../utils/statUtils';
 
 interface ChemistryGridProps {
   chemStyles: ChemStylesData;
@@ -75,8 +74,9 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
         const b = boost[subKey] || 0;
         const baseVal = subData.base;
         const finalVal = Math.min(99, baseVal + b);
-        baseSum += baseVal * subData.w;
-        chemSum += finalVal * subData.w;
+        const weight = faceWeight(faceKey, subKey, subData.w);
+        baseSum += baseVal * weight;
+        chemSum += finalVal * weight;
       });
       totalFaceBoost += (Math.round(chemSum) - Math.round(baseSum));
     });

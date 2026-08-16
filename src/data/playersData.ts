@@ -65,10 +65,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 87, evFace: 87,
         subs: {
-          agility: { label: 'Agility', base: 80, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 80, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 80, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 94, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 91, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 94, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 91, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 85, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 94, boost: 30, limit: 99, w: 0.05 }
         }
@@ -156,10 +156,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 83, evFace: 83,
         subs: {
-          agility: { label: 'Agility', base: 78, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 78, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 74, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 85, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 87, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 85, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 87, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 80, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 94, boost: 30, limit: 99, w: 0.05 }
         }
@@ -249,10 +249,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 92, evFace: 92,
         subs: {
-          agility: { label: 'Agility', base: 89, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 89, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 88, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 87, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 92, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 87, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 92, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 93, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 91, boost: 30, limit: 99, w: 0.05 }
         }
@@ -341,10 +341,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 83, evFace: 83,
         subs: {
-          agility: { label: 'Agility', base: 68, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 68, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 65, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 71, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 86, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 71, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 86, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 87, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 82, boost: 30, limit: 99, w: 0.05 }
         }
@@ -434,10 +434,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 76, evFace: 76,
         subs: {
-          agility: { label: 'Agility', base: 77, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 77, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 71, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 82, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 84, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 82, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 84, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 70, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 85, boost: 30, limit: 99, w: 0.05 }
         }
@@ -528,10 +528,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 92, evFace: 92,
         subs: {
-          agility: { label: 'Agility', base: 86, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 86, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 87, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 95, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 94, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 95, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 94, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 91, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 96, boost: 30, limit: 99, w: 0.05 }
         }
@@ -621,10 +621,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 85, evFace: 85,
         subs: {
-          agility: { label: 'Agility', base: 75, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 75, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 75, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 88, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 88, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 85, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 89, boost: 30, limit: 99, w: 0.05 }
         }
@@ -713,10 +713,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 77, evFace: 77,
         subs: {
-          agility: { label: 'Agility', base: 75, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 75, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 78, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 90, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 80, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 90, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 80, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 72, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 90, boost: 30, limit: 99, w: 0.05 }
         }
@@ -807,10 +807,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 93, evFace: 93,
         subs: {
-          agility: { label: 'Agility', base: 91, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 91, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 94, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 89, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 89, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 93, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 92, boost: 30, limit: 99, w: 0.05 }
         }
@@ -900,10 +900,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 90, evFace: 90,
         subs: {
-          agility: { label: 'Agility', base: 90, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 90, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 87, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 89, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 92, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 89, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 92, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 88, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 90, boost: 30, limit: 99, w: 0.05 }
         }
@@ -992,10 +992,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 83, evFace: 83,
         subs: {
-          agility: { label: 'Agility', base: 85, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 85, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 90, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 84, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 83, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 84, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 83, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 82, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 89, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1085,10 +1085,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 93, evFace: 93,
         subs: {
-          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 83, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 92, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 94, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 92, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 94, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 93, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 89, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1176,10 +1176,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 85, evFace: 85,
         subs: {
-          agility: { label: 'Agility', base: 75, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 75, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 79, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 89, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 87, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 89, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 87, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 86, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 87, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1267,10 +1267,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 88, evFace: 88,
         subs: {
-          agility: { label: 'Agility', base: 82, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 82, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 58, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 84, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 84, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 90, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 95, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1362,10 +1362,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 88, evFace: 88,
         subs: {
-          agility: { label: 'Agility', base: 82, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 82, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 80, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 88, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 88, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 90, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 86, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1455,10 +1455,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 92, evFace: 92,
         subs: {
-          agility: { label: 'Agility', base: 91, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 91, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 93, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 96, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 96, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 91, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 92, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1547,10 +1547,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 94, evFace: 94,
         subs: {
-          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 92, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 94, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 95, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 94, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 95, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 94, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 92, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1638,10 +1638,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 81, evFace: 81,
         subs: {
-          agility: { label: 'Agility', base: 80, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 80, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 80, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 80, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 88, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 80, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 80, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 88, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1732,10 +1732,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 94, evFace: 94,
         subs: {
-          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 94, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 94, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 97, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 95, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 97, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 95, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 93, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 93, boost: 30, limit: 99, w: 0.05 }
         }
@@ -1825,10 +1825,10 @@ export const playersDatabase: Record<string, PlayerData> = {
       dri: {
         label: 'Dribbling', baseFace: 93, evFace: 93,
         subs: {
-          agility: { label: 'Agility', base: 96, boost: 25, limit: 99, w: 0.09 },
+          agility: { label: 'Agility', base: 96, boost: 25, limit: 99, w: 0.10 },
           balance: { label: 'Balance', base: 84, boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: 91, boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.33 },
+          reactions: { label: 'Reactions', base: 91, boost: 25, limit: 99, w: 0.05 },
+          ballControl: { label: 'Ball Control', base: 93, boost: 30, limit: 99, w: 0.30 },
           dribbling: { label: 'Dribbling', base: 95, boost: 30, limit: 99, w: 0.45 },
           composure: { label: 'Composure', base: 87, boost: 30, limit: 99, w: 0.05 }
         }

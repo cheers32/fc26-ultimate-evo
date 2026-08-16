@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatsData, EvolutionDefinition } from '../types/player';
-import { calculateChip, getStatColorClass } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, faceWeight } from '../utils/statUtils';
 
 interface StatsGridProps {
   baseStats: StatsData;
@@ -110,8 +110,9 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
           const finalVal = Math.min(99, effectiveVal + boost);
 
-          totalFaceValBase += effectiveVal * subDataBase.w;
-          totalFaceValChem += finalVal * subDataBase.w;
+          const weight = faceWeight(faceKey, subKey, subDataBase.w);
+          totalFaceValBase += effectiveVal * weight;
+          totalFaceValChem += finalVal * weight;
 
           const diff = effectiveVal - activeBase;
           let utilChip = null;

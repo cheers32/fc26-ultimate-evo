@@ -3,6 +3,35 @@ export interface ChipInfo {
   className: string;
 }
 
+/**
+ * How much each sub-stat counts toward the face value above it.
+ *
+ * Kept here rather than read off each card's own `w`, because a card carries a copy of these
+ * numbers and imported ones are stored with whatever the table said the day they were imported —
+ * so a correction here would never reach them. The card's `w` is still written for compatibility
+ * and is now ignored.
+ *
+ * Checked against every card in the app: with these, the face value computed from the sub-stats
+ * matches the one FUTBIN prints on all 43. Dribbling used to carry agility 0.09 / reactions 0.03 /
+ * ball control 0.33, which got four of them wrong by a point — van Dijk's evolved card read 87
+ * dribbling where the game says 86.
+ */
+export const FACE_WEIGHTS: Record<string, Record<string, number>> = {
+  pac: { acceleration: 0.45, sprintSpeed: 0.55 },
+  sho: { positioning: 0.05, finishing: 0.45, shotPower: 0.20, longShots: 0.20, volleys: 0.05, penalties: 0.05 },
+  pas: { vision: 0.20, crossing: 0.20, freekick: 0.05, shortPass: 0.35, longPass: 0.15, curve: 0.05 },
+  dri: { agility: 0.10, balance: 0.05, reactions: 0.05, ballControl: 0.30, dribbling: 0.45, composure: 0.05 },
+  def: { interceptions: 0.20, headingAcc: 0.10, defAwareness: 0.30, standTackle: 0.30, slideTackle: 0.10 },
+  phy: { jumping: 0.05, stamina: 0.25, strength: 0.50, aggression: 0.20 }
+};
+
+/**
+ * The weight to use for one sub-stat, falling back to whatever the card itself carries for anything
+ * the table doesn't name.
+ */
+export const faceWeight = (faceKey: string, subKey: string, fallback = 0): number =>
+  FACE_WEIGHTS[faceKey]?.[subKey] ?? fallback;
+
 export const getStatColorClass = (val: number) => {
   if (val >= 95) return 'text-purple-400 drop-shadow-[0_0_3px_rgba(192,132,252,0.4)] font-black';
   if (val >= 90) return 'text-fcGreen font-bold';
