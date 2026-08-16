@@ -1231,6 +1231,20 @@ export default function App() {
     return simulateEvoChain(activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData);
   }, [activePath.chainIds, playerBio, initialOvrData, statsData, playStylesData]);
 
+  /**
+   * The card the verdict is about: the step you last clicked on the chain, or the raw card when
+   * that is the base. Not the preview column, which is the *higher* of the two selected nodes —
+   * clicking an earlier step to read it would otherwise leave the verdict describing a card two
+   * steps further on.
+   */
+  const focusedCard = useMemo(() => {
+    const idx = safeNodes[1];
+    const step = idx >= 0 ? chainResult.steps[idx] : undefined;
+    return step
+      ? { stats: step.statsAfter, bio: step.bioAfter, label: step.evoName }
+      : { stats: statsData, bio: playerBio, label: 'the base card' };
+  }, [safeNodes, chainResult, statsData, playerBio]);
+
   // A new pick is made at the end of the chain, so that's the card state it has to be legal for.
   const canAddPlayStylePick = canPickPlayStyles(chainResult.finalBio.rarity);
 
@@ -1820,7 +1834,12 @@ export default function App() {
                 />
               }
               asideBelow={
-                <CardVerdict stats={previewStats} bio={previewBio} position={scorePosition} />
+                <CardVerdict
+                  stats={focusedCard.stats}
+                  bio={focusedCard.bio}
+                  position={scorePosition}
+                  context={focusedCard.label}
+                />
               }
               below={
                 <ChemistryGrid

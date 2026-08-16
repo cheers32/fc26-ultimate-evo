@@ -17,7 +17,9 @@ export const CardVerdict: React.FC<{
   stats: StatsData;
   bio: PlayerBio;
   position: string;
-}> = ({ stats, bio, position }) => {
+  /** Which card this is about — the step on the chain it was read from. */
+  context?: string;
+}> = ({ stats, bio, position, context }) => {
   const verdict = React.useMemo(() => verdictAt(stats, bio, position), [stats, bio, position]);
   if (!verdict || (verdict.strengths.length === 0 && verdict.weaknesses.length === 0)) return null;
 
@@ -58,7 +60,8 @@ export const CardVerdict: React.FC<{
   return (
     <div className="mt-4 bg-[#1A1C1A] border border-gray-800 rounded-xl p-3">
       <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
-        As a {verdict.position} · judged as {verdict.plan.name} · stats only
+        As a {verdict.position} · judged as {verdict.plan.name}
+        {context ? ` · after ${context}` : ''} · stats only
       </div>
       <div className="flex flex-col sm:flex-row gap-4">
         {column(
