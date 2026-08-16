@@ -486,6 +486,42 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       if (!removedOne) break;
     }
 
+    // Which steps could be done in either order.
+    //
+    // The order in a chain is usually forced — an evo capped at 92 OVR has to come before the one
+    // that takes the card past it — but where it is not, that is worth knowing: an evening with an
+    // hour in it can spend that hour on whichever of the two is the shorter grind and end up at the
+    // same card.
+    //
+    // "The same card" is judged the way the row is judged, not stat for stat. Swapping two evos
+    // almost always moves something by a point, because every boost has its own cap — of the pairs
+    // in one pool where both orders were legal, none produced an identical card and half were
+    // identical to the plan. So a swap is only offered when the plan cannot tell the difference,
+    // *and* the card ends on the same OVR: a swap that ends a point higher has quietly spent
+    // headroom the evos still to come are gated on.
+    const SWAP_EPS = 0.1;
+    const swappable: [string, string][] = [];
+    const asIs = scoreChain(ids, t, arch);
+    const asIsOvr = subsOfChain(ids)?.sim.finalOvr;
+    if (asIs && asIsOvr !== undefined) {
+      for (let i = 0; i < ids.length - 1; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          if (ids[i] === ids[j]) continue;
+          const swapped = [...ids];
+          [swapped[i], swapped[j]] = [swapped[j], swapped[i]];
+          const other = scoreChain(swapped, t, arch);
+          const otherSim = subsOfChain(swapped);
+          if (!other || !otherSim) continue;
+          if (otherSim.sim.finalOvr !== asIsOvr) continue;
+          if (other.played.s.score < asIs.played.s.score - SWAP_EPS) continue;
+          swappable.push([
+            availableEvolutions[ids[i]]?.name || ids[i],
+            availableEvolutions[ids[j]]?.name || ids[j]
+          ]);
+        }
+      }
+    }
+
     // What one more evo out of the pool would still be worth.
     let more: { name: string; gain: number } | null = null;
     const used = new Set(ids);
@@ -503,7 +539,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       }
     }
 
-    return { ids, dropped, more };
+    return { ids, dropped, more, swappable };
   };
 
   /** One template's answer: its frontier of real choices, best first. */
@@ -695,6 +731,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           `${gained.length > 0 ? ` · +${gained.join('/')}` : ''}` +
           `${checked.dropped.length > 0 ? ` · dropped ${checked.dropped.join(', ')} (worth nothing here)` : ''}` +
           `${checked.more ? ` · one more worth +${checked.more.gain.toFixed(1)}: ${checked.more.name}` : ''}` +
+          `${checked.swappable.length > 0
+            ? ` · either order: ${checked.swappable.map(([a, b]) => `${a} ⇄ ${b}`).join(', ')}`
+            : ''}` +
           ` · ${costOf(chainIds)} · ${open} more evos still open — ${evoNames}`,
         isRecommended: true,
         chemStyle: style,
