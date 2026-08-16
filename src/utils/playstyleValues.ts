@@ -60,9 +60,9 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
   },
   'Finesse Shot': {
     axes: { sho: 0.8, dri: 0.2 },
-    tier: 'muted',
+    tier: 'core',
     gate: { curve: 80, finishing: 80 },
-    note: 'Off-plan, but it is the strongest shooting PlayStyle in the game at large — kept at a fraction rather than zeroed.'
+    note: 'The strongest shooting PlayStyle in the game. Was held at a fraction as off-plan; that was the model disagreeing with how the game is actually won.'
   },
   'Power Shot': { axes: { sho: 1 }, tier: 'off' },
   'Chip Shot': { axes: { sho: 1 }, tier: 'off' },
@@ -80,9 +80,20 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     gate: { freekick: 80, curve: 80 },
     note: 'Takes set pieces but does not build around them — a small bonus, never a reason to pick an evo.'
   },
-  'Pinged Pass': { axes: { pas: 1 }, tier: 'off' },
+  'Pinged Pass': {
+    axes: { pas: 1 },
+    tier: 'core',
+    gate: { longPass: 80, shortPass: 80 },
+    note: 'Driven passes arrive faster and flatter, which is most of what a passing game is doing.'
+  },
   'Long Ball Pass': { axes: { pas: 1 }, tier: 'off' },
-  'Tiki Taka': { axes: { pas: 1 }, tier: 'off' },
+  'Tiki Taka': {
+    axes: { pas: 1 },
+    tier: 'support',
+    gate: { shortPass: 82 },
+    overlaps: ['Incisive Pass'],
+    note: 'Real, and a tier below the two it shares a slot with.'
+  },
   'Whipped Pass': { axes: { pas: 1 }, tier: 'off' },
   'Inventive': { axes: { pas: 1 }, tier: 'off' },
 
@@ -178,8 +189,21 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     overlaps: ['Relentless']
   },
   'Acrobatic': { axes: { sho: 0.6, dri: 0.4 }, tier: 'off' },
-  'Aerial Fortress': { axes: { phy: 0.6, def: 0.4 }, tier: 'off', gateHeightCm: 185 },
-  'Precision Header': { axes: { sho: 0.5, phy: 0.5 }, tier: 'off', gateHeightCm: 183 },
+  // Set pieces and crosses are a standing source of goals at both ends, so a card that wins the ball
+  // in the air is doing a job — a tier below the ones that decide open play.
+  'Aerial Fortress': {
+    axes: { phy: 0.6, def: 0.4 },
+    tier: 'support',
+    gate: { headingAcc: 80, jumping: 82 },
+    gateHeightCm: 185
+  },
+  'Precision Header': {
+    axes: { sho: 0.5, phy: 0.5 },
+    tier: 'support',
+    gate: { headingAcc: 82, jumping: 80 },
+    gateHeightCm: 183,
+    overlaps: ['Aerial Fortress']
+  },
   'Far Reach': { axes: { dri: 1 }, tier: 'off', note: 'Confirm what this does in FC 26 before giving it weight.' },
 
   // --- GK — the outfield pool never sees these, listed so the table is complete -------------

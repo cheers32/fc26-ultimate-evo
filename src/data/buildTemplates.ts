@@ -75,8 +75,8 @@ export const PASS_MARK = 90;
  * - Balance and ball control, because they are what the card feels like on the ball at all: one
  *   that loses it under contact or takes two touches to turn stops getting picked.
  *
- * 93 rather than 90 because a chemistry style is worth +3 to +6, and these are read off the card
- * with its style on: from 93 the card ends up at the 96 or 99 the build is actually for.
+ * 93 rather than 90 because a chemistry style is worth +3 to +6: from 93 the card ends up at the 96
+ * or 99 the build is actually for.
  */
 export const FIELDABLE = 93;
 
@@ -86,6 +86,19 @@ export const FIELDABLE_FLOORS: Record<string, number> = {
   stamina: FIELDABLE,
   balance: FIELDABLE,
   ballControl: FIELDABLE
+};
+
+/**
+ * The floors that are read off the bare card even when a chemistry style is being assumed.
+ *
+ * Pace is the one thing a style must not be allowed to paper over. Everything else a style adds is
+ * a bonus on top of a card that already works; a card that needs Shadow to reach 93 pace is a card
+ * that is slow the moment the style is anything else, and at end game that is not a card. So the
+ * pace floor is checked against the card as it is, and the rest against the card as it is fielded.
+ */
+export const BARE_FLOORS: Record<string, number> = {
+  acceleration: FIELDABLE,
+  sprintSpeed: FIELDABLE
 };
 
 /**
@@ -112,7 +125,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Rock CB',
     positions: ['CB'],
     archetype: 'Lengthy',
-    maximise: { strength: 0.18, defAwareness: 0.18, headingAcc: 0.16, standTackle: 0.14, jumping: 0.12, interceptions: 0.1, aggression: 0.04, ...SHARP },
+    maximise: { strength: 0.17, defAwareness: 0.17, headingAcc: 0.15, standTackle: 0.13, jumping: 0.11, interceptions: 0.1, aggression: 0.07, ...SHARP },
     must: ['strength', 'defAwareness', 'headingAcc', 'standTackle', 'jumping'],
     roles: ['Centre-Half', 'Stopper'],
     blurb: 'Wins the ball, wins the header, wins the shove.'
@@ -165,7 +178,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Lockdown Full-Back',
     positions: ['LB', 'RB', 'LWB', 'RWB'],
     archetype: 'Explosive',
-    maximise: { defAwareness: 0.18, standTackle: 0.17, interceptions: 0.14, acceleration: 0.13, sprintSpeed: 0.12, stamina: 0.1, strength: 0.04, ...SHARP },
+    maximise: { defAwareness: 0.17, standTackle: 0.16, interceptions: 0.13, acceleration: 0.12, sprintSpeed: 0.11, stamina: 0.1, strength: 0.04, aggression: 0.07, ...SHARP },
     must: ['defAwareness', 'standTackle', 'interceptions', 'acceleration', 'stamina'],
     roles: ['Fullback', 'Falseback'],
     blurb: 'The winger gets past him once a season.'
@@ -187,7 +200,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Anchor CDM',
     positions: ['CDM', 'CM'],
     archetype: 'Lengthy',
-    maximise: { defAwareness: 0.19, standTackle: 0.17, interceptions: 0.14, strength: 0.12, headingAcc: 0.1, shortPass: 0.08, stamina: 0.08, ...SHARP },
+    maximise: { defAwareness: 0.18, standTackle: 0.16, interceptions: 0.13, strength: 0.11, headingAcc: 0.09, shortPass: 0.08, stamina: 0.08, aggression: 0.07, ...SHARP },
     must: ['defAwareness', 'standTackle', 'interceptions', 'strength', 'stamina'],
     roles: ['Holding', 'Centre-Half'],
     blurb: 'Sits in front of the back four and does not move.'
@@ -197,7 +210,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Ball-Winner',
     positions: ['CDM', 'CM'],
     archetype: 'Explosive',
-    maximise: { interceptions: 0.18, standTackle: 0.17, defAwareness: 0.15, stamina: 0.13, agility: 0.11, acceleration: 0.11, shortPass: 0.07, ...SHARP },
+    maximise: { interceptions: 0.17, standTackle: 0.16, defAwareness: 0.14, stamina: 0.12, agility: 0.1, acceleration: 0.11, shortPass: 0.06, aggression: 0.08, ...SHARP },
     must: ['interceptions', 'standTackle', 'defAwareness', 'stamina', 'agility'],
     avoid: ['strength'],
     roles: ['Holding', 'Box-To-Box'],
