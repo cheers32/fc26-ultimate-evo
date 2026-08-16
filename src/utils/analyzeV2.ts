@@ -161,7 +161,23 @@ interface Entry {
 
 const canonical = (ids: string[]) => [...ids].sort().join(',');
 
-export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
+/**
+ * What your thumbs do to a search, and deliberately no more than this.
+ *
+ * A build you turned down is not shown again for that card, and one you liked is always shown and
+ * marked. Both are memory rather than model: they change which rows appear, never what a stat is
+ * worth, so nothing about the ranking becomes harder to explain because of a click. Turning votes
+ * into weights is a separate, slower job that has to be argued for and checked against the bench —
+ * see scripts/feedbackReport.ts.
+ */
+export interface V2Feedback {
+  /** Canonical chain keys this card's owner turned down. */
+  down?: string[];
+  /** Canonical chain keys they liked — always listed, never thinned away. */
+  up?: string[];
+}
+
+export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Feedback }): EvolutionPath[] {
   const { baseBio, baseOvr, baseStats, basePlayStyles, poolIds } = input;
   const height = parseHeightCm(baseBio.height);
 
@@ -174,6 +190,11 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
 
   /** Shortlists keyed `templateId|tier`; see `tierOf`. */
   const shortlists = new Map<string, Entry[]>();
+
+  const downVoted = new Set(input.feedback?.down || []);
+  const upVoted = new Set(input.feedback?.up || []);
+  /** Liked builds, held aside so the shortlisting cannot quietly drop one you asked to keep. */
+  const liked = new Map<string, Entry>();
 
   /**
    * Which pile a build belongs in. Clearing the floors outranks reaching the archetype: a plan the
@@ -275,6 +296,10 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
     const subs = subValues(state.stats);
     for (const [k, v] of Object.entries(subs)) if (v > (achievable[k] ?? 0)) achievable[k] = v;
 
+    // A build you have already turned down for this card does not come back.
+    const ck = canonical(chainIds);
+    if (downVoted.has(ck)) return;
+
     const byChem = archetypesByChem(subs, height);
     const cand: Candidate = {
       chainIds: [...chainIds],
@@ -298,7 +323,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
 
       const provisional = scoreForTemplate(subs, t, () => ENDGAME_TARGET);
       const tier = tierOf(provisional.under.length === 0, fallback);
-      offer(`${t.id}|${tier}`, { cand, arch, fallback }, () => provisional.score);
+      const entry: Entry = { cand, arch, fallback };
+      if (upVoted.has(ck) && !liked.has(`${t.id}|${ck}`)) liked.set(`${t.id}|${ck}`, entry);
+      offer(`${t.id}|${tier}`, entry, () => provisional.score);
     }
   });
 
@@ -382,6 +409,13 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
       if (rows.length >= OUT_PER_TEMPLATE) break;
     }
 
+    // A build you liked is on the list whatever the thinning made of it.
+    for (const [key, entry] of liked) {
+      if (!key.startsWith(`${t.id}|`)) continue;
+      if (rows.some(r => r.e.cand === entry.cand)) continue;
+      rows.push({ e: entry, s: scoreForTemplate(entry.cand.subs, t, reach) });
+    }
+
     if (rows.length > 0) answers.push({ t, rows });
   }
 
@@ -446,6 +480,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
         id: `v2-path-${Date.now()}-${rank}`,
         name: `#${rank}`,
         description:
+          `${upVoted.has(canonical(cand.chainIds)) ? '★ you liked this · ' : ''}` +
           `${t.name} · +${s.score.toFixed(1)} over 90 · ${verdict}` +
           `${delta ? ` · ${delta} vs best` : ''}` +
           ` · ${archNote} · OVR ${cand.ovr} · IGS ${cand.igs} · ${statLine}` +

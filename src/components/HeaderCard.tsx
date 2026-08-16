@@ -3,10 +3,12 @@ import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, Sta
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
+import { chainKeyOf } from '../utils/feedback';
+import { FEEDBACK_REASONS } from '../types/player';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -37,6 +39,10 @@ interface HeaderCardProps {
   originalIgs: number;
   originalFaceSum: number;
   evoFilters: EvoFilters;
+  /** This card's verdicts, keyed by canonical chain. */
+  pathFeedback?: Record<string, import('../types/player').PathFeedback>;
+  /** Records a verdict, or clears it with null. Reasons are only meaningful on a thumbs-down. */
+  onRatePath?: (path: EvolutionPath, verdict: 'up' | 'down' | null, reasons?: string[]) => void;
   excludedCount: number;
   extraCount: number;
   onEvoFiltersChange: (val: EvoFilters) => void;
@@ -212,6 +218,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   originalIgs,
   originalFaceSum,
   evoFilters,
+  pathFeedback,
+  onRatePath,
   excludedCount,
   extraCount,
   onEvoFiltersChange,
@@ -253,6 +261,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const isLockedOrEvo = evoLocked || evoPreview;
 
   const [showFilters, setShowFilters] = React.useState(false);
+  /** Which row is currently being asked what was wrong with it. */
+  const [reasonsFor, setReasonsFor] = React.useState<string | null>(null);
   const [draftFilters, setDraftFilters] = React.useState<EvoFilters>(evoFilters || {});
 
   // Judged on the card as it is, not on the build in progress: which plan a card is for does not
@@ -1275,6 +1285,91 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     {renderPath.description}
                   </div>
                 )}
+                {/* The verdict goes where the reasoning is. A thumbs-down asks what was wrong with
+                    it, because a bare thumb cannot be acted on later — it says the row was wrong
+                    without saying which part, and by then the row is gone. */}
+                {renderPath.chainIds.length > 0 && onRatePath && (() => {
+                  const key = chainKeyOf(renderPath.chainIds);
+                  const verdict = pathFeedback?.[key]?.verdict;
+                  const chosen = pathFeedback?.[key]?.reasons || [];
+                  const asking = reasonsFor === renderPath.id;
+                  return (
+                    <div className="flex flex-wrap items-center gap-1 px-1.5">
+                      <button
+                        onClick={() => { onRatePath(renderPath, verdict === 'up' ? null : 'up'); setReasonsFor(null); }}
+                        title="Good recommendation — keep showing it, and use it when tuning the ranking"
+                        className={`px-1.5 py-0.5 rounded border text-[10px] transition-colors ${
+                          verdict === 'up'
+                            ? 'bg-green-900/40 border-fcGreen text-fcGreen'
+                            : 'bg-[#1a1c1a] border-gray-700 text-gray-500 hover:text-fcGreen hover:border-fcGreen/60'
+                        }`}
+                      >
+                        <ThumbsUp className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (verdict === 'down') { onRatePath(renderPath, null); setReasonsFor(null); }
+                          else { onRatePath(renderPath, 'down'); setReasonsFor(renderPath.id); }
+                        }}
+                        title="Not a build you would make — hidden from future searches on this card"
+                        className={`px-1.5 py-0.5 rounded border text-[10px] transition-colors ${
+                          verdict === 'down'
+                            ? 'bg-red-950/40 border-red-600 text-red-400'
+                            : 'bg-[#1a1c1a] border-gray-700 text-gray-500 hover:text-red-400 hover:border-red-700'
+                        }`}
+                      >
+                        <ThumbsDown className="w-3 h-3" />
+                      </button>
+                      {verdict === 'down' && !asking && chosen.length > 0 && (
+                        <button
+                          onClick={() => setReasonsFor(renderPath.id)}
+                          className="text-[9.5px] text-red-400/80 hover:text-red-300 underline decoration-dotted"
+                        >
+                          {chosen.map(id => FEEDBACK_REASONS.find(r => r.id === id)?.label || id).join(' · ')}
+                        </button>
+                      )}
+                      {verdict === 'down' && !asking && chosen.length === 0 && (
+                        <button
+                          onClick={() => setReasonsFor(renderPath.id)}
+                          className="text-[9.5px] text-gray-500 hover:text-gray-300 underline decoration-dotted"
+                        >
+                          say what was wrong
+                        </button>
+                      )}
+                      {verdict === 'down' && asking && (
+                        <span className="flex flex-wrap items-center gap-1">
+                          {FEEDBACK_REASONS.map(reason => {
+                            const picked = chosen.includes(reason.id);
+                            return (
+                              <button
+                                key={reason.id}
+                                title={reason.hint}
+                                onClick={() => onRatePath(
+                                  renderPath,
+                                  'down',
+                                  picked ? chosen.filter(r => r !== reason.id) : [...chosen, reason.id]
+                                )}
+                                className={`px-1.5 py-0.5 rounded border text-[9.5px] font-bold transition-colors ${
+                                  picked
+                                    ? 'bg-red-900/50 border-red-600 text-red-300'
+                                    : 'bg-[#2A2D2A] border-gray-700/50 text-gray-400 hover:text-white hover:bg-[#374151]'
+                                }`}
+                              >
+                                {reason.label}
+                              </button>
+                            );
+                          })}
+                          <button
+                            onClick={() => setReasonsFor(null)}
+                            className="px-1 text-[9.5px] text-gray-500 hover:text-white"
+                          >
+                            done
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 p-1.5 bg-[#1a1c1a] rounded-lg border border-gray-800">
                   <Layers className="w-3.5 h-3.5 text-gray-500 mr-1 shrink-0" />
 

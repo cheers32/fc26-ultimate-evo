@@ -175,6 +175,54 @@ export interface StatFilter {
   max?: number; 
   subs?: Record<string, { min?: number; max?: number }>; 
 }
+/**
+ * A verdict on one recommended build.
+ *
+ * The snapshot is the point. A thumb on its own says "this one was wrong" and nothing else — it
+ * cannot tell a retune whether the objection was the strength, the stamina, the cost or the
+ * archetype, and by the time anyone looks at it the ranking has changed and the row it was cast on
+ * no longer exists. Storing the numbers as they were judged means a proposed change to the model
+ * can be replayed against exactly what you saw and either agrees with you or does not.
+ *
+ * Kept in the global library rather than per team: this is your taste, and it does not change
+ * because you switched squads.
+ */
+export interface PathFeedback {
+  verdict: 'up' | 'down';
+  playerId: string;
+  playerName?: string;
+  /** Order-independent, so one build is one record however the search happened to find it. */
+  chainKey: string;
+  chainIds: string[];
+  /** Which plan the row was listed under, when it came from V2. */
+  templateId?: string;
+  /** Why, on a thumbs-down. Free of these a down vote is not actionable. */
+  reasons?: string[];
+  /** The row exactly as it was judged. */
+  snapshot: {
+    ovr: number;
+    igs: number;
+    positions: string;
+    heightCm?: number;
+    archetype?: string;
+    /** Every sub-stat of the finished card, so any weight can be re-examined later. */
+    subs: Record<string, number>;
+  };
+  at: number;
+}
+
+/** Why a build was turned down. Short, mutually distinguishable, and about the card not the app. */
+export const FEEDBACK_REASONS: { id: string; label: string; hint: string }[] = [
+  { id: 'wrong-accelerate', label: 'Wrong AcceleRATE', hint: 'Lands on an archetype this card should not be' },
+  { id: 'wasted-stats', label: 'Wasted stats', hint: 'Spends the chain on stats this player has no use for' },
+  { id: 'key-stat-low', label: 'Key stat too low', hint: 'A stat the position runs on is short' },
+  { id: 'stamina', label: 'Stamina', hint: 'Cannot last ninety minutes' },
+  { id: 'too-slow', label: 'Too slow', hint: 'Pace or agility not where it needs to be' },
+  { id: 'too-expensive', label: 'Costs too much', hint: 'Not worth the tokens or the objectives' },
+  { id: 'blocks-later', label: 'Blocks later evos', hint: 'Raises OVR past evos still worth doing' },
+  { id: 'better-exists', label: 'Something else is better', hint: 'A different build on this card beats it outright' }
+];
+
 export interface EvoFilters {
   ovr?: StatFilter;
   pac?: StatFilter;

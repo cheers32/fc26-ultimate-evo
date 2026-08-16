@@ -1,5 +1,5 @@
 import { analyzeEvolutions } from './evoEngine';
-import { analyzeEvolutionsV2 } from './analyzeV2';
+import { analyzeEvolutionsV2, V2Feedback } from './analyzeV2';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters } from '../types/player';
 
 export interface EvoSearchRequest {
@@ -13,6 +13,8 @@ export interface EvoSearchRequest {
   prefixChainIds: string[];
   /** Which ranking to run. V2 scores the weak link; see analyzeV2.ts. */
   version?: 1 | 2;
+  /** This card's thumbs. V2 only: hides what you turned down, keeps what you liked. */
+  feedback?: V2Feedback;
 }
 
 export type EvoSearchResponse =
@@ -40,6 +42,7 @@ self.onmessage = (e: MessageEvent<EvoSearchRequest>) => {
             basePlayStyles: req.playStyles,
             filters: req.filters,
             prefixChainIds: req.prefixChainIds,
+            feedback: req.feedback,
             onProgress
           })
         : analyzeEvolutions(

@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { playersDatabase } from './data/playersData';
 import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
-import { PlayerData, StatsData, PlayStylesData, EvolutionPath, EvoFilters, PlayerBio, OvrData } from './types/player';
+import { PlayerData, StatsData, PlayStylesData, EvolutionPath, EvoFilters, PlayerBio, OvrData, PathFeedback } from './types/player';
+import { feedbackForPlayer, feedbackKeyOf, flattenSubs, makeFeedback, templateIdFromDescription } from './utils/feedback';
+import { BUILD_TEMPLATES } from './data/buildTemplates';
 import { HeaderCard } from './components/HeaderCard';
 import { PlayerSubInfo } from './components/PlayerSubInfo';
 import { StatsGrid } from './components/StatsGrid';
@@ -121,6 +123,10 @@ export default function App() {
   };
 
   const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useLibrary<string[]>('deletedPlayers', []);
+
+  // Your verdicts on recommended builds. Global rather than per team: this is taste, and it does
+  // not change because you switched squads.
+  const [pathFeedback, setPathFeedback] = useLibrary<Record<string, PathFeedback>>('pathFeedback', {});
 
   const [storedCustomPlayers, setCustomPlayers, customPlayersLoaded] =
     useLibrary<Record<string, PlayerData>>('customPlayers', {});
@@ -515,6 +521,39 @@ export default function App() {
   const initialOvrData = currentPlayer.ovr;
   const playStylesData = currentPlayer.playStyles;
   const statsData = currentPlayer.stats;
+
+  const playerFeedback = useMemo(
+    () => feedbackForPlayer(pathFeedback || {}, selectedPlayerId),
+    [pathFeedback, selectedPlayerId]
+  );
+
+  /**
+   * Records a verdict on a build, with the card as it finishes rather than as it starts — a thumb
+   * that does not carry the numbers it was cast on cannot be argued with later.
+   */
+  const ratePath = (
+    path: EvolutionPath,
+    verdict: 'up' | 'down' | null,
+    reasons?: string[]
+  ) => {
+    const key = feedbackKeyOf(selectedPlayerId, path.chainIds);
+    const next = { ...(pathFeedback || {}) };
+    if (verdict === null) {
+      delete next[key];
+      setPathFeedback(next);
+      return;
+    }
+    const full = simulateEvoChain(path.chainIds, playerBio, initialOvrData, statsData, playStylesData);
+    const heightCm = parseHeightCm(full.finalBio.height);
+    const subs = flattenSubs(full.finalStats);
+    next[key] = makeFeedback(verdict, selectedPlayerId, playerBio, path.chainIds, full.finalOvr, full.finalStats, {
+      templateId: templateIdFromDescription(path.description, BUILD_TEMPLATES),
+      reasons,
+      heightCm,
+      archetype: calculateAccelerateFamily(subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, heightCm)
+    });
+    setPathFeedback(next);
+  };
 
   const [hoveredChem, setHoveredChem] = useState<string | null>(null);
   const [lockedChem, setLockedChem] = useState<string | null>(null);
@@ -1234,7 +1273,9 @@ export default function App() {
         playStyles: playStylesData,
         filters: evoFilters,
         prefixChainIds: basePrefix,
-        version
+        version,
+        // Only V2 reads these, and only to hide what you turned down and keep what you liked.
+        feedback: version === 2 ? { down: playerFeedback.down, up: playerFeedback.up } : undefined
       },
       nodes => setAnalyzeProgress(nodes)
     );
@@ -1598,6 +1639,8 @@ export default function App() {
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
+          pathFeedback={playerFeedback.byChain}
+          onRatePath={ratePath}
           excludedCount={excludedCount}
           extraCount={extraCount}
           onEvoFiltersChange={setEvoFilters}
