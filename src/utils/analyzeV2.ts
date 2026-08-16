@@ -360,7 +360,15 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     const ck = canonical(entry.cand.chainIds);
     const at = list.findIndex(e => canonical(e.cand.chainIds) === ck);
     if (at >= 0) {
-      if (score(entry.cand) <= score(list[at].cand)) return;
+      // The same evos in a different order are one build here, and only the better order is kept.
+      // Where the plan cannot tell them apart, the tie goes to the card that gives up less of
+      // everything else: Zambrotta's Year of the Fullbacks → Still Got It → The High Line and the
+      // same three with the last two swapped both come out at 87.8 as a full-back, because a
+      // full-back plan does not weigh passing — but the first ends 4 higher on short pass, long
+      // pass and curve for the same OVR. A coin flip between those is a build thrown away.
+      const mine = score(entry.cand);
+      const theirs = score(list[at].cand);
+      if (mine < theirs || (mine === theirs && entry.cand.igs <= list[at].cand.igs)) return;
       list.splice(at, 1);
     }
     if (list.length >= SEARCH_KEEP && score(entry.cand) <= score(list[list.length - 1].cand)) {
@@ -714,6 +722,15 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     // *and* the card ends on the same OVR: a swap that ends a point higher has quietly spent
     // headroom the evos still to come are gated on.
     const SWAP_EPS = 0.1;
+    /** True when `a` is at least `b` everywhere and better somewhere. */
+    const dominates = (a: Record<string, number>, b: Record<string, number>) => {
+      let strictly = false;
+      for (const key of Object.keys(a)) {
+        if ((a[key] ?? 0) < (b[key] ?? 0)) return false;
+        if ((a[key] ?? 0) > (b[key] ?? 0)) strictly = true;
+      }
+      return strictly;
+    };
     const swappable: [string, string][] = [];
     const asIs = scoreChain(ids, t, arch);
     const asIsOvr = subsOfChain(ids)?.sim.finalOvr;
@@ -728,6 +745,11 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           if (!other || !otherSim) continue;
           if (otherSim.sim.finalOvr !== asIsOvr) continue;
           if (other.total < asIs.total - SWAP_EPS) continue;
+          // Nor when one order is simply the better card. The plan not being able to tell them
+          // apart is not the same as their being the same: if every sub-stat of one is at least as
+          // high as the other's and one is higher, the lower one is a mistake rather than a choice,
+          // however little the plan cares about the stats it lost.
+          if (dominates(asIs.subs, otherSim.subs) || dominates(otherSim.subs, asIs.subs)) continue;
           swappable.push([
             availableEvolutions[ids[i]]?.name || ids[i],
             availableEvolutions[ids[j]]?.name || ids[j]
