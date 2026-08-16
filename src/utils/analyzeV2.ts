@@ -333,7 +333,13 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
 
   // Only the plans this card could actually be: the right positions, and an archetype its frame
   // allows. A CB has no business on the winger list, and a 180cm card has none on a Lengthy one.
-  const canFallBack = (t: BuildTemplate) => t.controlledFallback === true && t.archetype === 'Explosive';
+  // Controlled is still not a destination — but an empty list is not an answer either. Every plan
+  // will take a Controlled build, ranked below anything that reached the archetype and labelled as
+  // what it is; it is only ever *shown* when nothing reached the archetype, unless the plan says
+  // Controlled is a real card for it, in which case the two mix. This is what a 176cm full-back
+  // needs: every plan its frame allows is Explosive, so a pool that cannot make it Explosive used
+  // to return nothing at all while the same pool obviously builds it a card.
+  const canFallBack = (_t: BuildTemplate) => true;
 
   // Three states, and the difference between two of them matters. No choice at all means "you pick"
   // — the one or two plans this card already is, so a search returns an answer rather than a
@@ -516,10 +522,17 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       })
     );
 
+    // A build that reached the plan's archetype answers the plan; one that fell back to Controlled
+    // is the consolation. So the fallbacks are held back while anything reached it — and shown, all
+    // of them, when nothing did, because "here is the best card this pool builds, and it is not
+    // Explosive" is an answer and an empty list is not.
+    const reached = frontier.filter(row => !row.e.fallback);
+    const choices = t.controlledFallback || reached.length === 0 ? frontier : reached;
+
     // Then thin it to choices a person would actually weigh. Two builds a point apart on every axis
     // are one build shown twice, and a shortlist of those is the thing that wastes an evening.
     const rows: Row[] = [];
-    for (const row of frontier) {
+    for (const row of choices) {
       const mine = axesOf(row.subs);
       const dup = rows.some(kept => {
         const theirs = axesOf(kept.subs);
