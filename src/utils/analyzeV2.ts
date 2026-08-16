@@ -252,6 +252,19 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
    * the card is read as it is.
    */
   const assumeChem = input.filters?.assumeChemStyle === true;
+
+  /**
+   * Whether PlayStyles are allowed to move anything.
+   *
+   * Off by default. The stat model is the one that has been checked against real cards, and adding
+   * a second term to it changes an order that was worth trusting — so counting PlayStyles is a
+   * thing you turn on, not a thing that happens to your shortlist. Off, the weight is zero, the
+   * picker earns no credit, no picks are added to a chain, and the ranking is arithmetically what
+   * it was before any of this existed. The numbers are still measured and still printed; they just
+   * do not vote.
+   */
+  const usePs = input.filters?.usePlayStyleScore === true;
+  const psWeight = usePs ? PS_WORTH : 0;
   /** The readings a build is allowed: every style, or only the card as it stands. */
   const styleOptions: [string | null, Record<string, number>][] =
     assumeChem ? STYLE_OPTIONS : [[null, {}]];
@@ -410,7 +423,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
 
     // A chain that leaves the card able to pick its own PlayStyles is holding something the stat
     // score cannot see. Credited here so it survives the shortlist, priced for real in pass two.
-    const picker = canPickPlayStyles(state.bio.rarity) ? PICKER_HINT : 0;
+    const picker = usePs && canPickPlayStyles(state.bio.rarity) ? PICKER_HINT : 0;
 
     for (const t of templates) {
       let arch: AccelerateFamily | null = null;
@@ -543,7 +556,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
   };
 
   /** The two scores in one currency, which is the only place they are ever added together. */
-  const totalOf = (statScore: number, ps: PsPlan) => statScore + (PS_WORTH * ps.score) / 100;
+  const totalOf = (statScore: number, ps: PsPlan) => statScore + (psWeight * ps.score) / 100;
 
   /**
    * Where in the chain to make the picks.
@@ -746,6 +759,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const gain = scored.total - best;
         if (gain >= MORE_EPS && (!more || gain > more.gain)) more = { name: evo.name, gain };
         if (
+          usePs &&
           !canPickAlready &&
           evo.rarityChange &&
           FREE_PLAYSTYLE_RARITIES.includes(evo.rarityChange) &&
@@ -814,9 +828,10 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const b = axesOf(subs);
         const pairs: [number, number][] = [
           ...a.map((v, i) => [v, b[i]] as [number, number]),
-          // PlayStyles are an axis like any other here. Without this a build with the right four
-          // gold slots is knocked out by one a point better on dribbling and empty where it counts.
-          [oPs.score, ps.score],
+          // PlayStyles are an axis like any other here — while they count. Without this a build
+          // with the right four gold slots is knocked out by one a point better on dribbling and
+          // empty where it counts.
+          ...(usePs ? [[oPs.score, ps.score] as [number, number]] : []),
           [e.cand.chainIds.length, o.cand.chainIds.length]
         ];
         return pairs.every(([x, y]) => x >= y) && pairs.some(([x, y]) => x > y);
@@ -838,7 +853,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       const dup = rows.some(kept => {
         const theirs = axesOf(kept.subs);
         return mine.every((v, i) => Math.abs(v - theirs[i]) <= SAME_BUILD)
-          && Math.abs(kept.ps.score - row.ps.score) <= SAME_PS
+          && (!usePs || Math.abs(kept.ps.score - row.ps.score) <= SAME_PS)
           && kept.e.cand.chainIds.length === row.e.cand.chainIds.length;
       });
       if (dup) continue;
@@ -887,7 +902,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const style = rescored?.played.style ?? row.style;
         // Only now, on a chain that is going to be shown, is it worth searching for where the
         // picks belong — inside the audit they stay at the end, where they cost one simulation.
-        const placed = placePicks(checked.ids, t, style);
+        // Only when PlayStyles count. Otherwise the chain that comes back is the chain that was
+        // ranked, with nothing appended to it.
+        const placed = usePs ? placePicks(checked.ids, t, style) : null;
         const ps = placed?.ps ?? rescored?.ps ?? row.ps;
         built.push({
           e: row.e,

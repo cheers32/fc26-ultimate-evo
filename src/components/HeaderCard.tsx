@@ -412,6 +412,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
     if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
     if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
+    if (evoFilters.usePlayStyleScore) parts.push('PlayStyles count towards the ranking');
 
     if (evoFilters.newPosition) parts.push('a new position');
     if (evoFilters.noPositionChange) parts.push('positions unchanged');
@@ -930,6 +931,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           Assume chem style
+                        </label>
+                        {/* Off by default: the stat model is the one that has been checked against
+                            real cards, so letting a second term into it is a decision rather than
+                            something that happens to a shortlist that was already worth trusting. */}
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
+                               title="Let PlayStyles count towards where a build ranks, and fix a bad set by converting rarity — the picks come back inside the build. Off, the order is the stat model's alone and the PlayStyle score is only shown.">
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.usePlayStyleScore}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, usePlayStyleScore: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          Count PlayStyles
                         </label>
                       </div>
                     </div>
