@@ -728,3 +728,177 @@ check('Mbappé 93, labels glued by the copy', GLUED, 1, {
   igs: 2366,
   playStyles: ['Rapid+']
 });
+
+/**
+ * The same page with a chemistry style selected on it, which is how Messi imported as pace 50 /
+ * passing 50 / dribbling 50 while shooting, defending and physical came through: FUTBIN prints the
+ * style's boost on its own line and raises the value beside it, so exactly the panels that style
+ * touches stop matching a fixed run of lines. Engine here (+3 pace, +6 passing, +3/+6 dribbling).
+ *
+ * The expectation is the base card — the boost is taken back off, since the app applies chemistry
+ * itself and would otherwise count it twice.
+ *
+ * Three of these come back a point low on purpose, and the IGS with them: vision, curve and
+ * dribbling were boosted past 99, the page printed the capped 99, and how far past it went is not
+ * recoverable from the text. That is the reason the importer tells you to clear the style and copy
+ * again rather than quietly accepting the numbers.
+ */
+const STYLED = `Home
+EA FC 26
+Players
+Lionel Messi Time Warp
+MESSI - Time Warp EA FC 26 Prices and Rating
+90
+ST
+++
+RM
+CAM
+RW
+L
+4
+4
+83.7
+Messi
+90
+PAC
+90
+SHO
+89
+PAS
+94
+DRI
+37
+DEF
+70
+PHY
+SKILLS
+4
+WEAK FOOT
+4
+HEIGHT
+169cm | 5'7"
+FOOT
+Left
+AGE
+39 years old
+Finesse Shot
+Pace
++3
+93
+Acceleration
++3
+94
+Sprint Speed
++3
+93
+Shooting
+90
+Att. Position
+91
+Finishing
+90
+Shot Power
+90
+Long Shots
+92
+Volleys
+94
+Penalties
+81
+Passing
++6
+95
+Vision
++9
+99
+Crossing
++6
+90
+FK Acc.
+97
+Short Pass
++3
+93
+Long Pass
++6
+95
+Curve
++6
+99
+Dribbling
++3
+97
+Agility
++3
+93
+Balance
++6
+99
+Reactions
+91
+Ball Control
+97
+Dribbling
++6
+99
+Composure
+97
+Defending
+37
+Interceptions
+45
+Heading Acc.
+67
+Def. Aware
+22
+Stand Tackle
+39
+Slide Tackle
+27
+Physical
+70
+Jumping
+77
+Stamina
+80
+Strength
+73
+Aggression
+50
+TOTAL CHEM. STYLE ADDED:
+24
+Base Stats
+470
+0
+600
+IGS
+2306
+Player Bio - Lionel Messi
+
+Lionel Messi is a professional footballer from Argentina. He is a 169cm | 5'7" tall, left-footed striker (ST) who plays for Inter Miami CF in Major League Soccer. He was born on 24-06-1987 and he is now 39 years old.
+
+Lionel Messi's Time Warp card is rated 90.
+
+View other Players from:
+Inter Miami CF
+Argentina
+Major League Soccer
+`;
+
+check('Messi 90, chemistry style applied on the page', STYLED, 1, {
+  name: 'Lionel Messi',
+  ovr: 90,
+  positions: 'ST, RM, CAM, RW',
+  rarity: 'Time Warp',
+  club: 'Inter Miami CF',
+  nation: 'Argentina',
+  league: 'Major League Soccer',
+  height: `169cm | 5'7"`,
+  footAge: 'Left | 39 yrs',
+  skillMoves: 4,
+  weakFoot: 4,
+  faces: { pac: 90, sho: 90, pas: 89, dri: 94, def: 37, phy: 70 },
+  baseStats: 470,
+  igs: 2303,
+  playStyles: ['Finesse Shot+']
+});

@@ -95,90 +95,127 @@ export function parseFutbinText(
 
 
     // 2. Extract Stats
+    //
+    // Read label by label rather than as one fixed run of lines per block, because the page puts
+    // things between them. A chemistry style selected on the FUTBIN page prints its boost on its
+    // own line and raises the value beside it —
+    //
+    //   Pace / +3 / 93        instead of        Pace / 90
+    //
+    // which used to break exactly the blocks that style touched and no others: Messi copied with
+    // Engine on imported with pace, passing and dribbling at the placeholder 50 while shooting,
+    // defending and physical came through fine. The boost is subtracted back off, so the card that
+    // lands is the base card either way — this app applies chemistry itself.
     const stats: any = {};
-    
-    const pacMatch = text.match(/Pace\n(\d+)\nAcceleration\n(\d+)\nSprint Speed\n(\d+)/);
-    if (pacMatch) {
-      stats.pac = {
-        label: 'Pace', baseFace: parseInt(pacMatch[1]), evFace: parseInt(pacMatch[1]),
-        subs: {
-          acceleration: { label: 'Acceleration', base: parseInt(pacMatch[2]), boost: 30, limit: 99, w: 0.45 },
-          sprintSpeed: { label: 'Sprint Speed', base: parseInt(pacMatch[3]), boost: 30, limit: 99, w: 0.55 }
-        }
-      };
-    }
 
-    const shoMatch = text.match(/Shooting\n(\d+)\nAtt\. Position\n(\d+)\nFinishing\n(\d+)\nShot Power\n(\d+)\nLong Shots\n(\d+)\nVolleys\n(\d+)\nPenalties\n(\d+)/);
-    if (shoMatch) {
-      stats.sho = {
-        label: 'Shooting', baseFace: parseInt(shoMatch[1]), evFace: parseInt(shoMatch[1]),
-        subs: {
-          positioning: { label: 'Att. Position', base: parseInt(shoMatch[2]), boost: 25, limit: 99, w: 0.05 },
-          finishing: { label: 'Finishing', base: parseInt(shoMatch[3]), boost: 25, limit: 99, w: 0.45 },
-          shotPower: { label: 'Shot Power', base: parseInt(shoMatch[4]), boost: 25, limit: 99, w: 0.20 },
-          longShots: { label: 'Long Shots', base: parseInt(shoMatch[5]), boost: 25, limit: 99, w: 0.20 },
-          volleys: { label: 'Volleys', base: parseInt(shoMatch[6]), boost: 25, limit: 99, w: 0.05 },
-          penalties: { label: 'Penalties', base: parseInt(shoMatch[7]), boost: 25, limit: 99, w: 0.05 }
-        }
-      };
-    }
+    const statsRegion = (() => {
+      const start = text.search(/\nPace\n/);
+      if (start < 0) return text;
+      const end = text.search(/\nTOTAL CHEM\. STYLE ADDED/i);
+      return text.slice(start, end > start ? end : undefined);
+    })();
 
-    const pasMatch = text.match(/Passing\n(\d+)\nVision\n(\d+)\nCrossing\n(\d+)\nFK Acc\.\n(\d+)\nShort Pass\n(\d+)\nLong Pass\n(\d+)\nCurve\n(\d+)/);
-    if (pasMatch) {
-      stats.pas = {
-        label: 'Passing', baseFace: parseInt(pasMatch[1]), evFace: parseInt(pasMatch[1]),
-        subs: {
-          vision: { label: 'Vision', base: parseInt(pasMatch[2]), boost: 30, limit: 99, w: 0.20 },
-          crossing: { label: 'Crossing', base: parseInt(pasMatch[3]), boost: 25, limit: 99, w: 0.20 },
-          freekick: { label: 'FK Acc.', base: parseInt(pasMatch[4]), boost: 25, limit: 99, w: 0.05 },
-          shortPass: { label: 'Short Pass', base: parseInt(pasMatch[5]), boost: 30, limit: 99, w: 0.35 },
-          longPass: { label: 'Long Pass', base: parseInt(pasMatch[6]), boost: 30, limit: 99, w: 0.15 },
-          curve: { label: 'Curve', base: parseInt(pasMatch[7]), boost: 25, limit: 99, w: 0.05 }
-        }
+    /** `Label / [+N] / value`, case-insensitive, with the style's boost taken back off. */
+    const readStat = (labels: string[], from = 0): { base: number; end: number } | null => {
+      const alternatives = labels.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      // The closing newline is optional so the last row of the last panel still reads — the region
+      // ends right after Aggression's value.
+      const re = new RegExp(`\\n(?:${alternatives})\\n(?:([+-]\\d+)\\n)?(\\d{1,3})(?:\\n|$)`, 'i');
+      const slice = statsRegion.slice(from);
+      const m = slice.match(re);
+      if (!m || m.index === undefined) return null;
+      // Stops on the newline that closed this row rather than after it: that same newline opens the
+      // next row, and consuming it leaves the following label without the `\n` its pattern needs.
+      const consumed = m[0].endsWith('\n') ? m[0].length - 1 : m[0].length;
+      return {
+        base: parseInt(m[2], 10) - (m[1] ? parseInt(m[1], 10) : 0),
+        end: from + m.index + consumed
       };
-    }
+    };
 
-    const driMatch = text.match(/Dribbling\n(\d+)\nAgility\n(\d+)\nBalance\n(\d+)\nReactions\n(\d+)\nBall Control\n(\d+)\n(?:Dribbling|Drib\.)\n(\d+)\nComposure\n(\d+)/);
-    if (driMatch) {
-      stats.dri = {
-        label: 'Dribbling', baseFace: parseInt(driMatch[1]), evFace: parseInt(driMatch[1]),
-        subs: {
-          agility: { label: 'Agility', base: parseInt(driMatch[2]), boost: 25, limit: 99, w: 0.09 },
-          balance: { label: 'Balance', base: parseInt(driMatch[3]), boost: 30, limit: 99, w: 0.05 },
-          reactions: { label: 'Reactions', base: parseInt(driMatch[4]), boost: 25, limit: 99, w: 0.03 },
-          ballControl: { label: 'Ball Control', base: parseInt(driMatch[5]), boost: 30, limit: 99, w: 0.33 },
-          dribbling: { label: 'Dribbling', base: parseInt(driMatch[6]), boost: 30, limit: 99, w: 0.45 },
-          composure: { label: 'Composure', base: parseInt(driMatch[7]), boost: 30, limit: 99, w: 0.05 }
-        }
-      };
-    }
+    /** One of the six panels: its face value, then its sub-stats, all read inside the panel. */
+    const readBlock = (
+      faceLabels: string[],
+      subs: [string, string[], number, number, number][],
+      nextFaceLabels: string[] | null
+    ) => {
+      const face = readStat(faceLabels);
+      if (!face) return null;
+      const limit = nextFaceLabels ? readStat(nextFaceLabels, face.end) : null;
+      const stop = limit ? limit.end : statsRegion.length;
 
-    const defMatch = text.match(/Defending\n(\d+)\nInterceptions\n(\d+)\nHeading Acc\.\n(\d+)\nDef\. Aware\n(\d+)\nStand Tackle\n(\d+)\nSlide Tackle\n(\d+)/);
-    if (defMatch) {
-      stats.def = {
-        label: 'Defending', baseFace: parseInt(defMatch[1]), evFace: parseInt(defMatch[1]),
-        subs: {
-          interceptions: { label: 'Interceptions', base: parseInt(defMatch[2]), boost: 30, limit: 99, w: 0.20 },
-          headingAcc: { label: 'Heading Acc.', base: parseInt(defMatch[3]), boost: 25, limit: 99, w: 0.10 },
-          defAwareness: { label: 'Def. Aware', base: parseInt(defMatch[4]), boost: 30, limit: 99, w: 0.30 },
-          standTackle: { label: 'Stand Tackle', base: parseInt(defMatch[5]), boost: 30, limit: 99, w: 0.30 },
-          slideTackle: { label: 'Slide Tackle', base: parseInt(defMatch[6]), boost: 25, limit: 99, w: 0.10 }
-        }
-      };
-    }
+      const out: any = {};
+      let cursor = face.end;
+      for (const [key, labels, boost, cap, w] of subs) {
+        const sub = readStat(labels, cursor);
+        // Never read past the next panel: Dribbling is both a panel and one of its own rows, and
+        // wandering into the next block is how a missing row silently borrows another's number.
+        if (!sub || sub.end > stop) return null;
+        out[key] = { label: labels[0], base: sub.base, boost, limit: cap, w };
+        cursor = sub.end;
+      }
+      return { face: face.base, subs: out };
+    };
 
-    const phyMatch = text.match(/Physical\n(\d+)\nJumping\n(\d+)\nStamina\n(\d+)\nStrength\n(\d+)\nAggression\n(\d+)/);
-    if (phyMatch) {
-      stats.phy = {
-        label: 'Physical', baseFace: parseInt(phyMatch[1]), evFace: parseInt(phyMatch[1]),
-        subs: {
-          jumping: { label: 'Jumping', base: parseInt(phyMatch[2]), boost: 30, limit: 99, w: 0.05 },
-          stamina: { label: 'Stamina', base: parseInt(phyMatch[3]), boost: 30, limit: 99, w: 0.25 },
-          strength: { label: 'Strength', base: parseInt(phyMatch[4]), boost: 30, limit: 99, w: 0.50 },
-          aggression: { label: 'Aggression', base: parseInt(phyMatch[5]), boost: 30, limit: 99, w: 0.20 }
-        }
-      };
-    }
+    const PACE = ['Pace'];
+    const SHOOTING = ['Shooting'];
+    const PASSING = ['Passing'];
+    const DRIBBLING = ['Dribbling'];
+    const DEFENDING = ['Defending'];
+    const PHYSICAL = ['Physical'];
+
+    const pac = readBlock(PACE, [
+      ['acceleration', ['Acceleration'], 30, 99, 0.45],
+      ['sprintSpeed', ['Sprint Speed'], 30, 99, 0.55]
+    ], SHOOTING);
+    if (pac) stats.pac = { label: 'Pace', baseFace: pac.face, evFace: pac.face, subs: pac.subs };
+
+    const sho = readBlock(SHOOTING, [
+      ['positioning', ['Att. Position', 'Attacking Position', 'Positioning'], 25, 99, 0.05],
+      ['finishing', ['Finishing'], 25, 99, 0.45],
+      ['shotPower', ['Shot Power'], 25, 99, 0.20],
+      ['longShots', ['Long Shots'], 25, 99, 0.20],
+      ['volleys', ['Volleys'], 25, 99, 0.05],
+      ['penalties', ['Penalties'], 25, 99, 0.05]
+    ], PASSING);
+    if (sho) stats.sho = { label: 'Shooting', baseFace: sho.face, evFace: sho.face, subs: sho.subs };
+
+    const pas = readBlock(PASSING, [
+      ['vision', ['Vision'], 30, 99, 0.20],
+      ['crossing', ['Crossing'], 25, 99, 0.20],
+      ['freekick', ['FK Acc.', 'Free Kick Acc.', 'Free Kick Accuracy'], 25, 99, 0.05],
+      ['shortPass', ['Short Pass', 'Short Passing'], 30, 99, 0.35],
+      ['longPass', ['Long Pass', 'Long Passing'], 30, 99, 0.15],
+      ['curve', ['Curve'], 25, 99, 0.05]
+    ], DRIBBLING);
+    if (pas) stats.pas = { label: 'Passing', baseFace: pas.face, evFace: pas.face, subs: pas.subs };
+
+    const dri = readBlock(DRIBBLING, [
+      ['agility', ['Agility'], 25, 99, 0.09],
+      ['balance', ['Balance'], 30, 99, 0.05],
+      ['reactions', ['Reactions'], 25, 99, 0.03],
+      ['ballControl', ['Ball Control'], 30, 99, 0.33],
+      ['dribbling', ['Dribbling', 'Drib.'], 30, 99, 0.45],
+      ['composure', ['Composure'], 30, 99, 0.05]
+    ], DEFENDING);
+    if (dri) stats.dri = { label: 'Dribbling', baseFace: dri.face, evFace: dri.face, subs: dri.subs };
+
+    const def = readBlock(DEFENDING, [
+      ['interceptions', ['Interceptions'], 30, 99, 0.20],
+      ['headingAcc', ['Heading Acc.', 'Heading Accuracy'], 25, 99, 0.10],
+      ['defAwareness', ['Def. Aware', 'Def. Awareness', 'Defensive Awareness'], 30, 99, 0.30],
+      ['standTackle', ['Stand Tackle', 'Standing Tackle'], 30, 99, 0.30],
+      ['slideTackle', ['Slide Tackle', 'Sliding Tackle'], 25, 99, 0.10]
+    ], PHYSICAL);
+    if (def) stats.def = { label: 'Defending', baseFace: def.face, evFace: def.face, subs: def.subs };
+
+    const phy = readBlock(PHYSICAL, [
+      ['jumping', ['Jumping'], 30, 99, 0.05],
+      ['stamina', ['Stamina'], 30, 99, 0.25],
+      ['strength', ['Strength'], 30, 99, 0.50],
+      ['aggression', ['Aggression'], 30, 99, 0.20]
+    ], null);
+    if (phy) stats.phy = { label: 'Physical', baseFace: phy.face, evFace: phy.face, subs: phy.subs };
 
     // 3. Extract Roles
     const roles: Record<string, string[]> = {};
@@ -235,12 +272,10 @@ export function parseFutbinText(
      * PlayStyle the card carries. That mattered: nearly every evo caps how many PlayStyles a card
      * may have, so one phantom silver could make a card read as ineligible.
      */
-    const statSpans: [number, number][] = [];
-    [pacMatch, shoMatch, pasMatch, driMatch, defMatch, phyMatch].forEach(m => {
-      if (m && m.index !== undefined) statSpans.push([m.index, m.index + m[0].length]);
-    });
+    const statsStart = text.search(/\nPace\n/);
+    const statsEnd = statsStart < 0 ? -1 : statsStart + statsRegion.length;
     const insideStatBlock = (index: number) =>
-      statSpans.some(([start, end]) => index >= start && index < end);
+      statsStart >= 0 && index >= statsStart && index < statsEnd;
 
     for (const ps of validPlayStyles) {
       // Match the playstyle on its own line, tolerating some spaces. Scanned rather than matched

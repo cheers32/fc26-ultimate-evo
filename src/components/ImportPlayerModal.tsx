@@ -22,6 +22,13 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
   // Pasting is the whole point of this modal, so it opens with the caret already in the paste box.
   useModal(true, { onClose, focusRef: pasteRef });
 
+  /**
+   * A chemistry style left on the FUTBIN page raises the stats it printed, and the importer takes
+   * the boost back off — exactly, except where the boost ran into the 99 cap, which hides how far
+   * past it the stat really was. So the card still imports, and this says which one to trust.
+   */
+  const styleApplied = Number(rawText.match(/TOTAL CHEM\. STYLE ADDED:\s*\n?\s*(\d+)/i)?.[1] || 0) > 0;
+
   const handleImport = () => {
     setError(null);
     if (!rawText.trim()) {
@@ -124,6 +131,14 @@ export function ImportPlayerModal({ onClose, onImport }: ImportPlayerModalProps)
               className="w-full h-64 bg-gray-950 border border-gray-700 rounded-lg p-3 text-sm text-gray-200 focus:outline-none focus:border-fuchsia-500/50 resize-none font-mono"
             />
           </div>
+
+          {styleApplied && (
+            <div className="text-amber-300 text-sm p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              This page had a chemistry style applied. The boost is taken back off, but any stat it
+              pushed to 99 comes back a point or two low — clear the style on Futbin and copy again
+              for the exact card.
+            </div>
+          )}
 
           {error && (
             <div className="text-red-400 text-sm p-3 bg-red-500/10 rounded-lg border border-red-500/20">
