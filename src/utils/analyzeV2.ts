@@ -150,20 +150,21 @@ const prettySub = (key: string) =>
  */
 function archetypesByChem(
   subs: Record<string, number>,
-  heightCm?: number
+  heightCm: number | undefined,
+  styles: [string | null, Record<string, number>][]
 ): Map<AccelerateFamily, string[]> {
   const out = new Map<AccelerateFamily, string[]>();
   const acc = subs.acceleration ?? 50;
   const agi = subs.agility ?? 50;
   const str = subs.strength ?? 50;
 
-  for (const [name, boosts] of Object.entries(chemStyles)) {
+  for (const [name, boosts] of styles) {
     const cap = (base: number, key: string) => Math.min(99, base + (boosts[key] || 0));
     const fam = calculateAccelerateFamily(
       cap(acc, 'acceleration'), cap(agi, 'agility'), cap(str, 'strength'), heightCm
     );
     const list = out.get(fam) || [];
-    list.push(name);
+    list.push(name ?? 'bare');
     out.set(fam, list);
   }
   return out;
@@ -241,6 +242,22 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
    * and they cannot be reordered with what comes after. The evos are already spent.
    */
   const locked = (input.prefixChainIds ?? []).length;
+
+  /**
+   * Whether a build may be judged wearing a chemistry style it does not have yet.
+   *
+   * Off unless asked for. A style is a real choice and usually the right assumption — 96 and 99 are
+   * the same number once a +3 is on — but it is still an assumption, and while it is on, every
+   * floor a row clears and every archetype it reads is contingent on a style being applied. Off,
+   * the card is read as it is.
+   */
+  const assumeChem = input.filters?.assumeChemStyle === true;
+  /** The readings a build is allowed: every style, or only the card as it stands. */
+  const styleOptions: [string | null, Record<string, number>][] =
+    assumeChem ? STYLE_OPTIONS : [[null, {}]];
+  /** The best case for a stat, which is the bare value when nothing may be assumed. */
+  const bestCase = (subs: Record<string, number>, avoid?: string[]) =>
+    assumeChem ? optimistic(subs, avoid) : subs;
 
   const positions = baseBio.primaryPositions.split(',').map(p => p.trim()).filter(Boolean);
   const rankPositions = (positions.length > 0 ? positions : ['ST']).map(p => p.toUpperCase());
@@ -374,13 +391,13 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     // What the pool reaches is measured with a style on, because that is how the card gets played:
     // 96 and 99 are the same number once a +3 style is on it, and a bar set at the bare 99 charges
     // every build for a gap that does not exist on the pitch.
-    for (const [k, v] of Object.entries(optimistic(subs))) if (v > (achievable[k] ?? 0)) achievable[k] = v;
+    for (const [k, v] of Object.entries(bestCase(subs))) if (v > (achievable[k] ?? 0)) achievable[k] = v;
 
     // A build you have already turned down for this card does not come back.
     const ck = canonical(chainIds);
     if (downVoted.has(ck)) return;
 
-    const byChem = archetypesByChem(subs, height);
+    const byChem = archetypesByChem(subs, height, styleOptions);
     const cand: Candidate = {
       chainIds: [...chainIds],
       ovr: state.ovr,
@@ -408,7 +425,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       // Scored at its best case here, not at its bare value: the shortlist decides what survives to
       // be weighed properly, and a build that a style would carry over a floor must not be binned
       // before anything has looked at which style. The exact choice is made in pass two.
-      const provisional = scoreForTemplate(optimistic(subs, t.avoid), t, () => ENDGAME_TARGET);
+      const provisional = scoreForTemplate(bestCase(subs, t.avoid), t, () => ENDGAME_TARGET);
       const tier = tierOf(provisional.under.length === 0, fallback);
       const entry: Entry = { cand, arch, fallback };
       if (upVoted.has(ck) && !liked.has(`${t.id}|${ck}`)) liked.set(`${t.id}|${ck}`, entry);
@@ -455,7 +472,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
   const playedAs = (subsIn: Record<string, number>, t: BuildTemplate, arch: AccelerateFamily) => {
     const cand = { subs: subsIn } as Candidate;
     let best: { style: string | null; subs: Record<string, number>; s: Scored } | null = null;
-    for (const [style, boosts] of STYLE_OPTIONS) {
+    for (const [style, boosts] of styleOptions) {
       const subs = style === null ? cand.subs : withStyle(cand.subs, boosts);
       const fam = calculateAccelerateFamily(
         subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height
@@ -634,7 +651,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
   const scoreChain = (chainIds: string[], t: BuildTemplate, arch: AccelerateFamily) => {
     const got = subsOfChain(chainIds);
     if (!got) return null;
-    const byChem = archetypesByChem(got.subs, height);
+    const byChem = archetypesByChem(got.subs, height, styleOptions);
     // A trim that costs the card its archetype is not a trim, it is a different plan.
     if (!byChem.has(arch)) return null;
     const played = playedAs(got.subs, t, arch);

@@ -397,6 +397,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
     if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
     if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
+    if (evoFilters.assumeChemStyle) parts.push('judged on a chem style');
     if (evoFilters.newPosition) parts.push('a new position');
     if (evoFilters.noPositionChange) parts.push('positions unchanged');
     (['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).forEach(stat => {
@@ -883,6 +884,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           One EVO per rarity
+                        </label>
+                        {/* Off by default, and deliberately: a style is a real choice and usually
+                            the right assumption, but while it is on, every floor a row clears and
+                            every archetype it reads is contingent on putting one on. */}
+                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
+                               title="Judge builds wearing the best chemistry style they could legally take, instead of as the card stands">
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.assumeChemStyle}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, assumeChemStyle: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          Assume chem style
                         </label>
                       </div>
                     </div>

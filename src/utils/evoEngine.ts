@@ -1,6 +1,14 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
-import { achievableAccelerates, achievableAccelerateFamilies, controlModeFor, fitForPosition, fitScore } from './fitScore';
+import {
+  accelerateFamilyOf,
+  accelerateOf,
+  achievableAccelerates,
+  achievableAccelerateFamilies,
+  controlModeFor,
+  fitForPosition,
+  fitScore
+} from './fitScore';
 import { POSITION_WEIGHTS } from './positionWeights';
 import { faceWeight } from './statUtils';
 
@@ -760,13 +768,20 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
 
         // Not a prune: AcceleRATE moves both ways as a chain goes on, so a branch that misses the
         // wanted archetype now can still land on it later.
+        //
+        // "Reachable" means with a chemistry style on, which is an assumption and is only made when
+        // it has been asked for. Without it the question is what the card reads as it stands.
         if (filters.accelerate && filters.accelerate.length > 0) {
-          const reachable = achievableAccelerates(state.stats, state.bio);
+          const reachable = filters.assumeChemStyle
+            ? achievableAccelerates(state.stats, state.bio)
+            : new Set([accelerateOf(state.stats, state.bio)]);
           if (!filters.accelerate.some(type => reachable.has(type))) passesFilters = false;
         }
 
         if (filters.accelerateFamily && filters.accelerateFamily.length > 0) {
-          const reachable = achievableAccelerateFamilies(state.stats, state.bio);
+          const reachable = filters.assumeChemStyle
+            ? achievableAccelerateFamilies(state.stats, state.bio)
+            : new Set([accelerateFamilyOf(state.stats, state.bio)]);
           if (!filters.accelerateFamily.some(f => reachable.has(f))) passesFilters = false;
         }
 

@@ -292,6 +292,15 @@ export interface EvoFilters {
    * evo granting the rarity a step already gave is spending a step on nothing.
    */
   oneEvoPerRarity?: boolean;
+  /**
+   * Judge every build with the best chemistry style it could legally wear.
+   *
+   * Off by default, so a build is read as the card actually is. With it on, a stat at 93 and one at
+   * 99 are the same stat wherever a style would carry it, the archetype is whatever some style can
+   * make it, and the row says which style it assumed — which is the right reading when a style is
+   * going on the card anyway, and the wrong one when you want to know what you are really holding.
+   */
+  assumeChemStyle?: boolean;
 }
 
 export interface PlayerEvoState {
