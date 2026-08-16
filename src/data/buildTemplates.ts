@@ -71,16 +71,49 @@ export const PASS_MARK = 90;
 export const STAMINA_PASS = 94;
 
 /**
+ * Pace's own pass mark, on the plans that are about pace.
+ *
+ * An Explosive plan is a plan to beat someone over five yards, and a card that cannot do it is not
+ * a worse version of that plan — it is a different card, whatever its passing reads. 93 rather than
+ * 90 because a chemistry style is worth +3 to +6: from 93 the card ends up at 96 or 99, which is
+ * the number these builds are actually for.
+ *
+ * Lengthy plans are left alone. A 78-pace centre-back is doing its job.
+ */
+export const PACE_PASS = 93;
+
+/**
+ * Balance and ball control, on every plan there is.
+ *
+ * Not because every position is a dribbler, but because these two are what the card feels like on
+ * the ball at all: a build that loses it under contact or takes two touches to turn is one you stop
+ * picking, whatever the plan was. Same 93 as pace, and for the same reason — a style carries it to
+ * 96 or 99 from there.
+ */
+export const TOUCH_PASS = 93;
+
+/**
  * What each stat a plan runs on has to reach.
  *
  * Derived rather than written per template, so a plan cannot forget one — and stamina is added
  * whether or not the plan lists it, which is the bug this closes: ten of these plans never named
  * stamina in `must`, so a centre-back or a striker could be recommended at any stamina at all and
- * nothing in the model objected.
+ * nothing in the model objected. Pace on the Explosive plans is added the same way and for the
+ * same reason.
  */
 export function floorsOf(t: BuildTemplate): Record<string, number> {
-  const out: Record<string, number> = { stamina: STAMINA_PASS };
-  for (const key of t.must) out[key] = key === 'stamina' ? STAMINA_PASS : PASS_MARK;
+  const out: Record<string, number> = {
+    stamina: STAMINA_PASS,
+    balance: TOUCH_PASS,
+    ballControl: TOUCH_PASS
+  };
+  if (t.archetype === 'Explosive') {
+    out.acceleration = PACE_PASS;
+    out.sprintSpeed = PACE_PASS;
+  }
+  for (const key of t.must) {
+    out[key] = Math.max(out[key] ?? 0, key === 'stamina' ? STAMINA_PASS : PASS_MARK);
+  }
   for (const [key, v] of Object.entries(t.floorOverrides || {})) out[key] = Math.max(out[key] ?? 0, v);
   return out;
 }
