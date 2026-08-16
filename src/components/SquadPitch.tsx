@@ -178,6 +178,8 @@ interface SquadPitchProps {
   onSwapSlots: (squadId: string, fromSlotId: string, toSlotId: string) => void;
   /** Name of the build on screen, for the "add me here" tooltip. */
   currentName?: string;
+  /** Whoever the workbench has open — his cards on the pitch are marked, so the two views agree. */
+  currentPlayerId?: string;
   playersById: Record<string, PlayerData>;
 }
 
@@ -193,6 +195,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
   onAddCurrentToSlot,
   onSwapSlots,
   currentName,
+  currentPlayerId,
   playersById
 }) => {
   /** Which slot is being dragged. A squad is only its slots, so that is the only thing to drag. */
@@ -292,6 +295,9 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
   /** A filled slot. Same card on the pitch and in the reserves; only the fit warning differs. */
   const renderCard = (slotId: string, detail: SlotDetail, pos?: string) => {
     const mismatch = !!pos && detail.positions.length > 0 && !playsHere(pos, detail.positions);
+    // The card open in the workbench, wherever it is standing. Gold, the same mark a selected step
+    // wears on the chain, so "this is the one you are looking at" reads the same everywhere.
+    const isCurrent = !!currentPlayerId && detail.entry.playerId === currentPlayerId;
     const isOver = dragOverSlot === slotId;
     const isDragging = dragSlot === slotId;
 
@@ -326,11 +332,13 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
         }
         className={`w-[64px] rounded-xl p-1 border cursor-grab active:cursor-grabbing transition-all ${
           isDragging ? 'opacity-40' : ''
-        } ${
+        } ${isCurrent ? 'ring-1 ring-[#EBB626] shadow-[0_0_10px_rgba(235,182,38,0.25)]' : ''} ${
           isOver
             ? 'border-fcGreen bg-fcGreen/15'
             : mismatch
             ? 'bg-red-950/40 border-red-800/70 hover:border-red-500'
+            : isCurrent
+            ? 'bg-[#221f16] border-[#EBB626]/70'
             : 'bg-[#1f211f] border-gray-700 hover:border-fcGreen'
         }`}
       >

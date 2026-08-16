@@ -1838,6 +1838,7 @@ export default function App() {
                   onAddCurrentToSlot={addCurrentPlayerToSlot}
                   onSwapSlots={swapSquadSlots}
                   currentName={playerBio.name}
+                  currentPlayerId={selectedPlayerId}
                   playersById={allPlayersData}
                 />
               }
