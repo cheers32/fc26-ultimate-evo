@@ -304,18 +304,23 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
             the rest of the app judges a build on, on the card where the judging happens. */}
         {detail.score && (
           <div
-            className="flex items-center justify-center gap-1 font-mono text-[8px] leading-[10px] mt-0.5 border-t border-gray-700/60 pt-0.5"
+            className="font-mono text-[8px] leading-[10px] mt-0.5 border-t border-gray-700/60 pt-0.5"
             title={
               `${detail.score.position} ${detail.score.score.toFixed(1)}/100 as ${detail.score.plan.name}` +
               ` · ${detail.score.style ? `on ${detail.score.style}` : 'bare'}` +
               (detail.ps ? ` · PlayStyles ${detail.ps.score.toFixed(1)}/100` : '')
             }
           >
-            <span className={getStatColorClass(detail.score.score)}>{detail.score.score.toFixed(0)}</span>
-            <span className="text-gray-600">·</span>
-            <span className={detail.ps ? getStatColorClass(detail.ps.score) : 'text-gray-600'}>
-              {detail.ps ? detail.ps.score.toFixed(0) : '—'}
-            </span>
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-gray-500">{detail.score.position}</span>
+              <span className={getStatColorClass(detail.score.score)}>{detail.score.score.toFixed(1)}</span>
+            </div>
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-gray-500">PS</span>
+              <span className={detail.ps ? getStatColorClass(detail.ps.score) : 'text-gray-600'}>
+                {detail.ps ? detail.ps.score.toFixed(1) : '—'}
+              </span>
+            </div>
           </div>
         )}
       </div>

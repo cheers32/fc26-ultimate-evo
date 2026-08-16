@@ -7,13 +7,14 @@ import { feedbackForPlayer, feedbackKeyOf, flattenSubs, makeFeedback, templateId
 import { BUILD_TEMPLATES } from './data/buildTemplates';
 import { HeaderCard } from './components/HeaderCard';
 import { PlayerSubInfo } from './components/PlayerSubInfo';
+import { CardVerdict } from './components/CardVerdict';
 import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
 import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
-import { bestScore } from './utils/positionScore';
+import { bestScore, scoreAtPosition } from './utils/positionScore';
 import { playStyleScoreAt } from './utils/playStyleScore';
 import { DEFAULT_PATH_ID, IN_GAME_STAR_TIER, isInGamePath } from './utils/paths';
 import {
@@ -43,7 +44,7 @@ import { EvoPoolModal, EvoStatuses } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { PlayStylePickerModal } from './components/PlayStylePickerModal';
-import { SquadPitch, ALL_SLOT_IDS } from './components/SquadPitch';
+import { SquadPitch, ALL_SLOT_IDS, FORMATION_4231 } from './components/SquadPitch';
 import { ImportPlayerModal } from './components/ImportPlayerModal';
 import { Trophy, Layers } from 'lucide-react';
 import { Squad, SquadSlot, PlayerEvoState } from './types/player';
@@ -1450,8 +1451,26 @@ export default function App() {
     };
   }, [baseNode, previewNode, evoPreview, chainResult, compareChainResult, statsData, initialOvrData, playStylesData, playerBio]);
 
-  /** The previewed card scored where it plays — both header badges then read the same position. */
-  const previewScore = useMemo(() => bestScore(previewStats, previewBio), [previewStats, previewBio]);
+  /**
+   * Where this card is being judged. The slot it stands in on the pitch, because that is the
+   * question actually being asked of it — and its primary position when it isn't on one, which is
+   * what the card claims to be. Never "wherever it happens to score best": a right-back reading 96
+   * as a centre-back tells you nothing about the team you are picking.
+   */
+  const scorePosition = useMemo(() => {
+    const squad = squads.find(s => s.id === activeSquadId) || squads[0];
+    const onPitch = squad
+      ? Object.entries(squad.slots || {}).find(([, entry]) => entry?.playerId === selectedPlayerId)
+      : undefined;
+    const slotPos = onPitch ? FORMATION_4231.find(slot => slot.id === onPitch[0])?.pos : undefined;
+    return slotPos || previewBio.primaryPositions.split(',')[0]?.trim() || 'ST';
+  }, [squads, activeSquadId, selectedPlayerId, previewBio.primaryPositions]);
+
+  /** The previewed card scored there — every badge on the page reads this one position. */
+  const previewScore = useMemo(
+    () => scoreAtPosition(previewStats, previewBio, scorePosition) ?? bestScore(previewStats, previewBio),
+    [previewStats, previewBio, scorePosition]
+  );
 
   // Calculate IGS & Face Stats Summary
   const { igs, faceSum, accelerateType, accelerateFamily } = useMemo(() => {
@@ -1690,6 +1709,7 @@ export default function App() {
               ? playStyleScoreAt(previewStats, previewPlayStyles, previewBio, previewScore.position)
               : null
           }
+          scorePosition={previewScore?.position ?? scorePosition}
           igs={igs}
           faceSum={faceSum}
           activeEvo={activeEvo}
@@ -1798,6 +1818,9 @@ export default function App() {
                   currentName={playerBio.name}
                   playersById={allPlayersData}
                 />
+              }
+              asideBelow={
+                <CardVerdict stats={previewStats} bio={previewBio} position={scorePosition} />
               }
               below={
                 <ChemistryGrid

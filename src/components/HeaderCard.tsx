@@ -102,6 +102,11 @@ interface HeaderCardProps {
   score?: PositionScore | null;
   /** The same for its PlayStyles, scored separately because it is a separate question. */
   psScore?: PlayStyleScore | null;
+  /**
+   * Where the card is being judged: the slot it stands in on the pitch, or its primary position.
+   * Every score on this card reads it, so a chain's steps are all measured at one place.
+   */
+  scorePosition?: string;
 }
 
 /**
@@ -264,7 +269,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onRemoveNode,
   onSetProgress,
   score,
-  psScore
+  psScore,
+  scorePosition
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -499,7 +505,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
    * The raw card scored where it plays. Every step of every chain is then measured at this same
    * position, so the numbers down a row answer one question instead of each answering its own.
    */
-  const baseScore = React.useMemo(() => bestScore(rawStats, bio), [rawStats, bio]);
+  const baseScore = React.useMemo(
+    () =>
+      (scorePosition ? scoreAtPosition(rawStats, bio, scorePosition) : null) ?? bestScore(rawStats, bio),
+    [rawStats, bio, scorePosition]
+  );
   const basePs = React.useMemo(
     () => (baseScore ? playStyleScoreAt(rawStats, rawPlayStyles, bio, baseScore.position) : null),
     [baseScore, rawStats, rawPlayStyles, bio]

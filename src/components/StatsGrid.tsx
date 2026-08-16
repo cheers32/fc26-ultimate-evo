@@ -11,6 +11,8 @@ interface StatsGridProps {
   aside?: React.ReactNode;
   /** Rendered under the stat cards, in their column — e.g. the chemistry style picker. */
   below?: React.ReactNode;
+  /** Rendered under the aside, in its column — e.g. the card's strengths and weaknesses. */
+  asideBelow?: React.ReactNode;
   /**
    * All six panels on one row, tightened to fit. For the builder, where the grid is a reference
    * held next to the work rather than the page's own subject and every row it takes is a row of
@@ -26,6 +28,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   activeEvo,
   aside,
   below,
+  asideBelow,
   dense = false
 }) => {
   // Calculate Utilization stats if a specific EVO is selected
@@ -237,9 +240,10 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           {below}
         </div>
 
-        {aside && (
-          <div className="lg:shrink-0">
+        {(aside || asideBelow) && (
+          <div className="lg:shrink-0 flex flex-col">
             {aside}
+            {asideBelow}
           </div>
         )}
       </div>
