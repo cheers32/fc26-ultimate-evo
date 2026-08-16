@@ -28,33 +28,65 @@ export function parseFutbinText(
     // reading the line above the rating as the name is what used to make every accented player an
     // "Imported Player" at OVR 80: the old pattern spelt the name [A-Za-z\s.-]+, so Mbappé and
     // Fernández could not match it, and the fallback was a made-up card.
-    const POSITIONS = 'GK|CB|RB|LB|RWB|LWB|CDM|CM|CAM|RM|LM|RW|LW|CF|ST';
-    const cardMatch = text.match(new RegExp(
-      `\\n(\\d{2})\\n` +                                    // OVR
-      `((?:(?:${POSITIONS})\\n(?:\\+{1,2}\\n)?)+)` +        // positions, each with an optional +/++
-      `(?:([RL])\\n(\\d)\\n(\\d)\\n)?` +                    // foot, skill moves, weak foot
-      `(?:[\\d.]+\\n)?` +                                   // FUTBIN's own rating
-      `([^\\n]+)\\n\\d{1,3}\\nPAC\\n`                       // short name, then the first face stat
-    ));
+    const POSITION_LIST = ['GK', 'CB', 'RB', 'LB', 'RWB', 'LWB', 'CDM', 'CM', 'CAM', 'RM', 'LM', 'RW', 'LW', 'CF', 'ST'];
 
-    // The bio heading carries the full name where the card widget only has the surname.
+    // Read the card widget by walking back from the PAC that closes it rather than by matching a
+    // fixed run of lines. The widget prints
+    //
+    //   96 / CB / ++ / L / 4 / 5 / 94.2 / Pacho / 93 / PAC / …
+    //
+    // but not always all of it and not always in that order — the foot, the star ratings and
+    // FUTBIN's own rating come and go with the copy, and a pattern that spells the whole sequence
+    // out fails whole cards over one missing line. Walking back only assumes what is actually
+    // reliable: the positions sit above the short name, and the rating sits above the positions.
+    const lines = text.split('\n').map(line => line.trim());
+    const card = (() => {
+      for (let i = 1; i < lines.length; i++) {
+        if (lines[i] !== 'PAC' || !/^\d{1,3}$/.test(lines[i - 1])) continue;
+
+        const shortName = lines[i - 2] || '';
+        const positions: string[] = [];
+        let ovr: number | undefined;
+        let foot = '';
+        const digits: number[] = [];
+
+        for (let j = i - 3; j >= 0 && i - j < 16; j--) {
+          const line = lines[j];
+          if (POSITION_LIST.includes(line)) { positions.unshift(line); continue; }
+          if (/^\+{1,2}$/.test(line)) continue;                 // the role marker on a position
+          if (/^[RL]$/.test(line)) { foot = line; continue; }    // which foot
+          if (/^\d{1,3}\.\d$/.test(line)) continue;             // FUTBIN's own rating
+          if (/^\d$/.test(line)) { digits.unshift(Number(line)); continue; } // skills, weak foot
+          if (/^\d{2}$/.test(line) && positions.length > 0) { ovr = Number(line); break; }
+          if (positions.length > 0) break;                       // anything else ends the widget
+        }
+
+        if (ovr !== undefined && positions.length > 0) {
+          return { ovr, positions, foot, skills: digits[0], weakFoot: digits[1], shortName };
+        }
+      }
+      return null;
+    })();
+
+    // The full name, in the order the page is most likely to still have it after a partial copy:
+    // the bio heading at the bottom, the page heading at the top, then the surname on the card.
     const bioNameMatch = text.match(/\nPlayer Bio - ([^\n]+)\n/);
-    data.name = (bioNameMatch?.[1] || cardMatch?.[6] || 'Imported Player').trim();
+    // "Willian Pacho Festival of Football: Phenoms" sits above "PACHO - Festival of Football:
+    // Phenoms EA FC 26 Prices and Rating", so the version is what to trim off the heading.
+    const headingMatch = text.match(/\n([^\n]+)\n[^\n]+ - (.+?) EA FC 26 Prices and Rating\n/);
+    const headingName = headingMatch
+      ? headingMatch[1].replace(new RegExp(`\\s*${headingMatch[2].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`), '').trim()
+      : '';
+    data.name = (bioNameMatch?.[1] || headingName || card?.shortName || 'Imported Player').trim();
 
     // The bio spells the rating out in prose — "his UCL Road to the Finals card is rated 93" — and
     // prose survives a layout change that moves the card widget's line breaks around. Which does
     // happen: the same page copied from a different browser glued labels to their values, and the
     // widget stopped matching, so a real card imported at the made-up 80 again.
     const ratedMatch = text.match(/card is rated (\d{2,3})/i);
-    data.baseOvr = cardMatch
-      ? parseInt(cardMatch[1], 10)
-      : ratedMatch
-      ? parseInt(ratedMatch[1], 10)
-      : 80;
-    data.cardPositions = cardMatch
-      ? [...cardMatch[2].matchAll(new RegExp(`(${POSITIONS})`, 'g'))].map(m => m[1])
-      : [];
-    data.foot = cardMatch?.[3] === 'L' ? 'Left' : cardMatch?.[3] === 'R' ? 'Right' : '';
+    data.baseOvr = card?.ovr ?? (ratedMatch ? parseInt(ratedMatch[1], 10) : 80);
+    data.cardPositions = card?.positions ?? [];
+    data.foot = card?.foot === 'L' ? 'Left' : card?.foot === 'R' ? 'Right' : '';
 
     // 1.5 Extract Club, Nation, League, Height, Skills, Weak Foot, Age and the card's version.
     //
@@ -78,8 +110,8 @@ export function parseFutbinText(
 
     const skills = labelled('SKILLS');
     const weakFoot = labelled('WEAK FOOT');
-    data.skills = skills ? parseInt(skills, 10) : cardMatch?.[4] ? parseInt(cardMatch[4], 10) : 3;
-    data.wf = weakFoot ? parseInt(weakFoot, 10) : cardMatch?.[5] ? parseInt(cardMatch[5], 10) : 3;
+    data.skills = skills ? parseInt(skills, 10) : card?.skills ?? 3;
+    data.wf = weakFoot ? parseInt(weakFoot, 10) : card?.weakFoot ?? 3;
     data.height = labelled('HEIGHT') || 'Unknown Height';
 
     const age = labelled('AGE').match(/\d+/)?.[0];

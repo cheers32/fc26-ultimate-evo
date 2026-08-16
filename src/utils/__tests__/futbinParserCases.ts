@@ -902,3 +902,142 @@ check('Messi 90, chemistry style applied on the page', STYLED, 1, {
   igs: 2303,
   playStyles: ['Finesse Shot+']
 });
+
+/**
+ * Only the top of the page, which is what a mouse-drag selection gives: the card, the labelled bio
+ * strip and the stats, and none of the prose below them. Pacho imported from a copy like this as
+ * "Imported Player", OVR 80, rarity Custom — the name, the rating and the version were all being
+ * read from the bottom of the page, and the card widget was matched as one fixed run of lines.
+ */
+const PARTIAL = `Home
+EA FC 26
+Players
+Willian Pacho Festival of Football: Phenoms
+PACHO - Festival of Football: Phenoms EA FC 26 Prices and Rating
+Summary
+Stats
+Market
+Evolution
+
+96
+CB
+++
+L
+4
+5
+94.2
+Pacho
+93
+PAC
+46
+SHO
+85
+PAS
+83
+DRI
+96
+DEF
+94
+PHY
+PRICE RANGE:
+15,000 - 200,000
+SKILLS
+4
+WEAK FOOT
+5
+HEIGHT
+188cm | 6'2"
+FOOT
+Left
+AGE
+24 years old
+Anticipate
+Pace
+93
+Acceleration
+92
+Sprint Speed
+94
+Shooting
+46
+Att. Position
+40
+Finishing
+36
+Shot Power
+72
+Long Shots
+40
+Volleys
+30
+Penalties
+45
+Passing
+85
+Vision
+82
+Crossing
+70
+FK Acc.
+55
+Short Pass
+93
+Long Pass
+88
+Curve
+70
+Dribbling
+83
+Agility
+80
+Balance
+78
+Reactions
+92
+Ball Control
+88
+Dribbling
+80
+Composure
+92
+Defending
+96
+Interceptions
+95
+Heading Acc.
+93
+Def. Aware
+97
+Stand Tackle
+96
+Slide Tackle
+94
+Physical
+94
+Jumping
+92
+Stamina
+90
+Strength
+96
+Aggression
+88
+`;
+
+check('Pacho 96, only the top of the page copied', PARTIAL, 1, {
+  name: 'Willian Pacho',
+  ovr: 96,
+  positions: 'CB',
+  rarity: 'Festival of Football: Phenoms',
+  club: 'Unknown Club',
+  nation: 'Unknown Nation',
+  league: 'Unknown League',
+  height: `188cm | 6'2"`,
+  footAge: 'Left | 24 yrs',
+  skillMoves: 4,
+  weakFoot: 5,
+  faces: { pac: 93, sho: 46, pas: 85, dri: 83, def: 96, phy: 94 },
+  baseStats: 497,
+  igs: 2258,
+  playStyles: ['Anticipate+']
+});
