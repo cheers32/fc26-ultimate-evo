@@ -2,7 +2,14 @@ import { EvolutionDefinition, EvolutionPath, PlayerBio, StatsData } from '../typ
 import { availableEvolutions } from '../data/evolutionsData';
 import { chemStyles } from '../data/chemStyles';
 import { ChainSearchInput, forEachChain, simulateEvoChain, validateRequirement } from './evoEngine';
-import { BuildTemplate, PASS_MARK, floorsOf, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
+import {
+  BuildTemplate,
+  FIELDABLE_FLOORS,
+  PASS_MARK,
+  floorsOf,
+  suggestTemplates,
+  templatesAvailable
+} from '../data/buildTemplates';
 import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './statUtils';
 
 /**
@@ -483,6 +490,10 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           tierIdx: TIERS.indexOf(tierOf(played.s.under.length === 0, e.fallback))
         };
       })
+      // Under a plan's own floor is a build you should be told about — it is the plan you asked for,
+      // played short. Under a fieldable floor is not a build at all: a card that cannot run, cannot
+      // last the game or cannot keep the ball is not recommended with a note, it is not recommended.
+      .filter(row => !row.s.under.some(u => u.key in FIELDABLE_FLOORS))
       .sort((a, b) => a.tierIdx - b.tierIdx || b.s.score - a.s.score);
     if (scored.length === 0) continue;
 
