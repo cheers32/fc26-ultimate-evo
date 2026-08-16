@@ -2,7 +2,7 @@ import { EvolutionDefinition, EvolutionPath, PlayerBio, StatsData } from '../typ
 import { availableEvolutions } from '../data/evolutionsData';
 import { chemStyles } from '../data/chemStyles';
 import { ChainSearchInput, forEachChain, simulateEvoChain, validateRequirement } from './evoEngine';
-import { BuildTemplate, templatesFor } from '../data/buildTemplates';
+import { BuildTemplate, PASS_MARK, floorsOf, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './statUtils';
 
 /**
@@ -48,7 +48,7 @@ import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './st
  * The end-game zero. At this stage of the game 90 is not a good number, it is the pass mark: a card
  * is measured by what it has *above* 90, and anything below is a fail rather than a low score.
  */
-const ENDGAME_TARGET = 90;
+const ENDGAME_TARGET = PASS_MARK;
 
 /**
  * What a point of shortfall costs, in the same unit as a point of gain. Symmetric on purpose —
@@ -115,20 +115,6 @@ function archetypesByChem(
     out.set(fam, list);
   }
   return out;
-}
-
-/**
- * Whether a card can read an archetype at all, before any stat or style is considered. Height is the
- * one input no evo can change: below 185 a card will never be Lengthy, above 182 it will never be
- * Explosive. This is what stops a 180cm icon being handed a Lengthy destroyer plan that quietly
- * demoted itself to Controlled — a plan the card cannot carry out is not a fallback, it is the
- * wrong plan, and printing it is how a shortlist fills up with strength on a playmaker.
- */
-function archetypePossible(fam: AccelerateFamily, heightCm?: number): boolean {
-  if (heightCm === undefined) return true;
-  if (fam === 'Lengthy') return heightCm >= 185;
-  if (fam === 'Explosive') return heightCm <= 182;
-  return true;
 }
 
 /** What a chain costs, in the terms that matter when one pool has to dress a whole team. */
@@ -205,7 +191,8 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
   ): Scored => {
     // A plan's own floor outranks the general end-game bar where it is higher, and neither is worth
     // charging for beyond what this card could ever reach.
-    const targetFor = (key: string) => Math.min(Math.max(ENDGAME_TARGET, t.floors[key] ?? 0), reach(key));
+    const floors = floorsOf(t);
+    const targetFor = (key: string) => Math.min(Math.max(ENDGAME_TARGET, floors[key] ?? 0), reach(key));
     let raw = 0;
     let total = 0;
     for (const [key, w] of Object.entries(t.maximise)) {
@@ -221,7 +208,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
       raw -= over * AVOID_COST;
     }
 
-    const under = Object.entries(t.floors)
+    const under = Object.entries(floors)
       .map(([key, floor]) => ({ key, floor, value: subs[key] ?? 0 }))
       .filter(x => x.value < x.floor)
       .sort((a, b) => (b.floor - b.value) - (a.floor - a.value));
@@ -268,8 +255,19 @@ export function analyzeEvolutionsV2(input: ChainSearchInput): EvolutionPath[] {
   // Only the plans this card could actually be: the right positions, and an archetype its frame
   // allows. A CB has no business on the winger list, and a 180cm card has none on a Lengthy one.
   const canFallBack = (t: BuildTemplate) => t.controlledFallback === true && t.archetype === 'Explosive';
-  const templates = templatesFor(rankPositions)
-    .filter(t => archetypePossible(t.archetype, height) || canFallBack(t));
+
+  // Three states, and the difference between two of them matters. No choice at all means "you pick"
+  // — the one or two plans this card already is, so a search returns an answer rather than a
+  // catalogue. An empty choice is the user having cleared it on purpose, which means every plan the
+  // card's positions and frame allow. A list is a list.
+  const wanted = input.filters?.templateIds;
+  const pick =
+    wanted === undefined
+      ? suggestTemplates(rankPositions, subValues(baseStats), baseBio.roles, height)
+      : wanted.length > 0
+        ? wanted
+        : null;
+  const templates = templatesAvailable(rankPositions, height).filter(t => !pick || pick.includes(t.id));
 
   // Pass one: fill the shortlists. A build is admitted to a template only if it can be made to read
   // that template's archetype — or Controlled, where the template says that is a real card too.

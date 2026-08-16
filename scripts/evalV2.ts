@@ -9,9 +9,10 @@ import { analyzeEvolutions } from '../src/utils/evoEngine';
 import { analyzeEvolutionsV2 } from '../src/utils/analyzeV2';
 import { availableEvolutions } from '../src/data/evolutionsData';
 import { calculateAccelerateFamily, calculateAccelerateType, parseHeightCm } from '../src/utils/statUtils';
+import { suggestTemplates, templatesAvailable, BUILD_TEMPLATES } from '../src/data/buildTemplates';
 import { readFileSync } from 'fs';
 
-const [, , playersPath, teamPath, nameQuery, depthArg, versionArg] = process.argv;
+const [, , playersPath, teamPath, nameQuery, depthArg, versionArg, planArg] = process.argv;
 const players = JSON.parse(readFileSync(playersPath, 'utf8')) as Record<string, any>;
 const team = JSON.parse(readFileSync(teamPath, 'utf8'));
 const maxDepth = Number(depthArg || 3);
@@ -41,6 +42,11 @@ console.log(
     `${calculateAccelerateFamily(sub('acceleration'), sub('agility'), sub('strength'), height)} / ` +
     `${calculateAccelerateType(sub('acceleration'), sub('agility'), sub('strength'), height)}`
 );
+const subsAll: Record<string, number> = {};
+for (const f of Object.values(player.stats) as any[]) for (const [k, v] of Object.entries(f.subs) as any) subsAll[k] = v.base;
+const suggested = suggestTemplates(player.bio.primaryPositions.split(','), subsAll, player.bio.roles, height);
+console.log(`available: ${templatesAvailable(player.bio.primaryPositions.split(','), height).map(t => t.name).join(', ')}`);
+console.log(`suggested: ${suggested.map(id => BUILD_TEMPLATES.find(t => t.id === id)!.name).join(' + ')}`);
 console.log(`pool ${poolIds.length} evos · depth ${maxDepth}\n`);
 
 const input = {
@@ -49,7 +55,8 @@ const input = {
   baseBio: player.bio,
   baseOvr: player.ovr,
   baseStats: player.stats,
-  basePlayStyles: player.playStyles
+  basePlayStyles: player.playStyles,
+  filters: planArg ? { templateIds: planArg === 'all' ? [] : planArg.split(',') } : undefined
 };
 
 const t0 = Date.now();

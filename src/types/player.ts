@@ -185,6 +185,12 @@ export interface EvoFilters {
   phy?: StatFilter;
   psPlus?: StatFilter;
   ps?: StatFilter;
+  /**
+   * Which build templates V2 ranks against. Empty or absent means every plan the card's positions
+   * and frame allow — the app pre-selects the one or two it suggests, and clearing them is how you
+   * ask to see the lot.
+   */
+  templateIds?: string[];
   requiredEvos?: string[];
   blockedEvos?: string[];
   newRarity?: boolean;

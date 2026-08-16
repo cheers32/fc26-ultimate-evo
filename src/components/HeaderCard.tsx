@@ -1,7 +1,8 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
+import { BUILD_TEMPLATES, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { availableEvolutions } from '../data/evolutionsData';
@@ -253,6 +254,21 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
   const [showFilters, setShowFilters] = React.useState(false);
   const [draftFilters, setDraftFilters] = React.useState<EvoFilters>(evoFilters || {});
+
+  // Judged on the card as it is, not on the build in progress: which plan a card is for does not
+  // change halfway through a chain.
+  const buildPlans = React.useMemo(() => {
+    const positions = (rawPositions || bio.primaryPositions || '').split(',').map(p => p.trim()).filter(Boolean);
+    const heightCm = parseHeightCm(bio.height);
+    const subs: Record<string, number> = {};
+    for (const face of Object.values(rawStats || {})) {
+      for (const [key, sub] of Object.entries(face.subs)) subs[key] = sub.base;
+    }
+    return {
+      available: templatesAvailable(positions, heightCm),
+      suggested: suggestTemplates(positions, subs, bio.roles, heightCm)
+    };
+  }, [bio, rawStats, rawPositions]);
   // Which name is being edited, and the name being typed. Held here rather than in the path so an
   // abandoned edit leaves nothing behind. A build is renameable from two places — its chip and its
   // row — so the key carries both the path and which of the two is open, or they would both put an
@@ -337,6 +353,12 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     (evoFilters.requiredEvos || []).forEach(id =>
       parts.push(`must include ${availableEvolutions[id]?.name || id}`)
     );
+    if (evoFilters.templateIds && evoFilters.templateIds.length > 0) {
+      const names = evoFilters.templateIds
+        .map(id => BUILD_TEMPLATES.find(t => t.id === id)?.name)
+        .filter(Boolean);
+      if (names.length > 0) parts.push(`the ${names.join(' or ')} plan`);
+    }
     if (evoFilters.accelerateFamily && evoFilters.accelerateFamily.length > 0) {
       parts.push(`AcceleRATE ${evoFilters.accelerateFamily.join(' or ')} in game`);
     }
@@ -370,6 +392,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     // One narrowing, however many archetypes are ticked — the badge counts filters, not values.
     if (evoFilters.accelerate && evoFilters.accelerate.length > 0) count++;
     if (evoFilters.accelerateFamily && evoFilters.accelerateFamily.length > 0) count++;
+    if (evoFilters.templateIds && evoFilters.templateIds.length > 0) count++;
 
     // Check stats
     const statsToCheck = ['pac', 'sho', 'pas', 'dri', 'def', 'phy', 'ovr'];
@@ -739,6 +762,73 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           Keep Positions
                         </label>
                       </div>
+                    </div>
+
+                    {/* The plans V2 ranks against. A position is not a plan — a Rock CB and a Pace
+                        CB want different evos out of the same pool — so the choice of plan is the
+                        first thing the search needs, not the last. Left alone it uses the one or two
+                        this card already is, by its own roles and archetype; "All plans" is how you
+                        ask to see every option the card's positions and frame allow. */}
+                    <div className="mb-4 pb-3 border-b border-gray-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                          Build Plan <span className="text-gray-600 normal-case">· Analyze V2 only</span>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setDraftFilters({ ...draftFilters, templateIds: undefined })}
+                            className={`text-[10px] uppercase tracking-wider font-bold ${
+                              draftFilters.templateIds === undefined ? 'text-fcGreen' : 'text-gray-500 hover:text-white'
+                            }`}
+                          >
+                            Suggested
+                          </button>
+                          <button
+                            onClick={() => setDraftFilters({ ...draftFilters, templateIds: [] })}
+                            className={`text-[10px] uppercase tracking-wider font-bold ${
+                              draftFilters.templateIds?.length === 0 ? 'text-fcGreen' : 'text-gray-500 hover:text-white'
+                            }`}
+                          >
+                            All plans
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {buildPlans.available.map(t => {
+                          const auto = draftFilters.templateIds === undefined;
+                          const isSuggested = buildPlans.suggested.includes(t.id);
+                          const picked = auto ? isSuggested : (draftFilters.templateIds || []).includes(t.id);
+                          return (
+                            <button
+                              key={t.id}
+                              onClick={() => {
+                                const current = auto ? buildPlans.suggested : (draftFilters.templateIds || []);
+                                const next = picked ? current.filter(id => id !== t.id) : [...current, t.id];
+                                setDraftFilters({ ...draftFilters, templateIds: next });
+                              }}
+                              title={`${t.blurb} — ${t.archetype}${t.controlledFallback ? ', or Controlled if the card cannot reach it' : ''}. Passes at 90 on ${t.must.join(', ')}.`}
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${
+                                picked
+                                  ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
+                                  : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151] hover:text-white'
+                              }`}
+                            >
+                              {isSuggested && <span className={picked ? 'text-black/60' : 'text-fcGreen'}>★ </span>}
+                              {t.name}
+                            </button>
+                          );
+                        })}
+                        {buildPlans.available.length === 0 && (
+                          <span className="text-[10px] text-gray-600">No plan fits this card's positions and height.</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-gray-600 mt-1.5 leading-snug">
+                        {draftFilters.templateIds === undefined
+                          ? `★ suggested for this card — V2 will rank against ${buildPlans.suggested.length === 1 ? 'this plan' : 'these two'} only`
+                          : draftFilters.templateIds.length === 0
+                            ? 'Every plan this card can carry out'
+                            : `${draftFilters.templateIds.length} chosen`}
+                      </p>
                     </div>
 
                     {/* AcceleRATE is not a stat you can put a floor under — it is one of seven
