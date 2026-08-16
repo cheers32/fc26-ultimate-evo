@@ -2,6 +2,8 @@ import { PlayStylesData, PlayerBio, StatsData } from '../types/player';
 import { PLAYSTYLE_VALUES } from './playstyleValues';
 import { controlModeFor, accelerateOf, playStyleValue, playStylesScore } from './fitScore';
 import { ControlMode } from './playstyleProfile';
+import { withStyleStats } from './chem';
+import { chemStyles } from '../data/chemStyles';
 
 /**
  * What a card's PlayStyles are worth at a position, out of 100 — kept apart from the stat score on
@@ -56,9 +58,20 @@ export function playStyleScoreAt(
   playStyles: PlayStylesData,
   bio: PlayerBio,
   position: string,
-  mode?: ControlMode
+  opts: {
+    mode?: ControlMode;
+    /**
+     * The chemistry style the card is being read under, if any. PlayStyle values are gated on
+     * sub-stats, and a gate is exactly where the bare card and the fielded one answer differently
+     * — Power Shot on 92 shot power is not the PlayStyle it is on 89 — so this has to be the same
+     * style the position score beside it was read under, or the two disagree about one card.
+     */
+    style?: string | null;
+  } = {}
 ): PlayStyleScore {
   const pos = position.trim().toUpperCase();
+  const { mode } = opts;
+  if (opts.style) stats = withStyleStats(stats, chemStyles[opts.style] || {});
   // Scored at one position rather than across the card's list, so the number can be compared with
   // the stat score beside it — both are answering "here, at this position".
   const here: PlayerBio = { ...bio, primaryPositions: pos };
@@ -125,6 +138,6 @@ export function playStyleScoreCard(
     .split(',')
     .map(p => p.trim())
     .filter(Boolean)
-    .map(p => playStyleScoreAt(stats, playStyles, bio, p, mode))
+    .map(p => playStyleScoreAt(stats, playStyles, bio, p, { mode }))
     .sort((a, b) => b.score - a.score);
 }

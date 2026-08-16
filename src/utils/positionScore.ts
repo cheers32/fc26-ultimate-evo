@@ -137,7 +137,16 @@ function scoreAgainst(subs: Record<string, number>, t: BuildTemplate) {
 export function scoreAtPosition(
   stats: StatsData,
   bio: PlayerBio,
-  position: string
+  position: string,
+  /**
+   * Whether the card may be read wearing the best style it could legally take.
+   *
+   * Off by default, and the default is the honest one: a style is a choice you have not made yet,
+   * and which one you would actually put on is your call rather than the model's. With it on, this
+   * is the card as it would be fielded — 96 and 99 are the same stat once a +3 is on it — and the
+   * style it assumed is named in the result so the number can be checked.
+   */
+  assumeChem = false
 ): PositionScore | null {
   const key = position.trim().toUpperCase();
   const sided = SIDED[key];
@@ -153,7 +162,7 @@ export function scoreAtPosition(
   let best: PositionScore | null = null;
 
   for (const plan of plans) {
-    for (const [style, boosts] of STYLE_OPTIONS) {
+    for (const [style, boosts] of assumeChem ? STYLE_OPTIONS : BARE_ONLY) {
       const styled = style === null ? subs : withStyle(subs, boosts);
       const archetype = calculateAccelerateFamily(
         styled.acceleration ?? 50, styled.agility ?? 50, styled.strength ?? 50, height
@@ -174,18 +183,21 @@ export function scoreAtPosition(
   return best;
 }
 
+/** The one reading available when no style may be assumed: the card as it stands. */
+const BARE_ONLY: [string | null, Record<string, number>][] = [[null, {}]];
+
 /** The card at each position it lists, best first. */
-export function scoreCard(stats: StatsData, bio: PlayerBio): PositionScore[] {
+export function scoreCard(stats: StatsData, bio: PlayerBio, assumeChem = false): PositionScore[] {
   return bio.primaryPositions
     .split(',')
     .map(p => p.trim())
     .filter(Boolean)
-    .map(p => scoreAtPosition(stats, bio, p))
+    .map(p => scoreAtPosition(stats, bio, p, assumeChem))
     .filter((s): s is PositionScore => s !== null)
     .sort((a, b) => b.score - a.score);
 }
 
 /** The one number to put on a card: what it is worth at the position it is best at. */
-export function bestScore(stats: StatsData, bio: PlayerBio): PositionScore | null {
-  return scoreCard(stats, bio)[0] ?? null;
+export function bestScore(stats: StatsData, bio: PlayerBio, assumeChem = false): PositionScore | null {
+  return scoreCard(stats, bio, assumeChem)[0] ?? null;
 }

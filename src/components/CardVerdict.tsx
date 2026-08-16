@@ -19,8 +19,13 @@ export const CardVerdict: React.FC<{
   position: string;
   /** Which card this is about — the step on the chain it was read from. */
   context?: string;
-}> = ({ stats, bio, position, context }) => {
-  const verdict = React.useMemo(() => verdictAt(stats, bio, position), [stats, bio, position]);
+  /** Judge it wearing the best legal chemistry style, the same as every other score on screen. */
+  assumeChemStyle?: boolean;
+}> = ({ stats, bio, position, context, assumeChemStyle = false }) => {
+  const verdict = React.useMemo(
+    () => verdictAt(stats, bio, position, 3, assumeChemStyle),
+    [stats, bio, position, assumeChemStyle]
+  );
   if (!verdict || (verdict.strengths.length === 0 && verdict.weaknesses.length === 0)) return null;
 
   const column = (

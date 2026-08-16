@@ -107,6 +107,11 @@ function migratePlayStylePicks(
   };
 }
 
+/** Settings that belong to the person rather than to a card or a team. */
+interface Preferences {
+  assumeChemStyle?: boolean;
+}
+
 export default function App() {
   // Which team's state the app is looking at. The team owns its EVO pool and its squads; the
   // player and EVO libraries below are global, so a card imported by anyone shows up for everyone.
@@ -133,6 +138,18 @@ export default function App() {
   };
 
   const [deletedDatabasePlayers, setDeletedDatabasePlayers] = useLibrary<string[]>('deletedPlayers', []);
+
+  /**
+   * Whether every score in the app is read with the best legal chemistry style on.
+   *
+   * One setting for everything rather than one per card, and stored with the library rather than
+   * with a player: which style you would actually put on a card is a matter of taste, and a number
+   * that assumed one here and not on the next card is not comparable with itself. Off by default —
+   * what comes back is the card as it is until you say otherwise.
+   */
+  const [preferences, setPreferences] = useLibrary<Preferences>('preferences', {});
+  const assumeChemStyle = preferences.assumeChemStyle === true;
+  const setAssumeChemStyle = (on: boolean) => setPreferences({ ...preferences, assumeChemStyle: on });
 
   // Your verdicts on recommended builds. Global rather than per team: this is taste, and it does
   // not change because you switched squads.
@@ -1335,7 +1352,7 @@ export default function App() {
         ovr: initialOvrData,
         stats: statsData,
         playStyles: playStylesData,
-        filters: evoFilters,
+        filters: { ...evoFilters, assumeChemStyle },
         prefixChainIds: basePrefix,
         version,
         // Only V2 reads these, and only to hide what you turned down and keep what you liked.
@@ -1512,8 +1529,10 @@ export default function App() {
 
   /** The previewed card scored there — every badge on the page reads this one position. */
   const previewScore = useMemo(
-    () => scoreAtPosition(previewStats, previewBio, scorePosition) ?? bestScore(previewStats, previewBio),
-    [previewStats, previewBio, scorePosition]
+    () =>
+      scoreAtPosition(previewStats, previewBio, scorePosition, assumeChemStyle) ??
+      bestScore(previewStats, previewBio, assumeChemStyle),
+    [previewStats, previewBio, scorePosition, assumeChemStyle]
   );
 
   // Calculate IGS & Face Stats Summary
@@ -1731,6 +1750,8 @@ export default function App() {
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
+          assumeChemStyle={assumeChemStyle}
+          onSetAssumeChemStyle={setAssumeChemStyle}
           pathFeedback={playerFeedback.byChain}
           onRatePath={ratePath}
           excludedCount={excludedCount}
@@ -1755,7 +1776,7 @@ export default function App() {
           // quietly be talking about different positions.
           psScore={
             previewScore
-              ? playStyleScoreAt(previewStats, previewPlayStyles, previewBio, previewScore.position)
+              ? playStyleScoreAt(previewStats, previewPlayStyles, previewBio, previewScore.position, { style: previewScore.style })
               : null
           }
           scorePosition={previewScore?.position ?? scorePosition}
@@ -1873,6 +1894,7 @@ export default function App() {
                   currentName={playerBio.name}
                   currentPlayerId={selectedPlayerId}
                   playersById={allPlayersData}
+                  assumeChemStyle={assumeChemStyle}
                 />
               }
               asideBelow={
@@ -1881,6 +1903,7 @@ export default function App() {
                   bio={focusedCard.bio}
                   position={scorePosition}
                   context={focusedCard.label}
+                  assumeChemStyle={assumeChemStyle}
                 />
               }
               below={
@@ -1989,6 +2012,7 @@ export default function App() {
         baseStats={statsData}
         basePlayStyles={playStylesData}
         evoFilters={evoFilters}
+        assumeChemStyle={assumeChemStyle}
       />
       <EvoDetailsModal
         evoId={viewingEvoId}

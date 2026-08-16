@@ -437,6 +437,8 @@ interface ManualPathModalProps {
   // The pool's must-haves and the stat targets from Filters. The builder never blocks a pick on
   // them — it's a manual builder — but every recommendation is aimed at them.
   evoFilters?: EvoFilters;
+  /** Read every score in here with the best legal chemistry style on. One setting for the app. */
+  assumeChemStyle?: boolean;
   disabledEvos?: string[];
   includedEvos?: string[];
   onToggleDisabled?: (evoId: string) => void;
@@ -454,6 +456,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   editingPath = null,
   lockedPrefix = [],
   evoFilters,
+  assumeChemStyle = false,
   disabledEvos = [],
   includedEvos,
   onToggleDisabled
@@ -560,7 +563,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       // own must-haves and stat targets would accept. A must-have that can't be reached within
       // REC_CHAIN_DEPTH steps simply leaves the search with nothing to offer, which is the
       // honest answer rather than a suggestion that ignores it.
-      filters: evoFilters,
+      filters: { ...(evoFilters || {}), assumeChemStyle },
       prefixChainIds: selectedChain,
       // The same model Analyze V2 uses — plans, floors, the chemistry style the card would be
       // played with. A continuation offered here and a build offered there should never disagree
@@ -646,11 +649,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
   // What the card is worth at the position it is best at, out of 100 — and the position every evo
   // in the pool is then measured at, so the deltas on the cards are all answering one question.
-  const currentScore = bestScore(currentStats, currentBio);
+  const currentScore = bestScore(currentStats, currentBio, assumeChemStyle);
   // The PlayStyles are scored at the same position, and kept as their own number: an evo can be
   // worth a lot of one and none of the other, which is the whole reason to show both.
   const currentPs = currentScore
-    ? playStyleScoreAt(currentStats, currentPlayStyles, currentBio, currentScore.position)
+    ? playStyleScoreAt(currentStats, currentPlayStyles, currentBio, currentScore.position, { style: currentScore.style })
     : null;
 
   /**
@@ -709,10 +712,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedAccelerate = accelerateOf(testRes.finalStats, testRes.finalBio);
           expectedSpread = accelerateSpread(testRes.finalStats, testRes.finalBio);
           expectedScore = currentScore
-            ? scoreAtPosition(testRes.finalStats, testRes.finalBio, currentScore.position)
+            ? scoreAtPosition(testRes.finalStats, testRes.finalBio, currentScore.position, assumeChemStyle)
             : null;
           expectedPs = currentScore
-            ? playStyleScoreAt(testRes.finalStats, testRes.finalPlayStyles, testRes.finalBio, currentScore.position)
+            ? playStyleScoreAt(testRes.finalStats, testRes.finalPlayStyles, testRes.finalBio, currentScore.position, { style: expectedScore?.style })
             : null;
 
           if (currentFit) {
@@ -1540,10 +1543,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     // proposes one — a continuation worth taking should say so in the same terms
                     // as everything else, not only in IGS.
                     const recScorePos = last && currentScore
-                      ? scoreAtPosition(last.statsAfter, last.bioAfter, currentScore.position)
+                      ? scoreAtPosition(last.statsAfter, last.bioAfter, currentScore.position, assumeChemStyle)
                       : null;
                     const recPs = last && currentScore
-                      ? playStyleScoreAt(last.statsAfter, last.playStylesAfter, last.bioAfter, currentScore.position)
+                      ? playStyleScoreAt(last.statsAfter, last.playStylesAfter, last.bioAfter, currentScore.position, { style: recScorePos?.style })
                       : null;
 
                     return (

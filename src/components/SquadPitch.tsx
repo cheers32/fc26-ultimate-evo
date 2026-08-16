@@ -181,6 +181,8 @@ interface SquadPitchProps {
   /** Whoever the workbench has open — his cards on the pitch are marked, so the two views agree. */
   currentPlayerId?: string;
   playersById: Record<string, PlayerData>;
+  /** Read every card here with the best legal chemistry style on. One setting for the whole app. */
+  assumeChemStyle?: boolean;
 }
 
 export const SquadPitch: React.FC<SquadPitchProps> = ({
@@ -196,7 +198,8 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
   onSwapSlots,
   currentName,
   currentPlayerId,
-  playersById
+  playersById,
+  assumeChemStyle = false
 }) => {
   /** Which slot is being dragged. A squad is only its slots, so that is the only thing to drag. */
   const [dragSlot, setDragSlot] = useState<string | null>(null);
@@ -231,10 +234,12 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
       // best — the bench is the one place the pitch has no opinion about.
       const slotPos = formation.slots.find(slot => slot.id === slotId)?.pos;
       const score = slotPos
-        ? scoreAtPosition(result.finalStats, result.finalBio, slotPos)
-        : bestScore(result.finalStats, result.finalBio);
+        ? scoreAtPosition(result.finalStats, result.finalBio, slotPos, assumeChemStyle)
+        : bestScore(result.finalStats, result.finalBio, assumeChemStyle);
+      // Read under whatever style the position score settled on, so the two numbers on a card are
+      // about the same card.
       const ps = score
-        ? playStyleScoreAt(result.finalStats, result.finalPlayStyles, result.finalBio, score.position)
+        ? playStyleScoreAt(result.finalStats, result.finalPlayStyles, result.finalBio, score.position, { style: score.style })
         : null;
 
       map.set(slotId, {
@@ -249,7 +254,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
       });
     });
     return map;
-  }, [squad, playersById, formation]);
+  }, [squad, playersById, formation, assumeChemStyle]);
 
   /** Every slot is a drop target, so the handlers are the same wherever the slot is drawn. */
   const dropProps = (slotId: string) => ({

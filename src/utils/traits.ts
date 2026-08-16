@@ -91,8 +91,14 @@ const pretty = (key: string) =>
  * card is being asked to do. A trait the plan has no use for can be neither: a centre-back is not
  * praised for his crossing and not blamed for it either.
  */
-export function verdictAt(stats: StatsData, bio: PlayerBio, position: string, count = 3): CardVerdict | null {
-  const score = scoreAtPosition(stats, bio, position);
+export function verdictAt(
+  stats: StatsData,
+  bio: PlayerBio,
+  position: string,
+  count = 3,
+  assumeChem = false
+): CardVerdict | null {
+  const score = scoreAtPosition(stats, bio, position, assumeChem);
   if (!score) return null;
 
   const subs = subValues(stats);

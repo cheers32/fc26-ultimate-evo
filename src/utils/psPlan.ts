@@ -70,7 +70,7 @@ export function psPlanFor(
   const controlMode = controlModeFor(bio, mode);
   const accelerate = accelerateOf(stats, bio);
 
-  const before = playStyleScoreAt(stats, playStyles, bio, pos, controlMode).score;
+  const before = playStyleScoreAt(stats, playStyles, bio, pos, { mode: controlMode }).score;
   const canPick = canPickPlayStyles(bio.rarity);
 
   const picks = canPick
@@ -78,7 +78,7 @@ export function psPlanFor(
     : { gold: [], silver: [] };
   const filled = canPick ? applyFreePlayStyles(playStyles, picks) : playStyles;
 
-  const after = playStyleScoreAt(stats, filled, bio, pos, controlMode);
+  const after = playStyleScoreAt(stats, filled, bio, pos, { mode: controlMode });
 
   // Gold slots spent on nothing. Only gold is reported: a silver slot on a PlayStyle the position
   // ignores costs almost nothing, and there are eight of them, but a card has four gold slots and

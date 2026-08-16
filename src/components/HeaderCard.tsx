@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, StatsData, ChainStepResult } from '../types/player';
+import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
@@ -98,6 +98,15 @@ interface HeaderCardProps {
   onRemoveNode?: (pathId: string, index: number) => void;
   // Ticks off how far the build has been played: the index of the step just marked done.
   onSetProgress?: (pathId: string, index: number) => void;
+  /**
+   * Whether every score on screen is read with the best legal chemistry style on.
+   *
+   * One setting for the whole app rather than one per card: which style you would actually put on
+   * is a matter of taste, and a number that assumed one on this card and not on the next is not
+   * comparable with itself.
+   */
+  assumeChemStyle?: boolean;
+  onSetAssumeChemStyle?: (on: boolean) => void;
   /** What the card on screen is worth where it plays — computed by the page, shown beside OVR. */
   score?: PositionScore | null;
   /** The same for its PlayStyles, scored separately because it is a separate question. */
@@ -268,6 +277,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onSetBase,
   onRemoveNode,
   onSetProgress,
+  assumeChemStyle = false,
+  onSetAssumeChemStyle,
   score,
   psScore,
   scorePosition
@@ -397,7 +408,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
     if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
     if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
-    if (evoFilters.assumeChemStyle) parts.push('judged on a chem style');
+
     if (evoFilters.newPosition) parts.push('a new position');
     if (evoFilters.noPositionChange) parts.push('positions unchanged');
     (['ovr', 'pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).forEach(stat => {
@@ -514,11 +525,29 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
    */
   const baseScore = React.useMemo(
     () =>
-      (scorePosition ? scoreAtPosition(rawStats, bio, scorePosition) : null) ?? bestScore(rawStats, bio),
-    [rawStats, bio, scorePosition]
+      (scorePosition ? scoreAtPosition(rawStats, bio, scorePosition, assumeChemStyle) : null) ??
+      bestScore(rawStats, bio, assumeChemStyle),
+    [rawStats, bio, scorePosition, assumeChemStyle]
   );
+  /**
+   * The pair of scores for one card, always read the same way: the position score decides which
+   * style (if any) the card is being judged under, and the PlayStyle score is then read under that
+   * same style. Split apart, the two answered about different cards.
+   */
+  const scoreAt = (stats: StatsData, cardBio: PlayerBio, position: string) =>
+    scoreAtPosition(stats, cardBio, position, assumeChemStyle);
+  const psAt = (
+    stats: StatsData,
+    ps: PlayStylesData,
+    cardBio: PlayerBio,
+    position: string
+  ) => playStyleScoreAt(stats, ps, cardBio, position, { style: scoreAt(stats, cardBio, position)?.style });
+
   const basePs = React.useMemo(
-    () => (baseScore ? playStyleScoreAt(rawStats, rawPlayStyles, bio, baseScore.position) : null),
+    () =>
+      baseScore
+        ? playStyleScoreAt(rawStats, rawPlayStyles, bio, baseScore.position, { style: baseScore.style })
+        : null,
     [baseScore, rawStats, rawPlayStyles, bio]
   );
 
@@ -526,7 +555,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const pathScore = (path: EvolutionPath) => {
     const last = path.steps?.[path.steps.length - 1];
     if (!last) return baseScore;
-    return bestScore(last.statsAfter, last.bioAfter);
+    return bestScore(last.statsAfter, last.bioAfter, assumeChemStyle);
   };
 
   /** 0 unstarred, otherwise which colour. A starred build with no tier reads as the first. */
@@ -889,11 +918,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             the right assumption, but while it is on, every floor a row clears and
                             every archetype it reads is contingent on putting one on. */}
                         <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
-                               title="Judge builds wearing the best chemistry style they could legally take, instead of as the card stands">
+                               title="Read every score — here, on the pitch, and in what Analyze recommends — with the best chemistry style the card could legally take. Applies to every card, and takes effect immediately.">
                           <input
                             type="checkbox"
-                            checked={!!draftFilters.assumeChemStyle}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, assumeChemStyle: e.target.checked })}
+                            checked={assumeChemStyle}
+                            onChange={(e) => onSetAssumeChemStyle?.(e.target.checked)}
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           Assume chem style
@@ -1862,11 +1891,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                           being scored somewhere else. */}
                                       {(() => {
                                         if (!baseScore) return null;
-                                        const now = scoreAtPosition(stepResult.statsAfter, stepResult.bioAfter, baseScore.position);
+                                        const now = scoreAt(stepResult.statsAfter, stepResult.bioAfter, baseScore.position);
                                         if (!now) return null;
                                         const before = idx === 0
                                           ? baseScore
-                                          : scoreAtPosition(
+                                          : scoreAt(
                                               renderPath.steps![idx - 1].statsAfter,
                                               renderPath.steps![idx - 1].bioAfter,
                                               baseScore.position
@@ -1891,10 +1920,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                       })()}
                                       {(() => {
                                         if (!baseScore) return null;
-                                        const now = playStyleScoreAt(stepResult.statsAfter, stepResult.playStylesAfter, stepResult.bioAfter, baseScore.position);
+                                        const now = psAt(stepResult.statsAfter, stepResult.playStylesAfter, stepResult.bioAfter, baseScore.position);
                                         const before = idx === 0
                                           ? basePs
-                                          : playStyleScoreAt(
+                                          : psAt(
                                               renderPath.steps![idx - 1].statsAfter,
                                               renderPath.steps![idx - 1].playStylesAfter,
                                               renderPath.steps![idx - 1].bioAfter,
