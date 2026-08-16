@@ -333,7 +333,7 @@ const ScoreBadge = ({ before, after }: { before: PositionScore; after?: Position
             {delta > 0 ? '+' : ''}{delta.toFixed(1)}
           </span>
         )}
-        <span className={`font-bold ${shown.score >= 80 ? 'text-fcGreen' : shown.score >= 60 ? 'text-yellow-400' : 'text-gray-300'}`}>
+        <span className={getStatColorClass(shown.score)}>
           {shown.score.toFixed(1)}
         </span>
       </div>
@@ -1253,7 +1253,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       }
                     >
                       <span className="text-gray-500 font-bold">{currentScore.position}</span>
-                      <span className="text-fcGreen font-bold">{currentScore.score.toFixed(1)}</span>
+                      <span className={getStatColorClass(currentScore.score)}>{currentScore.score.toFixed(1)}</span>
                     </div>
                   )}
                 </div>

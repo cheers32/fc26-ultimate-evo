@@ -610,9 +610,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 }
               >
                 <span className="text-gray-500 text-[9px] font-semibold tracking-wider">{score.position}</span>
-                <span className={
-                  score.score >= 80 ? 'text-fcGreen' : score.score >= 60 ? 'text-yellow-400' : 'text-gray-300'
-                }>
+                <span className={getStatColorClass(score.score)}>
                   {score.score.toFixed(1)}
                 </span>
               </div>
@@ -1234,9 +1232,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       const s = pathScore(path);
                       if (!s) return null;
                       return (
-                        <span className={
-                          s.score >= 80 ? 'text-fcGreen' : s.score >= 60 ? 'text-yellow-400' : 'text-gray-400'
-                        }>
+                        <span className={getStatColorClass(s.score)}>
                           {s.score.toFixed(1)}
                         </span>
                       );
@@ -1552,7 +1548,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           title={`${baseScore.position} score ${baseScore.score.toFixed(1)}/100 as ${baseScore.plan.name} · ${baseScore.style ? `on ${baseScore.style}` : 'bare'}`}
                         >
                           <span className="text-white font-bold">{baseScore.position}</span>
-                          <span className="text-fcGreen font-bold">{baseScore.score.toFixed(1)}</span>
+                          <span className={getStatColorClass(baseScore.score)}>{baseScore.score.toFixed(1)}</span>
                         </div>
                       )}
                     </div>
@@ -1796,7 +1792,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                                   {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                                                 </span>
                                               )}
-                                              <span className="text-fcGreen font-bold">{now.score.toFixed(1)}</span>
+                                              <span className={getStatColorClass(now.score)}>{now.score.toFixed(1)}</span>
                                             </div>
                                           </div>
                                         );
