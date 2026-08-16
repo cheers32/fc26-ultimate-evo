@@ -1,4 +1,6 @@
 import { chemStyles } from '../data/chemStyles';
+import { StatsData } from '../types/player';
+import { faceWeight } from './statUtils';
 
 /**
  * The chemistry style is part of the card, not a footnote to it.
@@ -26,6 +28,37 @@ export function withStyle(
 ): Record<string, number> {
   const out: Record<string, number> = { ...subs };
   for (const [key, boost] of Object.entries(boosts)) out[key] = Math.min(99, (subs[key] ?? 0) + boost);
+  return out;
+}
+
+/**
+ * The same, on a whole stat block rather than the flat sub-stat map.
+ *
+ * Everything that ranks a build works on the flat map, but the PlayStyle model reads a StatsData —
+ * its gates are sub-stats, and a gate is exactly the place where the difference between the bare
+ * card and the fielded one decides the answer. Power Shot on 92 shot power is not the same
+ * PlayStyle as Power Shot on 89.
+ *
+ * Face values are recomputed from the sub-stats they are made of rather than left stale, so a
+ * block that has been through here reads consistently wherever it is used next.
+ */
+export function withStyleStats(stats: StatsData, boosts: Record<string, number>): StatsData {
+  const out: StatsData = {};
+  for (const [faceKey, face] of Object.entries(stats)) {
+    const subs = Object.fromEntries(
+      Object.entries(face.subs || {}).map(([key, sub]) => [
+        key,
+        { ...sub, base: Math.min(99, sub.base + (boosts[key] || 0)) }
+      ])
+    );
+    const total = Object.entries(subs).reduce((sum, [key, sub]) => sum + sub.base * faceWeight(faceKey, key, sub.w), 0);
+    const weight = Object.entries(subs).reduce((sum, [key, sub]) => sum + faceWeight(faceKey, key, sub.w), 0);
+    out[faceKey] = {
+      ...face,
+      baseFace: weight > 0 ? Math.round(total / weight) : face.baseFace,
+      subs
+    };
+  }
   return out;
 }
 

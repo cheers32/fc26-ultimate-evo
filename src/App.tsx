@@ -16,7 +16,14 @@ import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, acce
 import { isModalOpen } from './utils/modalStack';
 import { bestScore, scoreAtPosition } from './utils/positionScore';
 import { playStyleScoreAt } from './utils/playStyleScore';
-import { DEFAULT_PATH_ID, IN_GAME_STAR_TIER, isInGamePath } from './utils/paths';
+import {
+  BASE_CARD_PATH_ID,
+  DEFAULT_PATH_ID,
+  IN_GAME_PATH_NAME,
+  IN_GAME_STAR_TIER,
+  isBaseCardPath,
+  isInGamePath
+} from './utils/paths';
 import {
   simulateEvoChain,
   isPlayStyleNodeId,
@@ -801,12 +808,22 @@ export default function App() {
   // is created with.
   const [activeSquadId, setActiveSquadId] = useState<string | null>(null);
 
-  // Every player starts on an empty "Default" path, so the card shows the raw base until
+  // Every player starts on an empty "Current" path, so the card shows the raw base until
   // an evo is added. It only reaches manualPaths once something is appended to it.
   const defaultPath: EvolutionPath = useMemo(() => ({
     id: DEFAULT_PATH_ID,
-    name: 'Default',
-    description: 'Starting point — shows the base card until you add an EVO.',
+    name: IN_GAME_PATH_NAME,
+    description: 'What you have actually done in game. Add the EVOs as you finish them.',
+    isRecommended: false,
+    chainIds: []
+  }), []);
+
+  // The card as it came, always there and never editable — the fixed point every other chip is
+  // read against. Current moves as you play; this is what it moved from.
+  const baseCardPath: EvolutionPath = useMemo(() => ({
+    id: BASE_CARD_PATH_ID,
+    name: 'Base Card',
+    description: 'The card with no EVOs on it. Kept as it is, for comparison.',
     isRecommended: false,
     chainIds: []
   }), []);
@@ -853,6 +870,9 @@ export default function App() {
       return bReq - aReq;
     });
     const withDefault = saved.some(p => p.id === DEFAULT_PATH_ID) ? saved : [defaultPath, ...saved];
+    // The base card leads, always, and is never one of the saved ones — it is synthesised here on
+    // every render so nothing that writes paths can touch it.
+    withDefault.unshift(baseCardPath);
     // The in-game record is starred green wherever it came from — a stored copy from before this
     // rule, an edit that dropped the flags, a fresh synthesis. One place to enforce it beats
     // remembering to set it at each of the half-dozen places a path gets written.
@@ -864,6 +884,7 @@ export default function App() {
   }, [
     currentState.generatedPaths,
     currentState.manualPaths,
+    baseCardPath,
     defaultPath,
     playerBio,
     initialOvrData,
@@ -1003,6 +1024,7 @@ export default function App() {
 
   const handleDeletePath = (pathId: string) => {
     const path = allPaths.find(p => p.id === pathId);
+    if (isBaseCardPath(path)) return;
     if (path?.isFavorite && !isInGamePath(path)) return;
     if (activePathId === pathId) {
       updateState({ activePathId: DEFAULT_PATH_ID });
@@ -1059,7 +1081,7 @@ export default function App() {
    */
   const handleRenamePath = (pathId: string, name: string) => {
     const next = name.trim();
-    if (!next) return;
+    if (!next || isBaseCardPath({ id: pathId })) return;
     const generated = generatedPaths.find(p => p.id === pathId);
     if (generated) {
       updateState({
@@ -1083,7 +1105,7 @@ export default function App() {
    */
   const handleSetPathProgress = (pathId: string, index: number) => {
     const path = allPaths.find(p => p.id === pathId);
-    if (!path) return;
+    if (!path || isBaseCardPath(path)) return;
     const doneUpTo = (path.doneUpTo ?? -1) === index ? index - 1 : index;
 
     const generated = generatedPaths.find(p => p.id === pathId);
@@ -1116,7 +1138,7 @@ export default function App() {
   const handleRemoveNode = (pathId: string, index: number) => {
     const targetPathId = pathId;
     const path = allPaths.find(p => p.id === targetPathId);
-    if (!path) return;
+    if (!path || isBaseCardPath(path)) return;
 
     const newChainIds = [...path.chainIds];
     newChainIds.splice(index, 1);
@@ -1162,7 +1184,7 @@ export default function App() {
     target: number | 'new'
   ) => {
     const path = allPaths.find(p => p.id === pathId);
-    if (!path) return;
+    if (!path || isBaseCardPath(path)) return;
 
     const newChainIds = [...path.chainIds];
     const isEmpty = picks.gold.length === 0 && picks.silver.length === 0;
@@ -1251,7 +1273,8 @@ export default function App() {
   }, [safeNodes, chainResult, statsData, playerBio]);
 
   // A new pick is made at the end of the chain, so that's the card state it has to be legal for.
-  const canAddPlayStylePick = canPickPlayStyles(chainResult.finalBio.rarity);
+  const canAddPlayStylePick =
+    canPickPlayStyles(chainResult.finalBio.rarity) && !isBaseCardPath(activePath);
 
   // What the card looks like just before the pick lands: everything up to that point is locked,
   // and the picks go on top of it. For a new pick that's the end of the chain; for an existing
@@ -1785,8 +1808,13 @@ export default function App() {
           onViewEvo={(id) => setViewingEvoId(id)}
           baseIndex={safeBaseIndex}
           onSetBase={(pathId, idx) => {
+            // There is one starting point on a card, not one per path, so choosing a step on
+            // another build moves it there rather than toggling against the index the old build
+            // happened to be on — which is how clicking a node could clear the start instead of
+            // setting it, and Analyze would then quietly search from the base card again.
             if (activePathId !== pathId) {
-               updateState({ activePathId: pathId });
+              updateState({ activePathId: pathId, baseIndex: idx });
+              return;
             }
             setBaseIndex(idx === safeBaseIndex ? -1 : idx);
           }}
@@ -1935,7 +1963,9 @@ export default function App() {
         onToggleDisabled={toggleEvoDisabled}
         // Append grows the active path in place (so it keeps its id and name); branch leaves
         // it alone and starts a fresh path from the base prefix.
-        editingPath={pickerMode === 'append' ? activePath : null}
+        // The base card takes no edits, so appending from it starts a new build rather than
+        // growing the one chip that is meant to stay where it is.
+        editingPath={pickerMode === 'append' && !isBaseCardPath(activePath) ? activePath : null}
         lockedPrefix={pickerMode === 'branch' ? basePrefix : []}
         onSave={(path) => {
           const isManual = manualPaths.some(p => p.id === path.id);

@@ -1,8 +1,20 @@
-import { EvolutionDefinition, EvolutionPath, PlayerBio, StatsData } from '../types/player';
+import { EvolutionDefinition, EvolutionPath, PlayStylesData, PlayerBio, StatsData } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
 import { chemStyles } from '../data/chemStyles';
-import { STYLE_OPTIONS, optimistic, withStyle } from './chem';
-import { ChainSearchInput, forEachChain, simulateEvoChain, validateRequirement } from './evoEngine';
+import { STYLE_OPTIONS, optimistic, withStyle, withStyleStats } from './chem';
+import {
+  ChainSearchInput,
+  FREE_PLAYSTYLE_RARITIES,
+  buildPlayStyleNodeId,
+  canPickPlayStyles,
+  forEachChain,
+  isPlayStyleNodeId,
+  parsePlayStyleNodeId,
+  simulateEvoChain,
+  validateRequirement
+} from './evoEngine';
+import { bestFreePicks, controlModeFor } from './fitScore';
+import { PsPlan, psPlanFor } from './psPlan';
 import {
   BuildTemplate,
   FIELDABLE_FLOORS,
@@ -48,8 +60,12 @@ import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './st
  * happily rank first because nine other sub-stats covered for it. Those builds are cut, and if
  * nothing clears the floors the list says so rather than quietly promoting the best of a bad set.
  *
- * PlayStyles are deliberately absent — only stats and AcceleRATE, as asked — which also means
- * every number in a reason can be checked against the stat panel rather than taken on faith.
+ * PlayStyles used to be absent, and that turned out to be a hole rather than a simplification. A
+ * chain can arrive with every stat right and its four gold slots spent on PlayStyles the position
+ * has no use for, and nothing in a stat score can see it. They are in now — as their own term, not
+ * folded into the stat score, and with the one move that fixes a bad set made for you: several
+ * rarities let the player assign PlayStyles themselves, so a chain that converts the card's rarity
+ * comes back with the picks already in it. See ./psPlan.
  */
 
 /**
@@ -76,6 +92,34 @@ const OUT_PER_TEMPLATE = 4;
 
 /** Two builds within this on every stat the plan runs on are the same build. Only one is shown. */
 const SAME_BUILD = 2;
+
+/**
+ * What a full complement of the right PlayStyles is worth, in the same points as the stat score.
+ *
+ * The two are on different scales — the stat score counts points above 90 and a good build lands
+ * somewhere near +5, while the PlayStyle score is a percentage of the best set the card's own slots
+ * could hold — so one number has to buy the other, and this is the exchange rate. At 3.0 a card
+ * with the wrong PlayStyles has to be about three points of its key stats better to win, which is
+ * roughly the trade a player makes: a CAM that is 96 dribbling with Technical+ and Rapid+ is a
+ * better card than a 99 without them, and not by an unlimited margin.
+ *
+ * This is the one knob. Everything else about PlayStyles here is measurement.
+ */
+const PS_WORTH = 3;
+
+/**
+ * What the search credits a chain for ending on a rarity that hands out the PlayStyle picker.
+ *
+ * Pass one visits every chain in the pool and cannot afford to price a PlayStyle set for each, but
+ * it decides what survives to be priced properly — so a chain that spends a step converting the
+ * card's rarity would be binned for a stats-better one before anything looked at what the picker
+ * was worth. Half of a full set: the picker is a promise of empty slots, and how much of it lands
+ * depends on what the chain already put in them, which pass two works out exactly.
+ */
+const PICKER_HINT = PS_WORTH / 2;
+
+/** Two builds this close on PlayStyles too are the same build. Wider than a point: a slot is 25%. */
+const SAME_PS = 5;
 
 /**
  * What a point of a stat is worth to a plan, counted from the pass mark rather than from zero.
@@ -188,6 +232,15 @@ export interface V2Feedback {
 export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Feedback }): EvolutionPath[] {
   const { baseBio, baseOvr, baseStats, basePlayStyles, poolIds } = input;
   const height = parseHeightCm(baseBio.height);
+
+  /**
+   * How many steps at the head of every chain are yours rather than the search's.
+   *
+   * A search started from a point on an existing build is a continuation of that build, so those
+   * steps are not candidates for anything the audit does — they cannot be dropped as unnecessary,
+   * and they cannot be reordered with what comes after. The evos are already spent.
+   */
+  const locked = (input.prefixChainIds ?? []).length;
 
   const positions = baseBio.primaryPositions.split(',').map(p => p.trim()).filter(Boolean);
   const rankPositions = (positions.length > 0 ? positions : ['ST']).map(p => p.toUpperCase());
@@ -338,6 +391,10 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       positions: state.bio.primaryPositions.split(',').map(p => p.trim().toUpperCase()).filter(Boolean)
     };
 
+    // A chain that leaves the card able to pick its own PlayStyles is holding something the stat
+    // score cannot see. Credited here so it survives the shortlist, priced for real in pass two.
+    const picker = canPickPlayStyles(state.bio.rarity) ? PICKER_HINT : 0;
+
     for (const t of templates) {
       let arch: AccelerateFamily | null = null;
       let fallback = false;
@@ -355,7 +412,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       const tier = tierOf(provisional.under.length === 0, fallback);
       const entry: Entry = { cand, arch, fallback };
       if (upVoted.has(ck) && !liked.has(`${t.id}|${ck}`)) liked.set(`${t.id}|${ck}`, entry);
-      offer(`${t.id}|${tier}`, entry, () => provisional.score);
+      offer(`${t.id}|${tier}`, entry, () => provisional.score + picker);
     }
   });
 
@@ -420,6 +477,119 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     return best ?? { style: null, subs: cand.subs, s: scoreForTemplate(cand.subs, t, reach) };
   };
 
+  /**
+   * Where a plan is actually played, so its PlayStyles can be judged at all.
+   *
+   * A PlayStyle is worth what the position makes of it — Rapid on a winger and Rapid on a
+   * centre-back are not the same PlayStyle — so the plan has to name a position. The card's own
+   * list wins where it overlaps the plan's, because a plan that lists CAM and LW judged at LW for a
+   * card that is a CAM would be answering about a card that does not exist.
+   */
+  const positionFor = (t: BuildTemplate, cardPositions: string[]) =>
+    t.positions.find(p => cardPositions.includes(p)) || t.positions[0];
+
+  /**
+   * The finished card for a chain. Memoised on the chain *in order*, because order is exactly what
+   * the swap check varies and two orders are not the same card.
+   */
+  const simCache = new Map<string, ReturnType<typeof simulateEvoChain> | null>();
+  const simOfChain = (chainIds: string[]) => {
+    const key = chainIds.join(',');
+    if (simCache.has(key)) return simCache.get(key)!;
+    const sim = simulateEvoChain(chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+    const kept = sim.isValidChain ? sim : null;
+    simCache.set(key, kept);
+    return kept;
+  };
+
+  /** What this chain's PlayStyles come to under the plan, picks included. */
+  const psCache = new Map<string, PsPlan>();
+  const psOfChain = (
+    chainIds: string[],
+    sim: NonNullable<ReturnType<typeof simOfChain>>,
+    t: BuildTemplate,
+    style: string | null
+  ): PsPlan => {
+    const cardPositions = sim.finalBio.primaryPositions
+      .split(',').map(p => p.trim().toUpperCase()).filter(Boolean);
+    const position = positionFor(t, cardPositions);
+    const key = `${chainIds.join(',')}|${position}|${style ?? ''}`;
+    const hit = psCache.get(key);
+    if (hit) return hit;
+    // Read under the same style the rest of the row is read under: PlayStyle values are gated on
+    // sub-stats, so judging them bare beside styled floors is the same contradiction that used to
+    // fail a build on a stamina its own style would have carried.
+    const fielded = style ? withStyleStats(sim.finalStats, chemStyles[style] || {}) : sim.finalStats;
+    const plan = psPlanFor(fielded, sim.finalPlayStyles, sim.finalBio, position);
+    psCache.set(key, plan);
+    return plan;
+  };
+
+  /** The two scores in one currency, which is the only place they are ever added together. */
+  const totalOf = (statScore: number, ps: PsPlan) => statScore + (PS_WORTH * ps.score) / 100;
+
+  /**
+   * Where in the chain to make the picks.
+   *
+   * Slots are first-come, first-served: a PlayStyle an evo hands out takes a gold slot and does not
+   * give it back. So picking the moment the picker unlocks is a different card from picking at the
+   * end — it is how you stop the next three evos spending your four gold slots on Bruiser. It can
+   * also cost you, which is why this is a search and not a rule: a PlayStyle a later evo would have
+   * handed over for free is now locked out, and a few evos refuse cards carrying too many
+   * PlayStyles, which makes the whole chain illegal.
+   *
+   * Every legal moment is tried, including not picking early at all, and the best finished card
+   * wins. Only run on rows that are about to be shown — inside the audit the picks stay at the end,
+   * where they are a floor on what the PlayStyles are worth rather than the last word.
+   */
+  const placePicks = (ids: string[], t: BuildTemplate, style: string | null) => {
+    const evaluate = (chain: string[]) => {
+      const sim = simOfChain(chain);
+      if (!sim) return null;
+      const ps = psOfChain(chain, sim, t, style);
+      return { chain: ps.node ? [...chain, ps.node] : chain, ps };
+    };
+
+    let best = evaluate(ids);
+    const done = simOfChain(ids);
+    if (!best || !done) return null;
+
+    // The picks are chosen against the *finished* card's stats even when they are made early: a
+    // PlayStyle is gated on stats the rest of the chain is about to deliver, and you know that when
+    // you pick. Which slots are free, on the other hand, is a fact about the moment.
+    const fielded = style ? withStyleStats(done.finalStats, chemStyles[style] || {}) : done.finalStats;
+
+    for (let i = 1; i < ids.length; i++) {
+      const sim = simOfChain(ids.slice(0, i));
+      if (!sim || !canPickPlayStyles(sim.finalBio.rarity)) continue;
+      const position = positionFor(
+        t,
+        sim.finalBio.primaryPositions.split(',').map(p => p.trim().toUpperCase()).filter(Boolean)
+      );
+      const picks = bestFreePicks({
+        stats: fielded,
+        playStyles: sim.finalPlayStyles,
+        bio: { ...sim.finalBio, primaryPositions: position },
+        mode: controlModeFor(sim.finalBio)
+      });
+      if (picks.gold.length + picks.silver.length === 0) continue;
+
+      const placed = evaluate([
+        ...ids.slice(0, i),
+        buildPlayStyleNodeId(picks),
+        ...ids.slice(i)
+      ]);
+      if (placed && placed.ps.score > best.ps.score) best = placed;
+    }
+    // Every pick the chain now carries, wherever it was made, so the row can name them; and what
+    // the card's PlayStyles came to with none of them, which is what the picks are worth.
+    const picked = best.chain.filter(isPlayStyleNodeId).flatMap(id => {
+      const { gold, silver } = parsePlayStyleNodeId(id);
+      return [...gold.map(n => `${n}+`), ...silver];
+    });
+    return { ...best, picked, without: psOfChain(ids, done, t, style).before };
+  };
+
   interface Row {
     e: Entry;
     s: Scored;
@@ -427,6 +597,8 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     style: string | null;
     /** The card under that style — what the row's numbers are. */
     subs: Record<string, number>;
+    /** What its PlayStyles come to, and the picks that get them there. */
+    ps: PsPlan;
   }
 
 
@@ -449,37 +621,49 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
   const MORE_EPS = 0.5;
 
   const subsOfChain = (chainIds: string[]) => {
-    const sim = simulateEvoChain(chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
-    if (!sim.isValidChain) return null;
+    const sim = simOfChain(chainIds);
+    if (!sim) return null;
     return { sim, subs: subValues(sim.finalStats) };
   };
 
-  /** Score a chain the way its row is scored: same plan, same archetype, best style for it. */
+  /**
+   * Score a chain the way its row is scored: same plan, same archetype, best style for it — and its
+   * PlayStyles alongside, because every question the audit asks is really "is this a better card",
+   * and a step that fills the gold slots with the right four is a better card.
+   */
   const scoreChain = (chainIds: string[], t: BuildTemplate, arch: AccelerateFamily) => {
     const got = subsOfChain(chainIds);
     if (!got) return null;
     const byChem = archetypesByChem(got.subs, height);
     // A trim that costs the card its archetype is not a trim, it is a different plan.
     if (!byChem.has(arch)) return null;
-    return { ...got, played: playedAs(got.subs, t, arch) };
+    const played = playedAs(got.subs, t, arch);
+    const ps = psOfChain(chainIds, got.sim, t, played.style);
+    return { ...got, played, ps, total: totalOf(played.s.score, ps) };
   };
 
   const auditChain = (chainIds: string[], t: BuildTemplate, arch: AccelerateFamily) => {
     let ids = [...chainIds];
-    let best = scoreChain(ids, t, arch)?.played.s.score ?? -Infinity;
+    let best = scoreChain(ids, t, arch)?.total ?? -Infinity;
     const dropped: string[] = [];
 
     // Greedy, and repeated: dropping one step can make a second one redundant too.
+    //
+    // Never past `locked`. Those steps are the starting point you chose — a build already under way,
+    // or the point on an existing chain you asked to continue from — and an audit that decides the
+    // second of them earns nothing is answering a question nobody asked: the evo is already spent.
+    // Trimming it also silently moves the start, so the row that comes back is not a continuation of
+    // your build at all.
     for (let pass = 0; pass < ids.length; pass++) {
       let removedOne = false;
-      for (let i = 0; i < ids.length; i++) {
+      for (let i = locked; i < ids.length; i++) {
         const shorter = ids.filter((_, j) => j !== i);
         if (shorter.length === 0) continue;
         const scored = scoreChain(shorter, t, arch);
-        if (!scored || scored.played.s.score < best - TRIM_EPS) continue;
+        if (!scored || scored.total < best - TRIM_EPS) continue;
         dropped.push(availableEvolutions[ids[i]]?.name || ids[i]);
         ids = shorter;
-        best = scored.played.s.score;
+        best = scored.total;
         removedOne = true;
         break;
       }
@@ -504,7 +688,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     const asIs = scoreChain(ids, t, arch);
     const asIsOvr = subsOfChain(ids)?.sim.finalOvr;
     if (asIs && asIsOvr !== undefined) {
-      for (let i = 0; i < ids.length - 1; i++) {
+      for (let i = locked; i < ids.length - 1; i++) {
         for (let j = i + 1; j < ids.length; j++) {
           if (ids[i] === ids[j]) continue;
           const swapped = [...ids];
@@ -513,7 +697,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           const otherSim = subsOfChain(swapped);
           if (!other || !otherSim) continue;
           if (otherSim.sim.finalOvr !== asIsOvr) continue;
-          if (other.played.s.score < asIs.played.s.score - SWAP_EPS) continue;
+          if (other.total < asIs.total - SWAP_EPS) continue;
           swappable.push([
             availableEvolutions[ids[i]]?.name || ids[i],
             availableEvolutions[ids[j]]?.name || ids[j]
@@ -523,9 +707,17 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     }
 
     // What one more evo out of the pool would still be worth.
+    //
+    // `psFix` is the same question asked of one kind of evo only: the ones that convert the card's
+    // rarity to one that hands out the PlayStyle picker. It is reported separately because the best
+    // single addition is usually a stat evo, and a card whose gold slots are wrong needs to be told
+    // that the fix exists even when something else is worth marginally more — those are different
+    // problems and only one of them is fixed by another evo full of stats.
     let more: { name: string; gain: number } | null = null;
+    let psFix: { name: string; gain: number; ps: number } | null = null;
     const used = new Set(ids);
     const after = subsOfChain(ids);
+    const canPickAlready = canPickPlayStyles(after?.sim.finalBio.rarity ?? '');
     if (after) {
       for (const id of poolIds) {
         if (used.has(id)) continue;
@@ -534,12 +726,21 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         if (!validateRequirement(evo, after.sim.finalOvr, after.sim.finalStats, after.sim.finalPlayStyles, after.sim.finalBio).eligible) continue;
         const scored = scoreChain([...ids, id], t, arch);
         if (!scored) continue;
-        const gain = scored.played.s.score - best;
+        const gain = scored.total - best;
         if (gain >= MORE_EPS && (!more || gain > more.gain)) more = { name: evo.name, gain };
+        if (
+          !canPickAlready &&
+          evo.rarityChange &&
+          FREE_PLAYSTYLE_RARITIES.includes(evo.rarityChange) &&
+          gain > 0 &&
+          (!psFix || gain > psFix.gain)
+        ) {
+          psFix = { name: evo.name, gain, ps: scored.ps.score };
+        }
       }
     }
 
-    return { ids, dropped, more, swappable };
+    return { ids, dropped, more, swappable, psFix };
   };
 
   /** One template's answer: its frontier of real choices, best first. */
@@ -562,11 +763,17 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     const scored = TIERS.flatMap(tier => shortlists.get(`${t.id}|${tier}`) || [])
       .map(e => {
         const played = playedAs(e.cand.subs, t, e.arch);
+        const sim = simOfChain(e.cand.chainIds);
+        const ps = sim
+          ? psOfChain(e.cand.chainIds, sim, t, played.style)
+          : { score: 0, before: 0, canPick: false, picks: { gold: [], silver: [] }, node: null, wasted: [], missing: [], emptyGold: 0 };
         return {
           e,
           s: played.s,
           style: played.style,
           subs: played.subs,
+          ps,
+          total: totalOf(played.s.score, ps),
           tierIdx: TIERS.indexOf(tierOf(played.s.under.length === 0, e.fallback))
         };
       })
@@ -574,15 +781,15 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       // played short. Under a fieldable floor is not a build at all: a card that cannot run, cannot
       // last the game or cannot keep the ball is not recommended with a note, it is not recommended.
       .filter(row => !row.s.under.some(u => u.key in FIELDABLE_FLOORS))
-      .sort((a, b) => a.tierIdx - b.tierIdx || b.s.score - a.s.score);
+      .sort((a, b) => a.tierIdx - b.tierIdx || b.total - a.total);
     if (scored.length === 0) continue;
 
     // Inside a template, drop anything another build beats outright — same or better on every
     // stat the plan is built on, and no more evos. What is left is a set of real choices.
     const axes = Object.keys(t.maximise);
     const axesOf = (subs: Record<string, number>) => axes.map(k => subs[k] ?? 0);
-    const frontier = scored.filter(({ e, tierIdx, subs }) =>
-      !scored.some(({ e: o, tierIdx: oTier, subs: oSubs }) => {
+    const frontier = scored.filter(({ e, tierIdx, subs, ps }) =>
+      !scored.some(({ e: o, tierIdx: oTier, subs: oSubs, ps: oPs }) => {
         // A build that misses a floor never knocks out one that clears it, however good its numbers
         // on the axes look — that is the whole point of having a floor.
         if (o.cand === e.cand || oTier > tierIdx) return false;
@@ -590,6 +797,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const b = axesOf(subs);
         const pairs: [number, number][] = [
           ...a.map((v, i) => [v, b[i]] as [number, number]),
+          // PlayStyles are an axis like any other here. Without this a build with the right four
+          // gold slots is knocked out by one a point better on dribbling and empty where it counts.
+          [oPs.score, ps.score],
           [e.cand.chainIds.length, o.cand.chainIds.length]
         ];
         return pairs.every(([x, y]) => x >= y) && pairs.some(([x, y]) => x > y);
@@ -611,6 +821,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       const dup = rows.some(kept => {
         const theirs = axesOf(kept.subs);
         return mine.every((v, i) => Math.abs(v - theirs[i]) <= SAME_BUILD)
+          && Math.abs(kept.ps.score - row.ps.score) <= SAME_PS
           && kept.e.cand.chainIds.length === row.e.cand.chainIds.length;
       });
       if (dup) continue;
@@ -622,53 +833,85 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     for (const [key, entry] of liked) {
       if (!key.startsWith(`${t.id}|`)) continue;
       if (rows.some(r => r.e.cand === entry.cand)) continue;
-      const played = playedAs(entry.cand.subs, t, entry.arch);
-      rows.push({ e: entry, s: played.s, style: played.style, subs: played.subs });
+      const scoredLike = scoreChain(entry.cand.chainIds, t, entry.arch);
+      if (!scoredLike) continue;
+      rows.push({
+        e: entry,
+        s: scoredLike.played.s,
+        style: scoredLike.played.style,
+        subs: scoredLike.played.subs,
+        ps: scoredLike.ps
+      });
     }
 
     if (rows.length > 0) answers.push({ t, rows });
   }
 
+  /**
+   * Audit first, then rank. The audit changes the chain — it drops steps the plan would not miss —
+   * so a build's real score is only known after it, and ranking on the score it had before means
+   * the row printed #1 can be beaten by the one printed #2. The trim is also where the style is
+   * settled for good: a shorter chain is a different card and can want a different one.
+   */
+  const prepared = answers
+    .map(({ t, rows }) => {
+      // Two rows can trim down to the same chain — the same build offered twice is not a choice.
+      const emitted = new Set<string>();
+      const built = [];
+      for (const row of rows) {
+        const checked = auditChain(row.e.cand.chainIds, t, row.e.arch);
+        const key = canonical(checked.ids);
+        if (emitted.has(key)) continue;
+        emitted.add(key);
+
+        const rescored = scoreChain(checked.ids, t, row.e.arch);
+        const s = rescored?.played.s ?? row.s;
+        const subs = rescored?.played.subs ?? row.subs;
+        const style = rescored?.played.style ?? row.style;
+        // Only now, on a chain that is going to be shown, is it worth searching for where the
+        // picks belong — inside the audit they stay at the end, where they cost one simulation.
+        const placed = placePicks(checked.ids, t, style);
+        const ps = placed?.ps ?? rescored?.ps ?? row.ps;
+        built.push({
+          e: row.e,
+          checked,
+          placed,
+          s,
+          subs,
+          ps,
+          style,
+          total: totalOf(s.score, ps),
+          tierIdx: TIERS.indexOf(tierOf(s.under.length === 0, row.e.fallback))
+        });
+      }
+      built.sort((a, b) => a.tierIdx - b.tierIdx || b.total - a.total);
+      return { t, built };
+    })
+    .filter(a => a.built.length > 0);
+
   // Best plan first, so #1 is the best card this pool can build and not merely the first template
   // in the file. A chain that answers two plans is listed under both — being the best playmaker and
   // the best CAM is two different things to know, and hiding the second is how the CAM list ends up
   // empty for a card that is obviously a CAM.
-  answers.sort((a, b) => (b.rows[0]?.s.score ?? 0) - (a.rows[0]?.s.score ?? 0));
+  prepared.sort((a, b) => (b.built[0]?.total ?? 0) - (a.built[0]?.total ?? 0));
 
   const out: EvolutionPath[] = [];
   let rank = 0;
 
-  for (const { t, rows } of answers) {
-    const best = rows[0];
-    // Two rows can trim down to the same chain — the same build offered twice is not a choice.
-    const emitted = new Set<string>();
+  for (const { t, built } of prepared) {
+    const best = built[0];
 
-    for (const row of rows) {
-      const { e, style } = row;
-      let { s, subs } = row;
+    for (const row of built) {
+      const { e, style, s, subs, ps, checked } = row;
       const cand = e.cand;
+      const chainIds = checked.ids;
       rank += 1;
 
-      // Checked before it is offered: drop the steps the plan would not miss, and say whether one
-      // more is still worth taking.
-      const checked = auditChain(cand.chainIds, t, e.arch);
-      const chainIds = checked.ids;
-      if (checked.dropped.length > 0) {
-        const rescored = scoreChain(chainIds, t, e.arch);
-        if (rescored) {
-          s = rescored.played.s;
-          subs = rescored.played.subs;
-        }
-      }
-
-      const key = canonical(chainIds);
-      if (emitted.has(key)) {
-        rank -= 1;
-        continue;
-      }
-      emitted.add(key);
-
-      const full = simulateEvoChain(chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+      // The picks travel with the build. A card that can assign its own PlayStyles and is handed a
+      // chain without them is a recommendation you have to finish by hand, one PlayStyle at a time,
+      // re-reading the position to remember which four — which is the work this is meant to do.
+      const withPicks = row.placed?.chain ?? chainIds;
+      const full = simulateEvoChain(withPicks, baseBio, baseOvr, baseStats, basePlayStyles);
       // The style the row is scored under, named — it is an instruction, not a footnote: the same
       // build read bare is a different card, and often a failing one.
       const how = style === null ? 'bare' : `on ${style}`;
@@ -689,7 +932,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       const shown = topStats.includes('stamina') ? topStats : [...topStats, 'stamina'];
       const statLine = shown.map(k => `${prettySub(k)} ${subs[k] ?? 0}`).join(' · ');
 
-      const delta = best && cand !== best.e.cand
+      const delta = best && row !== best
         ? topStats
             .map(k => ({ k, d: (subs[k] ?? 0) - (best.subs[k] ?? 0) }))
             .filter(x => x.d !== 0)
@@ -714,9 +957,40 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           ? `all pass · gives up ${prettySub(s.left.key)} ${s.left.value} (${s.left.reach} reachable)`
           : 'all pass · nothing left on the table';
 
+      // What the PlayStyles come to, and how they got there. Three different answers, because they
+      // send you somewhere different: picks made for you, a picker with nothing left worth using,
+      // or a set you are stuck with and why — the gold slots an evo spent on nothing, or the
+      // PlayStyles this position wants that nothing in the chain hands out.
+      const psNote = (() => {
+        const at = `PS ${ps.score.toFixed(1)}/100`;
+        const picked = row.placed?.picked ?? [];
+        if (picked.length > 0) {
+          // Where the picks sit is part of the instruction, not a detail: taking them mid-chain is
+          // what stops the evos after it filling those slots with something you did not choose.
+          const pickAt = withPicks.findIndex(isPlayStyleNodeId);
+          const when = pickAt < chainIds.length
+            ? ` right after ${availableEvolutions[chainIds[pickAt - 1]]?.name || `step ${pickAt}`}`
+            : '';
+          return `${at} · pick ${picked.join(', ')}${when} (${(row.placed?.without ?? ps.before).toFixed(1)} without)`;
+        }
+        if (ps.canPick) return `${at} · free picks, nothing left worth adding`;
+        // Only worth saying while there is something to be done about it. A card holding a
+        // PlayStyle this position ignores and still scoring 95 has not wasted anything that
+        // matters, and the note reads as a contradiction next to the number.
+        if (ps.score >= 90) return at;
+        if (ps.wasted.length > 0) return `${at} · gold slots spent on ${ps.wasted.join(', ')}`;
+        if (ps.missing.length > 0) return `${at} · no ${ps.missing.join('/')}`;
+        return at;
+      })();
+
       const gained = full.finalBio.primaryPositions
         .split(',').map(p => p.trim().toUpperCase()).filter(p => p && !basePositions.has(p));
-      const open = headroomOf(chainIds, full);
+      // Counted on the evos alone. A PlayStyle pick is not an evo, but some evos cap how many
+      // PlayStyles the card they accept may carry, so filling the slots can close a door — worth a
+      // line of its own rather than a headroom number that quietly went down.
+      const noPicks = simulateEvoChain(chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+      const open = headroomOf(chainIds, noPicks);
+      const closes = ps.node ? open - headroomOf(chainIds, full) : 0;
       const evoNames = chainIds.map(id => availableEvolutions[id]?.name || id).join(' ➜ ');
 
       out.push({
@@ -727,6 +1001,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           `${t.name} · +${s.score.toFixed(1)} over 90 · ${verdict}` +
           `${carried.length > 0 ? ` · ${style} carries ${carried.join(', ')}` : ''}` +
           `${delta ? ` · ${delta} vs best` : ''}` +
+          ` · ${psNote}` +
+          `${checked.psFix ? ` · PS fix: ${checked.psFix.name} unlocks free picks (+${checked.psFix.gain.toFixed(1)}, PS ${checked.psFix.ps.toFixed(1)})` : ''}` +
+          `${closes > 0 ? ` · picks close ${closes} later evo${closes > 1 ? 's' : ''}` : ''}` +
           ` · ${archNote} · OVR ${cand.ovr} · IGS ${cand.igs} · ${statLine}` +
           `${gained.length > 0 ? ` · +${gained.join('/')}` : ''}` +
           `${checked.dropped.length > 0 ? ` · dropped ${checked.dropped.join(', ')} (worth nothing here)` : ''}` +
@@ -737,7 +1014,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           ` · ${costOf(chainIds)} · ${open} more evos still open — ${evoNames}`,
         isRecommended: true,
         chemStyle: style,
-        chainIds: [...chainIds],
+        chainIds: [...withPicks],
         steps: full.steps
       });
     }

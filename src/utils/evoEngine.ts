@@ -16,7 +16,9 @@ import { faceWeight } from './statUtils';
  * call both of them 'Futties Evo' — which quietly promised a free PlayStyle picker on the back of
  * FUTTIES Blueprint I, the one evo of the seven that grants the other card.
  */
-export const FREE_PLAYSTYLE_RARITIES = ['Futties', 'National Pride', 'Glory Hunters', 'FUT Birthday'];
+export const FREE_PLAYSTYLE_RARITIES = [
+  'Futties', 'National Pride', 'Glory Hunters', 'FUT Birthday', 'Star Performer'
+];
 
 // --- Path-ranking helpers used by analyzeEvolutions' search -----------------------------
 // Pulled out to module scope (rather than recreated as closures on every call) since they're
