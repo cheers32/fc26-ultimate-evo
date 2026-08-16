@@ -4,6 +4,7 @@ import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { chainKeyOf } from '../utils/feedback';
+import { IN_GAME_STAR_TIER, isInGamePath } from '../utils/paths';
 import { FEEDBACK_REASONS } from '../types/player';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
@@ -263,6 +264,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const [showFilters, setShowFilters] = React.useState(false);
   /** Which row is currently being asked what was wrong with it. */
   const [reasonsFor, setReasonsFor] = React.useState<string | null>(null);
+  /** The in-game record being deleted, and what has been typed to confirm it. */
+  const [confirmDelete, setConfirmDelete] = React.useState<string | null>(null);
+  const [deleteTyped, setDeleteTyped] = React.useState('');
   const [draftFilters, setDraftFilters] = React.useState<EvoFilters>(evoFilters || {});
 
   // Judged on the card as it is, not on the build in progress: which plan a card is for does not
@@ -484,12 +488,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   };
 
   /** 0 unstarred, otherwise which colour. A starred build with no tier reads as the first. */
-  const starTier = (path: EvolutionPath) => (path.isFavorite ? path.starTier ?? 1 : 0);
+  const starTier = (path: EvolutionPath) =>
+    isInGamePath(path) ? IN_GAME_STAR_TIER : path.isFavorite ? path.starTier ?? 1 : 0;
   const starTitle = (path: EvolutionPath) => {
+    if (isInGamePath(path)) {
+      return 'What you have actually done in game. Always saved, never cleared, and green is reserved for it.';
+    }
     const tier = starTier(path);
     if (tier === 0) return 'Star this build so it survives Analyze and the page reload';
-    const next = tier >= STAR_TIER_COUNT ? 'unstars it' : `turns it ${STAR_TIERS[tier]!.name}`;
-    return `Saved · ${STAR_TIERS[tier - 1].name} (${tier}/${STAR_TIER_COUNT}) — clicking ${next}`;
+    const after = tier + 1 === IN_GAME_STAR_TIER ? tier + 2 : tier + 1;
+    const next = after > STAR_TIER_COUNT ? 'unstars it' : `turns it ${STAR_TIERS[after - 1]!.name}`;
+    return `Saved · ${STAR_TIERS[tier - 1].name} — clicking ${next}`;
   };
 
   const startRename = (where: 'chip' | 'row', path: EvolutionPath) => {
@@ -1109,7 +1118,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               {onClearPaths && (
                 <button
                   onClick={onClearPaths}
-                  title="Clear all unstarred paths"
+                  title="Clear all unstarred paths. The Default path — what you have done in game — is never cleared."
                   className="px-2.5 py-1 bg-[#1f2937] hover:bg-red-900/50 border border-gray-600 hover:border-red-500/50 rounded-lg text-gray-400 hover:text-red-300 text-xs flex items-center gap-1 ml-auto"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Clear Unstarred <kbd className="ml-0.5 px-1 bg-black/40 border border-red-900/50 rounded text-[9px] text-red-400 font-mono">c</kbd>
@@ -1234,7 +1243,18 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   </button>
                 </div>
               )}
-              {(onDeletePath || onToggleFavoritePath) && path.chainIds.length > 0 && !path.isFavorite && (
+              {onDeletePath && isInGamePath(path) && path.chainIds.length > 0 && (
+                <div className="absolute -top-1.5 -right-1.5 opacity-40 hover:opacity-100 transition-opacity z-10">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(path.id); setDeleteTyped(''); }}
+                    className="bg-red-950 text-red-400 rounded-full p-0.5 hover:bg-red-600 hover:text-white shadow-sm"
+                    title="Delete the in-game record — asks you to type its name first"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              )}
+              {(onDeletePath || onToggleFavoritePath) && path.chainIds.length > 0 && !path.isFavorite && !isInGamePath(path) && (
                 <div className="absolute -top-1.5 -left-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   {onToggleFavoritePath && (
                     <button
@@ -1266,6 +1286,49 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           ))}
         </div>
       )}
+
+      {/* Typed rather than clicked. Every other build here is a proposal that can be made again;
+          this one is the record of evos already spent, and there is no undo for it. */}
+      {confirmDelete && onDeletePath && (() => {
+        const target = allPaths.find(p => p.id === confirmDelete);
+        if (!target) return null;
+        return (
+          <div className="mt-1 p-2.5 rounded-lg bg-red-950/30 border border-red-800/60 flex flex-col gap-2">
+            <div className="text-[11px] text-red-200/90 leading-snug">
+              Delete <span className="font-bold">{target.name}</span> — {target.chainIds.length} evo
+              {target.chainIds.length === 1 ? '' : 's'} you have already done in game. This cannot be undone,
+              and Analyze cannot rebuild it. Type <span className="font-mono font-bold">{target.name}</span> to confirm.
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={deleteTyped}
+                onChange={e => setDeleteTyped(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape') setConfirmDelete(null); }}
+                placeholder={target.name}
+                className="w-40 bg-[#121212] border border-red-800 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-red-500"
+              />
+              <button
+                disabled={deleteTyped.trim() !== target.name}
+                onClick={() => { onDeletePath(target.id); setConfirmDelete(null); setDeleteTyped(''); }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                  deleteTyped.trim() === target.name
+                    ? 'bg-red-600 border-red-500 text-white hover:bg-red-500'
+                    : 'bg-[#1f211f] border-gray-800 text-gray-600 cursor-not-allowed'
+                }`}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => { setConfirmDelete(null); setDeleteTyped(''); }}
+                className="px-2.5 py-1 rounded-lg text-[11px] text-gray-400 hover:text-white border border-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
           <div className="flex flex-col gap-2">
             {expandedPathIds.map(renderPathId => {

@@ -13,6 +13,7 @@ import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
 import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
+import { DEFAULT_PATH_ID, IN_GAME_STAR_TIER, isInGamePath } from './utils/paths';
 import {
   simulateEvoChain,
   isPlayStyleNodeId,
@@ -45,7 +46,6 @@ import { ImportPlayerModal } from './components/ImportPlayerModal';
 import { Trophy, Layers } from 'lucide-react';
 import { Squad, SquadSlot, PlayerEvoState } from './types/player';
 
-const DEFAULT_PATH_ID = 'default-path';
 /** The build a `?path=` link opens into. Fixed, so following the same link twice doesn't stack. */
 const SHARED_PATH_ID = 'shared-path';
 
@@ -684,7 +684,18 @@ export default function App() {
     JSON.stringify(paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>')]));
 
   const starredForPlayer = useMemo(
-    () => withoutSteps([...generatedPaths, ...manualPaths].filter(p => p.isFavorite)),
+    () =>
+      withoutSteps(
+        [...generatedPaths, ...manualPaths]
+          .filter(p => p.isFavorite || isInGamePath(p))
+          // Stored green, not merely painted green: the record keeps its colour on the next card,
+          // the next device and the next release, without this rule having to run again to restore it.
+          .map(p =>
+            isInGamePath(p)
+              ? { ...p, isFavorite: true, starTier: IN_GAME_STAR_TIER as NonNullable<EvolutionPath['starTier']> }
+              : p
+          )
+      ),
     [generatedPaths, manualPaths]
   );
 
@@ -833,7 +844,15 @@ export default function App() {
       const bReq = availableEvolutions[firstEvoId(b) || '']?.requirements?.maxOvr || 0;
       return bReq - aReq;
     });
-    return saved.some(p => p.id === DEFAULT_PATH_ID) ? saved : [defaultPath, ...saved];
+    const withDefault = saved.some(p => p.id === DEFAULT_PATH_ID) ? saved : [defaultPath, ...saved];
+    // The in-game record is starred green wherever it came from — a stored copy from before this
+    // rule, an edit that dropped the flags, a fresh synthesis. One place to enforce it beats
+    // remembering to set it at each of the half-dozen places a path gets written.
+    return withDefault.map(p =>
+      isInGamePath(p) && p.chainIds.length > 0
+        ? { ...p, isFavorite: true, starTier: IN_GAME_STAR_TIER as NonNullable<EvolutionPath['starTier']> }
+        : p
+    );
   }, [
     currentState.generatedPaths,
     currentState.manualPaths,
@@ -976,7 +995,7 @@ export default function App() {
 
   const handleDeletePath = (pathId: string) => {
     const path = allPaths.find(p => p.id === pathId);
-    if (path?.isFavorite) return;
+    if (path?.isFavorite && !isInGamePath(path)) return;
     if (activePathId === pathId) {
       updateState({ activePathId: DEFAULT_PATH_ID });
     }
@@ -1077,8 +1096,8 @@ export default function App() {
 
   const handleClearPaths = () => {
     updateState({
-      generatedPaths: generatedPaths.filter(p => p.isFavorite),
-      manualPaths: manualPaths.filter(p => p.isFavorite),
+      generatedPaths: generatedPaths.filter(p => p.isFavorite || isInGamePath(p)),
+      manualPaths: manualPaths.filter(p => p.isFavorite || isInGamePath(p)),
       activePathId: DEFAULT_PATH_ID,
       expandedPathIds: [DEFAULT_PATH_ID]
     });
@@ -1665,15 +1684,23 @@ export default function App() {
           onSetProgress={handleSetPathProgress}
           onToggleFavoritePath={(path) => {
             if (path.chainIds.length === 0) return;
+            // The in-game record does not cycle. It is saved, it is green, and a stray click on the
+            // star should not be able to hand it to Clear Unstarred.
+            if (isInGamePath(path)) return;
             // The star cycles rather than toggles: unstarred, then each colour in turn, then off again.
             // Every colour is a save, so only the last click gives the build back to Clear Unstarred.
             const tier = path.isFavorite ? path.starTier ?? 1 : 0;
+            const step = (from: number): number => {
+              const to = from + 1;
+              return to === IN_GAME_STAR_TIER ? step(to) : to; // green is the record's colour only
+            };
+            const nextTier = step(tier);
             const next =
               tier === 0
                 ? { isFavorite: true, starTier: 1 as const }
-                : tier >= STAR_TIER_COUNT
+                : nextTier > STAR_TIER_COUNT
                 ? { isFavorite: false, starTier: undefined }
-                : { isFavorite: true, starTier: (tier + 1) as NonNullable<EvolutionPath['starTier']> };
+                : { isFavorite: true, starTier: nextTier as NonNullable<EvolutionPath['starTier']> };
             const isManual = manualPaths.some(p => p.id === path.id);
             if (isManual) {
               // Already manual: just move it along in place.

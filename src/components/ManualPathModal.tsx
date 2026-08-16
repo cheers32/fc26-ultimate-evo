@@ -521,6 +521,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       name: editingPath ? editingPath.name : `Custom ${result.finalOvr}/${chain.length}/${igs}`,
       description: editingPath ? editingPath.description : 'User created manual evolution path.',
       isRecommended: editingPath?.isRecommended ?? false,
+      // Editing a build is not a reason to lose the save. Rebuilding the object without these
+      // silently unstarred every starred path the moment a step was added to it — and on the
+      // Default path, the record of what has actually been done, that also handed it to Clear.
+      isFavorite: editingPath?.isFavorite,
+      starTier: editingPath?.starTier,
+      doneUpTo: editingPath?.doneUpTo,
       chainIds: chain,
       steps: result.steps
     });
@@ -1114,6 +1120,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               name: editingPath ? editingPath.name : `Custom ${result.finalOvr}/${newChain.length}/${igs}`,
                               description: editingPath ? editingPath.description : 'User created manual evolution path.',
                               isRecommended: editingPath?.isRecommended ?? false,
+                              isFavorite: editingPath?.isFavorite,
+                              starTier: editingPath?.starTier,
+                              doneUpTo: editingPath?.doneUpTo,
                               chainIds: newChain,
                               steps: result.steps
                             });
