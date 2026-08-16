@@ -1214,25 +1214,34 @@ export default function App() {
     const nextBase = index <= currentBase ? currentBase - 1 : currentBase;
     const currentDone = path.doneUpTo ?? -1;
 
+    const forkId = wasGenerated ? `custom-${Date.now()}` : path.id;
     const updated: EvolutionPath = {
       ...path,
-      id: wasGenerated ? `custom-${Date.now()}` : path.id,
-      name: wasGenerated ? `${path.name} (Edited)` : path.name,
+      id: forkId,
+      name: wasGenerated ? `${keeperName(path)} (edited)` : path.name,
+      isFavorite: wasGenerated ? false : path.isFavorite,
+      starTier: wasGenerated ? undefined : path.starTier,
       doneUpTo: index <= currentDone ? currentDone - 1 : currentDone,
       chainIds: newChainIds,
       steps
     };
 
-    // Editing an Analyze result makes it user-owned, matching the manual-path save behaviour:
-    // otherwise the next Analyze run would silently discard the edit.
+    // Editing a recommendation forks it: the run's own list keeps the build it proposed, and what
+    // you are now working on is a build of yours that started from it. Taking the step out of the
+    // recommendation instead meant the shortlist quietly stopped being what Analyze said — and
+    // since the fork needs an id of its own, the chip you were looking at closed underneath you,
+    // because the selection still pointed at an id that no longer existed.
     updateState({
       baseIndex: nextBase,
-      generatedPaths: wasGenerated
-        ? currentState.generatedPaths.filter(p => p.id !== path.id)
-        : currentState.generatedPaths,
+      generatedPaths: currentState.generatedPaths,
       manualPaths: wasGenerated
         ? [...currentState.manualPaths, updated]
-        : currentState.manualPaths.map(p => (p.id === path.id ? updated : p))
+        : currentState.manualPaths.map(p => (p.id === path.id ? updated : p)),
+      // Follow the edit. Whatever you were looking at is what you are still looking at.
+      activePathId: forkId,
+      expandedPathIds: currentState.expandedPathIds.includes(forkId)
+        ? currentState.expandedPathIds
+        : [...currentState.expandedPathIds, forkId]
     });
   };
 

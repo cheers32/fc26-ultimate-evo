@@ -40,6 +40,19 @@ export const getStatColorClass = (val: number) => {
   return 'text-red-500 opacity-90';
 };
 
+/**
+ * The badge on a stat an evo touches: what it actually gave you, out of what it was allowed to
+ * give, up to the cap it stops at.
+ *
+ * Coloured by the first of those three and nothing else. It used to be coloured by the ratio, which
+ * answers a question about the evo rather than about the card: an evo allowed +2 that delivered
+ * both of them scored full marks and lit up green, and an evo allowed +30 that delivered 12 —
+ * twelve points, on a card at end game — read as a failure. What matters at a glance is how much
+ * the stat actually moved, so that is what the colour says.
+ *
+ * Nothing at all is red, a handful is yellow, a real gain is green, and anything past ten is blue,
+ * because at this stage of the game a stat moving more than ten points is a different card.
+ */
 export function calculateChip(
   base: number,
   allowedBoost: number,
@@ -49,30 +62,22 @@ export function calculateChip(
 ): ChipInfo | null {
   if (allowedBoost <= 0) return null;
 
-  const hitLimit = base + allowedBoost >= limit; // Capped out, lost some stats OR hit exactly
-  const utilRate = actualBoost / allowedBoost;
-
-  let className = "";
-
-  if (hitLimit) {
-    if (utilRate >= 0.8) {
-      className = isOvr
-        ? "text-green-800 bg-green-200 border border-green-600 shadow-[0_0_4px_rgba(74,222,128,0.5)]"
-        : "text-green-400 bg-green-900/40 border border-green-600/50";
-    } else if (utilRate >= 0.4) {
-      className = isOvr
-        ? "text-yellow-800 bg-yellow-200 border border-yellow-600 shadow-[0_0_4px_rgba(234,179,8,0.5)]"
-        : "text-yellow-400 bg-yellow-900/40 border border-yellow-600/50";
-    } else {
-      className = isOvr
+  const className =
+    actualBoost <= 0
+      ? isOvr
         ? "text-red-900 bg-red-200 border border-red-600 shadow-[0_0_4px_rgba(248,113,113,0.5)]"
-        : "text-red-400 bg-red-900/40 border border-red-600/50";
-    }
-  } else {
-    className = isOvr
-      ? "text-green-800 bg-green-200/80"
-      : "text-green-400 bg-green-900/20";
-  }
+        : "text-red-400 bg-red-900/40 border border-red-600/50"
+      : actualBoost <= 5
+        ? isOvr
+          ? "text-yellow-800 bg-yellow-200 border border-yellow-600 shadow-[0_0_4px_rgba(234,179,8,0.5)]"
+          : "text-yellow-400 bg-yellow-900/40 border border-yellow-600/50"
+        : actualBoost <= 10
+          ? isOvr
+            ? "text-green-800 bg-green-200 border border-green-600 shadow-[0_0_4px_rgba(74,222,128,0.5)]"
+            : "text-green-400 bg-green-900/40 border border-green-600/50"
+          : isOvr
+            ? "text-blue-900 bg-blue-200 border border-blue-600 shadow-[0_0_4px_rgba(96,165,250,0.5)]"
+            : "text-blue-400 bg-blue-900/40 border border-blue-600/50";
 
   return {
     text: `+${actualBoost}/${allowedBoost}/${limit}`,
