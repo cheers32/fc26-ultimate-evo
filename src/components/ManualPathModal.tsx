@@ -355,7 +355,7 @@ const PsBadge = ({ before, after }: { before: PlayStyleScore; after?: PlayStyleS
       title={
         `PlayStyles ${shown.score.toFixed(1)}/100 at ${shown.position}` +
         (shown.detail.length > 0
-          ? ` · best: ${shown.detail.slice(0, 3).map(d => `${d.name}${d.gold ? '+' : ''}`).join(', ')}`
+          ? ` · best: ${shown.detail.slice(0, 3).map(d => `${d.name.replace(/\+/g, '')}${d.gold ? '+' : ''}`).join(', ')}`
           : ' · none that this position uses') +
         (shown.missing.length > 0 ? ` · missing: ${shown.missing.join(', ')}` : '')
       }

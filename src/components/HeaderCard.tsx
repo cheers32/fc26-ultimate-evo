@@ -632,7 +632,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 title={
                   `PlayStyles ${psScore.score.toFixed(1)}/100 at ${psScore.position}` +
                   (psScore.detail.length > 0
-                    ? ` · best: ${psScore.detail.slice(0, 3).map(d => `${d.name}${d.gold ? '+' : ''}`).join(', ')}`
+                    ? ` · best: ${psScore.detail.slice(0, 3).map(d => `${d.name.replace(/\+/g, '')}${d.gold ? '+' : ''}`).join(', ')}`
                     : ' · none that this position uses') +
                   (psScore.missing.length > 0 ? ` · missing: ${psScore.missing.join(', ')}` : '')
                 }
@@ -1850,7 +1850,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                             title={
                                               `PlayStyles ${now.score.toFixed(1)}/100 at ${now.position}` +
                                               (now.detail.length > 0
-                                                ? ` · best: ${now.detail.slice(0, 3).map(d => `${d.name}${d.gold ? '+' : ''}`).join(', ')}`
+                                                ? ` · best: ${now.detail.slice(0, 3).map(d => `${d.name.replace(/\+/g, '')}${d.gold ? '+' : ''}`).join(', ')}`
                                                 : '')
                                             }
                                           >

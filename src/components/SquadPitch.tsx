@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, Plus, Trash2, UserPlus, X } from 'lucide-react';
 import { PlayerData, Squad, SquadSlot, StatsData } from '../types/player';
-import { fitScore, controlModeFor } from '../utils/fitScore';
 import { simulateEvoChain } from '../utils/evoEngine';
 import { getStatColorClass } from '../utils/statUtils';
+import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
+import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 
 /**
  * A squad laid out the way it is actually played, because a list of eleven names doesn't answer
@@ -84,7 +85,9 @@ interface SlotDetail {
   ovr: number;
   positions: string[];
   faces: { key: string; label: string; value: number }[];
-  fitFor: (pos: string) => number;
+  /** What the card is worth in the slot it is standing in, and what its PlayStyles are worth there. */
+  score: PositionScore | null;
+  ps: PlayStyleScore | null;
 }
 
 interface SquadPitchProps {
@@ -147,6 +150,15 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
         player.playStyles
       );
       const positions = result.finalBio.primaryPositions.split(',').map(p => p.trim()).filter(Boolean);
+      // Scored where it is standing. A reserve has no slot position, so it is scored where it is
+      // best — the bench is the one place the pitch has no opinion about.
+      const slotPos = FORMATION_4231.find(slot => slot.id === slotId)?.pos;
+      const score = slotPos
+        ? scoreAtPosition(result.finalStats, result.finalBio, slotPos)
+        : bestScore(result.finalStats, result.finalBio);
+      const ps = score
+        ? playStyleScoreAt(result.finalStats, result.finalPlayStyles, result.finalBio, score.position)
+        : null;
 
       map.set(slotId, {
         entry,
@@ -155,15 +167,8 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
         ovr: result.finalOvr,
         positions,
         faces: faceStats(result.finalStats),
-        // Judged as if the slot's position were the player's own — that is the question the
-        // pitch is asking: what is this card worth *here*.
-        fitFor: (pos: string) =>
-          fitScore({
-            stats: result.finalStats,
-            playStyles: result.finalPlayStyles,
-            bio: { ...result.finalBio, primaryPositions: pos },
-            mode: controlModeFor({ ...result.finalBio, primaryPositions: pos })
-          }).total
+        score,
+        ps,
       });
     });
     return map;
@@ -213,7 +218,6 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
   /** A filled slot. Same card on the pitch and in the reserves; only the fit warning differs. */
   const renderCard = (slotId: string, detail: SlotDetail, pos?: string) => {
     const mismatch = !!pos && detail.positions.length > 0 && !playsHere(pos, detail.positions);
-    const fit = pos ? detail.fitFor(pos) : 0;
     const isOver = dragOverSlot === slotId;
     const isDragging = dragSlot === slotId;
 
@@ -234,7 +238,14 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
         onClick={() => onOpenSlot(detail.entry)}
         title={
           detail.name +
-          (pos ? `\nFit at ${pos}: ${fit.toFixed(1)}` : '') +
+          // The card's own two numbers, on the same 0–100 the rest of the app uses. The old Fit
+          // total lived here and had no ceiling — it printed 105.7 for a left-back, which is not a
+          // number anyone can place next to a score out of 100.
+          (detail.score
+            ? `\n${detail.score.position} ${detail.score.score.toFixed(1)}/100 as ${detail.score.plan.name}` +
+              `${detail.score.style ? ` (on ${detail.score.style})` : ''}` +
+              (detail.ps ? `\nPlayStyles ${detail.ps.score.toFixed(1)}/100` : '')
+            : '') +
           (mismatch ? `\nOut of position (plays ${detail.positions.join(', ')})` : '') +
           `\n${detail.faces.map(f => `${f.label} ${f.value}`).join(' · ')}` +
           '\nDrag onto another slot to swap'
@@ -289,6 +300,24 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
             </span>
           ))}
         </div>
+        {/* What the card is worth here, and what its PlayStyles are worth here — the two numbers
+            the rest of the app judges a build on, on the card where the judging happens. */}
+        {detail.score && (
+          <div
+            className="flex items-center justify-center gap-1 font-mono text-[8px] leading-[10px] mt-0.5 border-t border-gray-700/60 pt-0.5"
+            title={
+              `${detail.score.position} ${detail.score.score.toFixed(1)}/100 as ${detail.score.plan.name}` +
+              ` · ${detail.score.style ? `on ${detail.score.style}` : 'bare'}` +
+              (detail.ps ? ` · PlayStyles ${detail.ps.score.toFixed(1)}/100` : '')
+            }
+          >
+            <span className={getStatColorClass(detail.score.score)}>{detail.score.score.toFixed(0)}</span>
+            <span className="text-gray-600">·</span>
+            <span className={detail.ps ? getStatColorClass(detail.ps.score) : 'text-gray-600'}>
+              {detail.ps ? detail.ps.score.toFixed(0) : '—'}
+            </span>
+          </div>
+        )}
       </div>
     );
   };
