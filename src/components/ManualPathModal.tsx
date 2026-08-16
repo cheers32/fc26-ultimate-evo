@@ -43,7 +43,7 @@ const STAT_SORTS = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
 type StatSort = typeof STAT_SORTS[number];
 const isStatSort = (mode: SortMode): mode is StatSort => (STAT_SORTS as readonly string[]).includes(mode);
 
-type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base' | 'fit' | StatSort;
+type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base' | 'fit' | 'score' | StatSort;
 
 const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
   { mode: 'default', label: 'Default', title: 'Cheapest entry first: required OVR, then target OVR, then base stats' },
@@ -55,6 +55,12 @@ const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
   },
   { mode: 'reqOvr', label: 'Req OVR ↑', title: 'Lowest required OVR first — the evos about to age out of reach' },
   { mode: 'targetOvr', label: 'Target OVR ↑', title: 'Lowest resulting OVR first — keeps headroom for later evos' },
+  {
+    mode: 'score',
+    label: 'Score ↓',
+    title: 'Biggest resulting position score first — what the card is worth where it plays, ' +
+      'rather than how many stat points the evo happens to add'
+  },
   { mode: 'igs', label: 'IGS ↓', title: 'Biggest resulting in-game stats total first' },
   { mode: 'base', label: 'BS ↓', title: 'Biggest resulting base (face) stats total first' },
   {
@@ -87,7 +93,8 @@ const getEvoRecommendation = ({
   currentPlayStyles,
   expectedPlayStyles,
   filters,
-  fitDelta
+  fitDelta,
+  scoreDelta
 }: {
   evoId: string;
   positions: string;
@@ -104,6 +111,12 @@ const getEvoRecommendation = ({
    * adding to it — otherwise the same improvement would be counted twice.
    */
   fitDelta?: number;
+  /**
+   * Position score gained, out of 100 — the model everything else on the page is judged by. It
+   * replaces the old face-stat gain for the same reason fit does: it is a better answer to the
+   * same question, and adding them would count one improvement twice.
+   */
+  scoreDelta?: number;
 }): { score: number, reasons: string[], blocked: boolean } => {
   if (!currentStats || !expectedStats) return { score: 0, reasons: [], blocked: false };
 
@@ -131,17 +144,28 @@ const getEvoRecommendation = ({
   // With the profile on, fit is the whole judgement of what the card became — PlayStyles,
   // sub-stats and AcceleRATE included. Without it, fall back to the position-weighted face-stat
   // gain plus a flat bonus per PlayStyle+.
-  const usingFit = fitDelta !== undefined;
-  const gain = usingFit ? fitDelta : positionGain;
+  // The position score first, the profile's fit next, the old face-stat gain last — each is a
+  // better answer than the one after it to "what did this evo do for this card here".
+  const usingScore = scoreDelta !== undefined;
+  const usingFit = !usingScore && fitDelta !== undefined;
+  const gain = usingScore ? scoreDelta : usingFit ? fitDelta! : positionGain;
   let score = gain * 6;
 
   if (newGoldCount > 0) {
     reasons.push(newGoldCount > 1 ? `Adds ${newGoldCount} PS+` : `Adds PS+`);
-    if (!usingFit) score += newGoldCount * 15;
+    // The PlayStyles have their own score now; only the oldest ranking still needs a bonus to
+    // notice them at all.
+    if (!usingFit && !usingScore) score += newGoldCount * 15;
   }
 
   if (gain > 0) {
-    reasons.push(usingFit ? `+${gain.toFixed(1)} fit` : `+${gain.toFixed(1)} ${posList[0] || 'rating'}`);
+    reasons.push(
+      usingScore
+        ? `+${gain.toFixed(1)} ${posList[0] || 'score'}`
+        : usingFit
+        ? `+${gain.toFixed(1)} fit`
+        : `+${gain.toFixed(1)} ${posList[0] || 'rating'}`
+    );
   }
 
   // OVR is the scarce resource in a chain — every point spent burns headroom on the max-OVR
@@ -537,7 +561,11 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       // REC_CHAIN_DEPTH steps simply leaves the search with nothing to offer, which is the
       // honest answer rather than a suggestion that ignores it.
       filters: evoFilters,
-      prefixChainIds: selectedChain
+      prefixChainIds: selectedChain,
+      // The same model Analyze V2 uses — plans, floors, the chemistry style the card would be
+      // played with. A continuation offered here and a build offered there should never disagree
+      // about what is worth doing next.
+      version: 2
     });
     chainSearchHandle.current = handle;
 
@@ -546,13 +574,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
         if (chainSearchHandle.current !== handle) return; // superseded by a newer chain
         chainSearchHandle.current = null;
         setIsSearchingChains(false);
-        // analyzeEvolutions returns the Max-IGS picks first, then one per primary position.
-        // The position-ranked ones are what this builder wants; IGS is the fallback when a
-        // player's position has no weights of its own.
-        const positioned = paths.filter(p => !p.name.startsWith('Max IGS'));
-        const ranked = positioned.length > 0 ? positioned : paths;
         setChainRecs(
-          ranked
+          paths
             .filter(p => p.chainIds.length > selectedChain.length)
             .slice(0, MAX_CHAIN_RECOMMENDATIONS)
         );
@@ -711,7 +734,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
             currentPlayStyles,
             expectedPlayStyles,
             filters: evoFilters,
-            fitDelta: currentFit && expectedFit ? expectedFit.total - currentFit.total : undefined
+            fitDelta: currentFit && expectedFit ? expectedFit.total - currentFit.total : undefined,
+            scoreDelta:
+              currentScore && expectedScore ? expectedScore.score - currentScore.score : undefined
           });
           // A warned pick is legal and can still be the right call, but it shouldn't collect a
           // thumbs-up unless it beats the clean options by a real margin rather than a hair.
@@ -859,6 +884,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       case 'base':
         if (a.expectedFaceStats !== b.expectedFaceStats) return b.expectedFaceStats - a.expectedFaceStats;
         break;
+      case 'score': {
+        // The number the rest of the app judges a build on. An evo with no simulated result has no
+        // score either; those already sort below the addable ones, so a missing score only orders
+        // them among themselves.
+        const aScore = a.expectedScore?.score ?? -1;
+        const bScore = b.expectedScore?.score ?? -1;
+        if (aScore !== bScore) return bScore - aScore;
+        break;
+      }
       case 'fit': {
         // An evo with no simulated result has no Fit either; those are already sorted below the
         // addable ones, so treating a missing score as 0 only orders them among themselves.
@@ -1502,6 +1536,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           0
                         )
                       : currentIgs;
+                    // The two numbers the rest of the app judges a build on, on the row that
+                    // proposes one — a continuation worth taking should say so in the same terms
+                    // as everything else, not only in IGS.
+                    const recScorePos = last && currentScore
+                      ? scoreAtPosition(last.statsAfter, last.bioAfter, currentScore.position)
+                      : null;
+                    const recPs = last && currentScore
+                      ? playStyleScoreAt(last.statsAfter, last.playStylesAfter, last.bioAfter, currentScore.position)
+                      : null;
 
                     return (
                       <div
@@ -1520,6 +1563,31 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               IGS <span className="text-fcGreen">+{finalIgs - currentIgs}</span>{' '}
                               <span className="text-blue-400 font-bold">{finalIgs}</span>
                             </span>
+                            {recScorePos && currentScore && (
+                              <span
+                                className="font-mono text-[10px] text-gray-400"
+                                title={`${recScorePos.position} ${recScorePos.score.toFixed(1)}/100 as ${recScorePos.plan.name}` +
+                                  ` · ${recScorePos.style ? `on ${recScorePos.style}` : 'bare'}`}
+                              >
+                                {recScorePos.position}{' '}
+                                {recScorePos.score - currentScore.score >= 0.05 && (
+                                  <span className="text-fcGreen">+{(recScorePos.score - currentScore.score).toFixed(1)}</span>
+                                )}{' '}
+                                <span className={getStatColorClass(recScorePos.score)}>{recScorePos.score.toFixed(1)}</span>
+                              </span>
+                            )}
+                            {recPs && currentPs && (
+                              <span
+                                className="font-mono text-[10px] text-gray-400"
+                                title={`PlayStyles ${recPs.score.toFixed(1)}/100 at ${recPs.position}`}
+                              >
+                                PS{' '}
+                                {recPs.score - currentPs.score >= 0.05 && (
+                                  <span className="text-fcGreen">+{(recPs.score - currentPs.score).toFixed(1)}</span>
+                                )}{' '}
+                                <span className={getStatColorClass(recPs.score)}>{recPs.score.toFixed(1)}</span>
+                              </span>
+                            )}
                             <span className="text-[9px] text-gray-500 font-mono">{added.length} more EVOs</span>
                           </div>
                           <div className="text-[11px] text-gray-300 mt-1 leading-snug">
