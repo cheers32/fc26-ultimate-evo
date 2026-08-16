@@ -4,7 +4,7 @@ import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { chainKeyOf } from '../utils/feedback';
-import { IN_GAME_STAR_TIER, isInGamePath } from '../utils/paths';
+import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
 import { FEEDBACK_REASONS } from '../types/player';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
@@ -494,13 +494,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   // builder/21177_1014_990_… is a 404, builder/21177_990_… is the build on screen. Requiring a
   // name slug behind the digits, as this used to, dropped every one of these but the first.
   /** Where a build's in-game stats total ends up — what a finished build is judged on. */
-  const pathIgs = (path: EvolutionPath) => {
-    const last = path.steps?.[path.steps.length - 1];
-    if (!last) return null;
-    return Object.values(last.statsAfter).reduce(
+  const igsOf = (stats: StatsData) =>
+    Object.values(stats).reduce(
       (acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0),
       0
     );
+
+  // A build with no steps is the raw card, so it is worth what the raw card is worth rather than
+  // nothing — otherwise the one chip that exists to be compared against carries no numbers.
+  const pathIgs = (path: EvolutionPath) => {
+    const last = path.steps?.[path.steps.length - 1];
+    return igsOf(last ? last.statsAfter : rawStats);
   };
 
   /**
@@ -520,7 +524,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   /** What the build is worth where it ends up playing — the chip's second number. */
   const pathScore = (path: EvolutionPath) => {
     const last = path.steps?.[path.steps.length - 1];
-    if (!last) return null;
+    if (!last) return baseScore;
     return bestScore(last.statsAfter, last.bioAfter);
   };
 
@@ -1274,7 +1278,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
                 }`}
               >
-                {path.name}
+                {pathLabel(path)}
                 {/* What the build is worth, on the chip itself, so builds can be told apart without
                     expanding them: the stat total it ends on, and what that is worth where the card
                     plays. Bare numbers — the labels cost more room than they explain, and the two
@@ -1344,7 +1348,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <button
                   onClick={(e) => { e.stopPropagation(); onDuplicatePath(path.id); }}
                   className="absolute -bottom-1.5 -left-1.5 rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-400 hover:bg-blue-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  title={`Duplicate "${path.name}"`}
+                  title={`Duplicate "${pathLabel(path)}"`}
                 >
                   <Copy className="w-2.5 h-2.5" />
                 </button>
@@ -1566,10 +1570,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   ) : (
                     <button
                       onClick={() => startRename('row', renderPath)}
-                      title={`Rename "${renderPath.name}"`}
+                      title={`Rename "${pathLabel(renderPath)}"`}
                       className="shrink-0 max-w-32 flex items-center gap-1 px-1.5 py-1 rounded border border-transparent hover:border-gray-700 text-[11px] font-bold text-gray-400 hover:text-gray-200 transition-colors group/name"
                     >
-                      <span className="truncate">{renderPath.name}</span>
+                      <span className="truncate">{pathLabel(renderPath)}</span>
                       <Pencil className="w-2.5 h-2.5 shrink-0 opacity-0 group-hover/name:opacity-100 transition-opacity" />
                     </button>
                   )
@@ -1675,7 +1679,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   <span className="text-gray-600 text-[10px] shrink-0">➜</span>
                 ) : (
                   <span className="text-[11px] text-gray-600 italic ml-2 shrink-0">
-                    No EVOs yet — use Add EVO to build from here.
+                    {isBaseCardPath(renderPath)
+                      ? 'The card as it came. Nothing is ever added here — it is what the others are read against.'
+                      : 'No EVOs yet — use Add EVO to build from here.'}
                   </span>
                 )}
 
