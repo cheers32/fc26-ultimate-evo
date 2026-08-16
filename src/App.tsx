@@ -44,7 +44,7 @@ import { EvoPoolModal, EvoStatuses } from './components/EvoPoolModal';
 import { ManualPathModal } from './components/ManualPathModal';
 import { EvoDetailsModal } from './components/EvoDetailsModal';
 import { PlayStylePickerModal } from './components/PlayStylePickerModal';
-import { SquadPitch, ALL_SLOT_IDS, FORMATION_4231 } from './components/SquadPitch';
+import { SquadPitch, ALL_SLOT_IDS, formationOf } from './components/SquadPitch';
 import { ImportPlayerModal } from './components/ImportPlayerModal';
 import { Trophy, Layers } from 'lucide-react';
 import { Squad, SquadSlot, PlayerEvoState } from './types/player';
@@ -370,6 +370,11 @@ export default function App() {
     const newSquad: Squad = { id: Date.now().toString(), name, slots: {}, createdAt: Date.now() };
     saveSquads([...squads, newSquad]);
     return newSquad.id;
+  };
+
+  /** The shape a squad is drawn and judged in. The slots keep whoever stands in them. */
+  const setSquadFormation = (squadId: string, formationId: string) => {
+    saveSquads(squads.map(s => (s.id === squadId ? { ...s, formation: formationId } : s)));
   };
 
   const deleteSquad = (squadId: string) => {
@@ -1476,7 +1481,9 @@ export default function App() {
     const onPitch = squad
       ? Object.entries(squad.slots || {}).find(([, entry]) => entry?.playerId === selectedPlayerId)
       : undefined;
-    const slotPos = onPitch ? FORMATION_4231.find(slot => slot.id === onPitch[0])?.pos : undefined;
+    const slotPos = onPitch
+      ? formationOf(squad?.formation).slots.find(slot => slot.id === onPitch[0])?.pos
+      : undefined;
     return slotPos || previewBio.primaryPositions.split(',')[0]?.trim() || 'ST';
   }, [squads, activeSquadId, selectedPlayerId, previewBio.primaryPositions]);
 
@@ -1826,6 +1833,7 @@ export default function App() {
                   onOpenSlot={openSquadSlot}
                   onClearSlot={clearSquadSlot}
                   onCreateSquad={createSquad}
+                  onSetFormation={setSquadFormation}
                   onDeleteSquad={deleteSquad}
                   onAddCurrentToSlot={addCurrentPlayerToSlot}
                   onSwapSlots={swapSquadSlots}

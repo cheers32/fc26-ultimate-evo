@@ -55,6 +55,26 @@ const AVOID_COST = 0.5;
 const pointsFor = (value: number) =>
   Math.max(0, Math.min(1, (value - WORTHLESS_AT) / (PERFECT_AT - WORTHLESS_AT))) * 100;
 
+/**
+ * Slots that are one position played from a side.
+ *
+ * A 4-2-3-1 fields three attacking midfielders, and the wide two are not the same job as the one in
+ * the middle: they come inside onto the good foot and run in behind, so the plans a winger is judged
+ * on are open to them and the pure playmaker plans are not the only answer. The middle one is judged
+ * as a CAM and nothing else.
+ *
+ * The key is what a slot passes in; the label is what gets printed, because "CAM (L)" is a position
+ * a person recognises and "CAM-L" is a lookup key.
+ */
+const SIDED: Record<string, { label: string; positions: string[] }> = {
+  'CAM-L': { label: 'CAM (L)', positions: ['CAM', 'LW', 'LM'] },
+  'CAM-R': { label: 'CAM (R)', positions: ['CAM', 'RW', 'RM'] }
+};
+
+/** The plain position behind a slot key — 'CAM-L' is a CAM. */
+export const basePosition = (key: string): string =>
+  SIDED[key.trim().toUpperCase()] ? key.trim().toUpperCase().split('-')[0] : key.trim().toUpperCase();
+
 export interface PositionScore {
   /** 0–100. */
   score: number;
@@ -119,9 +139,14 @@ export function scoreAtPosition(
   bio: PlayerBio,
   position: string
 ): PositionScore | null {
-  const pos = position.trim().toUpperCase();
+  const key = position.trim().toUpperCase();
+  const sided = SIDED[key];
+  const pos = sided ? sided.label : key;
+  const wanted = sided ? sided.positions : [key];
   const height = parseHeightCm(bio.height);
-  const plans = templatesAvailable([pos], height).filter(t => t.positions.includes(pos));
+  const plans = templatesAvailable(wanted, height).filter(t =>
+    t.positions.some(p => wanted.includes(p))
+  );
   if (plans.length === 0) return null;
 
   const subs = subValues(stats);

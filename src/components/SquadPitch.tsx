@@ -23,24 +23,93 @@ export interface PitchSlot {
   id: string;
   /** The position the slot demands — what a card is judged against when it sits here. */
   pos: string;
+  /** What to draw, where that differs from the scoring key: 'CAM-L' is drawn as 'CAM'. */
+  label?: string;
   /** Percentages, so the pitch scales with its container. */
   x: number;
   y: number;
 }
 
-export const FORMATION_4231: PitchSlot[] = [
-  { id: 'gk', pos: 'GK', x: 50, y: 92 },
-  { id: 'lb', pos: 'LB', x: 12, y: 72 },
-  { id: 'lcb', pos: 'CB', x: 35, y: 74 },
-  { id: 'rcb', pos: 'CB', x: 65, y: 74 },
-  { id: 'rb', pos: 'RB', x: 88, y: 72 },
-  { id: 'lcdm', pos: 'CDM', x: 35, y: 51 },
-  { id: 'rcdm', pos: 'CDM', x: 65, y: 51 },
-  { id: 'lw', pos: 'LM', x: 13, y: 31 },
-  { id: 'cam', pos: 'CAM', x: 50, y: 31 },
-  { id: 'rw', pos: 'RM', x: 87, y: 31 },
-  { id: 'st', pos: 'ST', x: 50, y: 11 }
+/**
+ * The formations the pitch can draw, keyed by what the squad stores.
+ *
+ * All three use the same eleven slot ids on purpose. A squad stores which player stands in `lw`,
+ * not which player stands at left midfield, so switching formation re-labels and re-scores the
+ * band without emptying it — the left-sided attacker stays where he is and is simply judged as
+ * what he now is.
+ *
+ * `pos` is the scoring key and `label` is what gets drawn. They differ only where a slot is a
+ * position played from a side: the wide two of a three-CAM band are judged on the winger plans as
+ * well as the playmaker ones, because that is the job — come inside onto the good foot and run in
+ * behind — while the middle one is judged as a CAM and nothing else.
+ */
+export interface Formation {
+  id: string;
+  name: string;
+  slots: PitchSlot[];
+}
+
+export const FORMATIONS: Formation[] = [
+  {
+    id: '4231-wide',
+    name: '4-2-3-1 · LM CAM RM',
+    slots: [
+      { id: 'gk', pos: 'GK', x: 50, y: 92 },
+      { id: 'lb', pos: 'LB', x: 12, y: 72 },
+      { id: 'lcb', pos: 'CB', x: 35, y: 74 },
+      { id: 'rcb', pos: 'CB', x: 65, y: 74 },
+      { id: 'rb', pos: 'RB', x: 88, y: 72 },
+      { id: 'lcdm', pos: 'CDM', x: 35, y: 51 },
+      { id: 'rcdm', pos: 'CDM', x: 65, y: 51 },
+      { id: 'lw', pos: 'LM', x: 13, y: 31 },
+      { id: 'cam', pos: 'CAM', x: 50, y: 31 },
+      { id: 'rw', pos: 'RM', x: 87, y: 31 },
+      { id: 'st', pos: 'ST', x: 50, y: 11 }
+    ]
+  },
+  {
+    id: '4231-cam',
+    name: '4-2-3-1 · three CAMs',
+    slots: [
+      { id: 'gk', pos: 'GK', x: 50, y: 92 },
+      { id: 'lb', pos: 'LB', x: 12, y: 72 },
+      { id: 'lcb', pos: 'CB', x: 35, y: 74 },
+      { id: 'rcb', pos: 'CB', x: 65, y: 74 },
+      { id: 'rb', pos: 'RB', x: 88, y: 72 },
+      { id: 'lcdm', pos: 'CDM', x: 35, y: 51 },
+      { id: 'rcdm', pos: 'CDM', x: 65, y: 51 },
+      { id: 'lw', pos: 'CAM-L', label: 'CAM', x: 16, y: 31 },
+      { id: 'cam', pos: 'CAM', x: 50, y: 29 },
+      { id: 'rw', pos: 'CAM-R', label: 'CAM', x: 84, y: 31 },
+      { id: 'st', pos: 'ST', x: 50, y: 11 }
+    ]
+  },
+  {
+    id: '4411',
+    name: '4-4-1-1 · LM CM CM RM',
+    slots: [
+      { id: 'gk', pos: 'GK', x: 50, y: 92 },
+      { id: 'lb', pos: 'LB', x: 12, y: 74 },
+      { id: 'lcb', pos: 'CB', x: 35, y: 76 },
+      { id: 'rcb', pos: 'CB', x: 65, y: 76 },
+      { id: 'rb', pos: 'RB', x: 88, y: 74 },
+      { id: 'lw', pos: 'LM', x: 12, y: 52 },
+      { id: 'lcdm', pos: 'CM', x: 38, y: 54 },
+      { id: 'rcdm', pos: 'CM', x: 62, y: 54 },
+      { id: 'rw', pos: 'RM', x: 88, y: 52 },
+      { id: 'cam', pos: 'CAM', x: 50, y: 30 },
+      { id: 'st', pos: 'ST', x: 50, y: 11 }
+    ]
+  }
 ];
+
+export const DEFAULT_FORMATION = FORMATIONS[0].id;
+
+export const formationOf = (id?: string): Formation =>
+  FORMATIONS.find(f => f.id === id) || FORMATIONS[0];
+
+/** Kept for the callers that only ever wanted "the eleven slots" — the first formation's. */
+export const FORMATION_4231: PitchSlot[] = FORMATIONS[0].slots;
 
 /** The rest of the squad. No position, so nothing here is ever "out of position". */
 export const RESERVE_SLOTS: string[] = Array.from({ length: 12 }, (_, i) => `res${i + 1}`);
@@ -100,6 +169,8 @@ interface SquadPitchProps {
   onClearSlot: (squadId: string, slotId: string) => void;
   /** Start another squad — a squad is one pitch, so a new pitch is a new squad. */
   onCreateSquad: (name: string) => string;
+  /** Change the shape. The slots keep their occupants — only what they are called and judged as. */
+  onSetFormation: (squadId: string, formationId: string) => void;
   onDeleteSquad: (squadId: string) => void;
   /** One click on an empty slot: the build currently open goes straight in there. */
   onAddCurrentToSlot: (squadId: string | null, slotId: string) => void;
@@ -117,6 +188,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
   onOpenSlot,
   onClearSlot,
   onCreateSquad,
+  onSetFormation,
   onDeleteSquad,
   onAddCurrentToSlot,
   onSwapSlots,
@@ -133,6 +205,8 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
    * Everything a card shows, worked out from the two things a slot stores: which player, and which
    * of their builds. Nothing is read from a snapshot, so a card can never be out of date.
    */
+  const formation = formationOf(squad?.formation);
+
   const details = useMemo(() => {
     const map = new Map<string, SlotDetail>();
     if (!squad) return map;
@@ -152,7 +226,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
       const positions = result.finalBio.primaryPositions.split(',').map(p => p.trim()).filter(Boolean);
       // Scored where it is standing. A reserve has no slot position, so it is scored where it is
       // best — the bench is the one place the pitch has no opinion about.
-      const slotPos = FORMATION_4231.find(slot => slot.id === slotId)?.pos;
+      const slotPos = formation.slots.find(slot => slot.id === slotId)?.pos;
       const score = slotPos
         ? scoreAtPosition(result.finalStats, result.finalBio, slotPos)
         : bestScore(result.finalStats, result.finalBio);
@@ -172,7 +246,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
       });
     });
     return map;
-  }, [squad, playersById]);
+  }, [squad, playersById, formation]);
 
   /** Every slot is a drop target, so the handlers are the same wherever the slot is drawn. */
   const dropProps = (slotId: string) => ({
@@ -196,7 +270,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
    * An empty slot is a button, not a hint: one click puts the build on screen into it. That is the
    * whole point — the squad is assembled from the workbench without a detour through a list.
    */
-  const renderEmpty = (slotId: string, pos?: string) => {
+  const renderEmpty = (slotId: string, pos?: string, posLabel?: string) => {
     const isOver = dragOverSlot === slotId;
     return (
       <button
@@ -210,7 +284,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
         }`}
       >
         <UserPlus className="w-3.5 h-3.5" />
-        {pos && <span className="text-[9px] font-bold mt-0.5">{pos}</span>}
+        {posLabel && <span className="text-[9px] font-bold mt-0.5">{posLabel}</span>}
       </button>
     );
   };
@@ -327,9 +401,9 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
     );
   };
 
-  const renderSlot = (slotId: string, pos?: string) => {
+  const renderSlot = (slotId: string, pos?: string, posLabel?: string) => {
     const detail = details.get(slotId);
-    return detail ? renderCard(slotId, detail, pos) : renderEmpty(slotId, pos);
+    return detail ? renderCard(slotId, detail, pos) : renderEmpty(slotId, pos, posLabel ?? pos);
   };
 
   return (
@@ -342,13 +416,13 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
           <div className="absolute left-2 right-2 top-1/2 h-px bg-white/10" />
           <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[46%] h-[14%] border border-white/10 border-t-0" />
           <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[46%] h-[14%] border border-white/10 border-b-0" />
-          {FORMATION_4231.map(slot => (
+          {formation.slots.map(slot => (
             <div
               key={slot.id}
               style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
               className="absolute -translate-x-1/2 -translate-y-1/2"
             >
-              {renderSlot(slot.id, slot.pos)}
+              {renderSlot(slot.id, slot.pos, slot.label ?? slot.pos)}
             </div>
           ))}
         </div>
@@ -407,7 +481,21 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
           </button>
         )}
 
-        <span className="text-[10px] text-gray-600 font-mono ml-0.5">4-2-3-1</span>
+        {squad && (
+          <div className="relative">
+            <select
+              value={formation.id}
+              onChange={e => onSetFormation(squad.id, e.target.value)}
+              title="Which shape the pitch draws — the same eleven slots, re-labelled and re-scored"
+              className="appearance-none bg-[#121212] border border-gray-800 rounded-lg pl-2.5 pr-7 py-1 text-[10px] font-mono text-gray-400 focus:border-fcGreen focus:outline-none cursor-pointer"
+            >
+              {FORMATIONS.map(f => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-3 h-3 text-gray-600 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        )}
         <span className="text-[10px] text-gray-600 font-mono">
           {details.size}/{ALL_SLOT_IDS.length}
         </span>
