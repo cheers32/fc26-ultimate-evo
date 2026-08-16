@@ -386,9 +386,23 @@ export function archetypePossible(fam: AccelerateFamily, heightCm?: number): boo
 
 /** Whether a plan is worth offering for a card at all: right position, reachable archetype. */
 export function templatesAvailable(positions: string[], heightCm?: number): BuildTemplate[] {
-  return templatesFor(positions).filter(
+  const all = templatesFor(positions);
+  const byFrame = all.filter(
     t => archetypePossible(t.archetype, heightCm) || (t.controlledFallback === true && t.archetype === 'Explosive')
   );
+
+  // A frame that reaches neither archetype still has a card on it.
+  //
+  // Explosive stops at 182 and Lengthy starts at 185, so a card at 183 or 184 passed no gate at
+  // all and came back with no plan — which is not "this card has no best position", it is the
+  // model having nothing to say. Everything downstream took the silence literally: no position
+  // score on the chip, no PlayStyle score, no verdict, and Analyze returning nothing for a card
+  // that obviously builds. Otamendi at 183cm is a centre-back whatever the thresholds say.
+  //
+  // So the gate narrows the list where it can and gets out of the way where it cannot. What comes
+  // back for those frames is scored as Controlled and labelled as the fallback, which is what the
+  // card is: neither of the two things you build toward, and still a card you field.
+  return byFrame.length > 0 ? byFrame : all;
 }
 
 /**
