@@ -395,7 +395,8 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
    * Only styles that still read the plan's archetype are eligible, so a style can never buy points
    * by spending the burst the plan is built on.
    */
-  const playedAs = (cand: Candidate, t: BuildTemplate, arch: AccelerateFamily) => {
+  const playedAs = (subsIn: Record<string, number>, t: BuildTemplate, arch: AccelerateFamily) => {
+    const cand = { subs: subsIn } as Candidate;
     let best: { style: string | null; subs: Record<string, number>; s: Scored } | null = null;
     for (const [style, boosts] of STYLE_OPTIONS) {
       const subs = style === null ? cand.subs : withStyle(cand.subs, boosts);
@@ -428,6 +429,83 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     subs: Record<string, number>;
   }
 
+
+  /**
+   * What a chain is checked for before it is offered.
+   *
+   * A shortlist is a set of instructions to spend evos on, and an evo is a card you do not get back.
+   * Two things a ranking never notices on its own:
+   *
+   * A step that earns nothing. Chains are grown one evo at a time, so a step taken early for stats a
+   * later one caps out anyway stays in the chain, and the score cannot tell — it only sees the end.
+   * Every step is pulled out in turn and the chain re-scored without it; anything the plan does not
+   * miss is dropped and named, so what is left is the shortest chain that reaches the same card.
+   *
+   * A step left on the table. "11 more evos still open" says a lot less than "one of them is worth
+   * another +3.4", which is the difference between a finished card and one you stopped building
+   * because the search ran out of depth.
+   */
+  const TRIM_EPS = 0.3;
+  const MORE_EPS = 0.5;
+
+  const subsOfChain = (chainIds: string[]) => {
+    const sim = simulateEvoChain(chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+    if (!sim.isValidChain) return null;
+    return { sim, subs: subValues(sim.finalStats) };
+  };
+
+  /** Score a chain the way its row is scored: same plan, same archetype, best style for it. */
+  const scoreChain = (chainIds: string[], t: BuildTemplate, arch: AccelerateFamily) => {
+    const got = subsOfChain(chainIds);
+    if (!got) return null;
+    const byChem = archetypesByChem(got.subs, height);
+    // A trim that costs the card its archetype is not a trim, it is a different plan.
+    if (!byChem.has(arch)) return null;
+    return { ...got, played: playedAs(got.subs, t, arch) };
+  };
+
+  const auditChain = (chainIds: string[], t: BuildTemplate, arch: AccelerateFamily) => {
+    let ids = [...chainIds];
+    let best = scoreChain(ids, t, arch)?.played.s.score ?? -Infinity;
+    const dropped: string[] = [];
+
+    // Greedy, and repeated: dropping one step can make a second one redundant too.
+    for (let pass = 0; pass < ids.length; pass++) {
+      let removedOne = false;
+      for (let i = 0; i < ids.length; i++) {
+        const shorter = ids.filter((_, j) => j !== i);
+        if (shorter.length === 0) continue;
+        const scored = scoreChain(shorter, t, arch);
+        if (!scored || scored.played.s.score < best - TRIM_EPS) continue;
+        dropped.push(availableEvolutions[ids[i]]?.name || ids[i]);
+        ids = shorter;
+        best = scored.played.s.score;
+        removedOne = true;
+        break;
+      }
+      if (!removedOne) break;
+    }
+
+    // What one more evo out of the pool would still be worth.
+    let more: { name: string; gain: number } | null = null;
+    const used = new Set(ids);
+    const after = subsOfChain(ids);
+    if (after) {
+      for (const id of poolIds) {
+        if (used.has(id)) continue;
+        const evo = availableEvolutions[id];
+        if (!evo) continue;
+        if (!validateRequirement(evo, after.sim.finalOvr, after.sim.finalStats, after.sim.finalPlayStyles, after.sim.finalBio).eligible) continue;
+        const scored = scoreChain([...ids, id], t, arch);
+        if (!scored) continue;
+        const gain = scored.played.s.score - best;
+        if (gain >= MORE_EPS && (!more || gain > more.gain)) more = { name: evo.name, gain };
+      }
+    }
+
+    return { ids, dropped, more };
+  };
+
   /** One template's answer: its frontier of real choices, best first. */
   interface Answer {
     t: BuildTemplate;
@@ -447,7 +525,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     // chosen.
     const scored = TIERS.flatMap(tier => shortlists.get(`${t.id}|${tier}`) || [])
       .map(e => {
-        const played = playedAs(e.cand, t, e.arch);
+        const played = playedAs(e.cand.subs, t, e.arch);
         return {
           e,
           s: played.s,
@@ -508,7 +586,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     for (const [key, entry] of liked) {
       if (!key.startsWith(`${t.id}|`)) continue;
       if (rows.some(r => r.e.cand === entry.cand)) continue;
-      const played = playedAs(entry.cand, t, entry.arch);
+      const played = playedAs(entry.cand.subs, t, entry.arch);
       rows.push({ e: entry, s: played.s, style: played.style, subs: played.subs });
     }
 
@@ -526,11 +604,35 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
 
   for (const { t, rows } of answers) {
     const best = rows[0];
+    // Two rows can trim down to the same chain — the same build offered twice is not a choice.
+    const emitted = new Set<string>();
 
-    for (const { e, s, style, subs } of rows) {
+    for (const row of rows) {
+      const { e, style } = row;
+      let { s, subs } = row;
       const cand = e.cand;
       rank += 1;
-      const full = simulateEvoChain(cand.chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
+
+      // Checked before it is offered: drop the steps the plan would not miss, and say whether one
+      // more is still worth taking.
+      const checked = auditChain(cand.chainIds, t, e.arch);
+      const chainIds = checked.ids;
+      if (checked.dropped.length > 0) {
+        const rescored = scoreChain(chainIds, t, e.arch);
+        if (rescored) {
+          s = rescored.played.s;
+          subs = rescored.played.subs;
+        }
+      }
+
+      const key = canonical(chainIds);
+      if (emitted.has(key)) {
+        rank -= 1;
+        continue;
+      }
+      emitted.add(key);
+
+      const full = simulateEvoChain(chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
       // The style the row is scored under, named — it is an instruction, not a footnote: the same
       // build read bare is a different card, and often a failing one.
       const how = style === null ? 'bare' : `on ${style}`;
@@ -576,24 +678,27 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           ? `all pass · gives up ${prettySub(s.left.key)} ${s.left.value} (${s.left.reach} reachable)`
           : 'all pass · nothing left on the table';
 
-      const gained = cand.positions.filter(p => !basePositions.has(p));
-      const open = headroomOf(cand.chainIds, full);
-      const evoNames = cand.chainIds.map(id => availableEvolutions[id]?.name || id).join(' ➜ ');
+      const gained = full.finalBio.primaryPositions
+        .split(',').map(p => p.trim().toUpperCase()).filter(p => p && !basePositions.has(p));
+      const open = headroomOf(chainIds, full);
+      const evoNames = chainIds.map(id => availableEvolutions[id]?.name || id).join(' ➜ ');
 
       out.push({
         id: `v2-path-${Date.now()}-${rank}`,
         name: `#${rank}`,
         description:
-          `${upVoted.has(canonical(cand.chainIds)) ? '★ you liked this · ' : ''}` +
+          `${upVoted.has(canonical(chainIds)) ? '★ you liked this · ' : ''}` +
           `${t.name} · +${s.score.toFixed(1)} over 90 · ${verdict}` +
           `${carried.length > 0 ? ` · ${style} carries ${carried.join(', ')}` : ''}` +
           `${delta ? ` · ${delta} vs best` : ''}` +
           ` · ${archNote} · OVR ${cand.ovr} · IGS ${cand.igs} · ${statLine}` +
           `${gained.length > 0 ? ` · +${gained.join('/')}` : ''}` +
-          ` · ${costOf(cand.chainIds)} · ${open} more evos still open — ${evoNames}`,
+          `${checked.dropped.length > 0 ? ` · dropped ${checked.dropped.join(', ')} (worth nothing here)` : ''}` +
+          `${checked.more ? ` · one more worth +${checked.more.gain.toFixed(1)}: ${checked.more.name}` : ''}` +
+          ` · ${costOf(chainIds)} · ${open} more evos still open — ${evoNames}`,
         isRecommended: true,
         chemStyle: style,
-        chainIds: [...cand.chainIds],
+        chainIds: [...chainIds],
         steps: full.steps
       });
     }
