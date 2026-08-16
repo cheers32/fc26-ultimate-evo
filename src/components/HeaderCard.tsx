@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
-import { BUILD_TEMPLATES, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
+import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { chainKeyOf } from '../utils/feedback';
 import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
 import { FEEDBACK_REASONS } from '../types/player';
@@ -54,7 +54,11 @@ interface HeaderCardProps {
   onAnalyzeV2?: () => void;
   isAnalyzing?: boolean;
   /** The last Analyze run came back with nothing that passed the filters. */
-  analyzeFoundNothing?: boolean;
+  /**
+   * Why the last run left the screen untouched, when it did: nothing cleared the bar, or everything
+   * that did is already saved on the card. Null when the run produced something.
+   */
+  analyzeNothing?: { reason: 'none' | 'duplicates'; assumedChem: boolean } | null;
   analyzeProgress?: number;
   onCancelAnalyze?: () => void;
   rawBaseOvr: number;
@@ -247,7 +251,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onAnalyze,
   onAnalyzeV2,
   isAnalyzing = false,
-  analyzeFoundNothing = false,
+  analyzeNothing = null,
   analyzeProgress = 0,
   onCancelAnalyze,
   rawBaseOvr,
@@ -1282,16 +1286,38 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           broken button rather than an answer. Filters can genuinely rule everything out — an evo
           that has to be in the chain can be the very thing that costs the card the AcceleRATE the
           chain is being filtered on — so say so, and say what is doing the ruling out. */}
-      {analyzeFoundNothing && !isAnalyzing && (
+      {analyzeNothing && !isAnalyzing && (
         <div className="mb-1 px-3 py-2 rounded-lg bg-amber-950/30 border border-amber-800/50 text-[11px] text-amber-200/90 leading-snug">
-          <span className="font-bold">Analyze found no build that satisfies the filters.</span>
-          {activeFilterSummary.length > 0 && (
-            <span className="text-amber-200/60"> Currently asking for: {activeFilterSummary.join(' · ')}.</span>
+          {analyzeNothing.reason === 'duplicates' ? (
+            <>
+              <span className="font-bold">Analyze found nothing you don't already have.</span>
+              <span className="text-amber-200/60">
+                {' '}Every build it came back with is already saved on this card, so the list is
+                unchanged. Widen the pool, raise the depth, or loosen Filters to look somewhere else.
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-bold">Analyze found no build that clears the bar.</span>
+              {activeFilterSummary.length > 0 && (
+                <span className="text-amber-200/60"> Currently asking for: {activeFilterSummary.join(' · ')}.</span>
+              )}
+              <span className="text-amber-200/60">
+                {' '}Filters can rule each other out — a required evo may cost the card the very
+                thing the rest of the filter is asking for. Every build also has to be fieldable:
+                pace, stamina, balance and ball control at {FIELDABLE} or better.
+              </span>
+              {/* The likeliest single cause once the assumption is off, and the one fix that is a
+                  click away rather than a change of plan. */}
+              {!analyzeNothing.assumedChem && (
+                <span className="text-amber-200/60">
+                  {' '}Those are being read on the bare card — turning on "Assume chem style" in
+                  Filters is often the difference.
+                </span>
+              )}
+              <span className="text-amber-200/60"> Or build by hand with Add EVO.</span>
+            </>
           )}
-          <span className="text-amber-200/60">
-            {' '}They can rule each other out — a required evo may cost the card the very thing the
-            rest of the filter is asking for. Loosen them in Filters, or build by hand with Add EVO.
-          </span>
         </div>
       )}
       {/* One chip per build, from the first build on — the row used to appear only once there were

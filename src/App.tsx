@@ -819,7 +819,15 @@ export default function App() {
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [isEvoLabOpen, setIsEvoLabOpen] = useState(false);
-  const [analyzeFoundNothing, setAnalyzeFoundNothing] = useState(false);
+  /**
+   * Why the last Analyze run left the screen looking untouched, if it did.
+   *
+   * Two different things happen and they need different answers: the search genuinely found nothing
+   * that clears the bar, or it found builds you already have. Reporting only the first was how the
+   * second came back as silence — the button appeared to do nothing at all.
+   */
+  const [analyzeNothing, setAnalyzeNothing] =
+    useState<{ reason: 'none' | 'duplicates'; assumedChem: boolean } | null>(null);
   const [isImportBuildOpen, setIsImportBuildOpen] = useState(false);
   // Which squad the pitch is showing. Defaults to the team's first, which is the one every team
   // is created with.
@@ -1341,7 +1349,7 @@ export default function App() {
   const runAnalyze = (version: 1 | 2 = 1) => {
     analyzeHandle.current?.cancel();
     setIsAnalyzing(true);
-    setAnalyzeFoundNothing(false);
+    setAnalyzeNothing(null);
     setAnalyzeProgress(0);
 
     const handle = runEvoSearch(
@@ -1386,8 +1394,14 @@ export default function App() {
 
         setGeneratedPaths(fresh);
         // Nothing came back, or everything that did was already on the card — either way the
-        // screen is about to look untouched, and that needs saying rather than showing.
-        setAnalyzeFoundNothing(results.length === 0);
+        // screen is about to look untouched, and that needs saying rather than showing. It used to
+        // test only the first of those, so a run that found four builds you had already saved was
+        // indistinguishable from a broken button.
+        setAnalyzeNothing(
+          fresh.length > 0
+            ? null
+            : { reason: results.length === 0 ? 'none' : 'duplicates', assumedChem: assumeChemStyle }
+        );
         if (fresh.length > 0) {
           setActivePathId(fresh[0].id);
           if (!evoPreview) setEvoPreview(true);
@@ -1402,8 +1416,10 @@ export default function App() {
       });
   };
 
-  // Abandon an in-flight search when the player changes, so its result can't land on someone else.
+  // Abandon an in-flight search when the player changes, so its result can't land on someone else —
+  // and drop the last run's verdict with it, since it was about a different card.
   useEffect(() => {
+    setAnalyzeNothing(null);
     return () => analyzeHandle.current?.cancel();
   }, [selectedPlayerId]);
 
@@ -1760,7 +1776,7 @@ export default function App() {
           onAnalyze={() => runAnalyze(1)}
           onAnalyzeV2={() => runAnalyze(2)}
           isAnalyzing={isAnalyzing}
-          analyzeFoundNothing={analyzeFoundNothing}
+          analyzeNothing={analyzeNothing}
           analyzeProgress={analyzeProgress}
           onCancelAnalyze={cancelAnalyze}
           evosPool={effectiveEvosPool}
