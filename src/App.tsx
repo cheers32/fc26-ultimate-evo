@@ -13,6 +13,7 @@ import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
 import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
+import { bestScore } from './utils/positionScore';
 import { DEFAULT_PATH_ID, IN_GAME_STAR_TIER, isInGamePath } from './utils/paths';
 import {
   simulateEvoChain,
@@ -1673,6 +1674,9 @@ export default function App() {
           evoPreview={evoPreview}
           evoLocked={evoLocked}
           accelerateType={accelerateType}
+          // The card on screen scored where it plays — the same number the evo cards show a delta
+          // of, so the two always agree about what the build is worth.
+          score={bestScore(previewStats, previewBio)}
           igs={igs}
           faceSum={faceSum}
           activeEvo={activeEvo}

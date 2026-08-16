@@ -8,6 +8,7 @@ import { IN_GAME_STAR_TIER, isInGamePath } from '../utils/paths';
 import { FEEDBACK_REASONS } from '../types/player';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
+import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ThumbsUp, ThumbsDown, ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
@@ -96,6 +97,8 @@ interface HeaderCardProps {
   onRemoveNode?: (pathId: string, index: number) => void;
   // Ticks off how far the build has been played: the index of the step just marked done.
   onSetProgress?: (pathId: string, index: number) => void;
+  /** What the card on screen is worth where it plays — computed by the page, shown beside OVR. */
+  score?: PositionScore | null;
 }
 
 /**
@@ -256,7 +259,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   baseIndex = -1,
   onSetBase,
   onRemoveNode,
-  onSetProgress
+  onSetProgress,
+  score
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
   const isLockedOrEvo = evoLocked || evoPreview;
@@ -487,6 +491,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     );
   };
 
+  /**
+   * The raw card scored where it plays. Every step of every chain is then measured at this same
+   * position, so the numbers down a row answer one question instead of each answering its own.
+   */
+  const baseScore = React.useMemo(() => bestScore(rawStats, bio), [rawStats, bio]);
+
+  /** What the build is worth where it ends up playing — the chip's second number. */
+  const pathScore = (path: EvolutionPath) => {
+    const last = path.steps?.[path.steps.length - 1];
+    if (!last) return null;
+    return bestScore(last.statsAfter, last.bioAfter);
+  };
+
   /** 0 unstarred, otherwise which colour. A starred build with no tier reads as the first. */
   const starTier = (path: EvolutionPath) =>
     isInGamePath(path) ? IN_GAME_STAR_TIER : path.isFavorite ? path.starTier ?? 1 : 0;
@@ -577,6 +594,28 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               >
                 <ExternalLink className="w-3 h-3" />
               </a>
+            )}
+
+            {/* What the card is worth where it plays, out of 100 — the same rank of number as OVR,
+                and the one that knows the difference between two 97s. */}
+            {score && (
+              <div
+                className="bg-gray-800/80 text-gray-200 px-2 py-0.5 rounded font-bold text-xs shadow-sm border border-gray-600 flex items-center gap-1 whitespace-nowrap"
+                title={
+                  `${score.position} score ${score.score.toFixed(1)}/100 as ${score.plan.name}` +
+                  ` · ${score.style ? `on ${score.style}` : 'bare'} · ${score.archetype}${score.fallback ? ' (fallback)' : ''}` +
+                  (score.under.length > 0
+                    ? ` · under ${score.under.map(u => `${u.key} ${u.value}/${u.floor}`).join(', ')}`
+                    : ' · clears every floor')
+                }
+              >
+                <span className="text-gray-500 text-[9px] font-semibold tracking-wider">{score.position}</span>
+                <span className={
+                  score.score >= 80 ? 'text-fcGreen' : score.score >= 60 ? 'text-yellow-400' : 'text-gray-300'
+                }>
+                  {score.score.toFixed(1)}
+                </span>
+              </div>
             )}
 
             {/* Main OVR Rating Badge */}
@@ -1175,11 +1214,33 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 }`}
               >
                 {path.name}
-                {/* What the build is worth, on the chip itself, so builds can be told apart
-                    without expanding them. */}
+                {/* What the build is worth, on the chip itself, so builds can be told apart without
+                    expanding them: the stat total it ends on, and what that is worth where the card
+                    plays. Bare numbers — the labels cost more room than they explain, and the two
+                    are never confusable at this range. */}
                 {pathIgs(path) !== null && (
-                  <span className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-black/40 border border-gray-700 text-blue-400">
-                    IGS {pathIgs(path)}
+                  <span
+                    className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-black/40 border border-gray-700 flex items-center gap-1"
+                    title={(() => {
+                      const s = pathScore(path);
+                      return `IGS ${pathIgs(path)}` + (s
+                        ? ` · ${s.position} score ${s.score.toFixed(1)}/100 as ${s.plan.name}` +
+                          ` · ${s.style ? `on ${s.style}` : 'bare'} · ${s.archetype}${s.fallback ? ' (fallback)' : ''}`
+                        : '');
+                    })()}
+                  >
+                    <span className="text-blue-400">{pathIgs(path)}</span>
+                    {(() => {
+                      const s = pathScore(path);
+                      if (!s) return null;
+                      return (
+                        <span className={
+                          s.score >= 80 ? 'text-fcGreen' : s.score >= 60 ? 'text-yellow-400' : 'text-gray-400'
+                        }>
+                          {s.score.toFixed(1)}
+                        </span>
+                      );
+                    })()}
                   </span>
                 )}
                 {/* How far it's been played, on the chip too — a collapsed build should still
@@ -1483,6 +1544,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         <span className={`text-white font-bold`}>IGS</span>
                         <span className={`text-blue-400 font-bold`}>{Object.values(rawStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0)}</span>
                       </div>
+                      {/* The raw card scored where it plays — the bar every step of the chain is
+                          then measured against. */}
+                      {baseScore && (
+                        <div
+                          className="flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] bg-gray-800/80 border-gray-600"
+                          title={`${baseScore.position} score ${baseScore.score.toFixed(1)}/100 as ${baseScore.plan.name} · ${baseScore.style ? `on ${baseScore.style}` : 'bare'}`}
+                        >
+                          <span className="text-white font-bold">{baseScore.position}</span>
+                          <span className="text-fcGreen font-bold">{baseScore.score.toFixed(1)}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-3 gap-0.5">
                       {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
@@ -1696,6 +1768,39 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                           <span className={`text-blue-400 font-bold`}>{curIgs}</span>
                                         </div>
                                       </div>
+                                      {/* What the step is worth where the card plays. Measured at
+                                          the base card's position all the way down the chain, so
+                                          the steps can be compared with each other rather than each
+                                          being scored somewhere else. */}
+                                      {(() => {
+                                        if (!baseScore) return null;
+                                        const now = scoreAtPosition(stepResult.statsAfter, stepResult.bioAfter, baseScore.position);
+                                        if (!now) return null;
+                                        const before = idx === 0
+                                          ? baseScore
+                                          : scoreAtPosition(
+                                              renderPath.steps![idx - 1].statsAfter,
+                                              renderPath.steps![idx - 1].bioAfter,
+                                              baseScore.position
+                                            );
+                                        const diff = before ? now.score - before.score : 0;
+                                        return (
+                                          <div
+                                            className="flex gap-1 items-center px-1.5 py-0.5 rounded border text-[9px] bg-gray-800/80 border-gray-600"
+                                            title={`${now.position} score ${now.score.toFixed(1)}/100 as ${now.plan.name} · ${now.style ? `on ${now.style}` : 'bare'}`}
+                                          >
+                                            <span className="text-white font-bold">{now.position}</span>
+                                            <div className="flex items-baseline gap-0.5">
+                                              {Math.abs(diff) >= 0.05 && (
+                                                <span className={`font-bold text-[7.5px] ${diff > 0 ? 'text-fcGreen' : 'text-red-400'}`}>
+                                                  {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+                                                </span>
+                                              )}
+                                              <span className="text-fcGreen font-bold">{now.score.toFixed(1)}</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
                                     </>
                                   );
                                 })()}
