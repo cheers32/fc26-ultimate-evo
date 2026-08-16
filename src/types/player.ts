@@ -302,17 +302,13 @@ export interface EvoFilters {
    */
   assumeChemStyle?: boolean;
   /**
-   * Let a build's PlayStyles count towards where it ranks, and fix a bad set by converting rarity.
+   * Which readings Analyze should come back with.
    *
-   * Off by default, and off means off: the stat model decides the order on its own, exactly as it
-   * did before PlayStyles were modelled, and no PlayStyle picks are added to a chain. The scores
-   * are still shown either way — what this switches is whether they move anything.
-   *
-   * On, a full complement of the right PlayStyles is worth about three points of the stat score, a
-   * chain that leaves the card able to pick its own is credited for it, and the picks come back
-   * inside the build.
+   * Both by default, and they are two answers rather than one answer and a variant: the bare list
+   * is what the card is, the chem list is what it would be fielded as, and a build can top one and
+   * be absent from the other. Narrow it when the style is already decided either way.
    */
-  usePlayStyleScore?: boolean;
+  analyzeReadings?: 'both' | 'bare' | 'chem';
 }
 
 export interface PlayerEvoState {

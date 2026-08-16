@@ -16,6 +16,7 @@ import {
 import { bestFreePicks, controlModeFor } from './fitScore';
 import { PsPlan, psPlanFor } from './psPlan';
 import {
+  BARE_FLOORS,
   BuildTemplate,
   FIELDABLE_FLOORS,
   PASS_MARK,
@@ -104,32 +105,18 @@ const SAME_BUILD = 2;
 const SAME_IGS = 12;
 
 /**
- * What a full complement of the right PlayStyles is worth, in the same points as the stat score.
+ * PlayStyles do not vote.
  *
- * The two are on different scales — the stat score counts points above 90 and a good build lands
- * somewhere near +5, while the PlayStyle score is a percentage of the best set the card's own slots
- * could hold — so one number has to buy the other, and this is the exchange rate. At 3.0 a card
- * with the wrong PlayStyles has to be about three points of its key stats better to win, which is
- * roughly the trade a player makes: a CAM that is 96 dribbling with Technical+ and Rapid+ is a
- * better card than a 99 without them, and not by an unlimited margin.
+ * They were briefly worth three points of the stat score, and that was the wrong call: the ranking
+ * is asked to answer a question about numbers, and which PlayStyles are worth having is a matter of
+ * taste the person holding the card is better at than the model. So the order is the stat model's
+ * alone, and the PlayStyle score is a reading printed beside it — a reference, not a vote.
  *
- * This is the one knob. Everything else about PlayStyles here is measurement.
+ * What they still do is the one job the model is better at: noticing that the gold slots have been
+ * spent on nothing and that a rarity conversion would hand them back. That is advice about which
+ * evo to run, not a change to how builds are ordered, so it stays.
  */
-const PS_WORTH = 3;
-
-/**
- * What the search credits a chain for ending on a rarity that hands out the PlayStyle picker.
- *
- * Pass one visits every chain in the pool and cannot afford to price a PlayStyle set for each, but
- * it decides what survives to be priced properly — so a chain that spends a step converting the
- * card's rarity would be binned for a stats-better one before anything looked at what the picker
- * was worth. Half of a full set: the picker is a promise of empty slots, and how much of it lands
- * depends on what the chain already put in them, which pass two works out exactly.
- */
-const PICKER_HINT = PS_WORTH / 2;
-
-/** Two builds this close on PlayStyles too are the same build. Wider than a point: a slot is 25%. */
-const SAME_PS = 5;
+const PS_WORTH = 0;
 
 /**
  * What a point of a stat is worth to a plan, counted from the pass mark rather than from zero.
@@ -266,18 +253,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
    */
   const assumeChem = input.filters?.assumeChemStyle === true;
 
-  /**
-   * Whether PlayStyles are allowed to move anything.
-   *
-   * Off by default. The stat model is the one that has been checked against real cards, and adding
-   * a second term to it changes an order that was worth trusting — so counting PlayStyles is a
-   * thing you turn on, not a thing that happens to your shortlist. Off, the weight is zero, the
-   * picker earns no credit, no picks are added to a chain, and the ranking is arithmetically what
-   * it was before any of this existed. The numbers are still measured and still printed; they just
-   * do not vote.
-   */
-  const usePs = input.filters?.usePlayStyleScore === true;
-  const psWeight = usePs ? PS_WORTH : 0;
+  const psWeight = PS_WORTH;
   /** The readings a build is allowed: every style, or only the card as it stands. */
   const styleOptions: [string | null, Record<string, number>][] =
     assumeChem ? STYLE_OPTIONS : [[null, {}]];
@@ -442,9 +418,6 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       positions: state.bio.primaryPositions.split(',').map(p => p.trim().toUpperCase()).filter(Boolean)
     };
 
-    // A chain that leaves the card able to pick its own PlayStyles is holding something the stat
-    // score cannot see. Credited here so it survives the shortlist, priced for real in pass two.
-    const picker = usePs && canPickPlayStyles(state.bio.rarity) ? PICKER_HINT : 0;
 
     for (const t of templates) {
       let arch: AccelerateFamily | null = null;
@@ -463,7 +436,7 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       const tier = tierOf(provisional.under.length === 0, fallback);
       const entry: Entry = { cand, arch, fallback };
       if (upVoted.has(ck) && !liked.has(`${t.id}|${ck}`)) liked.set(`${t.id}|${ck}`, entry);
-      offer(`${t.id}|${tier}`, entry, () => provisional.score + picker);
+      offer(`${t.id}|${tier}`, entry, () => provisional.score);
     }
   });
 
@@ -505,6 +478,11 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
    */
   const playedAs = (subsIn: Record<string, number>, t: BuildTemplate, arch: AccelerateFamily) => {
     const cand = { subs: subsIn } as Candidate;
+    // Pace is judged on the card as it is, whatever style is being assumed on top — a card that
+    // needs Shadow to reach 93 is slow the moment the style is anything else.
+    const bareShort = Object.entries(BARE_FLOORS)
+      .filter(([key, floor]) => (subsIn[key] ?? 0) < floor)
+      .map(([key, floor]) => ({ key, floor, value: subsIn[key] ?? 0 }));
     let best: { style: string | null; subs: Record<string, number>; s: Scored } | null = null;
     for (const [style, boosts] of styleOptions) {
       const subs = style === null ? cand.subs : withStyle(cand.subs, boosts);
@@ -512,7 +490,13 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height
       );
       if (fam !== arch) continue;
-      const s = scoreForTemplate(subs, t, reach);
+      const scored = scoreForTemplate(subs, t, reach);
+      // Merged in rather than recomputed, so a style cannot carry the card over a floor that is
+      // meant to be read without it.
+      const s: Scored = bareShort.length === 0 ? scored : {
+        ...scored,
+        under: [...bareShort.filter(b => !scored.under.some(u => u.key === b.key)), ...scored.under]
+      };
       // Clearing the plan's floors beats scoring well under them, the same way it does between
       // builds: a style that carries the card over a gate is the style it would be played with,
       // even where another one reads better on the stats the plan is trying to maximise.
@@ -530,8 +514,17 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       if (better) best = { style, subs, s };
     }
     // Every entry reached its archetype on some style — that is how it was admitted — but a card
-    // whose stats moved under it is better shown bare than dropped.
-    return best ?? { style: null, subs: cand.subs, s: scoreForTemplate(cand.subs, t, reach) };
+    // whose stats moved under it is better shown bare than dropped. The bare floors still apply.
+    if (best) return best;
+    const fallback = scoreForTemplate(cand.subs, t, reach);
+    return {
+      style: null,
+      subs: cand.subs,
+      s: {
+        ...fallback,
+        under: [...bareShort.filter(b => !fallback.under.some(u => u.key === b.key)), ...fallback.under]
+      }
+    };
   };
 
   /**
@@ -818,15 +811,20 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     // What one more evo out of the pool would still be worth.
     //
     // `psFix` is the same question asked of one kind of evo only: the ones that convert the card's
-    // rarity to one that hands out the PlayStyle picker. It is reported separately because the best
-    // single addition is usually a stat evo, and a card whose gold slots are wrong needs to be told
-    // that the fix exists even when something else is worth marginally more — those are different
-    // problems and only one of them is fixed by another evo full of stats.
+    // rarity to one that hands out the PlayStyle picker. It has to be asked separately, and in its
+    // own currency, because PlayStyles no longer count towards the ranking — so the evo that fixes
+    // a set of gold slots spent on nothing will never be the highest-scoring addition. It is judged
+    // on what it does to the PlayStyles, and only rejected if it costs the stats something real.
     let more: { name: string; gain: number } | null = null;
-    let psFix: { name: string; gain: number; ps: number } | null = null;
+    let psFix: { name: string; costs: number; from: number; to: number } | null = null;
     const used = new Set(ids);
     const after = subsOfChain(ids);
     const canPickAlready = canPickPlayStyles(after?.sim.finalBio.rarity ?? '');
+    /** Where the PlayStyles stand without it — what a conversion would be improving on. */
+    const psNow = scoreChain(ids, t, arch)?.ps.score ?? 0;
+    /** Worth mentioning only if it moves the PlayStyles this far, and costs the stats no more. */
+    const PS_FIX_GAIN = 5;
+    const PS_FIX_COST = 0.5;
     if (after) {
       for (const id of poolIds) {
         if (used.has(id)) continue;
@@ -838,14 +836,14 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const gain = scored.total - best;
         if (gain >= MORE_EPS && (!more || gain > more.gain)) more = { name: evo.name, gain };
         if (
-          usePs &&
           !canPickAlready &&
           evo.rarityChange &&
           FREE_PLAYSTYLE_RARITIES.includes(evo.rarityChange) &&
-          gain > 0 &&
-          (!psFix || gain > psFix.gain)
+          scored.ps.score - psNow >= PS_FIX_GAIN &&
+          gain >= -PS_FIX_COST &&
+          (!psFix || scored.ps.score > psFix.to)
         ) {
-          psFix = { name: evo.name, gain, ps: scored.ps.score };
+          psFix = { name: evo.name, costs: gain, from: psNow, to: scored.ps.score };
         }
       }
     }
@@ -909,10 +907,6 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const b = axesOf(subs);
         const pairs: [number, number][] = [
           ...a.map((v, i) => [v, b[i]] as [number, number]),
-          // PlayStyles are an axis like any other here — while they count. Without this a build
-          // with the right four gold slots is knocked out by one a point better on dribbling and
-          // empty where it counts.
-          ...(usePs ? [[oPs.score, ps.score] as [number, number]] : []),
           [e.cand.chainIds.length, o.cand.chainIds.length]
         ];
         return pairs.every(([x, y]) => x >= y) && pairs.some(([x, y]) => x > y);
@@ -935,7 +929,6 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const theirs = axesOf(kept.subs);
         return mine.every((v, i) => Math.abs(v - theirs[i]) <= SAME_BUILD)
           && Math.abs(igsOf(kept.subs) - igsOf(row.subs)) <= SAME_IGS
-          && (!usePs || Math.abs(kept.ps.score - row.ps.score) <= SAME_PS)
           && kept.e.cand.chainIds.length === row.e.cand.chainIds.length;
       });
       if (dup) continue;
@@ -984,9 +977,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         const style = rescored?.played.style ?? row.style;
         // Only now, on a chain that is going to be shown, is it worth searching for where the
         // picks belong — inside the audit they stay at the end, where they cost one simulation.
-        // Only when PlayStyles count. Otherwise the chain that comes back is the chain that was
-        // ranked, with nothing appended to it.
-        const placed = usePs ? placePicks(checked.ids, t, style) : null;
+        // The picks are a service, not a vote: they change which PlayStyles the finished card
+        // carries, never which build was chosen.
+        const placed = placePicks(checked.ids, t, style);
         const ps = placed?.ps ?? rescored?.ps ?? row.ps;
         built.push({
           e: row.e,
@@ -1118,7 +1111,10 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
           `${carried.length > 0 ? ` · ${style} carries ${carried.join(', ')}` : ''}` +
           `${delta ? ` · ${delta} vs best` : ''}` +
           ` · ${psNote}` +
-          `${checked.psFix ? ` · PS fix: ${checked.psFix.name} unlocks free picks (+${checked.psFix.gain.toFixed(1)}, PS ${checked.psFix.ps.toFixed(1)})` : ''}` +
+          `${checked.psFix
+            ? ` · PS fix: ${checked.psFix.name} unlocks free picks — PS ${checked.psFix.from.toFixed(1)}→${checked.psFix.to.toFixed(1)}` +
+              `${checked.psFix.costs < 0 ? ` for ${checked.psFix.costs.toFixed(1)} on the stats` : ''}`
+            : ''}` +
           `${closes > 0 ? ` · picks close ${closes} later evo${closes > 1 ? 's' : ''}` : ''}` +
           ` · ${archNote} · OVR ${cand.ovr} · IGS ${cand.igs} · ${statLine}` +
           `${gained.length > 0 ? ` · +${gained.join('/')}` : ''}` +
