@@ -101,6 +101,7 @@ import { everythingAtOnce1220 } from './evolutions/everythingAtOnce1220';
 import { backShortly1221 } from './evolutions/backShortly1221';
 import { neverLosingIt1222 } from './evolutions/neverLosingIt1222';
 import { stillGotIt1223 } from './evolutions/stillGotIt1223';
+import { passingTechnician736 } from './evolutions/passingTechnician736';
 import { crunchTime748 } from './evolutions/crunchTime748';
 import { counterCulture1239 } from './evolutions/counterCulture1239';
 import { twoWayTitan1240 } from './evolutions/twoWayTitan1240';
@@ -221,6 +222,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1221': backShortly1221,
   '1222': neverLosingIt1222,
   '1223': stillGotIt1223,
+  '736': passingTechnician736,
   '1239': counterCulture1239,
   '1240': twoWayTitan1240,
   '1241': vaVaVoom1241,
