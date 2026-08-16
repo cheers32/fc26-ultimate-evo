@@ -959,6 +959,59 @@ export default function App() {
   };
 
   /**
+   * Promote a build to Current — the record of what you have actually done in game.
+   *
+   * A plan becomes the record the moment you finish it, and until now that meant rebuilding it step
+   * by step on the Current chip. This moves it over whole.
+   *
+   * The build it replaces is kept rather than overwritten, because it is the only thing on this
+   * card that cannot be worked out again: Analyze can be re-run and a variant can be re-built, but
+   * what you spent your evos on last month is gone if this is wrong. It comes back as a starred
+   * build of its own, so a mis-click costs a rename rather than a record.
+   *
+   * The promoted build takes the record's id as well as its name, so there is exactly one Current
+   * and everything pointing at the record — the pitch, the saves — follows it.
+   */
+  const handleMakeCurrent = (pathId: string) => {
+    const target = allPaths.find(p => p.id === pathId);
+    if (!target || isBaseCardPath(target) || isInGamePath(target) || target.chainIds.length === 0) return;
+
+    const previous = allPaths.find(p => isInGamePath(p));
+    const taken = new Set(allPaths.map(p => p.name));
+    const asideName = (() => {
+      const base = 'Previous current';
+      if (!taken.has(base)) return base;
+      for (let n = 2; ; n++) if (!taken.has(`${base} ${n}`)) return `${base} ${n}`;
+    })();
+    // An empty Current is the placeholder every card starts on. Nothing to keep.
+    const aside: EvolutionPath[] =
+      previous && previous.chainIds.length > 0
+        ? [{ ...previous, id: `custom-${Date.now()}`, name: asideName, isFavorite: true, starTier: 1 as const }]
+        : [];
+
+    const promoted: EvolutionPath = {
+      ...target,
+      id: DEFAULT_PATH_ID,
+      name: IN_GAME_PATH_NAME,
+      isFavorite: true,
+      starTier: IN_GAME_STAR_TIER as NonNullable<EvolutionPath['starTier']>
+    };
+
+    const untouched = (list: EvolutionPath[]) =>
+      list.filter(p => p.id !== target.id && p.id !== previous?.id);
+
+    updateState({
+      generatedPaths: untouched(currentState.generatedPaths),
+      manualPaths: [...untouched(currentState.manualPaths), ...aside, promoted],
+      activePathId: DEFAULT_PATH_ID,
+      expandedPathIds: [
+        ...currentState.expandedPathIds.filter(id => id !== target.id && id !== DEFAULT_PATH_ID),
+        DEFAULT_PATH_ID
+      ]
+    });
+  };
+
+  /**
    * Star the build on screen, which is what saving is: it lifts the path out of the generated list
    * so an Analyze run can't discard it, and the effect above writes it to the player's saves.
    * Putting a card on the pitch goes through here, because a slot is only a pointer at a save.
@@ -1905,6 +1958,7 @@ export default function App() {
             }
           }}
           onRenamePath={handleRenamePath}
+          onMakeCurrent={handleMakeCurrent}
           shareUrlFor={(path) => buildShareUrl(selectedPlayerId, path.chainIds)}
           onClearPaths={handleClearPaths}
           onViewEvo={(id) => setViewingEvoId(id)}

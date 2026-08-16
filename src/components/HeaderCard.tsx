@@ -11,7 +11,7 @@ import { isModalOpen } from '../utils/modalStack';
 import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
 import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ThumbsUp, ThumbsDown, ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, Link2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, CheckCheck, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 interface HeaderCardProps {
@@ -98,6 +98,8 @@ interface HeaderCardProps {
   onClearPaths?: () => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
   onRenamePath?: (pathId: string, name: string) => void;
+  /** Promote a build to Current — what you have actually done in game. Keeps the old one. */
+  onMakeCurrent?: (pathId: string) => void;
   /** The link that reopens this build on someone else's screen. */
   shareUrlFor?: (path: EvolutionPath) => string;
   onViewEvo?: (evoId: string) => void;
@@ -287,6 +289,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onDuplicatePath,
   onToggleFavoritePath,
   onRenamePath,
+  onMakeCurrent,
   shareUrlFor,
   onChangePlayer,
   onClearPaths,
@@ -1487,8 +1490,21 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 )}
               </button>
               )}
-              {onSetComparePathId && activePathId !== path.id && (
-                <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                {/* Promote it to the record. A plan becomes what you have actually done the moment
+                    you finish it in game, and until now that meant rebuilding it by hand on the
+                    Current chip. The build you are replacing is kept, because it is the one thing
+                    here that cannot be worked out again. */}
+                {onMakeCurrent && path.chainIds.length > 0 && !isInGamePath(path) && !isBaseCardPath(path) && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMakeCurrent(path.id); }}
+                    className="rounded-full p-0.5 shadow-sm bg-green-950 text-fcGreen hover:bg-fcGreen hover:text-black"
+                    title="Make this Current — what you have actually done in game. The Current build it replaces is kept as a copy."
+                  >
+                    <CheckCheck className="w-2.5 h-2.5" />
+                  </button>
+                )}
+                {onSetComparePathId && activePathId !== path.id && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1499,8 +1515,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   >
                     <RefreshCw className="w-2.5 h-2.5" />
                   </button>
-                </div>
-              )}
+                )}
+              </div>
               {onRenamePath && path.chainIds.length > 0 && renamingKey !== `chip:${path.id}` && (
                 <button
                   onClick={(e) => { e.stopPropagation(); startRename('chip', path); }}
