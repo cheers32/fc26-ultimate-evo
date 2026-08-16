@@ -6,13 +6,17 @@ export const theLandlord1203: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1203/the-landlord',
   version: 'FC 26',
   description: 'Own the backline, collect every loose ball and make attackers pay rent for entering your space. Five PlayStyle+ upgrades turn your centre-back into the true landlord of the pitch.',
-  cost: '500 Tokens / 250,000 Coins',
+  cost: '500 FC Points / 250,000 Coins',
   requirements: {
     maxOvr: 95,
     maxPlayStyles: 10,
     maxPlayStylesPlus: 4,
     positions: ['CB']
   },
+  // Level 5 turns the card Futties — the preview card art changes to 16_futties, which is the
+  // picker rarity rather than 119_futties_evo. So this evo does not only fill the gold slots, it
+  // hands over the picker for whatever it leaves empty.
+  rarityChange: 'Futties',
   ovrBoost: { boost: 15, limit: 96 },
   subStatBoosts: {
     acceleration: { boost: 15, limit: 94 },
@@ -78,7 +82,7 @@ export const theLandlord1203: EvolutionDefinition = {
       name: 'Level 5',
       upgrades: [
         'Aggression +30 (95)', 'Stamina +30 (97)', 'Strength +30 (94)',
-        'Weak Foot +4', 'PlayStyle+: Relentless (5)', 'PlayStyle: Jockey (7)'
+        'Weak Foot +4', 'PlayStyle+: Relentless (5)', 'PlayStyle: Jockey (7)', '→ Futties'
       ]
     }
   ],
