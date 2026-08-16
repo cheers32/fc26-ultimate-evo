@@ -1,6 +1,7 @@
 import { EvolutionDefinition, EvolutionPath, PlayerBio, StatsData } from '../types/player';
 import { availableEvolutions } from '../data/evolutionsData';
 import { chemStyles } from '../data/chemStyles';
+import { STYLE_OPTIONS, optimistic, withStyle } from './chem';
 import { ChainSearchInput, forEachChain, simulateEvoChain, validateRequirement } from './evoEngine';
 import {
   BuildTemplate,
@@ -103,47 +104,6 @@ const prettySub = (key: string) =>
  * of use, so "can be made Explosive" is the question a template asks — and naming the styles that
  * do it is the difference between a claim and an instruction.
  */
-/**
- * Every style, plus playing the card bare, as the options a finished build is chosen between. Bare
- * is in the list because a style is a choice and occasionally the wrong one: the styles that would
- * lift a stat may be the same ones that spend the archetype.
- */
-const STYLE_OPTIONS: [string | null, Record<string, number>][] = [
-  [null, {}],
-  ...Object.entries(chemStyles)
-];
-
-/** The card as it reads with a style on, capped where the game caps it. */
-function withStyle(subs: Record<string, number>, boosts: Record<string, number>): Record<string, number> {
-  const out: Record<string, number> = { ...subs };
-  for (const [key, boost] of Object.entries(boosts)) out[key] = Math.min(99, (subs[key] ?? 0) + boost);
-  return out;
-}
-
-/** The most any single style adds to a stat. */
-const BEST_BOOST: Record<string, number> = (() => {
-  const out: Record<string, number> = {};
-  for (const boosts of Object.values(chemStyles)) {
-    for (const [key, boost] of Object.entries(boosts)) out[key] = Math.max(out[key] ?? 0, boost);
-  }
-  return out;
-})();
-
-/**
- * The best case stat by stat — more than any one style can deliver at once, and deliberately so.
- * Used while searching, where the cost of being optimistic is a build kept one pass too long and
- * the cost of being exact is a build cut before anyone weighed it. Stats the plan is hurt by are
- * left bare: the best case there is the style that doesn't touch them.
- */
-function optimistic(subs: Record<string, number>, avoid: string[] = []): Record<string, number> {
-  const out: Record<string, number> = { ...subs };
-  const leave = new Set(avoid);
-  for (const [key, value] of Object.entries(subs)) {
-    if (!leave.has(key)) out[key] = Math.min(99, value + (BEST_BOOST[key] ?? 0));
-  }
-  return out;
-}
-
 function archetypesByChem(
   subs: Record<string, number>,
   heightCm?: number

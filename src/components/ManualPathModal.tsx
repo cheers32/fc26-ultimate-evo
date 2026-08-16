@@ -18,6 +18,7 @@ import {
   ACCELERATE_FAMILY
 } from '../utils/statUtils';
 import { FitBreakdown, controlModeFor, fitScore, accelerateOf, accelerateSpread } from '../utils/fitScore';
+import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
 import { useModal } from '../utils/modalStack';
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
@@ -305,6 +306,41 @@ const AccelerateSpreadBadge = ({ spread }: { spread: Record<AccelerateFamily, nu
   </div>
 );
 
+/**
+ * What the card is worth at a position, out of 100, and what this evo does to it. The point of a
+ * single number here is that BS and IGS cannot answer "is this evo worth doing" — they count every
+ * point the same, including the ones this position has no use for and the ones that cost it its
+ * archetype.
+ */
+const ScoreBadge = ({ before, after }: { before: PositionScore; after?: PositionScore | null }) => {
+  const delta = after ? after.score - before.score : 0;
+  const shown = after ?? before;
+  return (
+    <div
+      title={
+        `${shown.position} score ${shown.score.toFixed(1)}/100 as ${shown.plan.name}` +
+        ` · ${shown.style ? `on ${shown.style}` : 'bare'} · ${shown.archetype}${shown.fallback ? ' (fallback)' : ''}` +
+        (shown.under.length > 0
+          ? ` · under ${shown.under.map(u => `${u.key} ${u.value}/${u.floor}`).join(', ')}`
+          : ' · clears every floor')
+      }
+      className="flex gap-1 items-center bg-gray-800/80 px-2 py-0.5 rounded border border-gray-600 text-[10px] whitespace-nowrap"
+    >
+      <span className="text-white font-bold">{shown.position}</span>
+      <div className="flex items-baseline gap-0.5">
+        {after && Math.abs(delta) >= 0.05 && (
+          <span className={`font-bold text-[8px] ${delta > 0 ? 'text-fcGreen' : 'text-red-400'}`}>
+            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+          </span>
+        )}
+        <span className={`font-bold ${shown.score >= 80 ? 'text-fcGreen' : shown.score >= 60 ? 'text-yellow-400' : 'text-gray-300'}`}>
+          {shown.score.toFixed(1)}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const PlayStyleDiffDisplay = ({ before, after }: { before?: PlayStylesData, after: PlayStylesData }) => {
   if (!before) return null;
   const beforeGold = new Set([...before.base.gold, ...before.ev.gold]);
@@ -552,6 +588,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // judgement of it, so every card shows it whether or not the profile is switched on.
   const currentAccelerate = accelerateOf(currentStats, currentBio);
 
+  // What the card is worth at the position it is best at, out of 100 — and the position every evo
+  // in the pool is then measured at, so the deltas on the cards are all answering one question.
+  const currentScore = bestScore(currentStats, currentBio);
+
   /**
    * The card as it stood after a given step, and what the step is called. Indices are clamped
    * because a step can be removed while it is one of the two being compared.
@@ -589,6 +629,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let expectedFit: FitBreakdown | null = null;
     let expectedAccelerate: AccelerateType | null = null;
     let expectedSpread: Record<AccelerateFamily, number> | null = null;
+    let expectedScore: PositionScore | null = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -605,6 +646,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
           expectedIgs = Object.values(testRes.finalStats).reduce((acc, f) => acc + Object.values(f.subs).reduce((subAcc, s) => subAcc + s.base, 0), 0);
           expectedAccelerate = accelerateOf(testRes.finalStats, testRes.finalBio);
           expectedSpread = accelerateSpread(testRes.finalStats, testRes.finalBio);
+          expectedScore = currentScore
+            ? scoreAtPosition(testRes.finalStats, testRes.finalBio, currentScore.position)
+            : null;
 
           if (currentFit) {
             expectedFit = fitScore({
@@ -671,6 +715,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       expectedFit,
       expectedAccelerate,
       expectedSpread,
+      expectedScore,
       posMatchScore
     };
   });
@@ -1196,6 +1241,21 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     <span className="text-gray-500 font-bold">RATE</span>
                     <span className="text-gray-200 font-bold">{ACCELERATE_SHORT[currentAccelerate]}</span>
                   </div>
+                  {currentScore && (
+                    <div
+                      className="flex gap-1 items-center"
+                      title={
+                        `${currentScore.position} score ${currentScore.score.toFixed(1)}/100 as ${currentScore.plan.name}` +
+                        ` · ${currentScore.style ? `on ${currentScore.style}` : 'bare'} · ${currentScore.archetype}` +
+                        (currentScore.under.length > 0
+                          ? ` · under ${currentScore.under.map(u => `${u.key} ${u.value}/${u.floor}`).join(', ')}`
+                          : ' · clears every floor')
+                      }
+                    >
+                      <span className="text-gray-500 font-bold">{currentScore.position}</span>
+                      <span className="text-fcGreen font-bold">{currentScore.score.toFixed(1)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="hidden md:flex items-center gap-3 text-[11px] font-mono bg-gray-800/50 px-3 py-1 rounded-full border border-gray-700/50">
                   {['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(statKey => {
@@ -1436,7 +1496,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               ) : (
                 visiblePool
-                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate, expectedSpread }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate, expectedSpread, expectedScore }) => {
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
@@ -1538,6 +1598,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             )}
                             {canAdd && expectedSpread && (
                               <AccelerateSpreadBadge spread={expectedSpread} />
+                            )}
+                            {canAdd && currentScore && (
+                              <ScoreBadge before={currentScore} after={expectedScore} />
                             )}
                             {canAdd && currentFit && expectedFit && (
                               <div
