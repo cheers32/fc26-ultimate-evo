@@ -561,6 +561,15 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
             .join(', ')
         : '';
 
+      // What the style is actually carrying: floors the bare card misses and it clears. Without
+      // this the row reads "all pass" next to a stat panel showing the bare number that doesn't.
+      const bare = scoreForTemplate(cand.subs, t, reach);
+      const carried = style
+        ? bare.under
+            .filter(u => !s.under.some(x => x.key === u.key))
+            .map(u => `${prettySub(u.key)} ${u.value}→${subs[u.key] ?? 0}`)
+        : [];
+
       const verdict = s.under.length > 0
         ? `FAILS ${s.under.slice(0, 3).map(u => `${prettySub(u.key)} ${u.value}/${u.floor}`).join(', ')}`
         : s.left
@@ -577,11 +586,13 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         description:
           `${upVoted.has(canonical(cand.chainIds)) ? '★ you liked this · ' : ''}` +
           `${t.name} · +${s.score.toFixed(1)} over 90 · ${verdict}` +
+          `${carried.length > 0 ? ` · ${style} carries ${carried.join(', ')}` : ''}` +
           `${delta ? ` · ${delta} vs best` : ''}` +
           ` · ${archNote} · OVR ${cand.ovr} · IGS ${cand.igs} · ${statLine}` +
           `${gained.length > 0 ? ` · +${gained.join('/')}` : ''}` +
           ` · ${costOf(cand.chainIds)} · ${open} more evos still open — ${evoNames}`,
         isRecommended: true,
+        chemStyle: style,
         chainIds: [...cand.chainIds],
         steps: full.steps
       });

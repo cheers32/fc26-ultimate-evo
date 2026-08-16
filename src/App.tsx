@@ -1688,6 +1688,11 @@ export default function App() {
           onSetComparePathId={(id) => updateState({ comparePathId: id })}
           onSelectPath={(id) => {
             updateState({ activePathId: id });
+            // A build judged with a chemistry style on is a build about a card wearing it, so
+            // opening it puts the style on. Otherwise the row says stamina 93 while the panel
+            // beneath says 87, and the reader has no way to tell which card is being described.
+            const chosen = allPaths.find(p => p.id === id);
+            if (chosen?.chemStyle) setLockedChem(chosen.chemStyle);
           }}
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}

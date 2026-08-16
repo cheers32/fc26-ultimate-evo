@@ -153,6 +153,13 @@ export interface EvolutionPath {
    * everything up to it is done and everything after it isn't.
    */
   doneUpTo?: number;
+  /**
+   * The chemistry style the build was judged under, where it was judged at all. A recommendation
+   * that clears its floors only with a style on is a recommendation about a card wearing it, so the
+   * style travels with the build and the app puts it on when the build is opened — otherwise the
+   * row says stamina 93 while the stat panel says 87 and both are right.
+   */
+  chemStyle?: string | null;
   // Steps of the build in order: EVO ids e.g. ['1076', '1159'], plus at most one 'ps:...' entry
   // for the PlayStyles the player picked themselves (see PLAYSTYLE_NODE_PREFIX in evoEngine).
   chainIds: string[];
