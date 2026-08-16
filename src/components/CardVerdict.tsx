@@ -27,7 +27,7 @@ export const CardVerdict: React.FC<{
     title: string,
     icon: React.ReactNode,
     tone: string,
-    rows: { label: string; text: string; value: number; detail: string }[],
+    rows: { label: string; text: string; textZh: string; value: number; detail: string }[],
     empty: string
   ) => (
     <div className="flex-1 min-w-0">
@@ -47,6 +47,9 @@ export const CardVerdict: React.FC<{
             >
               <div className="min-w-0">
                 <div className="text-[12px] text-gray-200 truncate">{row.text}</div>
+                {/* The same sentence in Chinese, under the English rather than instead of it —
+                    the numbers and the stat names stay in the language the game prints them in. */}
+                <div className="text-[11.5px] text-gray-300 truncate">{row.textZh}</div>
                 <div className="text-[9.5px] text-gray-500 truncate">{row.label} · {row.detail}</div>
               </div>
               <span className={`font-mono text-[13px] shrink-0 ${getStatColorClass(row.value)}`}>{row.value}</span>

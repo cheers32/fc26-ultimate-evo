@@ -24,6 +24,9 @@ interface Trait {
   good: string;
   /** Said when it isn't. */
   bad: string;
+  /** The same two in Chinese, printed under the English rather than instead of it. */
+  goodZh: string;
+  badZh: string;
   subs: string[];
 }
 
@@ -32,28 +35,30 @@ interface Trait {
  * anything from "standing tackle 91", they decide from "wins the ball cleanly".
  */
 const TRAITS: Trait[] = [
-  { label: 'Acceleration', good: 'Explosive off the mark', bad: 'Slow off the mark', subs: ['acceleration'] },
-  { label: 'Top speed', good: 'Runs away from people', bad: 'Gets run past', subs: ['sprintSpeed'] },
-  { label: 'Agility', good: 'Turns in a phone box', bad: 'Turns like a lorry', subs: ['agility', 'balance'] },
-  { label: 'Close control', good: 'Glued to his foot', bad: 'Heavy first touch', subs: ['ballControl', 'dribbling'] },
-  { label: 'Composure', good: 'Unhurried on the ball', bad: 'Rushed under pressure', subs: ['composure', 'reactions'] },
-  { label: 'Finishing', good: 'Finishes what he gets', bad: 'Wasteful in front of goal', subs: ['finishing', 'positioning'] },
-  { label: 'Shooting from range', good: 'Dangerous from distance', bad: 'No threat from distance', subs: ['longShots', 'shotPower'] },
-  { label: 'Short passing', good: 'Keeps it moving', bad: 'Gives it away', subs: ['shortPass', 'vision'] },
-  { label: 'Long passing', good: 'Switches play at will', bad: 'Cannot switch play', subs: ['longPass'] },
-  { label: 'Crossing', good: 'Delivers from wide', bad: 'Nothing from wide areas', subs: ['crossing', 'curve'] },
-  { label: 'Set pieces', good: 'A threat from dead balls', bad: 'Not a dead-ball taker', subs: ['freekick', 'penalties'] },
-  { label: 'Tackling', good: 'Wins the ball cleanly', bad: 'Dives in and misses', subs: ['standTackle', 'slideTackle'] },
-  { label: 'Reading the game', good: 'Reads it before it happens', bad: 'Caught out of position', subs: ['interceptions', 'defAwareness'] },
-  { label: 'Aerial ability', good: 'Wins everything in the air', bad: 'Loses his headers', subs: ['headingAcc', 'jumping'] },
-  { label: 'Strength', good: 'Impossible to shrug off', bad: 'Bullied off the ball', subs: ['strength', 'aggression'] },
-  { label: 'Stamina', good: 'Still there at ninety', bad: 'Walking by seventy', subs: ['stamina'] }
+  { label: 'Acceleration', good: 'Explosive off the mark', bad: 'Slow off the mark', goodZh: '启动快', badZh: '起步慢半拍', subs: ['acceleration'] },
+  { label: 'Top speed', good: 'Runs away from people', bad: 'Gets run past', goodZh: '拉开就甩掉人', badZh: '被人跑过', subs: ['sprintSpeed'] },
+  { label: 'Agility', good: 'Turns in a phone box', bad: 'Turns like a lorry', goodZh: '原地就能转身', badZh: '转身像卡车', subs: ['agility', 'balance'] },
+  { label: 'Close control', good: 'Glued to his foot', bad: 'Heavy first touch', goodZh: '球粘在脚上', badZh: '第一脚触球太笨', subs: ['ballControl', 'dribbling'] },
+  { label: 'Composure', good: 'Unhurried on the ball', bad: 'Rushed under pressure', goodZh: '拿球不慌', badZh: '被逼抢就乱', subs: ['composure', 'reactions'] },
+  { label: 'Finishing', good: 'Finishes what he gets', bad: 'Wasteful in front of goal', goodZh: '有机会就进', badZh: '门前太浪费', subs: ['finishing', 'positioning'] },
+  { label: 'Shooting from range', good: 'Dangerous from distance', bad: 'No threat from distance', goodZh: '远射有威胁', badZh: '远射没威胁', subs: ['longShots', 'shotPower'] },
+  { label: 'Short passing', good: 'Keeps it moving', bad: 'Gives it away', goodZh: '球在他脚下转得动', badZh: '容易丢球', subs: ['shortPass', 'vision'] },
+  { label: 'Long passing', good: 'Switches play at will', bad: 'Cannot switch play', goodZh: '随时能转移', badZh: '转移不了', subs: ['longPass'] },
+  { label: 'Crossing', good: 'Delivers from wide', bad: 'Nothing from wide areas', goodZh: '边路传得进来', badZh: '边路传不出东西', subs: ['crossing', 'curve'] },
+  { label: 'Set pieces', good: 'A threat from dead balls', bad: 'Not a dead-ball taker', goodZh: '定位球有威胁', badZh: '不是定位球人选', subs: ['freekick', 'penalties'] },
+  { label: 'Tackling', good: 'Wins the ball cleanly', bad: 'Dives in and misses', goodZh: '抢断干净', badZh: '上抢就漏', subs: ['standTackle', 'slideTackle'] },
+  { label: 'Reading the game', good: 'Reads it before it happens', bad: 'Caught out of position', goodZh: '预判快人一步', badZh: '位置容易被打穿', subs: ['interceptions', 'defAwareness'] },
+  { label: 'Aerial ability', good: 'Wins everything in the air', bad: 'Loses his headers', goodZh: '制空无敌', badZh: '头球争不到', subs: ['headingAcc', 'jumping'] },
+  { label: 'Strength', good: 'Impossible to shrug off', bad: 'Bullied off the ball', goodZh: '顶不动他', badZh: '对抗被推开', subs: ['strength', 'aggression'] },
+  { label: 'Stamina', good: 'Still there at ninety', bad: 'Walking by seventy', goodZh: '九十分钟还在跑', badZh: '七十分钟就在走', subs: ['stamina'] }
 ];
 
 export interface TraitVerdict {
   label: string;
   /** The sentence to print. */
   text: string;
+  /** The same sentence in Chinese, printed under it. */
+  textZh: string;
   /** The trait's value on this card, 0–99 — shown so the claim can be checked. */
   value: number;
   /** Which sub-stat carried it, for the tooltip. */
@@ -120,6 +125,7 @@ export function verdictAt(stats: StatsData, bio: PlayerBio, position: string, co
     .map(x => ({
       label: x.trait.label,
       text: x.trait.good,
+      textZh: x.trait.goodZh,
       value: Math.round(x.value),
       detail: `${pretty(x.best)} ${subs[x.best]}`
     }));
@@ -143,6 +149,7 @@ export function verdictAt(stats: StatsData, bio: PlayerBio, position: string, co
     .map(x => ({
       label: x.trait.label,
       text: x.trait.bad,
+      textZh: x.trait.badZh,
       value: Math.round(x.value),
       detail: `${pretty(x.worst)} ${subs[x.worst]}`
     }));
