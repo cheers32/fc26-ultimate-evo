@@ -687,6 +687,9 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
    * were still worth a median of 24 IGS to the card, and as much as 426. Below this a step really is
    * doing nothing; above it, the step stays and the row says what it is and is not buying, because
    * whether that trade is worth an evo token is not a question the plan can answer.
+   *
+   * Size is not the whole test either — see `touchesWhatMatters`. Eight points spread over volleys
+   * and aggression is nothing; eight points of acceleration is a different card.
    */
   const TRIM_IGS = 8;
 
@@ -718,6 +721,8 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     const dropped: string[] = [];
     /** Steps kept because they earn the plan nothing but are not doing nothing. */
     const offPlan: { name: string; igs: number }[] = [];
+    /** Every stat this plan either maximises or gates on — nothing here is spare. */
+    const cares = [...new Set([...Object.keys(t.maximise), ...Object.keys(floorsOf(t))])];
 
     // Greedy, and repeated: dropping one step can make a second one redundant too.
     //
@@ -735,10 +740,18 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         if (!scored || scored.total < best - TRIM_EPS) continue;
 
         // The plan would not miss it. Would the card?
+        //
+        // Two ways it would, and the second is the one a total hides. A step can be small and still
+        // land entirely on a stat the position runs on: the plan's score credits nothing below the
+        // pass mark and nothing above a stat's cap, so a step that takes acceleration from 82 to 90
+        // scores exactly zero and reads as free to delete. It is not. Any loss at all on a stat this
+        // plan maximises or gates keeps the step, whatever the arithmetic says.
         const whole = subsOfChain(ids);
         const cost = whole ? igsOf(whole.subs) - igsOf(scored.subs) : 0;
+        const touchesWhatMatters =
+          !!whole && cares.some(key => (scored.subs[key] ?? 0) < (whole.subs[key] ?? 0));
         const name = availableEvolutions[ids[i]]?.name || ids[i];
-        if (cost > TRIM_IGS) {
+        if (cost > TRIM_IGS || touchesWhatMatters) {
           if (!offPlan.some(x => x.name === name)) offPlan.push({ name, igs: cost });
           continue;
         }
