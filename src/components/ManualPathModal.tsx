@@ -573,7 +573,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     chainSearchHandle.current = handle;
 
     handle.promise
-      .then(paths => {
+      .then(({ paths }) => {
         if (chainSearchHandle.current !== handle) return; // superseded by a newer chain
         chainSearchHandle.current = null;
         setIsSearchingChains(false);

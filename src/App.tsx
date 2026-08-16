@@ -826,8 +826,12 @@ export default function App() {
    * that clears the bar, or it found builds you already have. Reporting only the first was how the
    * second came back as silence — the button appeared to do nothing at all.
    */
-  const [analyzeNothing, setAnalyzeNothing] =
-    useState<{ reason: 'none' | 'duplicates'; assumedChem: boolean } | null>(null);
+  const [analyzeNothing, setAnalyzeNothing] = useState<{
+    reason: 'none' | 'duplicates';
+    assumedChem: boolean;
+    /** Fieldable floors nothing in the pool could reach, worst gap first. */
+    short?: { key: string; floor: number; best: number }[];
+  } | null>(null);
   const [isImportBuildOpen, setIsImportBuildOpen] = useState(false);
   // Which squad the pitch is showing. Defaults to the team's first, which is the one every team
   // is created with.
@@ -1410,7 +1414,7 @@ export default function App() {
     analyzeHandle.current = handle;
 
     handle.promise
-      .then(results => {
+      .then(({ paths: results, diagnosis }) => {
         if (analyzeHandle.current !== handle) return; // superseded by a newer run
         analyzeHandle.current = null;
         setIsAnalyzing(false);
@@ -1439,7 +1443,15 @@ export default function App() {
         setAnalyzeNothing(
           fresh.length > 0
             ? null
-            : { reason: results.length === 0 ? 'none' : 'duplicates', assumedChem: assumeChemStyle }
+            : {
+                reason: results.length === 0 ? 'none' : 'duplicates',
+                assumedChem: assumeChemStyle,
+                // Which bar was missed and by how much, so the answer to "now what" is a stat name
+                // rather than another run with a different filter.
+                short: (diagnosis?.floors || []).filter(f => f.best < f.floor).sort(
+                  (a, b) => (b.floor - b.best) - (a.floor - a.best)
+                )
+              }
         );
         if (fresh.length > 0) {
           setActivePathId(fresh[0].id);

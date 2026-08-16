@@ -230,7 +230,29 @@ export interface V2Feedback {
   up?: string[];
 }
 
-export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Feedback }): EvolutionPath[] {
+/**
+ * Why a search came back with nothing, in the only terms that say what to do next.
+ *
+ * "No build clears the bar" leaves you to work out which bar by hand, on a card whose numbers you
+ * would have to add up yourself — and the answer is usually one stat that nothing in the pool can
+ * move. So every fieldable floor is tracked as the search runs: the highest any chain got it to,
+ * read the same way the floor is judged. A stat that never cleared in any chain is not a build that
+ * needs finding, it is an evo that needs adding to the pool.
+ */
+export interface V2Diagnosis {
+  /** How many legal chains were looked at. Zero means the filters cut everything before scoring. */
+  visited: number;
+  /** Every fieldable floor, with the best any chain reached. */
+  floors: { key: string; floor: number; best: number }[];
+}
+
+export function analyzeEvolutionsV2(
+  input: ChainSearchInput & {
+    feedback?: V2Feedback;
+    /** Called once at the end, whatever the result — see V2Diagnosis. */
+    report?: (d: V2Diagnosis) => void;
+  }
+): EvolutionPath[] {
   const { baseBio, baseOvr, baseStats, basePlayStyles, poolIds } = input;
   const height = parseHeightCm(baseBio.height);
 
@@ -394,6 +416,14 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
         : null;
   const templates = templatesAvailable(rankPositions, height).filter(t => !pick || pick.includes(t.id));
 
+  /**
+   * The best any chain got each fieldable stat to, read the way its floor is judged: pace off the
+   * bare card, the rest as the card would be fielded.
+   */
+  const reached: Record<string, number> = {};
+  for (const key of Object.keys(FIELDABLE_FLOORS)) reached[key] = 0;
+  let visited = 0;
+
   // Pass one: fill the shortlists. A build is admitted to a template only if it can be made to read
   // that template's archetype — or Controlled, where the template says that is a real card too.
   forEachChain(input, (chainIds, state) => {
@@ -402,6 +432,13 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
     // 96 and 99 are the same number once a +3 style is on it, and a bar set at the bare 99 charges
     // every build for a gap that does not exist on the pitch.
     for (const [k, v] of Object.entries(bestCase(subs))) if (v > (achievable[k] ?? 0)) achievable[k] = v;
+
+    visited += 1;
+    const fielded = bestCase(subs);
+    for (const key of Object.keys(FIELDABLE_FLOORS)) {
+      const v = key in BARE_FLOORS ? (subs[key] ?? 0) : (fielded[key] ?? 0);
+      if (v > reached[key]) reached[key] = v;
+    }
 
     // A build you have already turned down for this card does not come back.
     const ck = canonical(chainIds);
@@ -1134,6 +1171,11 @@ export function analyzeEvolutionsV2(input: ChainSearchInput & { feedback?: V2Fee
       });
     }
   }
+
+  input.report?.({
+    visited,
+    floors: Object.entries(FIELDABLE_FLOORS).map(([key, floor]) => ({ key, floor, best: reached[key] }))
+  });
 
   return out;
 }

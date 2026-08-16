@@ -1,9 +1,16 @@
 import { EvolutionPath } from '../types/player';
+import type { V2Diagnosis } from './analyzeV2';
 import type { EvoSearchRequest, EvoSearchResponse } from './evoSearch.worker';
+
+export interface EvoSearchResult {
+  paths: EvolutionPath[];
+  /** Why nothing came back, when nothing did. V2 only — see V2Diagnosis. */
+  diagnosis?: V2Diagnosis;
+}
 
 export interface EvoSearchHandle {
   /** Resolves with the paths found, or rejects with the worker's error. */
-  promise: Promise<EvolutionPath[]>;
+  promise: Promise<EvoSearchResult>;
   /** Stops the search. The promise rejects with an `AbortError`. */
   cancel: () => void;
 }
@@ -29,7 +36,7 @@ export function runEvoSearch(
   const PROGRESS_THROTTLE_MS = 250;
   let lastProgressAt = 0;
 
-  const promise = new Promise<EvolutionPath[]>((resolve, reject) => {
+  const promise = new Promise<EvoSearchResult>((resolve, reject) => {
     rejectPromise = reject;
 
     worker.onmessage = (e: MessageEvent<EvoSearchResponse>) => {
@@ -44,7 +51,7 @@ export function runEvoSearch(
       }
       settled = true;
       worker.terminate();
-      if (msg.type === 'done') resolve(msg.paths);
+      if (msg.type === 'done') resolve({ paths: msg.paths, diagnosis: msg.diagnosis });
       else reject(new Error(msg.message));
     };
 

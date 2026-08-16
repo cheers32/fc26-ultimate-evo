@@ -1,5 +1,5 @@
 import { analyzeEvolutions } from './evoEngine';
-import { analyzeEvolutionsV2, V2Feedback } from './analyzeV2';
+import { analyzeEvolutionsV2, V2Diagnosis, V2Feedback } from './analyzeV2';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters } from '../types/player';
 
 export interface EvoSearchRequest {
@@ -26,7 +26,7 @@ export interface EvoSearchRequest {
 
 export type EvoSearchResponse =
   | { type: 'progress'; nodesVisited: number }
-  | { type: 'done'; paths: EvolutionPath[] }
+  | { type: 'done'; paths: EvolutionPath[]; diagnosis?: V2Diagnosis }
   | { type: 'error'; message: string };
 
 // The search is a deep DFS that runs for tens of seconds at the depths the app uses, so it
@@ -38,6 +38,7 @@ self.onmessage = (e: MessageEvent<EvoSearchRequest>) => {
       const msg: EvoSearchResponse = { type: 'progress', nodesVisited };
       self.postMessage(msg);
     };
+    let diagnosis: V2Diagnosis | undefined;
     const runV2 = () => {
       const readings = req.readings && req.readings.length > 0 ? req.readings : ['bare', 'chem'];
       const out: EvolutionPath[] = [];
@@ -56,7 +57,16 @@ self.onmessage = (e: MessageEvent<EvoSearchRequest>) => {
           filters: { ...(req.filters || {}), assumeChemStyle: reading === 'chem' },
           prefixChainIds: req.prefixChainIds,
           feedback: req.feedback,
-          onProgress
+          onProgress,
+          // The readings differ on what a stat can reach, so the kindest of them is reported: a
+          // floor that is out of reach even at its most optimistic is out of reach.
+          report: d => {
+            if (!diagnosis) { diagnosis = d; return; }
+            diagnosis = {
+              visited: diagnosis.visited + d.visited,
+              floors: diagnosis.floors.map((f, i) => ({ ...f, best: Math.max(f.best, d.floors[i]?.best ?? 0) }))
+            };
+          }
         });
         // Numbered within its own reading and named for it, because the two lists answer different
         // questions and interleaving them would leave a #2 that is better than a #1.
@@ -92,7 +102,7 @@ self.onmessage = (e: MessageEvent<EvoSearchRequest>) => {
             req.prefixChainIds,
             onProgress
           );
-    const msg: EvoSearchResponse = { type: 'done', paths };
+    const msg: EvoSearchResponse = { type: 'done', paths, diagnosis };
     self.postMessage(msg);
   } catch (err) {
     const msg: EvoSearchResponse = {

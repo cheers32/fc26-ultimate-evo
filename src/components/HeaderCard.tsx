@@ -58,7 +58,12 @@ interface HeaderCardProps {
    * Why the last run left the screen untouched, when it did: nothing cleared the bar, or everything
    * that did is already saved on the card. Null when the run produced something.
    */
-  analyzeNothing?: { reason: 'none' | 'duplicates'; assumedChem: boolean } | null;
+  analyzeNothing?: {
+    reason: 'none' | 'duplicates';
+    assumedChem: boolean;
+    /** Fieldable floors nothing in the pool could reach, worst gap first. */
+    short?: { key: string; floor: number; best: number }[];
+  } | null;
   analyzeProgress?: number;
   onCancelAnalyze?: () => void;
   rawBaseOvr: number;
@@ -220,6 +225,13 @@ const PlayStyleNode: React.FC<{
     </div>
   );
 };
+
+/** Sub-stat keys as the game prints them, for the one place that has to name one in a sentence. */
+const prettyStat = (key: string) =>
+  key.replace(/([A-Z])/g, ' $1').toLowerCase()
+    .replace('def awareness', 'defensive awareness')
+    .replace('heading acc', 'heading')
+    .trim();
 
 export const HeaderCard: React.FC<HeaderCardProps> = ({
   bio,
@@ -1340,17 +1352,45 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           ) : (
             <>
               <span className="font-bold">Analyze found no build that clears the bar.</span>
-              {activeFilterSummary.length > 0 && (
-                <span className="text-amber-200/60"> Currently asking for: {activeFilterSummary.join(' · ')}.</span>
+              {/* Which bar, and by how much. Without this the answer to "now what" is another run
+                  with a different filter; with it, it is a stat name and a number — which says
+                  whether to loosen something, add an evo to the pool, or give up on the card. */}
+              {analyzeNothing.short && analyzeNothing.short.length > 0 ? (
+                <>
+                  <span className="text-amber-200/60">
+                    {' '}Nothing in the pool got{' '}
+                  </span>
+                  {analyzeNothing.short.map((f, i) => (
+                    <span key={f.key}>
+                      {i > 0 && <span className="text-amber-200/60">, </span>}
+                      <span className="text-amber-100 font-semibold">
+                        {prettyStat(f.key)} past {f.best}
+                      </span>
+                      <span className="text-amber-200/60"> (needs {f.floor})</span>
+                    </span>
+                  ))}
+                  <span className="text-amber-200/60">
+                    {' '}— on any chain it tried. That is an evo the pool is missing rather than a
+                    build it failed to find.
+                  </span>
+                </>
+              ) : (
+                <>
+                  {activeFilterSummary.length > 0 && (
+                    <span className="text-amber-200/60"> Currently asking for: {activeFilterSummary.join(' · ')}.</span>
+                  )}
+                  <span className="text-amber-200/60">
+                    {' '}Every fieldable stat is reachable on its own — pace, stamina, balance and
+                    ball control at {FIELDABLE} — so it is the filters, the plan's own floors, or no
+                    single chain managing all of them at once.
+                  </span>
+                </>
               )}
-              <span className="text-amber-200/60">
-                {' '}Filters can rule each other out — a required evo may cost the card the very
-                thing the rest of the filter is asking for. Every build also has to be fieldable:
-                pace, stamina, balance and ball control at {FIELDABLE} or better.
-              </span>
               {/* The likeliest single cause once the assumption is off, and the one fix that is a
-                  click away rather than a change of plan. */}
-              {!analyzeNothing.assumedChem && (
+                  click away rather than a change of plan. Pace is exempt: it is read bare either
+                  way, so a style would not have carried it. */}
+              {!analyzeNothing.assumedChem &&
+                (analyzeNothing.short || []).some(f => f.key !== 'acceleration' && f.key !== 'sprintSpeed') && (
                 <span className="text-amber-200/60">
                   {' '}Those are being read on the bare card — turning on "Assume chem style" in
                   Filters is often the difference.
