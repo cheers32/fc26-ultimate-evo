@@ -870,19 +870,25 @@ export default function App() {
 
     // A ranked shortlist has to be shown in its own order, or the number on the chip is the only
     // thing carrying it and the row reads as shuffled. Only V2's `#n` names match this.
+    // Two ranked lists, each in its own order: `#n` is the card as it is, `Cn` is the card with a
+    // chemistry style on. Bare leads, because it promises less.
     const rankOf = (p: EvolutionPath) => {
-      const m = /^#(\d+)$/.exec(p.name);
-      return m ? Number(m[1]) : null;
+      const m = /^(#|C)(\d+)$/.exec(p.name);
+      if (!m) return null;
+      return (m[1] === '#' ? 0 : 1000) + Number(m[2]);
     };
 
     const saved = [...currentState.generatedPaths, ...currentState.manualPaths]
       .map(withFreshSteps)
       .sort((a, b) => {
+        // Your builds first, then this run's results as a block at the end — they are replaced
+        // wholesale by the next run, and threading them through the builds you keep is what made a
+        // fresh Analyze read as the row having been shuffled.
         const ra = rankOf(a);
         const rb = rankOf(b);
         if (ra !== null && rb !== null) return ra - rb;
-        if (ra !== null) return -1;
-        if (rb !== null) return 1;
+        if (ra !== null) return 1;
+        if (rb !== null) return -1;
       // First sort by target ovr
       const aOvr = a.steps?.[a.steps.length - 1]?.ovrAfter || 0;
       const bOvr = b.steps?.[b.steps.length - 1]?.ovrAfter || 0;
@@ -1363,6 +1369,12 @@ export default function App() {
         filters: { ...evoFilters, assumeChemStyle },
         prefixChainIds: basePrefix,
         version,
+        // Two lists rather than one, unless told otherwise: the card as it is and the card as it
+        // would be fielded are different questions with different best answers.
+        readings:
+          evoFilters.analyzeReadings === 'bare' ? ['bare']
+          : evoFilters.analyzeReadings === 'chem' ? ['chem']
+          : ['bare', 'chem'],
         // Only V2 reads these, and only to hide what you turned down and keep what you liked.
         feedback: version === 2 ? { down: playerFeedback.down, up: playerFeedback.up } : undefined
       },
@@ -1929,6 +1941,8 @@ export default function App() {
                   hoveredChem={hoveredChem}
                   lockedChem={lockedChem}
                   heightCm={parseHeightCm(playerBio.height)}
+                  bio={previewBio}
+                  scorePosition={scorePosition}
                   onHoverChem={setHoveredChem}
                   onLockChem={(name) => {
                     setLockedChem(lockedChem === name ? null : name);

@@ -1,5 +1,8 @@
 import React from 'react';
-import { ChemStylesData, StatsData } from '../types/player';
+import { ChemStylesData, PlayerBio, StatsData } from '../types/player';
+import { withStyleStats } from '../utils/chem';
+import { scoreAtPosition, bestScore } from '../utils/positionScore';
+import { getStatColorClass } from '../utils/statUtils';
 import {
   ACCELERATE_FAMILIES,
   ACCELERATE_TIERS_BY_FAMILY,
@@ -18,6 +21,10 @@ interface ChemistryGridProps {
   heightCm?: number;
   onHoverChem: (name: string | null) => void;
   onLockChem: (name: string) => void;
+  /** The card these styles are being put on, and where it is being judged. */
+  bio?: PlayerBio;
+  /** Slot position if the card is on the pitch, otherwise its own — the same rule as everywhere. */
+  scorePosition?: string;
 }
 
 export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
@@ -27,7 +34,9 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
   lockedChem,
   heightCm,
   onHoverChem,
-  onLockChem
+  onLockChem,
+  bio,
+  scorePosition
 }) => {
   const names = Object.keys(chemStyles);
 
@@ -83,36 +92,85 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     return totalFaceBoost;
   };
 
+  /**
+   * What each style is worth where the card plays.
+   *
+   * A style is only ever chosen for what it does to the card, and "+7 face stats" is not that:
+   * Shadow and Anchor can add the same total and one of them is the style and the other is a waste
+   * of a slot. So each is scored the way the rest of the app scores a card — at the position it is
+   * being judged at, on the plan it is best at — with that style already on.
+   *
+   * Read with `assumeChem` off, deliberately: the style being tried *is* the assumption here, and
+   * letting the scorer put a second one on top would be scoring a card wearing two.
+   */
+  const scoreOf = React.useMemo(() => {
+    if (!bio || !previewStats) return null;
+    const out = new Map<string, number>();
+    for (const name of names) {
+      const styled = withStyleStats(previewStats, chemStyles[name] || {});
+      const s = scorePosition
+        ? scoreAtPosition(styled, bio, scorePosition) ?? bestScore(styled, bio)
+        : bestScore(styled, bio);
+      if (s) out.set(name, s.score);
+    }
+    return out;
+  }, [names, chemStyles, previewStats, bio, scorePosition]);
+
+  const scoreFor = (name: string) => scoreOf?.get(name);
+
   /** One dense lookup grid of styles; shared by both groupings. */
-  const styleGrid = (items: string[]) => (
+  const styleGrid = (items: string[]) => {
+    // Ordered by what they are worth here rather than by raw stat total, and the best one or two in
+    // each group are marked: within an archetype the choice is usually between two, and the rest of
+    // the list exists to show what was passed over.
+    const ordered = scoreOf
+      ? [...items].sort((a, b) => (scoreFor(b) ?? -1) - (scoreFor(a) ?? -1))
+      : [...items].sort((a, b) => getFaceBoost(b) - getFaceBoost(a));
+    const top = new Set(
+      scoreOf
+        ? ordered.filter(n => scoreFor(n) !== undefined).slice(0, Math.min(2, ordered.length))
+        : []
+    );
+    return (
     <div className="grid grid-cols-3 rounded-lg overflow-hidden border border-[#4b5563]/40">
-      {[...items].sort((a, b) => getFaceBoost(b) - getFaceBoost(a)).map((name) => {
+      {ordered.map((name) => {
         const isLocked = name === lockedChem;
         const isHovered = name === hoveredChem;
+        const score = scoreFor(name);
+        const isTop = top.has(name);
         return (
           <button
             key={name}
             onMouseEnter={() => onHoverChem(name)}
             onMouseLeave={() => onHoverChem(null)}
             onClick={() => onLockChem(name)}
+            title={score !== undefined ? `${name}: ${score.toFixed(1)}/100 here` : name}
             className={`
-              relative transition-colors text-[10.5px] font-semibold py-1 px-1 cursor-pointer text-center select-none flex items-center justify-center
+              relative transition-colors text-[10.5px] font-semibold py-1 px-1 cursor-pointer text-center select-none flex items-center justify-center gap-1
               border-r border-b border-[#4b5563]/25 last:border-r-0
               ${
                 isLocked
                   ? 'bg-[#1ED760]/25 text-[#1ED760] ring-1 ring-inset ring-[#1ED760]'
                   : isHovered
                   ? 'bg-[#374151] text-white'
+                  : isTop
+                  ? 'bg-[#1ED760]/10 text-gray-200 hover:bg-[#374151] hover:text-white'
                   : 'bg-[#1f2937]/50 text-gray-300 hover:bg-[#374151] hover:text-white'
               }
             `}
           >
-            {name}
+            <span className="truncate">{name}</span>
+            {score !== undefined && (
+              <span className={`font-mono text-[9px] shrink-0 ${isLocked ? '' : getStatColorClass(score)}`}>
+                {score.toFixed(1)}
+              </span>
+            )}
           </button>
         );
       })}
     </div>
-  );
+    );
+  };
 
   const heading = (text: string, count: number) => (
     <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide flex items-baseline gap-1.5">

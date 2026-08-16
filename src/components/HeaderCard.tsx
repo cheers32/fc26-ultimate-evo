@@ -412,7 +412,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
     if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
     if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
-    if (evoFilters.usePlayStyleScore) parts.push('PlayStyles count towards the ranking');
+    if (evoFilters.analyzeReadings === 'bare') parts.push('bare recommendations only');
+    if (evoFilters.analyzeReadings === 'chem') parts.push('chem-style recommendations only');
 
     if (evoFilters.newPosition) parts.push('a new position');
     if (evoFilters.noPositionChange) parts.push('positions unchanged');
@@ -562,6 +563,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (!last) return baseScore;
     return bestScore(last.statsAfter, last.bioAfter, assumeChemStyle);
   };
+
+  /**
+   * A build this Analyze run produced, as opposed to one you keep.
+   *
+   * The two ranked lists name themselves — `#n` bare, `Cn` with a chemistry style — and they are
+   * replaced wholesale by the next run, so they belong under a line of their own rather than mixed
+   * in among the builds that survive it.
+   */
+  const isFresh = (path?: EvolutionPath) => !!path && /^(#|C)\d+$/.test(path.name);
 
   /** 0 unstarred, otherwise which colour. A starred build with no tier reads as the first. */
   const starTier = (path: EvolutionPath) =>
@@ -932,19 +942,33 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           />
                           Assume chem style
                         </label>
-                        {/* Off by default: the stat model is the one that has been checked against
-                            real cards, so letting a second term into it is a decision rather than
-                            something that happens to a shortlist that was already worth trusting. */}
-                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
-                               title="Let PlayStyles count towards where a build ranks, and fix a bad set by converting rarity — the picks come back inside the build. Off, the order is the stat model's alone and the PlayStyle score is only shown.">
-                          <input
-                            type="checkbox"
-                            checked={!!draftFilters.usePlayStyleScore}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, usePlayStyleScore: e.target.checked })}
-                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
-                          />
-                          Count PlayStyles
-                        </label>
+                      </div>
+                      {/* What Analyze comes back with. Not the same question as the one above: that
+                          one is how every score on screen is read, this one is which lists a run
+                          produces. Both by default — a build can top one list and not exist on the
+                          other, and that is worth seeing rather than choosing between blind. */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[11px] text-gray-500">Recommend</span>
+                        {([
+                          ['both', 'Both'],
+                          ['bare', 'Bare only'],
+                          ['chem', 'With chem']
+                        ] as const).map(([value, label]) => {
+                          const active = (draftFilters.analyzeReadings ?? 'both') === value;
+                          return (
+                            <button
+                              key={value}
+                              onClick={() => setDraftFilters({ ...draftFilters, analyzeReadings: value })}
+                              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                                active
+                                  ? 'bg-fuchsia-900/30 border-fuchsia-600 text-fuchsia-200'
+                                  : 'bg-[#121212] border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1337,8 +1361,21 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
       {/* One chip per build, from the first build on — the row used to appear only once there were
           two, which left a single saved build with nothing to carry its name and its total. */}
       {allPaths.some(p => p.chainIds.length > 0) && (
-        <div className="flex flex-wrap gap-1.5 mb-1">
-          {allPaths.map((path) => (
+        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+          {allPaths.map((path, i) => (
+            <React.Fragment key={`row-${path.id}`}>
+              {/* The run's own results, kept apart from your builds. A fresh Analyze used to drop
+                  eight chips into the middle of the row and the builds you had saved were suddenly
+                  somewhere in a wall of them. Below the line is what you keep; after it is what
+                  this run found, and it is replaced wholesale by the next one. */}
+              {isFresh(path) && !isFresh(allPaths[i - 1]) && (
+                <div className="basis-full flex items-center gap-2 mt-1.5 mb-0.5">
+                  <span className="text-[9.5px] uppercase tracking-wider text-fuchsia-400/80 font-bold">
+                    This run
+                  </span>
+                  <span className="flex-1 h-px bg-fuchsia-900/40" />
+                </div>
+              )}
             <div key={path.id} className="relative flex items-center group">
               {renamingKey === `chip:${path.id}` ? (
                 nameInput(path, "w-32 bg-[#121212] border border-fcGreen rounded-lg px-2 py-1 text-[11px] font-bold text-white outline-none")
@@ -1490,6 +1527,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 </div>
               )}
             </div>
+            </React.Fragment>
           ))}
         </div>
       )}
