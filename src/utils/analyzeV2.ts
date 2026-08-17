@@ -266,6 +266,16 @@ export function analyzeEvolutionsV2(
   const locked = (input.prefixChainIds ?? []).length;
 
   /**
+   * Evos you said every build has to contain.
+   *
+   * The search only ever visits chains that have them, so this exists for one reason: the audit
+   * must not take them out again. "This step earns the plan nothing" is a fair thing to notice and
+   * the wrong thing to act on when the step is there because you asked for it — the answer to
+   * "which build should I make, given I am running this evo" is not a build without it.
+   */
+  const required = new Set(input.filters?.requiredEvos ?? []);
+
+  /**
    * Whether a build may be judged wearing a chemistry style it does not have yet.
    *
    * Off unless asked for. A style is a real choice and usually the right assumption — 96 and 99 are
@@ -764,6 +774,7 @@ export function analyzeEvolutionsV2(
     for (let pass = 0; pass < ids.length; pass++) {
       let removedOne = false;
       for (let i = locked; i < ids.length; i++) {
+        if (required.has(ids[i])) continue;
         const shorter = ids.filter((_, j) => j !== i);
         if (shorter.length === 0) continue;
         const scored = scoreChain(shorter, t, arch);
