@@ -172,8 +172,13 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     gate: { defAwareness: 78 }
   },
   'Slide Tackle': { axes: { def: 1 }, tier: 'support', gate: { slideTackle: 82 } },
-  'Bruiser': { axes: { phy: 1 }, tier: 'off' },
-  'Enforcer': { axes: { phy: 0.6, def: 0.4 }, tier: 'off' },
+  'Bruiser': {
+    axes: { phy: 1 },
+    tier: 'core',
+    gate: { strength: 82 },
+    note: 'Winning the shoulder is a job, not a stat line. Was rated at zero, which made every evo that hands it out look like a wasted gold slot — and made the model advise converting a rarity to pick something else in its place.'
+  },
+  'Enforcer': { axes: { phy: 0.6, def: 0.4 }, tier: 'support', gate: { strength: 80, aggression: 78 } },
 
   // --- Physical / other -------------------------------------------------------------------
   'Relentless': {
@@ -186,7 +191,7 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     axes: { phy: 0.6, def: 0.4 },
     tier: 'core',
     gate: { stamina: 82, aggression: 78 },
-    overlaps: ['Relentless']
+    note: 'Not an overlap with Relentless, on the authority of someone who plays both: they read as the same idea on paper and do different jobs on the pitch, so a card holding one is not done wanting the other.'
   },
   'Acrobatic': { axes: { sho: 0.6, dri: 0.4 }, tier: 'off' },
   // Set pieces and crosses are a standing source of goals at both ends, so a card that wins the ball
