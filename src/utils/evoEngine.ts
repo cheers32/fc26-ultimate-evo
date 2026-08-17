@@ -484,13 +484,69 @@ export function applyEvo(
     // PlayStyles past the card's capacity, and — the one that finally pinned it — Let Me Cook add
     // to a Petit already holding eight against that evo's limit of seven. Route One withholding
     // Block from Rabiot at seven of seven is the same rule seen from the other side.
-    const silverBudget = Math.max(
+    const goldLimit = evo.playStylesLimit?.gold ?? 99;
+
+    /**
+     * The evo's PlayStyle grants, split the way the game hands them out: one level at a time.
+     *
+     * This is the whole of the rule. A level is evaluated against the card as it stood when the
+     * level started, so a slot freed by a promotion inside that level is not one the same level can
+     * refill — but the next level starts from the updated card and can. Route One promotes
+     * Anticipate and grants Block in the same level, so Block does not fit on a card at seven of
+     * seven; The Landlord promotes Bruiser at level 1 and grants Aerial Fortress at level 2, so
+     * Aerial Fortress lands in the slot Bruiser left. Both were observed in game, and read as a
+     * contradiction only while the evo was applied as one lump.
+     *
+     * Falls back to one lump where the levels are absent or do not add up to the same grants as the
+     * header, since a mis-parsed level list would be worse than the approximation it replaces.
+     */
+    const grantsByLevel = (() => {
+      if (!evo.levels?.length) return null;
+      const clean = (n: string) => n.replace('+', '').trim();
+      const perLevel: { gold: string[]; silver: string[] }[] = [];
+      const allGold: string[] = [];
+      const allSilver: string[] = [];
+      for (const level of evo.levels) {
+        const gold: string[] = [];
+        const silver: string[] = [];
+        for (const upgrade of level.upgrades) {
+          const plus = /^PlayStyle\+:\s*([^(]+)/.exec(upgrade);
+          if (plus) { gold.push(plus[1].trim()); continue; }
+          const plain = /^PlayStyle:\s*([^(]+)/.exec(upgrade);
+          if (plain) silver.push(plain[1].trim());
+        }
+        perLevel.push({ gold, silver });
+        allGold.push(...gold);
+        allSilver.push(...silver);
+      }
+      const same = (a: string[], b: string[]) =>
+        a.length === b.length && a.every(x => b.some(y => clean(y) === clean(x)));
+      if (!same(allGold, evo.playStylesAdded.gold) || !same(allSilver, evo.playStylesAdded.silver)) {
+        return null;
+      }
+      // Store the name the header uses, not the one the level line was written with — the header
+      // carries the trailing '+' that marks a PlayStyle+ everywhere it is displayed.
+      const asWritten = (name: string, from: string[]) =>
+        from.find(x => clean(x) === clean(name)) ?? name;
+      return perLevel.map(level => ({
+        gold: level.gold.map(n => asWritten(n, evo.playStylesAdded.gold)),
+        silver: level.silver.map(n => asWritten(n, evo.playStylesAdded.silver))
+      }));
+    })();
+
+    const batches = grantsByLevel ?? [
+      { gold: evo.playStylesAdded.gold, silver: evo.playStylesAdded.silver }
+    ];
+
+    for (const batch of batches) {
+    // Counted at the start of the level, so a promotion inside it cannot free a slot for a grant
+    // beside it.
+    let silverRemaining = Math.max(
       0,
       (evo.playStylesLimit?.silver ?? 99) - currentPlayStyles.base.silver.length
     );
 
-    const goldLimit = evo.playStylesLimit?.gold ?? 99;
-    evo.playStylesAdded.gold.forEach((ps) => {
+    batch.gold.forEach((ps) => {
       const baseName = ps.replace('+', '').trim();
       const hasGold = currentPlayStyles.base.gold.some(g => g.replace('+', '').trim() === baseName);
 
@@ -512,8 +568,7 @@ export function applyEvo(
       }
     });
 
-    let silverRemaining = silverBudget;
-    evo.playStylesAdded.silver.forEach((ps) => {
+    batch.silver.forEach((ps) => {
       const baseName = ps.replace('+', '').trim();
 
       // Only add to silver if they don't already have it as gold or silver
@@ -536,6 +591,7 @@ export function applyEvo(
         silverRemaining--;
       }
     });
+    }
 
     // Apply Bio mutations
     if (evo.weakFootBoost) {
