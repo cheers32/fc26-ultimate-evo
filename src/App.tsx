@@ -368,17 +368,31 @@ export default function App() {
    * Anything that isn't a slot in this shape is dropped on read: a slot id the formation doesn't
    * have, and a slot naming a player who has since been deleted. Both are empty slots.
    */
+  /**
+   * The squads, with every card read as it stands today rather than as it stood when it was put on
+   * the pitch.
+   *
+   * A slot stores the chain it was saved with, and that chain goes stale the moment the card moves
+   * on: finish two more evos on your Current build and the pitch keeps showing the card from before
+   * them. So where the player has a Current — the record of what is actually done in game — the
+   * slot is read from that instead. The stored chain stays as the fallback, for cards with no
+   * record yet and for slots deliberately holding a build that is not the record.
+   */
   const squads = useMemo(
     () => (team?.squads || []).map(squad => {
       const slots: Record<string, SquadSlot> = {};
       Object.entries(squad.slots || {}).forEach(([slotId, entry]) => {
         if (!ALL_SLOT_IDS.includes(slotId)) return;
         if (!entry || typeof entry !== 'object' || !allPlayersData[entry.playerId]) return;
-        slots[slotId] = { playerId: entry.playerId, chainIds: entry.chainIds || [] };
+        const record = (team?.savedPaths?.[entry.playerId] || []).find(isInGamePath);
+        slots[slotId] = {
+          playerId: entry.playerId,
+          chainIds: record ? record.chainIds : entry.chainIds || []
+        };
       });
       return { id: squad.id, name: squad.name, createdAt: squad.createdAt, formation: squad.formation, slots };
     }),
-    [team?.squads, allPlayersData]
+    [team?.squads, team?.savedPaths, allPlayersData]
   );
 
   /** Every squad write goes through here so one changed squad is one request. */
@@ -827,11 +841,22 @@ export default function App() {
    * that clears the bar, or it found builds you already have. Reporting only the first was how the
    * second came back as silence — the button appeared to do nothing at all.
    */
+  /**
+   * The builds this Analyze run produced, by id.
+   *
+   * Kept apart from `generatedPaths` because starring one moves it into `manualPaths` — it becomes
+   * yours — and that must not move it on screen while you are looking at it. Membership here is
+   * what draws the "This run" line, and it is cleared when the next run starts.
+   */
+  const [runPathIds, setRunPathIds] = useState<string[]>([]);
+
   const [analyzeNothing, setAnalyzeNothing] = useState<{
     reason: 'none' | 'duplicates';
     assumedChem: boolean;
     /** Fieldable floors nothing in the pool could reach, worst gap first. */
     short?: { key: string; floor: number; best: number }[];
+    /** How many legal chains the search had to look at. Zero is its own answer. */
+    visited?: number;
   } | null>(null);
   const [isImportBuildOpen, setIsImportBuildOpen] = useState(false);
   // Which squad the pitch is showing. Defaults to the team's first, which is the one every team
@@ -883,42 +908,31 @@ export default function App() {
       return (m[1] === '#' ? 0 : 1000) + Number(m[2]);
     };
 
-    // Which side of the line a build is on is decided by the list it is in, not the name it wears.
-    // Star a recommendation and it keeps its `#2`; it is yours from that moment and belongs up with
-    // the rest of what you keep.
-    const fresh = new Set(currentState.generatedPaths.map(p => p.id));
+    // Which side of the line a build is on is settled by the run it came out of, and stays settled
+    // when you star it. Starring used to move a chip out of "This run" and up among the builds you
+    // keep, which is where it belongs eventually — but not at the moment you click, with your eye
+    // still on where it was. It moves when the next run replaces the block, not before.
+    // Either still in the run's own list, or starred out of the run you are looking at. The second
+    // half is what keeps a starred chip where you clicked it; the first is what brings the block
+    // back after a reload, when this session never saw the run that produced them.
+    const generatedIds = new Set(currentState.generatedPaths.map(p => p.id));
+    const fresh = (p: EvolutionPath) => generatedIds.has(p.id) || runPathIds.includes(p.id);
 
-    const saved = [...currentState.generatedPaths, ...currentState.manualPaths]
-      .map(withFreshSteps)
-      .sort((a, b) => {
-        // Your builds first, then this run's results as a block at the end — they are replaced
-        // wholesale by the next run, and threading them through the builds you keep is what made a
-        // fresh Analyze read as the row having been shuffled.
-        const fa = fresh.has(a.id);
-        const fb = fresh.has(b.id);
-        if (fa !== fb) return fa ? 1 : -1;
-        if (fa && fb) {
-          const ra = rankOf(a);
-          const rb = rankOf(b);
-          if (ra !== null && rb !== null) return ra - rb;
-          if (ra !== null) return -1;
-          if (rb !== null) return 1;
-        }
-      // First sort by target ovr
-      const aOvr = a.steps?.[a.steps.length - 1]?.ovrAfter || 0;
-      const bOvr = b.steps?.[b.steps.length - 1]?.ovrAfter || 0;
-      if (bOvr !== aOvr) return bOvr - aOvr;
-      
-      // If equal, sort by max req ovr of the first evo
-      const firstEvoId = (p: EvolutionPath) => p.chainIds.find(id => !isPlayStyleNodeId(id));
-      const aReq = availableEvolutions[firstEvoId(a) || '']?.requirements?.maxOvr || 0;
-      const bReq = availableEvolutions[firstEvoId(b) || '']?.requirements?.maxOvr || 0;
-      return bReq - aReq;
-    });
-    const withDefault = saved.some(p => p.id === DEFAULT_PATH_ID) ? saved : [defaultPath, ...saved];
-    // The base card leads, always, and is never one of the saved ones — it is synthesised here on
-    // every render so nothing that writes paths can touch it.
-    withDefault.unshift(baseCardPath);
+    // Manual first, because that array is in the order builds were added and that is the order to
+    // show them in: a row you can read by when you made things, not by a ranking that reshuffles.
+    const all = [...currentState.manualPaths, ...currentState.generatedPaths].map(withFreshSteps);
+
+    const record = all.find(isInGamePath);
+    const kept = all.filter(p => !isInGamePath(p) && !fresh(p));
+    // Inside this run's block the ranking is the order: `#n` is the card as it is, `Cn` is the card
+    // with a chemistry style on, and bare leads because it promises less.
+    const thisRun = all.filter(p => !isInGamePath(p) && fresh(p))
+      .sort((a, b) => (rankOf(a) ?? 1e9) - (rankOf(b) ?? 1e9));
+
+    // The base card leads, always, and is never one of the saved ones — it is synthesised on every
+    // render so nothing that writes paths can touch it. The record comes second, wherever it was
+    // stored, so the two fixed points of the row are always the first two chips.
+    const withDefault = [baseCardPath, record ?? defaultPath, ...kept, ...thisRun];
     // The in-game record is starred green wherever it came from — a stored copy from before this
     // rule, an edit that dropped the flags, a fresh synthesis. One place to enforce it beats
     // remembering to set it at each of the half-dozen places a path gets written.
@@ -930,6 +944,7 @@ export default function App() {
   }, [
     currentState.generatedPaths,
     currentState.manualPaths,
+    runPathIds,
     baseCardPath,
     defaultPath,
     playerBio,
@@ -1450,6 +1465,7 @@ export default function App() {
     analyzeHandle.current?.cancel();
     setIsAnalyzing(true);
     setAnalyzeNothing(null);
+    setRunPathIds([]);
     setAnalyzeProgress(0);
 
     const handle = runEvoSearch(
@@ -1499,6 +1515,7 @@ export default function App() {
         });
 
         setGeneratedPaths(fresh);
+        setRunPathIds(fresh.map(p => p.id));
         // Nothing came back, or everything that did was already on the card — either way the
         // screen is about to look untouched, and that needs saying rather than showing. It used to
         // test only the first of those, so a run that found four builds you had already saved was
@@ -1513,7 +1530,8 @@ export default function App() {
                 // rather than another run with a different filter.
                 short: (diagnosis?.floors || []).filter(f => f.best < f.floor).sort(
                   (a, b) => (b.floor - b.best) - (a.floor - a.best)
-                )
+                ),
+                visited: diagnosis?.visited ?? 0
               }
         );
         if (fresh.length > 0) {
@@ -1880,7 +1898,7 @@ export default function App() {
           originalIgs={originalIgs}
           originalFaceSum={originalFaceSum}
           evoFilters={evoFilters}
-          freshPathIds={generatedPaths.map(p => p.id)}
+          freshPathIds={runPathIds}
           assumeChemStyle={assumeChemStyle}
           onSetAssumeChemStyle={setAssumeChemStyle}
           pathFeedback={playerFeedback.byChain}

@@ -63,6 +63,8 @@ interface HeaderCardProps {
     assumedChem: boolean;
     /** Fieldable floors nothing in the pool could reach, worst gap first. */
     short?: { key: string; floor: number; best: number }[];
+    /** How many legal chains the search had to look at. Zero is its own answer. */
+    visited?: number;
   } | null;
   analyzeProgress?: number;
   onCancelAnalyze?: () => void;
@@ -1375,8 +1377,18 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               <span className="font-bold">Analyze found no build that clears the bar.</span>
               {/* Which bar, and by how much. Without this the answer to "now what" is another run
                   with a different filter; with it, it is a stat name and a number — which says
-                  whether to loosen something, add an evo to the pool, or give up on the card. */}
-              {analyzeNothing.short && analyzeNothing.short.length > 0 ? (
+                  whether to loosen something, add an evo to the pool, or give up on the card.
+
+                  Unless there was nothing to measure. A search that found no legal chain at all
+                  has no highest-reached anything, and quoting the zeros reads as though every stat
+                  had been tried and failed — when the truth is that no evo would take the card. */}
+              {analyzeNothing.visited === 0 ? (
+                <span className="text-amber-200/60">
+                  {' '}No evo in the pool will take this card at all — nothing was left to search.
+                  Usually its OVR has passed what they accept; a required evo or a locked-in
+                  starting point can do it too.
+                </span>
+              ) : analyzeNothing.short && analyzeNothing.short.length > 0 ? (
                 <>
                   <span className="text-amber-200/60">
                     {' '}Nothing in the pool got{' '}
@@ -1410,7 +1422,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               {/* The likeliest single cause once the assumption is off, and the one fix that is a
                   click away rather than a change of plan. Pace is exempt: it is read bare either
                   way, so a style would not have carried it. */}
-              {!analyzeNothing.assumedChem &&
+              {analyzeNothing.visited !== 0 &&
+                !analyzeNothing.assumedChem &&
                 (analyzeNothing.short || []).some(f => f.key !== 'acceleration' && f.key !== 'sprintSpeed') && (
                 <span className="text-amber-200/60">
                   {' '}Those are being read on the bare card — turning on "Assume chem style" in
