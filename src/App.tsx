@@ -16,6 +16,7 @@ import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, acce
 import { isModalOpen } from './utils/modalStack';
 import { bestScore, scoreAtPosition } from './utils/positionScore';
 import { playStyleScoreAt } from './utils/playStyleScore';
+import { psPlanFor } from './utils/psPlan';
 import {
   BASE_CARD_PATH_ID,
   DEFAULT_PATH_ID,
@@ -1909,6 +1910,14 @@ export default function App() {
               ? playStyleScoreAt(previewStats, previewPlayStyles, previewBio, previewScore.position, { style: previewScore.style })
               : null
           }
+          // A FUT Birthday, Futties or National Pride card assigns its own PlayStyles, so empty
+          // slots on one are a blank form rather than a verdict. What it reaches once they are
+          // filled is shown beside what it has.
+          psPotential={(() => {
+            if (!previewScore) return null;
+            const plan = psPlanFor(previewStats, previewPlayStyles, previewBio, previewScore.position);
+            return plan.canPick && plan.score > plan.before + 0.05 ? plan.score : null;
+          })()}
           scorePosition={previewScore?.position ?? scorePosition}
           igs={igs}
           faceSum={faceSum}

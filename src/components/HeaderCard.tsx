@@ -125,6 +125,11 @@ interface HeaderCardProps {
   /** The same for its PlayStyles, scored separately because it is a separate question. */
   psScore?: PlayStyleScore | null;
   /**
+   * What the PlayStyles would come to on a card whose rarity lets you assign them yourself, with
+   * the slots filled. Null when the card cannot pick, or when picking would not improve it.
+   */
+  psPotential?: number | null;
+  /**
    * Where the card is being judged: the slot it stands in on the pitch, or its primary position.
    * Every score on this card reads it, so a chain's steps are all measured at one place.
    */
@@ -303,6 +308,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onSetAssumeChemStyle,
   score,
   psScore,
+  psPotential,
   scorePosition
 }) => {
   const showEvoOvr = evoPreview && previewOvr !== activeBaseOvr;
@@ -710,6 +716,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 className="bg-gray-800/80 text-gray-200 px-2 py-0.5 rounded font-bold text-xs shadow-sm border border-gray-600 flex items-center gap-1 whitespace-nowrap"
                 title={
                   `PlayStyles ${psScore.score.toFixed(1)}/100 at ${psScore.position}` +
+                  (psPotential != null
+                    ? ` · this card assigns its own, and would reach ${psPotential.toFixed(1)} with the slots filled`
+                    : '') +
                   (psScore.detail.length > 0
                     ? ` · best: ${psScore.detail.slice(0, 3).map(d => `${d.name.replace(/\+/g, '')}${d.gold ? '+' : ''}`).join(', ')}`
                     : ' · none that this position uses') +
@@ -718,6 +727,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               >
                 <span className="text-gray-500 text-[9px] font-semibold tracking-wider">PS</span>
                 <span className={getStatColorClass(psScore.score)}>{psScore.score.toFixed(1)}</span>
+                {/* A card that assigns its own PlayStyles is not a card with none. Showing the bare
+                    0.0 on a FUT Birthday with empty slots reads as a verdict when it is a blank
+                    form — so what it reaches once filled is shown beside it. */}
+                {psPotential != null && (
+                  <>
+                    <span className="text-gray-600 text-[9px]">→</span>
+                    <span className={`${getStatColorClass(psPotential)} opacity-70`}>{psPotential.toFixed(1)}</span>
+                  </>
+                )}
               </div>
             )}
 
