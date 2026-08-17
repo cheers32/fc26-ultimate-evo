@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, psPlusCapOf, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { chainKeyOf } from '../utils/feedback';
 import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
@@ -1976,6 +1976,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               finished chain shows it without opening them. */}
                           {(evo.rarityChange
                             || maxRepeat > 1
+                            || psPlusCapOf(evo)
                             || (evo.positionsAdded && evo.positionsAdded.length > 0)
                             || (evo.requirements.positions && evo.requirements.positions.length > 0)
                             || displayExcludedPositions(evo).length > 0) && (
@@ -1993,6 +1994,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               {evo.rarityChange && (
                                 <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
                                   → {evo.rarityChange}
+                                </span>
+                              )}
+                              {psPlusCapOf(evo) && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/60 text-[8.5px] font-bold tracking-wide"
+                                  title={`Takes the card to ${psPlusCapOf(evo)} PlayStyle+ slots — one more than a card normally holds`}
+                                >
+                                  {psPlusCapOf(evo)}× PS+
                                 </span>
                               )}
                               {evo.positionsAdded && evo.positionsAdded.length > 0 && (

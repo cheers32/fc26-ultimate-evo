@@ -5,6 +5,7 @@ import { EvoDetailsModal } from './EvoDetailsModal';
 import { StatsGrid } from './StatsGrid';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore } from '../utils/evoEngine';
+import { psPlusCapOf } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import {
@@ -480,6 +481,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   );
   const canRecommend = useMemo(() => new Set(recommendationPool), [recommendationPool]);
   const [filterNewRarity, setFilterNewRarity] = useState(false);
+  /**
+   * Only evos that take the card past four PlayStyle+.
+   *
+   * A fifth gold slot is the one thing on a card that cannot be bought, picked or worked around —
+   * a handful of evos grant it and nothing else does, so "which of these opens the fifth" is a
+   * question worth being able to ask the list directly.
+   */
+  const [filterFifthPsPlus, setFilterFifthPsPlus] = useState(false);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
   // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
   // opposite instead of leaving a combination that matches nothing.
@@ -924,6 +933,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (!showNotIncluded && !canRecommend.has(id)) return false;
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterNewRarity && !evo.rarityChange) return false;
+    if (filterFifthPsPlus && !psPlusCapOf(evo)) return false;
     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
     if (filterNoRarity && evo.rarityChange) return false;
     if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
@@ -1094,6 +1104,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                         {/* What this step asks for and turns the card into, same badges as the pool
                             below and the chain on the player panel. */}
                         {(evo.rarityChange
+                          || psPlusCapOf(evo)
                           || (evo.positionsAdded && evo.positionsAdded.length > 0)
                           || (evo.requirements.positions && evo.requirements.positions.length > 0)
                           || displayExcludedPositions(evo).length > 0) && (
@@ -1111,6 +1122,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             {evo.rarityChange && (
                               <span className="px-1.5 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 text-[8.5px] font-bold tracking-wide">
                                 → {evo.rarityChange}
+                              </span>
+                            )}
+                            {/* The scarcest thing an evo hands over: a slot the card could not
+                                otherwise hold, and cannot get any other way. */}
+                            {psPlusCapOf(evo) && (
+                              <span
+                                className="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/60 text-[8.5px] font-bold tracking-wide"
+                                title={`Takes the card to ${psPlusCapOf(evo)} PlayStyle+ slots — one more than a card normally holds`}
+                              >
+                                {psPlusCapOf(evo)}× PS+
                               </span>
                             )}
                             {evo.positionsAdded && evo.positionsAdded.length > 0 && (
@@ -1422,6 +1443,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   }`}
                 >
                   New Rarity
+                </button>
+                <button
+                  onClick={() => setFilterFifthPsPlus(!filterFifthPsPlus)}
+                  title="Only evos that take the card past four PlayStyle+ — the one slot nothing else can give it"
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterFifthPsPlus ? 'bg-amber-400 text-black border-amber-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  5th PS+
                 </button>
                 <button
                   onClick={() => { setFilterNoRarity(!filterNoRarity); setFilterNewRarity(false); }}

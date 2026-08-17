@@ -283,6 +283,25 @@ export function formatEvoTerms(evo: import('../types/player').EvolutionDefinitio
  * that one says nothing about the evo and only crowds out the badges that do — every other
  * exclusion stays. Shared so each card that lists requirements makes the same call.
  */
+/**
+ * The standard number of PlayStyle+ slots a card carries. An evo allowed more than this is not
+ * merely generous with its own grants — it takes the card past what it could otherwise hold.
+ */
+export const STANDARD_PS_PLUS_SLOTS = 4;
+
+/**
+ * The PlayStyle+ cap an evo raises the card to, or null when it does not raise one.
+ *
+ * This is the scarcest thing an evo can hand over. A fifth gold slot cannot be bought, picked or
+ * worked around — only a handful of evos grant one, and a card that has spent its four is finished
+ * on that axis until one of them comes along. Worth saying on the card rather than leaving in the
+ * data for someone to find.
+ */
+export function psPlusCapOf(evo: import('../types/player').EvolutionDefinition): number | null {
+  const cap = evo.playStylesLimit?.gold;
+  return cap !== undefined && cap > STANDARD_PS_PLUS_SLOTS ? cap : null;
+}
+
 export function displayExcludedPositions(evo: import('../types/player').EvolutionDefinition): string[] {
   return (evo.requirements.excludedPositions || []).filter(pos => pos !== 'GK');
 }
