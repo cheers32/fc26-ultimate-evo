@@ -484,6 +484,16 @@ export function applyEvo(
     // PlayStyles past the card's capacity, and — the one that finally pinned it — Let Me Cook add
     // to a Petit already holding eight against that evo's limit of seven. Route One withholding
     // Block from Rabiot at seven of seven is the same rule seen from the other side.
+    // An evo that allows more PlayStyle+ than the card has room for raises the card's own capacity,
+    // not just its own allowance. Counter Culture takes a four-slot card to five, and the fifth slot
+    // stays a slot: it is what the card holds afterwards, and what the picker may fill if the evo
+    // leaves it empty. Left unraised, a card could finish holding five while every later reading —
+    // the free-pick picker most of all — still believed it had four.
+    currentPlayStyles.limits = {
+      gold: Math.max(currentPlayStyles.limits.gold, evo.playStylesLimit?.gold ?? 0),
+      silver: Math.max(currentPlayStyles.limits.silver, evo.playStylesLimit?.silver ?? 0)
+    };
+
     const goldLimit = evo.playStylesLimit?.gold ?? 99;
 
     /**
