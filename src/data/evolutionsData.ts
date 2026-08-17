@@ -90,6 +90,9 @@ import { theHighLine1200 } from './evolutions/theHighLine1200';
 import { maxSweat1201 } from './evolutions/maxSweat1201';
 import { bornStriker1202 } from './evolutions/bornStriker1202';
 import { theLandlord1203 } from './evolutions/theLandlord1203';
+import { guardDuty1258 } from './evolutions/guardDuty1258';
+import { finalTouches1259 } from './evolutions/finalTouches1259';
+import { the12thMan1260 } from './evolutions/the12thMan1260';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
 import { postureCheck1206 } from './evolutions/postureCheck1206';
@@ -211,6 +214,9 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1201': maxSweat1201,
   '1202': bornStriker1202,
   '1203': theLandlord1203,
+  '1258': guardDuty1258,
+  '1259': finalTouches1259,
+  '1260': the12thMan1260,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
   '1206': postureCheck1206,
