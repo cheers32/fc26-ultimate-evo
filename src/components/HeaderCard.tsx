@@ -1939,9 +1939,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   const afterPsPlus = stepResult 
                     ? (stepResult.playStylesAfter.base.gold.length + stepResult.playStylesAfter.ev.gold.length)
                     : '?';
-                  const baseClass = isStepActive
-                    ? "bg-[#1f211f] text-gray-200 border-[#EBB626] ring-1 ring-[#EBB626] shadow-[0_0_8px_rgba(235,182,38,0.3)] hover:text-white"
-                    : "bg-[#2a2d2a] text-gray-400 border-gray-600 hover:border-gray-400 hover:text-gray-200";
                   // Everything up to the chosen base is locked in as the starting point.
                   const isBase = renderPath.id === activePathId && idx === baseIndex;
                   const inBasePrefix = renderPath.id === activePathId && idx <= baseIndex;
@@ -1949,6 +1946,21 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   // the marker on step n means every step up to n is behind you.
                   const isDone = idx <= (renderPath.doneUpTo ?? -1);
                   const isLastDone = idx === (renderPath.doneUpTo ?? -1);
+                  // How far you have got, as a colour rather than a marker you have to look for.
+                  //
+                  // Only once a build has been started: on a path with no progress every step is
+                  // "still to do", which is true and says nothing, and painting the whole row for
+                  // it would drown the two colours where they do mean something.
+                  const started = (renderPath.doneUpTo ?? -1) >= 0;
+                  const doneTint = started && isDone
+                    ? 'bg-green-950/40 border-fcGreen/40 hover:border-fcGreen/70'
+                    : null;
+                  const aheadTint = started && !isDone
+                    ? 'bg-amber-950/25 border-amber-800/40 hover:border-amber-600/70'
+                    : null;
+                  const baseClass = isStepActive
+                    ? "bg-[#1f211f] text-gray-200 border-[#EBB626] ring-1 ring-[#EBB626] shadow-[0_0_8px_rgba(235,182,38,0.3)] hover:text-white"
+                    : `${doneTint ?? aheadTint ?? 'bg-[#2a2d2a] border-gray-600 hover:border-gray-400'} text-gray-400 hover:text-gray-200`;
 
                   // A repeatable evo can appear several times in one chain, and on a path the
                   // useful part isn't that it repeats but which run this is and how many are left —
