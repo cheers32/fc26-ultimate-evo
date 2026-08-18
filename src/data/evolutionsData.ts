@@ -93,6 +93,7 @@ import { theLandlord1203 } from './evolutions/theLandlord1203';
 import { guardDuty1258 } from './evolutions/guardDuty1258';
 import { finalTouches1259 } from './evolutions/finalTouches1259';
 import { the12thMan1260 } from './evolutions/the12thMan1260';
+import { wallOfFame1261 } from './evolutions/wallOfFame1261';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
 import { postureCheck1206 } from './evolutions/postureCheck1206';
@@ -120,6 +121,7 @@ import { pocketInspector1252 } from './evolutions/pocketInspector1252';
 import { creativeLicense1253 } from './evolutions/creativeLicense1253';
 import { classOnGrass1254 } from './evolutions/classOnGrass1254';
 import { fidgetSpinner1255 } from './evolutions/fidgetSpinner1255';
+import { ninetyNineSho1256 } from './evolutions/ninetyNineSho1256';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '748': crunchTime748,
@@ -217,6 +219,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1258': guardDuty1258,
   '1259': finalTouches1259,
   '1260': the12thMan1260,
+  '1261': wallOfFame1261,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
   '1206': postureCheck1206,
@@ -242,7 +245,8 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1252': pocketInspector1252,
   '1253': creativeLicense1253,
   '1254': classOnGrass1254,
-  '1255': fidgetSpinner1255
+  '1255': fidgetSpinner1255,
+  '1256': ninetyNineSho1256
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
