@@ -15,7 +15,9 @@ interface EditPlayerModalProps {
     newPositions: string,
     gold: string[],
     silver: string[],
-    newOvr: number
+    newOvr: number,
+    /** How many PlayStyle+ and PlayStyle slots the card actually has. */
+    slots: { gold: number; silver: number }
   ) => void;
 }
 
@@ -27,6 +29,16 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
   // Held as text so the field can be emptied while typing; an empty or unreadable one saves as
   // the OVR the card already had.
   const [ovr, setOvr] = useState(String(player.ovr.base));
+  /**
+   * How many PlayStyle slots the card has.
+   *
+   * Never read on import — every card was filed as four and eight, which is a guess dressed as
+   * data. It decides whether an evo's PlayStyle lands: a card with seven plain slots that the model
+   * believes has eight gets handed one the game never gives it. FUTBIN does not print the number
+   * (it lists what a card has, not what it can hold), so it has to be typed in from the card.
+   */
+  const [goldSlots, setGoldSlots] = useState(String(player.playStyles.limits.gold));
+  const [silverSlots, setSilverSlots] = useState(String(player.playStyles.limits.silver));
 
   const [goldPs, setGoldPs] = useState<Set<string>>(new Set(player.playStyles.base.gold.map(p => p.replace('+', ''))));
   const [silverPs, setSilverPs] = useState<Set<string>>(new Set(player.playStyles.base.silver));
@@ -42,7 +54,11 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
       positionsStr,
       Array.from(goldPs).map(ps => ps + '+'),
       Array.from(silverPs),
-      Number.isFinite(Number(ovr)) && Number(ovr) > 0 ? Number(ovr) : player.ovr.base
+      Number.isFinite(Number(ovr)) && Number(ovr) > 0 ? Number(ovr) : player.ovr.base,
+      {
+        gold: Number(goldSlots) > 0 ? Number(goldSlots) : player.playStyles.limits.gold,
+        silver: Number(silverSlots) > 0 ? Number(silverSlots) : player.playStyles.limits.silver
+      }
     );
     onClose();
   };
@@ -103,6 +119,32 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
                 className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
               />
             </div>
+          </div>
+
+          {/* How many slots the card has, which nothing else in the app can find out. */}
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-2 w-32">
+              <label className="text-sm font-semibold text-gray-300">PlayStyle+ slots</label>
+              <input
+                type="number" min={0} max={9}
+                value={goldSlots}
+                onChange={(e) => setGoldSlots(e.target.value)}
+                className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
+              />
+            </div>
+            <div className="flex flex-col gap-2 w-32">
+              <label className="text-sm font-semibold text-gray-300">PlayStyle slots</label>
+              <input
+                type="number" min={0} max={14}
+                value={silverSlots}
+                onChange={(e) => setSilverSlots(e.target.value)}
+                className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
+              />
+            </div>
+            <p className="text-[11px] text-gray-500 self-end pb-3 flex-1">
+              How many the card can hold, empty ones included — imports guess 4 and 8, and an evo
+              will fill a slot the model thinks is there.
+            </p>
           </div>
 
           {/* Futbin URL */}

@@ -270,7 +270,7 @@ export default function App() {
     leaveCard(id);
   };
 
-  const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[], newOvr?: number) => {
+  const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[], newOvr?: number, slots?: { gold: number; silver: number }) => {
     // If it's a built-in player, we create an override in customPlayers
     const targetPlayer = customPlayers[id] || playersDatabase[id];
     if (targetPlayer) {
@@ -288,6 +288,8 @@ export default function App() {
         },
         playStyles: {
           ...targetPlayer.playStyles,
+          // What the card can hold. Imports guess four and eight; only the card knows.
+          limits: slots ?? targetPlayer.playStyles.limits,
           base: {
             ...targetPlayer.playStyles.base,
             gold: goldPs || targetPlayer.playStyles.base.gold,

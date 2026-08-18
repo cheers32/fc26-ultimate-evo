@@ -18,7 +18,7 @@ interface PlayerSelectionModalProps {
   onUnhidePlayer?: (id: string) => void;
   /** Take a card out of the shared library, for every team. Not reversible. */
   onDeletePlayer?: (id: string) => void;
-  onEditPlayerAvatar?: (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, gold: string[], silver: string[], newOvr: number) => void;
+  onEditPlayerAvatar?: (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, gold: string[], silver: string[], newOvr: number, slots?: { gold: number; silver: number }) => void;
 }
 
 export function PlayerSelectionModal({
@@ -290,8 +290,8 @@ export function PlayerSelectionModal({
         <EditPlayerModal
           player={players[editingPlayerId]}
           onClose={() => setEditingPlayerId(null)}
-          onSave={(id, url, name, futbinUrl, positions, gold, silver, ovr) => {
-            if (onEditPlayerAvatar) onEditPlayerAvatar(id, url, name, futbinUrl, positions, gold, silver, ovr);
+          onSave={(id, url, name, futbinUrl, positions, gold, silver, ovr, slots) => {
+            if (onEditPlayerAvatar) onEditPlayerAvatar(id, url, name, futbinUrl, positions, gold, silver, ovr, slots);
             setEditingPlayerId(null);
           }}
         />
