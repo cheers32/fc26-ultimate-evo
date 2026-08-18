@@ -188,10 +188,10 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     note: 'The battery. On the card that is manually dragged back to defend every possession this is the whole point.'
   },
   'Press Proven': {
-    axes: { phy: 0.6, def: 0.4 },
+    axes: { phy: 1 },
     tier: 'core',
     gate: { stamina: 82, aggression: 78 },
-    note: 'Not an overlap with Relentless, on the authority of someone who plays both: they read as the same idea on paper and do different jobs on the pitch, so a card holding one is not done wanting the other.'
+    note: 'Physical, not defensive. Written as 60/40 it read as a midfielder\'s PlayStyle and scored near nothing on a striker — but what it does on the pitch, on the word of someone who has played two Ronaldos with it, is let a forward hold the ball up under contact. That is the physical axis doing the work, and a striker uses it. Also not an overlap with Relentless: they read as the same idea on paper and do different jobs.'
   },
   'Acrobatic': { axes: { sho: 0.6, dri: 0.4 }, tier: 'off' },
   // Set pieces and crosses are a standing source of goals at both ends, so a card that wins the ball
