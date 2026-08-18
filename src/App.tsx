@@ -1791,6 +1791,15 @@ export default function App() {
 
   const currentOvrVal = previewOvr;
 
+  /**
+   * The tab says who is open and what he is worth, because a browser with six of these in it is
+   * otherwise six identical tabs. The OVR is the build on screen rather than the card's own, since
+   * that is the number the tab is being kept open to watch.
+   */
+  useEffect(() => {
+    document.title = `${playerBio.name} - ${previewOvr} - FC Evo`;
+  }, [playerBio.name, previewOvr]);
+
   const activeEvo: EvolutionDefinition | null = useMemo(() => {
     if (previewNode < 0 || baseNode >= previewNode) return null;
 
