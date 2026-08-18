@@ -372,7 +372,7 @@ export function templatesFor(positions: string[]): BuildTemplate[] {
 
 /**
  * Whether a card can read an archetype at all, before any stat or style is considered. Height is
- * the one input no evo can change: below 185 a card will never be Lengthy, above 182 it will never
+ * the one input no evo can change: below 185 a card will never be Lengthy, above 183 it will never
  * be Explosive. This is what stops a 180cm icon being handed a Lengthy destroyer plan that quietly
  * demoted itself to Controlled — a plan the card cannot carry out is not a fallback, it is the
  * wrong plan, and printing it is how a shortlist fills up with strength on a playmaker.
@@ -380,7 +380,7 @@ export function templatesFor(positions: string[]): BuildTemplate[] {
 export function archetypePossible(fam: AccelerateFamily, heightCm?: number): boolean {
   if (heightCm === undefined) return true;
   if (fam === 'Lengthy') return heightCm >= 185;
-  if (fam === 'Explosive') return heightCm <= 182;
+  if (fam === 'Explosive') return heightCm <= 183;
   return true;
 }
 
