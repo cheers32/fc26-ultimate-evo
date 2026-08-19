@@ -41,5 +41,10 @@ export const deadballMastery1061: EvolutionDefinition = {
       ]
     }
   ],
-  maxRepeatable: 1
+  maxRepeatable: 1,
+  // Ships off, because the one requirement that matters here is the one the schema cannot express.
+  // With no player gate and no OVR cap it is eligible for every card in the library, and a step that
+  // costs nothing and grants a gold PlayStyle turns up in recommendations for people who will never
+  // be able to run it. Whoever actually holds Forlan can switch it back on.
+  defaultDisabled: true
 };
