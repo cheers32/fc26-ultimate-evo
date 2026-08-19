@@ -1761,8 +1761,8 @@ export const playersDatabase: Record<string, PlayerData> = {
       }
     }
   },
-  'yamal-90': {
-    id: 'yamal-90',
+  'yamal-92': {
+    id: 'yamal-92',
     futbinLink: 'https://www.futbin.com/26/player/23805/lamine-yamal-nasraoui-ebana',
     avatarUrl: 'https://cdn3.futbin.com/content/fifa26/img/players/p117718155.png?fm=png&ixlib=java-2.1.0&verzion=2&w=485&s=c8b25d0593cc1441ac640d4127962c9e',
     bio: {

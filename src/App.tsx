@@ -43,7 +43,9 @@ import {
   readActiveTeamId,
   writeActiveTeamId,
   readActivePlayerId,
-  writeActivePlayerId
+  writeActivePlayerId,
+  migratePlayerId,
+  migratePlayerKeys
 } from './utils/teamStore';
 import { TeamListPage } from './components/TeamListPage';
 import { EvolutionDefinition } from './types/player';
@@ -161,7 +163,11 @@ export default function App() {
   // Repair custom players that were saved without a full stat block, whatever they came from —
   // the shared copy arrives after mount, so this can't be a one-off at initialisation.
   const customPlayers = useMemo(() => {
-    Object.values(storedCustomPlayers || {}).forEach((p: any) => {
+    // Renamed catalogue ids, applied here too: an override or an import saved under the old id has
+    // to follow the record it overrides, or it lingers as a second card the app can never reconcile.
+    const stored = migratePlayerKeys(storedCustomPlayers || {});
+    Object.values(stored).forEach((p: any) => {
+      if (p && p.id) p.id = migratePlayerId(p.id);
       if (p && p.stats) {
         ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].forEach(f => {
           if (!p.stats[f]) {
@@ -170,7 +176,7 @@ export default function App() {
         });
       }
     });
-    return storedCustomPlayers || {};
+    return stored;
   }, [storedCustomPlayers]);
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -349,7 +355,7 @@ export default function App() {
   /** The whole shared catalogue, before this team's own opinion of it. */
   const libraryPlayers = useMemo(() => {
     const combined = { ...playersDatabase, ...customPlayers };
-    deletedDatabasePlayers.forEach(id => delete combined[id]);
+    deletedDatabasePlayers.forEach(id => delete combined[migratePlayerId(id)]);
     return combined;
   }, [customPlayers, deletedDatabasePlayers]);
 

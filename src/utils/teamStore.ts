@@ -49,6 +49,59 @@ export interface TeamState extends TeamSummary {
 const ACTIVE_TEAM_KEY = 'futEvo_active_team';
 const ACTIVE_PLAYER_KEY = 'futEvo_active_player';
 
+/**
+ * Player ids that have been renamed in the catalogue, old → new.
+ *
+ * A record's id is `name-ovr`, so re-pointing one at a different card of the same player leaves the
+ * id lying — `yamal-90` naming a 92. Renaming it is the fix, but the id is also the key everything
+ * stored hangs off: starred builds, squad slots, the hidden list, the last-opened pointer. Renaming
+ * without moving those orphans them — the build survives in the store and points at a player the
+ * catalogue no longer has, which reads to the user as "my save vanished".
+ *
+ * So every read of stored state runs through here. Rewriting on read rather than on write means the
+ * old data stays valid until something writes it back, which is what makes this safe to ship: a
+ * client that hasn't loaded the new code still finds what it wrote.
+ */
+const PLAYER_ID_MIGRATIONS: Record<string, string> = {
+  'yamal-90': 'yamal-92'
+};
+
+export function migratePlayerId(id: string): string {
+  return PLAYER_ID_MIGRATIONS[id] ?? id;
+}
+
+/** The same, over a map keyed by player id — later keys win, so a real record beats a migrated one. */
+export function migratePlayerKeys<T>(byId: Record<string, T>): Record<string, T> {
+  let touched = false;
+  const out: Record<string, T> = {};
+  for (const [id, value] of Object.entries(byId)) {
+    const next = migratePlayerId(id);
+    if (next !== id) touched = true;
+    // An already-migrated entry is the newer one; never let the stale key overwrite it.
+    if (next in out && next !== id) continue;
+    out[next] = value;
+  }
+  return touched ? out : byId;
+}
+
+/** Every player id a team holds, moved at once. */
+function migrateTeam(team: TeamState): TeamState {
+  return {
+    ...team,
+    savedPaths: team.savedPaths ? migratePlayerKeys(team.savedPaths) : team.savedPaths,
+    hiddenPlayers: team.hiddenPlayers?.map(migratePlayerId),
+    squads: team.squads?.map(squad => ({
+      ...squad,
+      slots: Object.fromEntries(
+        Object.entries(squad.slots || {}).map(([slot, entry]) => [
+          slot,
+          entry?.playerId ? { ...entry, playerId: migratePlayerId(entry.playerId) } : entry
+        ])
+      )
+    }))
+  };
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -139,7 +192,8 @@ export function writeActiveTeamId(teamId: string | null): void {
  */
 export function readActivePlayerId(): string | null {
   try {
-    return localStorage.getItem(ACTIVE_PLAYER_KEY);
+    const stored = localStorage.getItem(ACTIVE_PLAYER_KEY);
+    return stored ? migratePlayerId(stored) : stored;
   } catch {
     return null;
   }
@@ -218,7 +272,7 @@ export function useTeam(teamId: string | null) {
     teamApi
       .get(teamId)
       .then(next => {
-        if (active) setTeam(next);
+        if (active) setTeam(migrateTeam(next));
       })
       .catch(err => {
         if (active) setError(err.message);
