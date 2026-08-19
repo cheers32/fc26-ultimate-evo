@@ -2,7 +2,24 @@ import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { FC26_PLAYSTYLES, getPlayStyleIconUrl } from '../utils/playstyles';
+import { FREE_PLAYSTYLE_RARITIES } from '../utils/evoEngine';
 import { useModal } from '../utils/modalStack';
+
+/**
+ * The rarities that are not a picker, offered so a mis-read import can be corrected to the truth
+ * rather than only to something convenient.
+ *
+ * Every one an evo gates on is here — an evo that requires Futties or refuses World Tour Silver
+ * Stars can only be judged if the card can say which it is — alongside the versions the catalogue
+ * already ships. The list is not exhaustive and does not need to be: the card's current value is
+ * always offered, so a rarity nobody has typed yet survives being edited.
+ */
+const OTHER_RARITIES = [
+  'Base Icon', 'Cornerstones', 'Festival of Football Captains', 'Futties Evo', 'Gold Rare',
+  'Greats of the Game Icon', 'Icon', 'Knockout Royalty Icon', 'Path to Glory', 'Prime Heroes',
+  'Summer Stars', 'Team of the Season', 'Team of the Week', 'Thunderstruck', 'Time Warp',
+  'TOTY', 'Trophy Titans Icon', 'Ultimate Scream', 'World Tour Silver Stars', 'Custom'
+];
 
 interface EditPlayerModalProps {
   player: PlayerData;
@@ -17,7 +34,9 @@ interface EditPlayerModalProps {
     silver: string[],
     newOvr: number,
     /** How many PlayStyle+ and PlayStyle slots the card actually has. */
-    slots: { gold: number; silver: number }
+    slots: { gold: number; silver: number },
+    /** The card's version. Decides evo eligibility and whether PlayStyles can be picked at all. */
+    newRarity: string
   ) => void;
 }
 
@@ -29,6 +48,16 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
   // Held as text so the field can be emptied while typing; an empty or unreadable one saves as
   // the OVR the card already had.
   const [ovr, setOvr] = useState(String(player.ovr.base));
+  /**
+   * The card's version, which the importer guesses at and often gets wrong.
+   *
+   * It is not decoration. Evos require one or rule one out, and five of them hand the player the
+   * PlayStyle picker — a card left on the importer's "Custom" fallback is ruled out by nothing,
+   * matches nothing, and silently cannot pick, which quietly invalidates every PlayStyle the
+   * recommendations assumed it could choose.
+   */
+  const [rarity, setRarity] = useState(player.bio.rarity || '');
+
   /**
    * How many PlayStyle slots the card has.
    *
@@ -58,7 +87,8 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
       {
         gold: Number(goldSlots) > 0 ? Number(goldSlots) : player.playStyles.limits.gold,
         silver: Number(silverSlots) > 0 ? Number(silverSlots) : player.playStyles.limits.silver
-      }
+      },
+      rarity.trim() || player.bio.rarity
     );
     onClose();
   };
@@ -119,6 +149,34 @@ export function EditPlayerModal({ player, onClose, onSave }: EditPlayerModalProp
                 className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
               />
             </div>
+          </div>
+
+          {/* The version. Grouped so the five that hand over the PlayStyle picker are one glance
+              away — that is the difference the field exists to make, and it is invisible in a flat
+              alphabetical list. The card's own value is always present, even if unknown here, so
+              opening this dialog can never silently rewrite a rarity nobody has listed yet. */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-gray-300">Rarity / Version</label>
+            <select
+              value={rarity}
+              onChange={(e) => setRarity(e.target.value)}
+              className="w-full bg-[#0f100f] border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fcGreen focus:ring-1 focus:ring-fcGreen transition-all"
+            >
+              {rarity && ![...FREE_PLAYSTYLE_RARITIES, ...OTHER_RARITIES].includes(rarity) && (
+                <option value={rarity}>{rarity} (as imported)</option>
+              )}
+              <optgroup label="Picks its own PlayStyles">
+                {FREE_PLAYSTYLE_RARITIES.map(r => <option key={r} value={r}>{r}</option>)}
+              </optgroup>
+              <optgroup label="Everything else">
+                {OTHER_RARITIES.map(r => <option key={r} value={r}>{r}</option>)}
+              </optgroup>
+            </select>
+            <p className="text-[11px] text-gray-500">
+              {FREE_PLAYSTYLE_RARITIES.includes(rarity)
+                ? 'This card assigns its own PlayStyles — empty slots are worth whatever the best ones for the position are.'
+                : 'Evos require or rule out a version, and five of them let the card pick its own PlayStyles. An import that guessed "Custom" matches none of that.'}
+            </p>
           </div>
 
           {/* How many slots the card has, which nothing else in the app can find out. */}

@@ -276,7 +276,7 @@ export default function App() {
     leaveCard(id);
   };
 
-  const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[], newOvr?: number, slots?: { gold: number; silver: number }) => {
+  const handleEditPlayerAvatar = (id: string, newUrl: string, newName: string, newFutbinUrl: string, newPositions: string, goldPs: string[], silverPs: string[], newOvr?: number, slots?: { gold: number; silver: number }, newRarity?: string) => {
     // If it's a built-in player, we create an override in customPlayers
     const targetPlayer = customPlayers[id] || playersDatabase[id];
     if (targetPlayer) {
@@ -290,7 +290,11 @@ export default function App() {
         bio: {
           ...targetPlayer.bio,
           name: newName || targetPlayer.bio.name,
-          primaryPositions: newPositions || targetPlayer.bio.primaryPositions
+          primaryPositions: newPositions || targetPlayer.bio.primaryPositions,
+          // Which version the card is, which the importer only guesses. Evos gate on it, and five
+          // rarities hand over the PlayStyle picker, so an import stuck on "Custom" is a card the
+          // model believes can neither qualify for those evos nor choose a PlayStyle.
+          rarity: newRarity || targetPlayer.bio.rarity
         },
         playStyles: {
           ...targetPlayer.playStyles,
