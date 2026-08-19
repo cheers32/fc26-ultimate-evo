@@ -13,7 +13,9 @@ export const thePivotPoint1245: EvolutionDefinition = {
     maxPlayStyles: 10,
     excludedPositions: ['GK']
   },
-  ovrBoost: { boost: 2, limit: 98 },
+  // FUTBIN prints Overall bare, like the other uncapped upgrades here — and repeatable eight times
+  // is what makes the difference matter: at 98 the repeats stop one short of the ceiling.
+  ovrBoost: { boost: 2, limit: 99 },
   // Small boosts spread over most of the card. Where FUTBIN prints no cap the stat is only held
   // by the 99 ceiling, which is what 99 means here.
   subStatBoosts: {
@@ -50,7 +52,7 @@ export const thePivotPoint1245: EvolutionDefinition = {
     {
       name: 'Level 1',
       upgrades: [
-        'OVR +2 (98)',
+        'OVR +2',
         'Crossing +3 (97)',
         'Jumping +5 (98)',
         'Long Passing +3',
