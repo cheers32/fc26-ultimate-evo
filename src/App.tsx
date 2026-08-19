@@ -743,10 +743,21 @@ export default function App() {
     JSON.stringify(paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>')]));
 
   const starredForPlayer = useMemo(
-    () =>
-      withoutSteps(
+    () => {
+      // A build you made by hand is data; an Analyze result is a query you can run again.
+      //
+      // Only starred builds used to be written, and the rest were called drafts — but a chip you
+      // appended two evos to by hand is not a draft, it is work, and it was being discarded on
+      // reload with no warning and no way to get it back. Starring is a shortlist marker, not a
+      // save instruction, and nothing on screen said it was load-bearing.
+      //
+      // So everything in `manualPaths` is stored, starred or not. `generatedPaths` still is not:
+      // an Analyze run produces dozens, they are reproducible from the same pool, and keeping them
+      // would grow the team's record without preserving anything you could not regenerate.
+      const manualIds = new Set(manualPaths.map(p => p.id));
+      return withoutSteps(
         [...generatedPaths, ...manualPaths]
-          .filter(p => p.isFavorite || isInGamePath(p))
+          .filter(p => p.isFavorite || isInGamePath(p) || manualIds.has(p.id))
           // Stored green, not merely painted green: the record keeps its colour on the next card,
           // the next device and the next release, without this rule having to run again to restore it.
           .map(p =>
@@ -754,7 +765,8 @@ export default function App() {
               ? { ...p, isFavorite: true, starTier: IN_GAME_STAR_TIER as NonNullable<EvolutionPath['starTier']> }
               : p
           )
-      ),
+      );
+    },
     [generatedPaths, manualPaths]
   );
 
@@ -766,6 +778,26 @@ export default function App() {
   const hydratedPlayers = useRef<Set<string>>(new Set());
 
   /**
+   * What hydration found stored for each player, and whether it has reached the workbench yet.
+   *
+   * `hydratedPlayers` alone was not enough, and the gap between the two cost builds. Hydration adds
+   * to it synchronously but hands the restored builds over through `setPlayerStates`, which lands on
+   * the *next* render. Both effects belong to this component and React runs them in order within one
+   * commit — so in the very commit hydration marks the player, the persist effect below already sees
+   * the flag while `starredForPlayer` is still derived from the empty pre-restore state. Stored is
+   * non-empty, on-screen is empty, the keys differ, and it writes the emptiness back. An empty write
+   * deletes the player's entry outright, so a build that took an evening to find is gone.
+   *
+   * The next render usually wrote it back and hid the damage — but "usually" is doing real work
+   * there: the delete and the restore are two PATCHes in flight at once, and nothing orders them.
+   *
+   * So a player is only settled once every build hydration found is actually on screen. Sticky,
+   * because after that the user removing one is a real removal and must persist.
+   */
+  const hydratedIds = useRef<Map<string, string[]>>(new Map());
+  const settledPlayers = useRef<Set<string>>(new Set());
+
+  /**
    * Changing team empties the workbench.
    *
    * Builds are the team's, so the ones on screen mean nothing under the next one. Leaving them
@@ -775,6 +807,8 @@ export default function App() {
    */
   useEffect(() => {
     hydratedPlayers.current = new Set();
+    hydratedIds.current = new Map();
+    settledPlayers.current = new Set();
     setPlayerStates({});
     setPendingOpen(null);
     setActiveSquadId(null);
@@ -787,6 +821,7 @@ export default function App() {
     hydratedPlayers.current.add(selectedPlayerId);
 
     const saved = team.savedPaths?.[selectedPlayerId];
+    hydratedIds.current.set(selectedPlayerId, (saved || []).map(p => p.id));
     if (!saved || saved.length === 0) return;
 
     setPlayerStates(prev => {
@@ -814,6 +849,17 @@ export default function App() {
 
   useEffect(() => {
     if (!team || !hydratedPlayers.current.has(selectedPlayerId)) return;
+
+    // Not until what was stored is actually on screen — see `hydratedIds`. Writing before that
+    // sends an empty set for a player whose builds are still one render away, and empty deletes.
+    if (!settledPlayers.current.has(selectedPlayerId)) {
+      const expected = hydratedIds.current.get(selectedPlayerId);
+      if (expected === undefined) return;
+      const present = new Set(starredForPlayer.map(p => p.id));
+      if (!expected.every(id => present.has(id))) return;
+      settledPlayers.current.add(selectedPlayerId);
+    }
+
     const stored = team.savedPaths?.[selectedPlayerId] || [];
     if (starredKey(stored) === starredKey(starredForPlayer)) return;
     setSavedPathsForPlayer(selectedPlayerId, starredForPlayer);
