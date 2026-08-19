@@ -94,6 +94,7 @@ import { guardDuty1258 } from './evolutions/guardDuty1258';
 import { finalTouches1259 } from './evolutions/finalTouches1259';
 import { the12thMan1260 } from './evolutions/the12thMan1260';
 import { wallOfFame1261 } from './evolutions/wallOfFame1261';
+import { theVanguard1262 } from './evolutions/theVanguard1262';
 import { instantMagnet2446 } from './evolutions/instantMagnet2446';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
@@ -221,6 +222,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1259': finalTouches1259,
   '1260': the12thMan1260,
   '1261': wallOfFame1261,
+  '1262': theVanguard1262,
   '2446': instantMagnet2446,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
