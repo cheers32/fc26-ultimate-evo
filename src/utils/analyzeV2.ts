@@ -5,6 +5,7 @@ import { STYLE_OPTIONS, optimistic, withStyle, withStyleStats } from './chem';
 import {
   ChainSearchInput,
   FREE_PLAYSTYLE_RARITIES,
+  FullChainResult,
   buildPlayStyleNodeId,
   canPickPlayStyles,
   forEachChain,
@@ -117,6 +118,23 @@ const SAME_IGS = 12;
  * evo to run, not a change to how builds are ordered, so it stays.
  */
 const PS_WORTH = 0;
+
+/**
+ * What a position an evo hands the card is worth to its row, and how many are counted.
+ *
+ * Positions were the one thing a chain could buy that the ranking could not see at all. A step that
+ * adds LM and RM changes where the card can be fielded for the rest of its life, and no later evo
+ * gives it back — but it scores nothing on the plan, so the audit read it as a step doing nothing
+ * and dropped it. Tiny Tim on a striker is exactly that: six IGS of stats, two positions, deleted.
+ *
+ * Deliberately small. This is not a claim that a second position is worth a third of a point of the
+ * plan; it is enough to clear `TRIM_EPS`, so a step that buys one survives the audit and reaches the
+ * row where you can see it. Ordering between builds that differ on real stats is untouched.
+ *
+ * Counted to three because the fourth position on a card is not doing the job the first one did.
+ */
+const POSITION_WORTH = 0.4;
+const POSITIONS_COUNTED = 3;
 
 /**
  * What a point of a stat is worth to a plan, counted from the pass mark rather than from zero.
@@ -622,8 +640,19 @@ export function analyzeEvolutionsV2(
     return plan;
   };
 
-  /** The two scores in one currency, which is the only place they are ever added together. */
-  const totalOf = (statScore: number, ps: PsPlan) => statScore + (psWeight * ps.score) / 100;
+  /** Positions the chain hands the card that it did not start with — see `POSITION_WORTH`. */
+  const positionsGained = (sim: FullChainResult | null) => {
+    if (!sim) return 0;
+    const got = sim.finalBio.primaryPositions
+      .split(',').map((p: string) => p.trim().toUpperCase()).filter(Boolean);
+    return got.filter((p: string) => !basePositions.has(p)).length;
+  };
+
+  /** The scores in one currency, which is the only place they are ever added together. */
+  const totalOf = (statScore: number, ps: PsPlan, sim?: FullChainResult | null) =>
+    statScore
+    + (psWeight * ps.score) / 100
+    + POSITION_WORTH * Math.min(positionsGained(sim ?? null), POSITIONS_COUNTED);
 
   /**
    * Where in the chain to make the picks.
@@ -752,7 +781,7 @@ export function analyzeEvolutionsV2(
     if (!byChem.has(arch)) return null;
     const played = playedAs(got.subs, t, arch);
     const ps = psOfChain(chainIds, got.sim, t, played.style);
-    return { ...got, played, ps, total: totalOf(played.s.score, ps) };
+    return { ...got, played, ps, total: totalOf(played.s.score, ps, got.sim) };
   };
 
   const auditChain = (chainIds: string[], t: BuildTemplate, arch: AccelerateFamily) => {
@@ -929,7 +958,7 @@ export function analyzeEvolutionsV2(
           style: played.style,
           subs: played.subs,
           ps,
-          total: totalOf(played.s.score, ps),
+          total: totalOf(played.s.score, ps, sim),
           tierIdx: TIERS.indexOf(tierOf(played.s.under.length === 0, e.fallback))
         };
       })
@@ -1037,7 +1066,7 @@ export function analyzeEvolutionsV2(
           subs,
           ps,
           style,
-          total: totalOf(s.score, ps),
+          total: totalOf(s.score, ps, rescored?.sim ?? simOfChain(checked.ids)),
           tierIdx: TIERS.indexOf(tierOf(s.under.length === 0, row.e.fallback))
         });
       }
