@@ -344,7 +344,13 @@ export function parsePlayStyleNodeId(id: string): { gold: string[]; silver: stri
       if (part.endsWith('+')) gold.push(part.slice(0, -1).trim());
       else silver.push(part);
     });
-  return { gold, silver };
+  // A PlayStyle held as gold is not also held as silver — `applyFreePlayStyles` drops the plain
+  // one the moment the PS+ lands, so a node listing both is describing a card that cannot exist.
+  // Normalising here rather than in each caller: the engine already ignored the duplicate, but
+  // every chip that drew the two lists straight out showed one PlayStyle twice, which reads as a
+  // pick spending two slots on the same thing.
+  const goldNames = new Set(gold.map(ps => ps.replace('+', '').trim()));
+  return { gold, silver: silver.filter(ps => !goldNames.has(ps.replace('+', '').trim())) };
 }
 
 /**
