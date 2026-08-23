@@ -96,6 +96,7 @@ import { the12thMan1260 } from './evolutions/the12thMan1260';
 import { wallOfFame1261 } from './evolutions/wallOfFame1261';
 import { theVanguard1262 } from './evolutions/theVanguard1262';
 import { futtiesFinale1264 } from './evolutions/futtiesFinale1264';
+import { backToTheSilverAge1249 } from './evolutions/backToTheSilverAge1249';
 import { endgameEchoes1265 } from './evolutions/endgameEchoes1265';
 import { order671276 } from './evolutions/order671276';
 import { leyendaDeMoncada1277 } from './evolutions/leyendaDeMoncada1277';
@@ -231,6 +232,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1261': wallOfFame1261,
   '1262': theVanguard1262,
   '1264': futtiesFinale1264,
+  '1249': backToTheSilverAge1249,
   '1265': endgameEchoes1265,
   '1276': order671276,
   '1277': leyendaDeMoncada1277,
