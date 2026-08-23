@@ -101,7 +101,7 @@ import { order671276 } from './evolutions/order671276';
 import { leyendaDeMoncada1277 } from './evolutions/leyendaDeMoncada1277';
 import { keepBetterCompany2463 } from './evolutions/keepBetterCompany2463';
 import { primeIconicAttacker2464 } from './evolutions/primeIconicAttacker2464';
-import { instantMagnet2446 } from './evolutions/instantMagnet2446';
+import { instantMagnet1263 } from './evolutions/instantMagnet1263';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
 import { postureCheck1206 } from './evolutions/postureCheck1206';
@@ -235,7 +235,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1277': leyendaDeMoncada1277,
   '2463': keepBetterCompany2463,
   '2464': primeIconicAttacker2464,
-  '2446': instantMagnet2446,
+  '1263': instantMagnet1263,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
   '1206': postureCheck1206,
