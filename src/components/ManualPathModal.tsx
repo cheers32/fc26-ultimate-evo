@@ -489,6 +489,20 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
    * question worth being able to ask the list directly.
    */
   const [filterFifthPsPlus, setFilterFifthPsPlus] = useState(false);
+  /**
+   * The two gates that decide whether an evo will take the card at all, as filters on the grid.
+   *
+   * Hand-building runs into them constantly and in one direction only: PlayStyle+ and OVR both go
+   * up and never come down, so every evo the card grows past is gone for good. Being able to ask
+   * "what still accepts a card at 4 PlayStyle+" or "what is left once this hits 97" is the question
+   * the builder is actually being used to answer, and it was only answerable by opening evos one at
+   * a time to read their requirements.
+   *
+   * Grouped by the gate's own value rather than by what this card currently is, so the list means
+   * the same thing whichever card is open.
+   */
+  const [gatePsPlus, setGatePsPlus] = useState<3 | 4 | 5 | null>(null);
+  const [gateOvr, setGateOvr] = useState<95 | 96 | 97 | null>(null);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
   // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
   // opposite instead of leaving a combination that matches nothing.
@@ -934,6 +948,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterNewRarity && !evo.rarityChange) return false;
     if (filterFifthPsPlus && !psPlusCapOf(evo)) return false;
+    if (gatePsPlus !== null) {
+      const gate = evo.requirements.maxPlayStylesPlus;
+      // 5 is "no PlayStyle+ gate at all" — nothing in the library caps at five, so an evo that
+      // never asks is the only thing that still accepts a card carrying the full five.
+      if (gatePsPlus === 5 ? gate !== undefined : (gate === undefined || (gatePsPlus === 3 ? gate > 3 : gate !== 4))) return false;
+    }
+    if (gateOvr !== null) {
+      const cap = evo.requirements.maxOvr;
+      if (gateOvr === 95 ? cap > 95 : cap !== gateOvr) return false;
+    }
     if (filterNewPosition && (!evo.positionsAdded || evo.positionsAdded.length === 0)) return false;
     if (filterNoRarity && evo.rarityChange) return false;
     if (filterNoPosition && evo.positionsAdded && evo.positionsAdded.length > 0) return false;
@@ -1453,6 +1477,34 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   5th PS+
                 </button>
+                {([3, 4, 5] as const).map(n => (
+                  <button
+                    key={`gps-${n}`}
+                    onClick={() => setGatePsPlus(gatePsPlus === n ? null : n)}
+                    title={n === 5
+                      ? 'Only evos with no PlayStyle+ requirement — the ones a card carrying five can still run'
+                      : `Only evos that accept a card with at most ${n} PlayStyle+`}
+                    className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                      gatePsPlus === n ? 'bg-amber-400 text-black border-amber-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                    }`}
+                  >
+                    ≤{n} PS+
+                  </button>
+                ))}
+                {([95, 96, 97] as const).map(n => (
+                  <button
+                    key={`govr-${n}`}
+                    onClick={() => setGateOvr(gateOvr === n ? null : n)}
+                    title={n === 95
+                      ? 'Only evos whose OVR cap is 95 or lower'
+                      : `Only evos whose OVR cap is exactly ${n}`}
+                    className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                      gateOvr === n ? 'bg-sky-400 text-black border-sky-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                    }`}
+                  >
+                    OVR {n === 95 ? '≤95' : n}
+                  </button>
+                ))}
                 <button
                   onClick={() => { setFilterNoRarity(!filterNoRarity); setFilterNewRarity(false); }}
                   title="Hide every evo that changes the card's rarity"
