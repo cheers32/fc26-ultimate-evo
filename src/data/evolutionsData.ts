@@ -99,6 +99,7 @@ import { futtiesFinale1264 } from './evolutions/futtiesFinale1264';
 import { endgameEchoes1265 } from './evolutions/endgameEchoes1265';
 import { order671276 } from './evolutions/order671276';
 import { leyendaDeMoncada1277 } from './evolutions/leyendaDeMoncada1277';
+import { eagleEyed2461 } from './evolutions/eagleEyed2461';
 import { keepBetterCompany2463 } from './evolutions/keepBetterCompany2463';
 import { primeIconicAttacker2464 } from './evolutions/primeIconicAttacker2464';
 import { instantMagnet1263 } from './evolutions/instantMagnet1263';
@@ -233,6 +234,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1265': endgameEchoes1265,
   '1276': order671276,
   '1277': leyendaDeMoncada1277,
+  '2461': eagleEyed2461,
   '2463': keepBetterCompany2463,
   '2464': primeIconicAttacker2464,
   '1263': instantMagnet1263,
