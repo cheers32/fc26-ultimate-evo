@@ -2,16 +2,14 @@ import { EvolutionDefinition } from '../../types/player';
 
 /**
  * The +45 OVR and +40 pace are what the 200 tokens buy: built to drag a mid-rated forward all the
- * way to 98, not to finish one already there. Strength and aggression cap at 92 while everything
- * attacking caps at 96-98, so a card arriving physical keeps it and a card without one is not
- * handed one.
- *
- * Not on FUTBIN at the time of writing, so the id and link are fut.gg's.
+ * way to 98, not to finish one already there. Strength and aggression cap at 92 while the
+ * attacking stats cap at 96-98, so a card arriving physical keeps it and one without is not handed
+ * any.
  */
-export const primeIconicAttacker2464: EvolutionDefinition = {
-  id: '2464',
+export const primeIconicAttacker1279: EvolutionDefinition = {
+  id: '1279',
   name: 'Prime Iconic Attacker',
-  futbinLink: 'https://www.fut.gg/evolutions/2464-prime-iconic-attacker/',
+  futbinLink: 'https://www.futbin.com/26/evolutions/1279/prime-iconic-attacker',
   version: 'FC 26',
   description: 'Found in the token store.',
   cost: 'Tokens — 200',
@@ -19,11 +17,11 @@ export const primeIconicAttacker2464: EvolutionDefinition = {
     maxOvr: 97,
     maxPlayStyles: 10,
     maxPlayStylesPlus: 4,
-    positions: ['ST', 'RW', 'LW']
+    positions: ['ST', 'LW', 'RW']
   },
   ovrBoost: { boost: 45, limit: 98 },
   faceBoosts: {
-    pac: { boost: 40, limit: 98 },
+    pac: { boost: 40, limit: 96 },
     pas: { boost: 20, limit: 95 }
   },
   subStatBoosts: {
@@ -33,11 +31,11 @@ export const primeIconicAttacker2464: EvolutionDefinition = {
     longShots: { boost: 30, limit: 96 },
     volleys: { boost: 30, limit: 96 },
     penalties: { boost: 25, limit: 96 },
-    agility: { boost: 40, limit: 96 },
+    agility: { boost: 40, limit: 98 },
     balance: { boost: 30, limit: 96 },
     reactions: { boost: 35, limit: 99 },
-    ballControl: { boost: 30, limit: 97 },
-    dribbling: { boost: 30, limit: 98 },
+    ballControl: { boost: 30, limit: 95 },
+    dribbling: { boost: 40, limit: 98 },
     composure: { boost: 40, limit: 96 },
     headingAcc: { boost: 30, limit: 99 },
     jumping: { boost: 40, limit: 95 },

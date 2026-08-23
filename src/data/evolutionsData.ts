@@ -101,8 +101,9 @@ import { endgameEchoes1265 } from './evolutions/endgameEchoes1265';
 import { order671276 } from './evolutions/order671276';
 import { leyendaDeMoncada1277 } from './evolutions/leyendaDeMoncada1277';
 import { eagleEyed2461 } from './evolutions/eagleEyed2461';
-import { keepBetterCompany2463 } from './evolutions/keepBetterCompany2463';
-import { primeIconicAttacker2464 } from './evolutions/primeIconicAttacker2464';
+import { keepBetterKompany1278 } from './evolutions/keepBetterKompany1278';
+import { primeIconicAttacker1279 } from './evolutions/primeIconicAttacker1279';
+import { guardianOfTheWing1280 } from './evolutions/guardianOfTheWing1280';
 import { instantMagnet1263 } from './evolutions/instantMagnet1263';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
@@ -237,8 +238,9 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1276': order671276,
   '1277': leyendaDeMoncada1277,
   '2461': eagleEyed2461,
-  '2463': keepBetterCompany2463,
-  '2464': primeIconicAttacker2464,
+  '1278': keepBetterKompany1278,
+  '1279': primeIconicAttacker1279,
+  '1280': guardianOfTheWing1280,
   '1263': instantMagnet1263,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
