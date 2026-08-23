@@ -306,9 +306,19 @@ export const STANDARD_PS_PLUS_SLOTS = 4;
  * on that axis until one of them comes along. Worth saying on the card rather than leaving in the
  * data for someone to find.
  */
-export function psPlusCapOf(evo: import('../types/player').EvolutionDefinition): number | null {
+export function psPlusCapOf(
+  evo: import('../types/player').EvolutionDefinition,
+  /**
+   * How many gold slots a card holds without this evo's help. Four under the old rules; five since
+   * every card carries five. Passed in rather than read here, because the rule lives in evoEngine
+   * and statUtils is upstream of it — and because the answer is only interesting relative to what
+   * the card would have anyway: an evo capping at five stopped being generous the day five became
+   * the standard.
+   */
+  baseline: number = STANDARD_PS_PLUS_SLOTS
+): number | null {
   const cap = evo.playStylesLimit?.gold;
-  return cap !== undefined && cap > STANDARD_PS_PLUS_SLOTS ? cap : null;
+  return cap !== undefined && cap > baseline ? cap : null;
 }
 
 export function displayExcludedPositions(evo: import('../types/player').EvolutionDefinition): string[] {

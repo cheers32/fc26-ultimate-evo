@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult } from '../types/player';
-import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, psPlusCapOf, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
+import { isPlayStyleNodeId, parsePlayStyleNodeId, openPlayStylesOn, OPEN_GOLD_SLOTS } from '../utils/evoEngine';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, psPlusCapOf, STANDARD_PS_PLUS_SLOTS, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { chainKeyOf } from '../utils/feedback';
 import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
@@ -13,6 +13,10 @@ import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ThumbsUp, ThumbsDown, ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, CheckCheck, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
+
+/** See psPlusCapOf: five stopped being generous the day five became standard. */
+const psSlotBaseline = () => (openPlayStylesOn() ? OPEN_GOLD_SLOTS : STANDARD_PS_PLUS_SLOTS);
+
 
 interface HeaderCardProps {
   bio: PlayerBio;
@@ -2021,7 +2025,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               finished chain shows it without opening them. */}
                           {(evo.rarityChange
                             || maxRepeat > 1
-                            || psPlusCapOf(evo)
+                            || psPlusCapOf(evo, psSlotBaseline())
                             || (evo.positionsAdded && evo.positionsAdded.length > 0)
                             || (evo.requirements.positions && evo.requirements.positions.length > 0)
                             || displayExcludedPositions(evo).length > 0) && (
@@ -2041,12 +2045,12 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                   → {evo.rarityChange}
                                 </span>
                               )}
-                              {psPlusCapOf(evo) && (
+                              {psPlusCapOf(evo, psSlotBaseline()) && (
                                 <span
                                   className="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/60 text-[8.5px] font-bold tracking-wide"
-                                  title={`Takes the card to ${psPlusCapOf(evo)} PlayStyle+ slots — one more than a card normally holds`}
+                                  title={`Takes the card to ${psPlusCapOf(evo, psSlotBaseline())} PlayStyle+ slots — one more than a card normally holds`}
                                 >
-                                  {psPlusCapOf(evo)}× PS+
+                                  {psPlusCapOf(evo, psSlotBaseline())}× PS+
                                 </span>
                               )}
                               {evo.positionsAdded && evo.positionsAdded.length > 0 && (

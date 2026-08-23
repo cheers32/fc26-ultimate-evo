@@ -4,8 +4,8 @@ import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { StatsGrid } from './StatsGrid';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
-import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore } from '../utils/evoEngine';
-import { psPlusCapOf } from '../utils/statUtils';
+import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, openPlayStylesOn, OPEN_GOLD_SLOTS } from '../utils/evoEngine';
+import { psPlusCapOf, STANDARD_PS_PLUS_SLOTS } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import {
@@ -22,6 +22,10 @@ import { FitBreakdown, controlModeFor, fitScore, accelerateOf, accelerateSpread 
 import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
 import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { useModal } from '../utils/modalStack';
+
+/** See psPlusCapOf: five stopped being generous the day five became standard. */
+const psSlotBaseline = () => (openPlayStylesOn() ? OPEN_GOLD_SLOTS : STANDARD_PS_PLUS_SLOTS);
+
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
 // badged, which on a full pool marked most of the list and made the mark meaningless — so
@@ -947,7 +951,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (!showNotIncluded && !canRecommend.has(id)) return false;
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterNewRarity && !evo.rarityChange) return false;
-    if (filterFifthPsPlus && !psPlusCapOf(evo)) return false;
+    if (filterFifthPsPlus && !psPlusCapOf(evo, psSlotBaseline())) return false;
     if (gatePsPlus !== null) {
       const gate = evo.requirements.maxPlayStylesPlus;
       // 5 is "no PlayStyle+ gate at all" — nothing in the library caps at five, so an evo that
@@ -1128,7 +1132,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                         {/* What this step asks for and turns the card into, same badges as the pool
                             below and the chain on the player panel. */}
                         {(evo.rarityChange
-                          || psPlusCapOf(evo)
+                          || psPlusCapOf(evo, psSlotBaseline())
                           || (evo.positionsAdded && evo.positionsAdded.length > 0)
                           || (evo.requirements.positions && evo.requirements.positions.length > 0)
                           || displayExcludedPositions(evo).length > 0) && (
@@ -1150,12 +1154,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             )}
                             {/* The scarcest thing an evo hands over: a slot the card could not
                                 otherwise hold, and cannot get any other way. */}
-                            {psPlusCapOf(evo) && (
+                            {psPlusCapOf(evo, psSlotBaseline()) && (
                               <span
                                 className="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/60 text-[8.5px] font-bold tracking-wide"
-                                title={`Takes the card to ${psPlusCapOf(evo)} PlayStyle+ slots — one more than a card normally holds`}
+                                title={`Takes the card to ${psPlusCapOf(evo, psSlotBaseline())} PlayStyle+ slots — one more than a card normally holds`}
                               >
-                                {psPlusCapOf(evo)}× PS+
+                                {psPlusCapOf(evo, psSlotBaseline())}× PS+
                               </span>
                             )}
                             {evo.positionsAdded && evo.positionsAdded.length > 0 && (
@@ -1468,6 +1472,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   New Rarity
                 </button>
+                {/* Nothing in the library caps above five, so under the current rules this would
+                    always come back empty — a filter that can only ever return nothing is worse
+                    than no filter. */}
+                {psSlotBaseline() < 5 && (
                 <button
                   onClick={() => setFilterFifthPsPlus(!filterFifthPsPlus)}
                   title="Only evos that take the card past four PlayStyle+ — the one slot nothing else can give it"
@@ -1477,6 +1485,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   5th PS+
                 </button>
+                )}
                 {([3, 4, 5] as const).map(n => (
                   <button
                     key={`gps-${n}`}
