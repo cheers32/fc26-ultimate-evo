@@ -96,6 +96,11 @@ import { the12thMan1260 } from './evolutions/the12thMan1260';
 import { wallOfFame1261 } from './evolutions/wallOfFame1261';
 import { theVanguard1262 } from './evolutions/theVanguard1262';
 import { futtiesFinale1264 } from './evolutions/futtiesFinale1264';
+import { endgameEchoes1265 } from './evolutions/endgameEchoes1265';
+import { order671276 } from './evolutions/order671276';
+import { leyendaDeMoncada1277 } from './evolutions/leyendaDeMoncada1277';
+import { keepBetterCompany2463 } from './evolutions/keepBetterCompany2463';
+import { primeIconicAttacker2464 } from './evolutions/primeIconicAttacker2464';
 import { instantMagnet2446 } from './evolutions/instantMagnet2446';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
@@ -225,6 +230,11 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1261': wallOfFame1261,
   '1262': theVanguard1262,
   '1264': futtiesFinale1264,
+  '1265': endgameEchoes1265,
+  '1276': order671276,
+  '1277': leyendaDeMoncada1277,
+  '2463': keepBetterCompany2463,
+  '2464': primeIconicAttacker2464,
   '2446': instantMagnet2446,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
