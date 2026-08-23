@@ -295,7 +295,7 @@ export function applyFreePlayStyles(
     const hasGold = result.base.gold.some(g => baseName(g) === name);
     // Only drop the plain version once the PS+ actually landed — same order as applyEvo. Removing
     // it regardless would delete a PlayStyle the card already had whenever the gold slots are full.
-    const upgraded = hasGold || result.base.gold.length < result.limits.gold;
+    const upgraded = hasGold || result.base.gold.length < effectiveGoldLimit(result);
     if (!hasGold && upgraded) result.base.gold.push(ps);
     if (upgraded) result.base.silver = result.base.silver.filter(s => baseName(s) !== name);
   });
@@ -358,8 +358,44 @@ export function parsePlayStyleNodeId(id: string): { gold: string[]; silver: stri
  * the rarities that unlock free assignment — a chain can pick more than once, and each pick sits
  * where it was actually made rather than being pulled back to the evo that unlocked it.
  */
+/**
+ * The August 2026 rule change: every card carries five PlayStyle+ and assigns its own PlayStyles,
+ * whatever its rarity.
+ *
+ * Kept switchable rather than written in, because the old rules are what every build made before
+ * the change was planned under — a card whose four gold slots were the whole constraint reads as a
+ * different problem once it has five and can rewrite them. So this is a rule the app models, not a
+ * fact it assumes, and the filter says which version you are asking about.
+ *
+ * Module state rather than a threaded parameter: it is a statement about which game is being
+ * modelled, not about one query, and it is read from a dozen places that have no filters to hand.
+ * Both entry points that run a search set it from the filters first — the app on every render, the
+ * worker on every request, since a worker holds its own copy of this module.
+ */
+let openPlayStyles = true;
+
+/** How many PlayStyle+ every card holds once the new rules are on. */
+export const OPEN_GOLD_SLOTS = 5;
+
+export function setOpenPlayStyles(on: boolean): void {
+  openPlayStyles = on;
+}
+
+export function openPlayStylesOn(): boolean {
+  return openPlayStyles;
+}
+
+/**
+ * How many gold slots a card really has — its own, never fewer than it is already carrying, and
+ * never fewer than the new rules grant.
+ */
+export function effectiveGoldLimit(ps: PlayStylesData): number {
+  const own = Math.max(ps.limits.gold, ps.base.gold.length);
+  return openPlayStyles ? Math.max(own, OPEN_GOLD_SLOTS) : own;
+}
+
 export function canPickPlayStyles(rarity: string): boolean {
-  return FREE_PLAYSTYLE_RARITIES.includes(rarity);
+  return openPlayStyles || FREE_PLAYSTYLE_RARITIES.includes(rarity);
 }
 
 // `roles` is never mutated while applying an evolution, so it can stay shared.
@@ -784,7 +820,7 @@ export function forEachChain(
         if (filters.ovr?.min !== undefined && state.ovr < filters.ovr.min) passesFilters = false;
 
         const finalPS = state.playStyles;
-        const psPlusCount = Math.min(finalPS.base.gold.length + finalPS.ev.gold.length, finalPS.limits.gold);
+        const psPlusCount = Math.min(finalPS.base.gold.length + finalPS.ev.gold.length, effectiveGoldLimit(finalPS));
         const psCount = Math.min(finalPS.base.silver.length + finalPS.ev.silver.length, finalPS.limits.silver);
 
         if (filters.psPlus) {

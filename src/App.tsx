@@ -30,7 +30,8 @@ import {
   isPlayStyleNodeId,
   buildPlayStyleNodeId,
   parsePlayStyleNodeId,
-  canPickPlayStyles
+  canPickPlayStyles,
+  setOpenPlayStyles
 } from './utils/evoEngine';
 import { runEvoSearch, EvoSearchHandle } from './utils/runEvoSearch';
 import { buildShareUrl, clearShareParam, parseShareUrl, SharedBuild } from './utils/shareLink';
@@ -870,6 +871,10 @@ export default function App() {
     () => ({ ...currentState.evoFilters, requiredEvos }),
     [currentState.evoFilters, requiredEvos]
   );
+  // Set before anything reads it. The rule decides how many gold slots a card has and whether it
+  // can choose what goes in them, and that is read all over the render — from psPlanFor on down —
+  // so it has to be true by the time this render's children run, not one effect later.
+  setOpenPlayStyles(evoFilters.openPlayStyles !== false);
 
   const setActivePathId = (val: string | ((prev: string) => string)) => {
     const nextId = typeof val === 'function' ? val(currentState.activePathId) : val;

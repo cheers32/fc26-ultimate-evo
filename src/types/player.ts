@@ -248,6 +248,15 @@ export interface EvoFilters {
   templateIds?: string[];
   requiredEvos?: string[];
   blockedEvos?: string[];
+  /**
+   * Whether to model the August 2026 rule change: every card holds five PlayStyle+ and assigns its
+   * own PlayStyles regardless of rarity. Absent means on — it is how the game works now, and a
+   * default that has to be switched on is a default that is wrong for most people.
+   *
+   * Off restores the old rules, which is what every build planned before the change was reasoned
+   * under: four gold slots that only a handful of rarities let you choose.
+   */
+  openPlayStyles?: boolean;
   newRarity?: boolean;
   newPosition?: boolean;
   /**

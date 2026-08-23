@@ -2,7 +2,7 @@ import { PlayStylesData, PlayerBio, StatsData } from '../types/player';
 import { PLAYSTYLE_VALUES } from './playstyleValues';
 import { accelerateOf, bestFreePicks, controlModeFor, playStyleValue } from './fitScore';
 import { ControlMode } from './playstyleProfile';
-import { applyFreePlayStyles, buildPlayStyleNodeId, canPickPlayStyles } from './evoEngine';
+import { applyFreePlayStyles, buildPlayStyleNodeId, canPickPlayStyles, effectiveGoldLimit } from './evoEngine';
 import { playStyleScoreAt } from './playStyleScore';
 
 /**
@@ -96,7 +96,7 @@ export function psPlanFor(
     node: picks.gold.length + picks.silver.length > 0 ? buildPlayStyleNodeId(picks) : null,
     wasted,
     missing: after.missing,
-    emptyGold: Math.max(0, filled.limits.gold - heldGold.length)
+    emptyGold: Math.max(0, effectiveGoldLimit(filled) - heldGold.length)
   };
 }
 

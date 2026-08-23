@@ -8,6 +8,7 @@ import {
   calculateAccelerateFamily,
   parseHeightCm
 } from './statUtils';
+import { effectiveGoldLimit } from './evoEngine';
 import { chemStyles } from '../data/chemStyles';
 import {
   GATE_FLOOR,
@@ -467,7 +468,7 @@ export function bestFreePicks(ctx: FitContext): { gold: string[]; silver: string
     return chosen;
   };
 
-  const goldSlots = Math.max(0, ctx.playStyles.limits.gold - existingGold.length);
+  const goldSlots = Math.max(0, effectiveGoldLimit(ctx.playStyles) - existingGold.length);
   const silverSlots = Math.max(0, ctx.playStyles.limits.silver - existingSilver.length);
 
   const gold = pick(goldSlots, true);

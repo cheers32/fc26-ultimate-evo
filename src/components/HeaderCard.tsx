@@ -900,6 +900,26 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       )}
                     </div>
 
+                    {/* The rule set, not a filter on results: it changes what every card is,
+                        so it sits above the pairs rather than among them. */}
+                    <div className="mb-3 pb-3 border-b border-gray-800">
+                      <label className="flex items-start gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={draftFilters.openPlayStyles !== false}
+                          onChange={(e) => setDraftFilters({ ...draftFilters, openPlayStyles: e.target.checked })}
+                          className="w-3.5 h-3.5 mt-0.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                        />
+                        <span>
+                          5× PlayStyle+ &amp; free picks
+                          <span className="block text-[10px] text-gray-500 leading-snug">
+                            Aug 2026 rules: every card holds five PlayStyle+ and assigns its own
+                            PlayStyles. Untick to plan under the old four-slot, rarity-gated rules.
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+
                     {/* Each pair is a three-way choice — want it, avoid it, don't care — so ticking
                         one side clears the other rather than leaving a filter that matches nothing. */}
                     <div className="mb-4 pb-3 border-b border-gray-800 space-y-2">

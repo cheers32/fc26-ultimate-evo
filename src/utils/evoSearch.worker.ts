@@ -1,4 +1,4 @@
-import { analyzeEvolutions } from './evoEngine';
+import { analyzeEvolutions, setOpenPlayStyles } from './evoEngine';
 import { analyzeEvolutionsV2, V2Diagnosis, V2Feedback } from './analyzeV2';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters } from '../types/player';
 
@@ -33,6 +33,9 @@ export type EvoSearchResponse =
 // lives in a worker: the main thread stays interactive and the run can simply be terminated.
 self.onmessage = (e: MessageEvent<EvoSearchRequest>) => {
   const req = e.data;
+  // A worker holds its own copy of evoEngine, so the rule set has to be restated per request —
+  // absent means the new rules, matching the app.
+  setOpenPlayStyles(req.filters?.openPlayStyles !== false);
   try {
     const onProgress = (nodesVisited: number) => {
       const msg: EvoSearchResponse = { type: 'progress', nodesVisited };
