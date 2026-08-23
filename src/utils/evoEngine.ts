@@ -700,7 +700,9 @@ export function simulateEvoChain(
     if (isPlayStyleNodeId(evoId)) {
       const picks = parsePlayStyleNodeId(evoId);
       const reasons: string[] = [];
-      if (!FREE_PLAYSTYLE_RARITIES.includes(state.bio.rarity)) {
+      // Through canPickPlayStyles, not the rarity list directly: under the current rules every card
+      // assigns its own PlayStyles, and reading the list here would flag a legal pick as invalid.
+      if (!canPickPlayStyles(state.bio.rarity)) {
         reasons.push(`Only ${FREE_PLAYSTYLE_RARITIES.join(' / ')} cards can pick PlayStyles freely`);
       }
       // Picks still apply when misplaced, the same way an ineligible evo still shows its
@@ -724,7 +726,27 @@ export function simulateEvoChain(
     const evo = availableEvolutions[evoId];
     if (!evo) continue;
 
+    // How many times this evo already appears earlier in the chain.
+    //
+    // The search enforces the repeat limit itself, so it never proposes a chain that breaks it —
+    // but a hand-built one could, and did: nothing here checked, so the builder would happily stack
+    // a one-use evo twice and simulate the second as if it had applied.
+    let usedBefore = 0;
+    for (let i = 0; i < index; i++) {
+      if (chainIds[i] === evoId) usedBefore++;
+    }
+    const repeatLimit = evo.maxRepeatable ?? 1;
+
     const applied = applyEvo(state, evo);
+    if (usedBefore >= repeatLimit) {
+      applied.validation.eligible = false;
+      applied.validation.reasons = [
+        ...applied.validation.reasons,
+        repeatLimit === 1
+          ? `${evo.name} cannot be repeated — it is already in this chain`
+          : `${evo.name} can be run ${repeatLimit}× and this chain already uses it ${usedBefore}×`
+      ];
+    }
     if (!applied.validation.eligible) {
       overallValid = false;
     }
