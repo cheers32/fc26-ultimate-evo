@@ -270,8 +270,16 @@ function clonePlayStyles(ps: PlayStylesData): PlayStylesData {
  * held where it is, not read as having negative room. Only the imports written since carry a limit
  * that follows the card, so stored cards still need this.
  */
-function effectiveSilverLimit(ps: PlayStylesData): number {
-  return Math.max(ps.limits.silver, ps.base.silver.length);
+/** How many plain PlayStyles every card holds once the new rules are on. */
+export const OPEN_SILVER_SLOTS = 8;
+
+/**
+ * How many plain slots a card really has — its own, never fewer than it is already carrying, and
+ * never fewer than the new rules grant. The gold twin is `effectiveGoldLimit`.
+ */
+export function effectiveSilverLimit(ps: PlayStylesData): number {
+  const own = Math.max(ps.limits.silver, ps.base.silver.length);
+  return openPlayStyles ? Math.max(own, OPEN_SILVER_SLOTS) : own;
 }
 
 /**

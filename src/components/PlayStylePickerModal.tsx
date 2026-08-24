@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, Search, Star, Circle } from 'lucide-react';
 import { FC26_PLAYSTYLES, getPlayStyleIconUrl } from '../utils/playstyles';
 import { useModal } from '../utils/modalStack';
+import { PlayStylesData } from '../types/player';
+import { effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
 
 interface PlayStylePickerModalProps {
   isOpen: boolean;
@@ -73,8 +75,17 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
   const upgradeCount = draftGold.filter(ps => lockedSilverNames.includes(baseName(ps))).length;
   const goldCount = lockedGold.length + draftGold.length;
   const silverCount = lockedSilver.length + draftSilver.length - upgradeCount;
-  const goldFull = goldCount >= limits.gold;
-  const silverFull = silverCount >= limits.silver;
+  // Through the effective limits, not the card's own: the current rules give every card five
+  // gold and eight plain slots, and reading `limits` here capped the picker at whatever the card
+  // was imported with.
+  // The helpers take a whole PlayStylesData; this modal only gets the limits and what is locked in,
+  // which is all they read — the card's own cap and how many it is already carrying.
+  const asPlayStyles = (gold: string[], silver: string[]) =>
+    ({ limits, base: { gold, silver }, ev: { gold: [], silver: [] } }) as PlayStylesData;
+  const goldMax = effectiveGoldLimit(asPlayStyles(lockedGold, lockedSilver));
+  const silverMax = effectiveSilverLimit(asPlayStyles(lockedGold, lockedSilver));
+  const goldFull = goldCount >= goldMax;
+  const silverFull = silverCount >= silverMax;
 
   const setTier = (name: string, tier: 'gold' | 'silver' | null) => {
     setDraftGold(prev => prev.filter(ps => baseName(ps) !== name));
@@ -107,10 +118,10 @@ export const PlayStylePickerModal: React.FC<PlayStylePickerModalProps> = ({
         <div className="px-6 py-3 border-b border-gray-800 bg-[#121212] flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 text-xs font-semibold">
             <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${goldFull ? 'bg-yellow-950/40 border-yellow-700/60 text-yellow-400' : 'bg-black/40 border-gray-700 text-gray-300'}`}>
-              <Star className="w-3.5 h-3.5" /> PS+ {goldCount}/{limits.gold}
+              <Star className="w-3.5 h-3.5" /> PS+ {goldCount}/{goldMax}
             </span>
             <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${silverFull ? 'bg-gray-700/60 border-gray-500 text-gray-200' : 'bg-black/40 border-gray-700 text-gray-300'}`}>
-              <Circle className="w-3.5 h-3.5" /> PS {silverCount}/{limits.silver}
+              <Circle className="w-3.5 h-3.5" /> PS {silverCount}/{silverMax}
             </span>
           </div>
           <div className="relative flex-1 max-w-xs">

@@ -4,7 +4,7 @@ import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { StatsGrid } from './StatsGrid';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
-import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, openPlayStylesOn, OPEN_GOLD_SLOTS } from '../utils/evoEngine';
+import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, openPlayStylesOn, OPEN_GOLD_SLOTS, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
 import { psPlusCapOf, STANDARD_PS_PLUS_SLOTS } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
@@ -211,8 +211,8 @@ const getEvoRecommendation = ({
       reasons.push(`Adds ${evo.positionsAdded.join(', ')}`);
     }
 
-    const goldCount = (ps: PlayStylesData) => Math.min(ps.base.gold.length + ps.ev.gold.length, ps.limits.gold);
-    const silverCount = (ps: PlayStylesData) => Math.min(ps.base.silver.length + ps.ev.silver.length, ps.limits.silver);
+    const goldCount = (ps: PlayStylesData) => Math.min(ps.base.gold.length + ps.ev.gold.length, effectiveGoldLimit(ps));
+    const silverCount = (ps: PlayStylesData) => Math.min(ps.base.silver.length + ps.ev.silver.length, effectiveSilverLimit(ps));
 
     const targets: { label: string; filter?: StatFilter; before: number; after: number }[] = [
       { label: 'OVR', filter: filters.ovr, before: currentOvr, after: expectedOvr },

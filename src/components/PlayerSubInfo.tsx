@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlayerBio, PlayStylesData } from '../types/player';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
+import { effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
 
 interface PlayerSubInfoProps {
   bio: PlayerBio;
@@ -11,7 +12,9 @@ interface PlayerSubInfoProps {
 export const PlayerSubInfo: React.FC<PlayerSubInfoProps> = ({ playStyles, isEvo }) => {
   // Gold PlayStyles stats
   const goldBase = playStyles.base.gold.length;
-  const goldLimit = playStyles.limits.gold;
+  // Effective, not the card's own — the current rules give every card five gold and eight plain
+  // slots, so the panel would otherwise report a card as full while the picker still had room.
+  const goldLimit = effectiveGoldLimit(playStyles);
   const goldEvTotal = playStyles.ev.gold.length;
   let goldAdded = 0;
   if (isEvo) {
@@ -22,7 +25,7 @@ export const PlayerSubInfo: React.FC<PlayerSubInfoProps> = ({ playStyles, isEvo 
 
   // Silver PlayStyles stats
   const silverBase = playStyles.base.silver.length;
-  const silverLimit = playStyles.limits.silver;
+  const silverLimit = effectiveSilverLimit(playStyles);
   const silverEvTotal = playStyles.ev.silver.length;
   let silverAdded = 0;
   if (isEvo) {
