@@ -105,6 +105,10 @@ import { keepBetterKompany1278 } from './evolutions/keepBetterKompany1278';
 import { primeIconicAttacker1279 } from './evolutions/primeIconicAttacker1279';
 import { guardianOfTheWing1280 } from './evolutions/guardianOfTheWing1280';
 import { theTenant1281 } from './evolutions/theTenant1281';
+import { maxPace1236 } from './evolutions/maxPace1236';
+import { maxPassing1237 } from './evolutions/maxPassing1237';
+import { maxShooting1238 } from './evolutions/maxShooting1238';
+import { maxDefending1242 } from './evolutions/maxDefending1242';
 import { instantMagnet1263 } from './evolutions/instantMagnet1263';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
@@ -243,6 +247,10 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1279': primeIconicAttacker1279,
   '1280': guardianOfTheWing1280,
   '1281': theTenant1281,
+  '1236': maxPace1236,
+  '1237': maxPassing1237,
+  '1238': maxShooting1238,
+  '1242': maxDefending1242,
   '1263': instantMagnet1263,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
