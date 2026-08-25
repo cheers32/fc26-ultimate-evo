@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp, ChevronDown } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
-import { StatsGrid } from './StatsGrid';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, openPlayStylesOn, OPEN_GOLD_SLOTS, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
 import { psPlusCapOf, STANDARD_PS_PLUS_SLOTS } from '../utils/statUtils';
@@ -524,16 +523,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const [sortMode, setSortMode] = useState<SortMode>('default');
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  /**
-   * The two steps the stat panel is comparing, as indices in the chain — -1 is the base card, and
-   * both the same means nothing is being compared, so it shows the card as it stands. Clicking a
-   * step pushes it in and drops the older of the two, which is how the workbench's chain reads
-   * too: click one node, then another, and the panel spans them.
-   */
-  const [comparedNodes, setComparedNodes] = useState<[number, number]>([-1, -1]);
-  /** The card the cursor is over, whose result the stat panel previews. */
+  /** The card the cursor is over, which the pool's own summary highlights. */
   const [hoveredEvoId, setHoveredEvoId] = useState<string | null>(null);
-  const compareNode = (idx: number) => setComparedNodes(([, previous]) => [previous, idx]);
 
   // 'a' is what opens the builder, so inside it the same key returns to the search box.
   useModal(isOpen, { onClose, focusRef: searchInputRef, focusKey: 'a' });
@@ -544,7 +535,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
     setSelectedChain(editingPath ? [...editingPath.chainIds] : [...lockedPrefix]);
     setSearchQuery('');
-    setComparedNodes([-1, -1]);
   }, [isOpen, editingPath, lockedPrefix]);
 
   // Live simulation to check if the current chain is valid
@@ -683,24 +673,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     ? playStyleScoreAt(currentStats, currentPlayStyles, currentBio, currentScore.position, { style: currentScore.style })
     : null;
 
-  /**
-   * The card as it stood after a given step, and what the step is called. Indices are clamped
-   * because a step can be removed while it is one of the two being compared.
-   */
-  const lastNode = selectedChain.length - 1;
-  const nodeAt = (idx: number) => Math.max(-1, Math.min(idx, lastNode));
-  const statsAt = (idx: number) =>
-    idx < 0 ? baseStats : validationResult.result?.steps[idx]?.statsAfter ?? currentStats;
-  const nodeName = (idx: number) => {
-    if (idx < 0) return 'Base Card';
-    const id = selectedChain[idx];
-    if (id === undefined) return 'Base Card';
-    return isPlayStyleNodeId(id) ? 'PlayStyle Pick' : availableEvolutions[id]?.name ?? id;
-  };
-
-  const [comparedFrom, comparedTo] = [nodeAt(comparedNodes[0]), nodeAt(comparedNodes[1])].sort((a, b) => a - b);
-  const isComparing = comparedFrom !== comparedTo;
-
   const poolWithStatus = evosPool.map((id) => {
     const evo = availableEvolutions[id];
     const count = selectedChain.filter(eid => eid === id).length;
@@ -817,24 +789,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       posMatchScore
     };
   });
-
-  /**
-   * What the stat panel is showing.
-   *
-   * Hovering a card in the pool answers the question you hovered it to ask — what this evo would do
-   * to the card — by pointing the panel at the state that picking it would produce. Every card has
-   * already worked that state out for its own summary, so this is only choosing which one to read.
-   *
-   * Hover wins over a pinned comparison because it is the transient thing: let go and the pinned
-   * one is still there. A card that can't be picked has no such state, and the panel doesn't move.
-   */
-  const hoveredExpected =
-    (hoveredEvoId ? poolWithStatus.find(p => p.id === hoveredEvoId)?.expectedStats : null) || null;
-
-  // Not comparing anything is the card as it stands, on both sides, which is what leaves the panel
-  // showing plain values with no arrows.
-  const panelFrom = hoveredExpected ? currentStats : isComparing ? statsAt(comparedFrom) : currentStats;
-  const panelTo = hoveredExpected || (isComparing ? statsAt(comparedTo) : currentStats);
 
   // What the recommendations are currently aiming at, spelled out next to them — otherwise a
   // shortlist narrowed by a filter set in another modal just looks arbitrary.
@@ -999,10 +953,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 
                 {/* Base Card Chip */}
                 <div
-                  onClick={() => compareNode(-1)}
                   title="Compare from here"
                   className={`bg-[#1f211f] text-gray-200 border p-1.5 rounded font-bold flex flex-col shadow gap-1 shrink-0 cursor-pointer transition-all ${
-                    isComparing && (comparedFrom === -1 || comparedTo === -1)
+                    false
                       ? 'border-[#EBB626] ring-1 ring-[#EBB626]'
                       : 'border-gray-700 hover:border-gray-500'
                   }`}
@@ -1064,13 +1017,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     return (
                       <React.Fragment key={`${id}-${idx}`}>
                         <div
-                          onClick={() => compareNode(idx)}
-                          title={invalid ? validationResult.result!.steps[idx].validation.reasons.join(' · ') : 'PlayStyle Pick — click to compare from here'}
+                          title={invalid ? validationResult.result!.steps[idx].validation.reasons.join(' · ') : 'PlayStyle Pick'}
                           className={`shrink-0 flex items-center gap-1.5 p-1.5 rounded border font-bold text-[10.5px] bg-yellow-950/25 text-yellow-300 cursor-pointer transition-all ${
                             invalid
                               ? 'border-red-600 ring-1 ring-red-700/60'
-                              : isComparing && (comparedFrom === idx || comparedTo === idx)
-                              ? 'border-[#EBB626] ring-1 ring-[#EBB626]'
                               : 'border-yellow-800/70 hover:border-yellow-600'
                           }`}
                         >
@@ -1100,10 +1050,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   return (
                     <React.Fragment key={`${id}-${idx}`}>
                       <div
-                        onClick={() => compareNode(idx)}
-                        title={`${evo.name} — click to compare from here`}
+                        title={evo.name}
                         className={`group/node relative bg-[#1f211f] text-gray-200 border p-1.5 rounded font-bold flex flex-col shadow gap-1 shrink-0 cursor-pointer transition-all ${
-                          isComparing && (comparedFrom === idx || comparedTo === idx)
+                          false
                             ? 'border-[#EBB626] ring-1 ring-[#EBB626]'
                             : 'border-gray-700 hover:border-gray-500'
                         }`}
@@ -1316,29 +1265,6 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               </div>
             </div>
           )}
-
-          {/* The sub-stats of the chain as it stands. The chain above shows the six face values,
-              but an evo is chosen on the sub-stats under them — agility against strength decides
-              the archetype, and a face value can sit still while the stat you came for moves. No
-              deltas here: the chips on the chain already say what each step added, and this is the
-              answer to "where is the card now". */}
-          <div className="p-3 border-b border-gray-800 bg-[#121212] shrink-0 flex flex-col gap-2">
-            {isComparing && (
-              <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                <span className="text-gray-500 uppercase tracking-wider font-semibold">Comparing</span>
-                <span className="font-bold text-gray-200">{nodeName(comparedFrom)}</span>
-                <span className="text-gray-600">➜</span>
-                <span className="font-bold text-gray-200">{nodeName(comparedTo)}</span>
-                <button
-                  onClick={() => setComparedNodes([-1, -1])}
-                  className="text-gray-500 hover:text-white border border-gray-700 hover:border-gray-500 rounded px-1.5 py-0.5 transition-colors"
-                >
-                  Show current
-                </button>
-              </div>
-            )}
-            <StatsGrid baseStats={panelFrom} previewStats={panelTo} activeChemBoosts={{}} dense />
-          </div>
 
           {/* Bottom Side: Available Pool */}
           <div className="flex flex-col shrink-0">
