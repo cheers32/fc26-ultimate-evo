@@ -104,6 +104,7 @@ import { eagleEyed2461 } from './evolutions/eagleEyed2461';
 import { keepBetterKompany1278 } from './evolutions/keepBetterKompany1278';
 import { primeIconicAttacker1279 } from './evolutions/primeIconicAttacker1279';
 import { guardianOfTheWing1280 } from './evolutions/guardianOfTheWing1280';
+import { theTenant1281 } from './evolutions/theTenant1281';
 import { instantMagnet1263 } from './evolutions/instantMagnet1263';
 import { rightRoute1204 } from './evolutions/rightRoute1204';
 import { tooBasic1205 } from './evolutions/tooBasic1205';
@@ -241,6 +242,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1278': keepBetterKompany1278,
   '1279': primeIconicAttacker1279,
   '1280': guardianOfTheWing1280,
+  '1281': theTenant1281,
   '1263': instantMagnet1263,
   '1204': rightRoute1204,
   '1205': tooBasic1205,
