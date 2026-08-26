@@ -56,6 +56,24 @@ const pointsFor = (value: number) =>
   Math.max(0, Math.min(1, (value - WORTHLESS_AT) / (PERFECT_AT - WORTHLESS_AT))) * 100;
 
 /**
+ * What missing a floor by `short` points costs, out of that floor's full price.
+ *
+ * A floor used to be a cliff: one point under and the whole cost landed. That made the model say
+ * things it did not mean. A card a point short on five fieldable floors — balance 92, stamina 92,
+ * ball control 92, where the floor is 93 — was charged forty points and came back rated as
+ * unusable, which is not a description of that card, it is a description of the rule.
+ *
+ * It runs out to nothing at the same place a stat stops being worth anything at all: `WORTHLESS_AT`.
+ * A stat that far under is genuinely the reason you stop picking the card and pays in full; one a
+ * point short pays almost nothing, which is what a point is worth. The floors still say the same
+ * thing about which stats a plan cannot do without — they just now say it by degree.
+ */
+const missCost = (floor: number, value: number, full: number) => {
+  const span = Math.max(1, floor - WORTHLESS_AT);
+  return full * Math.min(1, Math.max(0, floor - value) / span);
+};
+
+/**
  * Slots that are one position played from a side.
  *
  * A 4-2-3-1 fields three attacking midfielders, and the wide two are not the same job as the one in
@@ -124,7 +142,9 @@ function scoreAgainst(subs: Record<string, number>, t: BuildTemplate) {
     .filter(x => x.value < x.floor)
     .sort((a, b) => (b.floor - b.value) - (a.floor - a.value));
 
-  for (const miss of under) raw -= miss.fieldable ? UNFIELDABLE_COST : SHORT_COST;
+  for (const miss of under) {
+    raw -= missCost(miss.floor, miss.value, miss.fieldable ? UNFIELDABLE_COST : SHORT_COST);
+  }
 
   return { score: Math.max(0, Math.min(100, raw)), under };
 }
