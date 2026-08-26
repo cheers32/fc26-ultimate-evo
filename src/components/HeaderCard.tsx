@@ -670,25 +670,11 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     [baseScore, rawStats, rawPlayStyles, bio]
   );
 
-  /**
-   * What the build is worth at the position the row is about — the chip's second number.
-   *
-   * It used to be the card's best position, whatever that turned out to be, while the base chip
-   * beside it was read at the position being judged. So a centre-back build that happened to add ST
-   * came back labelled "ST 91.5", the row read as a set of attacking recommendations, and the one
-   * question the row exists to answer — which of these makes the better centre-back — could not be
-   * read off it at all. The builds were ranked as centre-backs the whole time.
-   *
-   * Falls back to the best position only when this one has no plan the card's frame allows, which
-   * is the same thing `baseScore` does.
-   */
+  /** What the build is worth where it ends up playing — the chip's second number. */
   const pathScore = (path: EvolutionPath) => {
     const last = path.steps?.[path.steps.length - 1];
     if (!last) return baseScore;
-    return (
-      (baseScore ? scoreAtPosition(last.statsAfter, last.bioAfter, baseScore.position, assumeChemStyle) : null) ??
-      bestScore(last.statsAfter, last.bioAfter, assumeChemStyle)
-    );
+    return bestScore(last.statsAfter, last.bioAfter, assumeChemStyle);
   };
 
   /**
