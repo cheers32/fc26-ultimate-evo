@@ -1951,7 +1951,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 </div>
 
                 {renderPath.chainIds.length > 0 ? (
-                  <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                  // The gap before the first step, where a pick goes in ahead of everything —
+                  // `after: -1` being the raw card, the same index the base marker uses for it.
+                  <StepArrow onInsert={insertPickAfter(renderPath, -1)} />
                 ) : (
                   <span className="text-[11px] text-gray-600 italic ml-2 shrink-0">
                     {isBaseCardPath(renderPath)
