@@ -78,11 +78,20 @@ import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './st
 const ENDGAME_TARGET = PASS_MARK;
 
 /**
- * What a point of shortfall costs, in the same unit as a point of gain. Symmetric on purpose —
- * one point under the bar is worth exactly as much as one point over it is, and the floors do the
- * rest of the work by cutting a failing build out of the clean list entirely.
+ * What a point of shortfall costs, against a point of gain.
+ *
+ * It claimed to be symmetric and was not. A gain is weighted and averaged — a point added to the
+ * plan's most important stat moves the score by its weight, at most 0.18 — while a point of
+ * shortfall was charged flat at 1, five times heavier. So a build two points better on heading and
+ * one better on standing tackle, a point under on balance, scored *below* the build it beat on
+ * every stat the plan is for.
+ *
+ * A little more than a point of the plan's best axis, which is what a floor deserves: it is a stat
+ * the plan cannot do without, not a stat five times more important than the ones it is built on.
+ * The rest of the work is done where it should be, by the tier below cutting a genuinely failing
+ * build out of the clean list.
  */
-const SHORTFALL_COST = 1;
+const SHORTFALL_COST = 0.25;
 
 /** What a point of a stat the plan is hurt by costs, once it is past end-game. */
 const AVOID_COST = 0.25;
@@ -343,6 +352,16 @@ export function analyzeEvolutionsV2(
    */
   const tierOf = (clean: boolean, fallback: boolean) => `${clean ? 'a' : 'b'}${fallback ? '2' : '1'}`;
   const TIERS = ['a1', 'a2', 'b1', 'b2'];
+
+  /**
+   * How far under a floor still counts as clearing it, for the purpose of which pile a build is in.
+   *
+   * The tier outranks the score, so read as a switch it buried real differences: a build a single
+   * point under on balance sat below every build that cleared, however much better a centre-back it
+   * was. Two points is inside what a chemistry style moves, and the score already charges the gap —
+   * past that the tier does what it is for.
+   */
+  const TIER_SLACK = 2;
 
   /** What a template makes of a finished card: what it is worth, and what it is short of. */
   const scoreForTemplate = (
@@ -969,7 +988,7 @@ export function analyzeEvolutionsV2(
           subs: played.subs,
           ps,
           total: totalOf(played.s.score, ps, sim),
-          tierIdx: TIERS.indexOf(tierOf(played.s.under.length === 0, e.fallback))
+          tierIdx: TIERS.indexOf(tierOf(!played.s.under.some(u => u.floor - u.value > TIER_SLACK), e.fallback))
         };
       })
       // Under a plan's own floor is a build you should be told about — it is the plan you asked for,
