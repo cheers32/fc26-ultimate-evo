@@ -3,15 +3,13 @@ import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, Pla
 import { isPlayStyleNodeId, parsePlayStyleNodeId, openPlayStylesOn, OPEN_GOLD_SLOTS } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, psPlusCapOf, STANDARD_PS_PLUS_SLOTS, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
-import { chainKeyOf } from '../utils/feedback';
 import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
-import { FEEDBACK_REASONS } from '../types/player';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { isModalOpen } from '../utils/modalStack';
 import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScore';
 import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { availableEvolutions } from '../data/evolutionsData';
-import { ThumbsUp, ThumbsDown, ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, CheckCheck, Link2 } from 'lucide-react';
+import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, CheckCheck, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
 
 /** See psPlusCapOf: five stopped being generous the day five became standard. */
@@ -49,9 +47,7 @@ interface HeaderCardProps {
   originalFaceSum: number;
   evoFilters: EvoFilters;
   /** This card's verdicts, keyed by canonical chain. */
-  pathFeedback?: Record<string, import('../types/player').PathFeedback>;
   /** Records a verdict, or clears it with null. Reasons are only meaningful on a thumbs-down. */
-  onRatePath?: (path: EvolutionPath, verdict: 'up' | 'down' | null, reasons?: string[]) => void;
   excludedCount: number;
   extraCount: number;
   onEvoFiltersChange: (val: EvoFilters) => void;
@@ -343,8 +339,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   originalIgs,
   originalFaceSum,
   evoFilters,
-  pathFeedback,
-  onRatePath,
   excludedCount,
   extraCount,
   onEvoFiltersChange,
@@ -396,7 +390,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
   const [showFilters, setShowFilters] = React.useState(false);
   /** Which row is currently being asked what was wrong with it. */
-  const [reasonsFor, setReasonsFor] = React.useState<string | null>(null);
   /** The in-game record being deleted, and what has been typed to confirm it. */
   const [confirmDelete, setConfirmDelete] = React.useState<string | null>(null);
   const [deleteTyped, setDeleteTyped] = React.useState('');
@@ -500,11 +493,37 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
    * an edit control on them would act on a chain the panel below is not describing.
    */
   /**
-   * Ruled out, beside the star rather than instead of it.
+   * The row, minus what has been ruled out — and the ruled-out ones behind a fold.
    *
-   * The two say different things and a build can be both: a shortlist marker you keep, and a
-   * decision you have made about it. Kept visible once it is set — otherwise the only way to take
-   * it back would be to remember which of the struck-through chips you were hovering.
+   * Sorting them last was not enough: the point of discarding a build is to stop looking at it, and
+   * a row still showing eight struck-through chips is the clutter it was meant to remove. Shut by
+   * default and counted on the header, so nothing is hidden without saying how much.
+   */
+  const [showDiscarded, setShowDiscarded] = React.useState(false);
+  const discardedPaths = allPaths.filter(p => p.discarded);
+  const rowPaths = showDiscarded ? allPaths : allPaths.filter(p => !p.discarded);
+
+  const discardedHeader = (
+    <div className="basis-full mt-1.5 mb-0.5">
+      <button
+        onClick={() => setShowDiscarded(v => !v)}
+        className="flex items-center gap-2 w-full text-left group/disc"
+        title={showDiscarded ? 'Fold the ruled-out builds away' : 'Show the builds you have ruled out'}
+      >
+        <span className="text-[9.5px] uppercase tracking-wider text-gray-500 font-bold group-hover/disc:text-gray-300 transition-colors">
+          {showDiscarded ? '▾' : '▸'} Discarded {discardedPaths.length}
+        </span>
+        <span className="flex-1 h-px bg-gray-800" />
+      </button>
+    </div>
+  );
+
+  /**
+   * Ruled out. Same round badge as the double-tick beside it, and to its left.
+   *
+   * Independent of the star: the two say different things and a build can be both — a shortlist
+   * marker you keep, and a decision you have made about it. Neither touches the other's flag.
+   * Kept visible once it is set, so taking it back does not mean remembering which chip to hover.
    */
   const discardBadge = (path: EvolutionPath) =>
     onToggleDiscardPath && path.chainIds.length > 0 && !isInGamePath(path) ? (
@@ -512,14 +531,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
         onClick={(e) => { e.stopPropagation(); onToggleDiscardPath(path); }}
         title={path.discarded
           ? `"${pathLabel(path)}" is ruled out — click to bring it back`
-          : `Rule "${pathLabel(path)}" out. It stays on the card, struck through and sorted last, and Clear Unstarred leaves it alone. The star is untouched.`}
+          : `Rule "${pathLabel(path)}" out. It folds away under Discarded, Clear Unstarred leaves it alone, and the star is untouched.`}
         className={`rounded-full p-0.5 shadow-sm transition-colors ${
           path.discarded
             ? 'bg-gray-500 text-white'
-            : 'bg-gray-800 text-gray-500 hover:bg-gray-400 hover:text-black'
+            : 'bg-gray-800 text-gray-400 hover:bg-gray-400 hover:text-black'
         }`}
       >
-        <Minus className="w-2.5 h-2.5" strokeWidth={3.5} />
+        <Minus className="w-2.5 h-2.5" strokeWidth={4} />
       </button>
     ) : null;
 
@@ -1593,13 +1612,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           two, which left a single saved build with nothing to carry its name and its total. */}
       {allPaths.some(p => p.chainIds.length > 0) && (
         <div className="flex flex-wrap items-center gap-1.5 mb-1">
-          {allPaths.map((path, i) => (
+          {rowPaths.map((path, i) => (
             <React.Fragment key={`row-${path.id}`}>
               {/* The run's own results, kept apart from your builds. A fresh Analyze used to drop
                   eight chips into the middle of the row and the builds you had saved were suddenly
                   somewhere in a wall of them. Below the line is what you keep; after it is what
                   this run found, and it is replaced wholesale by the next one. */}
-              {isFresh(path) && !isFresh(allPaths[i - 1]) && (
+              {path.discarded && !rowPaths[i - 1]?.discarded && discardedHeader}
+              {isFresh(path) && !isFresh(rowPaths[i - 1]) && (
                 <div className="basis-full flex items-center gap-2 mt-1.5 mb-0.5">
                   <span className="text-[9.5px] uppercase tracking-wider text-fuchsia-400/80 font-bold">
                     This run
@@ -1680,7 +1700,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 )}
               </button>
               )}
-              <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <div className={`absolute -top-1.5 -right-1.5 flex items-center gap-0.5 transition-opacity z-10 ${
+                path.discarded ? '' : 'opacity-0 group-hover:opacity-100'
+              }`}>
+                {discardBadge(path)}
                 {/* Promote it to the record. A plan becomes what you have actually done the moment
                     you finish it in game, and until now that meant rebuilding it by hand on the
                     Current chip. The build you are replacing is kept, because it is the one thing
@@ -1728,7 +1751,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 </button>
               )}
               {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
-                <div className="absolute -top-3 -left-1.5 z-10 flex items-center gap-0.5">
+                <div className="absolute -top-3 -left-1.5 z-10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1739,7 +1762,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   >
                     <Star className={`w-2.5 h-2.5 ${STAR_TIERS[starTier(path) - 1].fill}`} />
                   </button>
-                  {discardBadge(path)}
                 </div>
               )}
               {onDeletePath && isInGamePath(path) && path.chainIds.length > 0 && (
@@ -1769,7 +1791,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       <Star className="w-2.5 h-2.5" />
                     </button>
                   )}
-                  {discardBadge(path)}
                   {onDeletePath && (
                     <button
                       onClick={(e) => {
@@ -1787,6 +1808,8 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
             </div>
             </React.Fragment>
           ))}
+          {/* Folded shut, so the header is all there is to draw while it is closed. */}
+          {discardedPaths.length > 0 && !showDiscarded && discardedHeader}
         </div>
       )}
 
@@ -1851,91 +1874,6 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     {renderPath.description}
                   </div>
                 )}
-                {/* The verdict goes where the reasoning is. A thumbs-down asks what was wrong with
-                    it, because a bare thumb cannot be acted on later — it says the row was wrong
-                    without saying which part, and by then the row is gone. */}
-                {renderPath.chainIds.length > 0 && onRatePath && (() => {
-                  const key = chainKeyOf(renderPath.chainIds);
-                  const verdict = pathFeedback?.[key]?.verdict;
-                  const chosen = pathFeedback?.[key]?.reasons || [];
-                  const asking = reasonsFor === renderPath.id;
-                  return (
-                    <div className="flex flex-wrap items-center gap-1 px-1.5">
-                      <button
-                        onClick={() => { onRatePath(renderPath, verdict === 'up' ? null : 'up'); setReasonsFor(null); }}
-                        title="Good recommendation — keep showing it, and use it when tuning the ranking"
-                        className={`px-1.5 py-0.5 rounded border text-[10px] transition-colors ${
-                          verdict === 'up'
-                            ? 'bg-green-900/40 border-fcGreen text-fcGreen'
-                            : 'bg-[#1a1c1a] border-gray-700 text-gray-500 hover:text-fcGreen hover:border-fcGreen/60'
-                        }`}
-                      >
-                        <ThumbsUp className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (verdict === 'down') { onRatePath(renderPath, null); setReasonsFor(null); }
-                          else { onRatePath(renderPath, 'down'); setReasonsFor(renderPath.id); }
-                        }}
-                        title="Not a build you would make — hidden from future searches on this card"
-                        className={`px-1.5 py-0.5 rounded border text-[10px] transition-colors ${
-                          verdict === 'down'
-                            ? 'bg-red-950/40 border-red-600 text-red-400'
-                            : 'bg-[#1a1c1a] border-gray-700 text-gray-500 hover:text-red-400 hover:border-red-700'
-                        }`}
-                      >
-                        <ThumbsDown className="w-3 h-3" />
-                      </button>
-                      {verdict === 'down' && !asking && chosen.length > 0 && (
-                        <button
-                          onClick={() => setReasonsFor(renderPath.id)}
-                          className="text-[9.5px] text-red-400/80 hover:text-red-300 underline decoration-dotted"
-                        >
-                          {chosen.map(id => FEEDBACK_REASONS.find(r => r.id === id)?.label || id).join(' · ')}
-                        </button>
-                      )}
-                      {verdict === 'down' && !asking && chosen.length === 0 && (
-                        <button
-                          onClick={() => setReasonsFor(renderPath.id)}
-                          className="text-[9.5px] text-gray-500 hover:text-gray-300 underline decoration-dotted"
-                        >
-                          say what was wrong
-                        </button>
-                      )}
-                      {verdict === 'down' && asking && (
-                        <span className="flex flex-wrap items-center gap-1">
-                          {FEEDBACK_REASONS.map(reason => {
-                            const picked = chosen.includes(reason.id);
-                            return (
-                              <button
-                                key={reason.id}
-                                title={reason.hint}
-                                onClick={() => onRatePath(
-                                  renderPath,
-                                  'down',
-                                  picked ? chosen.filter(r => r !== reason.id) : [...chosen, reason.id]
-                                )}
-                                className={`px-1.5 py-0.5 rounded border text-[9.5px] font-bold transition-colors ${
-                                  picked
-                                    ? 'bg-red-900/50 border-red-600 text-red-300'
-                                    : 'bg-[#2A2D2A] border-gray-700/50 text-gray-400 hover:text-white hover:bg-[#374151]'
-                                }`}
-                              >
-                                {reason.label}
-                              </button>
-                            );
-                          })}
-                          <button
-                            onClick={() => setReasonsFor(null)}
-                            className="px-1 text-[9.5px] text-gray-500 hover:text-white"
-                          >
-                            done
-                          </button>
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 p-1.5 bg-[#1a1c1a] rounded-lg border border-gray-800">
                   <Layers className="w-3.5 h-3.5 text-gray-500 mr-1 shrink-0" />
 

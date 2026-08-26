@@ -1630,7 +1630,9 @@ export default function App() {
           : evoFilters.analyzeReadings === 'chem' ? ['chem']
           : ['bare', 'chem'],
         // Only V2 reads these, and only to hide what you turned down and keep what you liked.
-        feedback: version === 2 ? { down: playerFeedback.down, up: playerFeedback.up } : undefined
+        // Thumbs are off: the stored votes are left alone, but nothing is fed to the search, so
+        // the ranking is the model and only the model.
+        feedback: undefined
       },
       nodes => setAnalyzeProgress(nodes)
     );
@@ -2060,8 +2062,6 @@ export default function App() {
           freshPathIds={runPathIds}
           assumeChemStyle={assumeChemStyle}
           onSetAssumeChemStyle={setAssumeChemStyle}
-          pathFeedback={playerFeedback.byChain}
-          onRatePath={ratePath}
           excludedCount={excludedCount}
           extraCount={extraCount}
           onEvoFiltersChange={setEvoFilters}
