@@ -5,10 +5,9 @@ import { EvolutionDefinition } from '../../types/player';
  * caps — +4 shooting on a card already at 96 buys two points — so it is a finisher for a card in
  * the mid 90s rather than anything you build around.
  *
- * Carried the fut.gg id 2461 until FUTBIN indexed it; the numbers below are still the ones read
- * off fut.gg, whose images were checked directly for granted PlayStyles (there are none) because
- * fut.gg renders them as pictures with no text — the mistake that lost Instant Magnet's First
- * Touch+. They have not been re-read against FUTBIN.
+ * Carried the fut.gg id 2461 until FUTBIN indexed it. Every upgrade line agreed across the two;
+ * the one thing only FUTBIN prints is the GK exclusion, which is the second time fut.gg has left
+ * that particular requirement out — Leyenda de Moncada was the first.
  *
  * fut.gg prints the OVR upgrade without a cap. It does not matter which the cap is: entry is
  * capped at 97 and the boost is +1, so 98 is the ceiling either way, and 98 is what its worked
@@ -20,9 +19,10 @@ export const eagleEyed1282: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1282/eagle-eyed',
   version: 'FC 26',
   description: 'Unlocked by completing the Wind it Back task in the Ultimate Rewind Completionist objective.',
-  cost: 'Free / Objective',
+  cost: 'Objective Reward — Wind it Back',
   requirements: {
-    maxOvr: 97
+    maxOvr: 97,
+    excludedPositions: ['GK']
   },
   ovrBoost: { boost: 1, limit: 98 },
   faceBoosts: {
