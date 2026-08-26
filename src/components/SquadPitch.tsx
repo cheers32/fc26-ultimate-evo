@@ -85,6 +85,27 @@ export const FORMATIONS: Formation[] = [
     ]
   },
   {
+    id: '4222',
+    name: '4-2-2-2 · two STs',
+    // The two behind the strikers are judged as CAM-L and CAM-R — the same wide-playmaker reading
+    // the three-CAM formation uses — while the central attacker of the other shapes moves up to be
+    // the second striker. Slot ids stay put, so switching in or out of this re-labels the front
+    // four rather than emptying them.
+    slots: [
+      { id: 'gk', pos: 'GK', x: 50, y: 92 },
+      { id: 'lb', pos: 'LB', x: 12, y: 74 },
+      { id: 'lcb', pos: 'CB', x: 35, y: 76 },
+      { id: 'rcb', pos: 'CB', x: 65, y: 76 },
+      { id: 'rb', pos: 'RB', x: 88, y: 74 },
+      { id: 'lcdm', pos: 'CDM', x: 35, y: 54 },
+      { id: 'rcdm', pos: 'CDM', x: 65, y: 54 },
+      { id: 'lw', pos: 'CAM-L', label: 'CAM', x: 22, y: 33 },
+      { id: 'rw', pos: 'CAM-R', label: 'CAM', x: 78, y: 33 },
+      { id: 'cam', pos: 'ST', label: 'ST', x: 36, y: 12 },
+      { id: 'st', pos: 'ST', x: 64, y: 12 }
+    ]
+  },
+  {
     id: '4411',
     name: '4-4-1-1 · LM CM CM RM',
     slots: [
