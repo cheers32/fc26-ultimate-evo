@@ -19,6 +19,15 @@ interface StatsGridProps {
    * the evo pool pushed off screen.
    */
   dense?: boolean;
+  /**
+   * Show the chemistry style's printed boost rather than what the card actually gained.
+   *
+   * Off by default, and the default is the honest one: a +6 on a stat sitting at 96 is a +3, and
+   * printing +6 there describes the style rather than the card. Worth keeping switchable because
+   * the printed number is what the style is picked by — two styles that both bottom out against
+   * the ceiling here are not the same style on the next card.
+   */
+  nominalChemBoost?: boolean;
 }
 
 export const StatsGrid: React.FC<StatsGridProps> = ({
@@ -29,7 +38,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   aside,
   below,
   asideBelow,
-  dense = false
+  dense = false,
+  nominalChemBoost = false
 }) => {
   // Calculate Utilization stats if a specific EVO is selected
   let totalAllowedBoost = 0;
@@ -112,6 +122,9 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
           const showEvo = effectiveVal !== activeBase;
 
           const finalVal = Math.min(99, effectiveVal + boost);
+          // What the style is printed as, or what the card actually got out of it — see
+          // `nominalChemBoost`. They differ exactly where the 99 ceiling eats the difference.
+          const shownBoost = nominalChemBoost ? boost : finalVal - effectiveVal;
 
           const weight = faceWeight(faceKey, subKey, subDataBase.w);
           totalFaceValBase += effectiveVal * weight;
@@ -162,8 +175,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
                 {anyChemBoost && (
                   <>
-                    <span className={`font-normal text-[10.5px] ml-1 w-7 shrink-0 text-left tracking-tighter ${boost > 0 ? 'text-fcGreen font-bold' : boost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
-                      {boost > 0 ? `+${boost}` : boost < 0 ? `${boost}` : '+0'}
+                    <span className={`font-normal text-[10.5px] ml-1 w-7 shrink-0 text-left tracking-tighter ${shownBoost > 0 ? 'text-fcGreen font-bold' : shownBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                      {shownBoost > 0 ? `+${shownBoost}` : shownBoost < 0 ? `${shownBoost}` : '+0'}
                     </span>
 
                     <span className={`w-6 shrink-0 text-right ${boost > 0 ? getStatColorClass(finalVal) : 'text-transparent'}`}>

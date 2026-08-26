@@ -890,6 +890,11 @@ export default function App() {
   const baseIndex = currentState.baseIndex ?? -1;
   const setBaseIndex = (val: number) => updateState({ baseIndex: val });
 
+  /**
+   * Whether the stat grid prints a chemistry style's nominal boost or what the card actually gains.
+   * Off by default — a +6 onto a 96 is a +3, and saying +6 describes the style, not this card.
+   */
+  const [nominalChemBoost, setNominalChemBoost] = useState(false);
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   // Which PlayStyle node the picker is editing: an index in the chain, 'new' to add one at the
   // end, or null when it's closed.
@@ -2113,6 +2118,7 @@ export default function App() {
               previewStats={previewStats}
               activeChemBoosts={activeChemBoosts}
               activeEvo={activeEvo}
+              nominalChemBoost={nominalChemBoost}
               aside={
                 <SquadPitch
                   squads={squads}
@@ -2153,6 +2159,8 @@ export default function App() {
                   onLockChem={(name) => {
                     setLockedChem(lockedChem === name ? null : name);
                   }}
+                  nominalChemBoost={nominalChemBoost}
+                  onToggleNominalChemBoost={() => setNominalChemBoost(v => !v)}
                 />
               }
             />

@@ -25,6 +25,9 @@ interface ChemistryGridProps {
   bio?: PlayerBio;
   /** Slot position if the card is on the pitch, otherwise its own — the same rule as everywhere. */
   scorePosition?: string;
+  /** Whether the stat grid is printing the style's nominal boost rather than the realised one. */
+  nominalChemBoost?: boolean;
+  onToggleNominalChemBoost?: () => void;
 }
 
 export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
@@ -36,7 +39,9 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
   onHoverChem,
   onLockChem,
   bio,
-  scorePosition
+  scorePosition,
+  nominalChemBoost = false,
+  onToggleNominalChemBoost
 }) => {
   const names = Object.keys(chemStyles);
 
@@ -185,6 +190,19 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
           line falls rather than one being a refinement of the other: the game turns Explosive on at
           an agility lead of 10, while the seven-way thresholds lean Explosive from 4. Nesting would
           have to pick one of them to be the outer truth. */}
+      {onToggleNominalChemBoost && (
+        <label className="flex items-center gap-1.5 text-[9px] text-gray-500 hover:text-gray-300 cursor-pointer select-none -mb-1">
+          <input
+            type="checkbox"
+            checked={nominalChemBoost}
+            onChange={onToggleNominalChemBoost}
+            className="w-3 h-3 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-0 focus:ring-offset-0 cursor-pointer"
+          />
+          <span title="Off: the points the card actually gains, with anything the 99 ceiling ate already taken off. On: the number the style is printed with.">
+            Show the style's printed boost
+          </span>
+        </label>
+      )}
       <div className="flex flex-col gap-1.5">
         <div className="text-[9px] font-bold uppercase tracking-wider text-fcGreen/70">In game · FC 26</div>
         {ACCELERATE_FAMILIES.map(family => {
