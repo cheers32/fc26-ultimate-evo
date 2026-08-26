@@ -148,6 +148,18 @@ export interface EvolutionPath {
    */
   starTier?: 1 | 2 | 3 | 4 | 5;
   /**
+   * Considered and turned down, but not thrown away.
+   *
+   * The star answers "keep this", and there was no way to say the other useful thing: that a build
+   * has been looked at and ruled out. Without it the only way to stop a build cluttering the row is
+   * Clear Unstarred, which deletes it — so the next Analyze run offers it again, and it gets ruled
+   * out again, with nothing on the card remembering that it ever was.
+   *
+   * Struck through and sorted to the end, kept like any other saved build, and never swept by
+   * Clear. It is a third state alongside starred and unstarred, not a colour of star.
+   */
+  discarded?: boolean;
+  /**
    * How far the build has actually been played in game: the index of the last step that's done, so
    * -1 (or absent) is "not started". Evos are applied in chain order, so one pointer says it —
    * everything up to it is done and everything after it isn't.

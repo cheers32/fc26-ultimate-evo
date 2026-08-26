@@ -67,6 +67,8 @@ interface HeaderCardProps {
   analyzeNothing?: {
     reason: 'none' | 'duplicates';
     assumedChem: boolean;
+    /** Builds already on the card that the last run came back with. */
+    duplicateIds?: string[];
     /** Fieldable floors nothing in the pool could reach, worst gap first. */
     short?: { key: string; floor: number; best: number }[];
     /** How many legal chains the search had to look at. Zero is its own answer. */
@@ -105,6 +107,8 @@ interface HeaderCardProps {
   onChangePlayer?: () => void;
   onClearPaths?: () => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
+  /** Rule a build out without deleting it — struck through, sorted last, never swept by Clear. */
+  onToggleDiscardPath?: (path: EvolutionPath) => void;
   onRenamePath?: (pathId: string, name: string) => void;
   /** Promote a build to Current — what you have actually done in game. Keeps the old one. */
   onMakeCurrent?: (pathId: string) => void;
@@ -368,6 +372,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onDeletePath,
   onDuplicatePath,
   onToggleFavoritePath,
+  onToggleDiscardPath,
   onRenamePath,
   onMakeCurrent,
   shareUrlFor,
@@ -1478,6 +1483,24 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 {' '}Every build it came back with is already saved on this card, so the list is
                 unchanged. Widen the pool, raise the depth, or loosen Filters to look somewhere else.
               </span>
+              {/* Which ones. Without this the note is true and unusable on a card carrying eight
+                  saves — the chips are ringed to match, so the eye lands on them either way. */}
+              {(analyzeNothing.duplicateIds || []).length > 0 && (
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <span className="text-amber-200/60">It came back with:</span>
+                  {analyzeNothing.duplicateIds!.map(id => {
+                    const p = allPaths.find(x => x.id === id);
+                    return (
+                      <span
+                        key={id}
+                        className="px-1.5 py-0.5 rounded border border-amber-500/70 bg-amber-950/40 text-amber-200 font-bold"
+                      >
+                        {p ? pathLabel(p) : id}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -1579,10 +1602,15 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
                     : comparePathId === path.id
                     ? 'bg-purple-950/40 text-purple-400 border-purple-500 shadow-sm'
+                    // The builds the last run came back with and you already had. Amber, matching
+                    // the note that says so, because "you already have these" is not an answer
+                    // until you can see which.
+                    : (analyzeNothing?.duplicateIds || []).includes(path.id)
+                    ? 'bg-amber-950/40 text-amber-200 border-amber-500 shadow-sm'
                     : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
-                }`}
+                } ${path.discarded ? 'opacity-50' : ''}`}
               >
-                {pathLabel(path)}
+                <span className={path.discarded ? 'line-through decoration-2' : ''}>{pathLabel(path)}</span>
                 {/* What the build is worth, on the chip itself, so builds can be told apart without
                     expanding them: the stat total it ends on, and what that is worth where the card
                     plays. Bare numbers — the labels cost more room than they explain, and the two
@@ -2407,6 +2435,26 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       >
                         <Star className={`w-3 h-3 ${starTier(renderPath) === 0 ? '' : STAR_TIERS[starTier(renderPath) - 1].fill}`} />
                         {starTier(renderPath) > 0 ? 'Saved' : 'Save'}
+                      </button>
+                    )}
+                    {/* The other useful thing to say about a build: looked at, ruled out, keep the
+                        record. Not offered on the in-game one, which is not a proposal. */}
+                    {onToggleDiscardPath && !isInGamePath(renderPath) && (
+                      <button
+                        onClick={() => onToggleDiscardPath(renderPath)}
+                        title={renderPath.discarded
+                          ? 'Ruled out — click to bring it back into the list'
+                          : 'Rule this one out. It stays on the card, struck through and sorted last, and Clear Unstarred leaves it alone.'}
+                        className={`text-[10px] flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
+                          renderPath.discarded
+                            ? 'bg-[#2a2d2a] text-gray-300 border-gray-500'
+                            : 'bg-[#1f211f] text-gray-400 border-gray-700 hover:border-gray-400 hover:text-gray-200'
+                        }`}
+                      >
+                        <Minus className="w-3 h-3" />
+                        <span className={renderPath.discarded ? 'line-through decoration-2' : ''}>
+                          {renderPath.discarded ? 'Discarded' : 'Discard'}
+                        </span>
                       </button>
                     )}
                     {shareUrlFor && (

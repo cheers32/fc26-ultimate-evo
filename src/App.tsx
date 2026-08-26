@@ -745,7 +745,7 @@ export default function App() {
    */
   const starredKey = (paths: EvolutionPath[]) =>
     JSON.stringify(
-      paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>'), p.chemStyle ?? ''])
+      paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>'), p.chemStyle ?? '', p.discarded ? 1 : 0])
     );
 
   const starredForPlayer = useMemo(
@@ -968,6 +968,8 @@ export default function App() {
   const [analyzeNothing, setAnalyzeNothing] = useState<{
     reason: 'none' | 'duplicates';
     assumedChem: boolean;
+    /** Builds already on the card that this run came back with — highlighted in the row. */
+    duplicateIds?: string[];
     /** Fieldable floors nothing in the pool could reach, worst gap first. */
     short?: { key: string; floor: number; best: number }[];
     /** How many legal chains the search had to look at. Zero is its own answer. */
@@ -1017,7 +1019,15 @@ export default function App() {
     // thing carrying it and the row reads as shuffled. Only V2's `#n` names match this.
     // Two ranked lists, each in its own order: `#n` is the card as it is, `Cn` is the card with a
     // chemistry style on. Bare leads, because it promises less.
+    //
+    // Read off the run itself where the run is still in hand, because the name is not stable:
+    // starring a result renames it — `#2` was a position in a list, and the plan it was ranked
+    // under is what keeps meaning something — and the name was the only thing this had to sort by.
+    // So the click that saved a build also sent it to the end of the block you were looking at.
+    // `runPathIds` is the order the run produced, keyed by identity, which a rename cannot touch.
     const rankOf = (p: EvolutionPath) => {
+      const ran = runPathIds.indexOf(p.id);
+      if (ran >= 0) return ran;
       const m = /^(#|C)(\d+)$/.exec(p.name);
       if (!m) return null;
       return (m[1] === '#' ? 0 : 1000) + Number(m[2]);
@@ -1047,7 +1057,10 @@ export default function App() {
     // The base card leads, always, and is never one of the saved ones — it is synthesised on every
     // render so nothing that writes paths can touch it. The record comes second, wherever it was
     // stored, so the two fixed points of the row are always the first two chips.
-    const withDefault = [baseCardPath, record ?? defaultPath, ...kept, ...thisRun];
+    // Ruled out, so out of the way — but still there, which is the difference between discarding a
+    // build and deleting one. Order among themselves is left alone.
+    const sink = (list: EvolutionPath[]) => [...list.filter(p => !p.discarded), ...list.filter(p => p.discarded)];
+    const withDefault = [baseCardPath, record ?? defaultPath, ...sink(kept), ...sink(thisRun)];
     // The in-game record is starred green wherever it came from — a stored copy from before this
     // rule, an edit that dropped the flags, a fresh synthesis. One place to enforce it beats
     // remembering to set it at each of the half-dozen places a path gets written.
@@ -1372,8 +1385,10 @@ export default function App() {
 
   const handleClearPaths = () => {
     updateState({
-      generatedPaths: generatedPaths.filter(p => p.isFavorite || isInGamePath(p)),
-      manualPaths: manualPaths.filter(p => p.isFavorite || isInGamePath(p)),
+      // Discarded is a decision about a build, not an absence of one — sweeping it away would
+      // throw out the record of having ruled it out, which is the whole point of the state.
+      generatedPaths: generatedPaths.filter(p => p.isFavorite || p.discarded || isInGamePath(p)),
+      manualPaths: manualPaths.filter(p => p.isFavorite || p.discarded || isInGamePath(p)),
       activePathId: DEFAULT_PATH_ID,
       expandedPathIds: [DEFAULT_PATH_ID]
     });
@@ -1634,12 +1649,19 @@ export default function App() {
         // Only the manual paths — starred saves and hand-built drafts alike — are compared against:
         // they are what survives a run. The previous run's results are being replaced by this one,
         // so matching against those would delete a build instead of deduplicating it.
-        const already = new Set(currentState.manualPaths.map(p => p.chainIds.join('>')));
+        const already = new Map(currentState.manualPaths.map(p => [p.chainIds.join('>'), p.id]));
         const fresh: EvolutionPath[] = [];
+        // Which builds already on the card the run came back with. "You already have these" is only
+        // half an answer on a card carrying eight saves — the other half is which ones.
+        const duplicateIds: string[] = [];
         results.forEach(path => {
           const key = path.chainIds.join('>');
-          if (already.has(key)) return;
-          already.add(key);
+          const owner = already.get(key);
+          if (owner !== undefined) {
+            if (!duplicateIds.includes(owner)) duplicateIds.push(owner);
+            return;
+          }
+          already.set(key, path.id);
           fresh.push(path);
         });
 
@@ -1655,6 +1677,7 @@ export default function App() {
             : {
                 reason: results.length === 0 ? 'none' : 'duplicates',
                 assumedChem: assumeChemStyle,
+                duplicateIds,
                 // Which bar was missed and by how much, so the answer to "now what" is a stat name
                 // rather than another run with a different filter.
                 short: (diagnosis?.floors || []).filter(f => f.best < f.floor).sort(
@@ -2082,6 +2105,23 @@ export default function App() {
           onDeletePath={handleDeletePath}
           onDuplicatePath={handleDuplicatePath}
           onSetProgress={handleSetPathProgress}
+          onToggleDiscardPath={(path) => {
+            // The record's own build is not a proposal and cannot be ruled out.
+            if (isInGamePath(path) || isBaseCardPath(path)) return;
+            const next = { discarded: !path.discarded };
+            const isManual = manualPaths.some(p => p.id === path.id);
+            if (isManual) {
+              updateState({ manualPaths: manualPaths.map(p => (p.id === path.id ? { ...p, ...next } : p)) });
+            } else {
+              // Same promotion a star does, and for the same reason: the next run replaces
+              // generatedPaths wholesale, and a build you deliberately ruled out has to survive
+              // that or the run will offer it straight back.
+              updateState({
+                generatedPaths: generatedPaths.filter(p => p.id !== path.id),
+                manualPaths: [...manualPaths, { ...path, ...next, name: keeperName(path) }]
+              });
+            }
+          }}
           onToggleFavoritePath={(path) => {
             if (path.chainIds.length === 0) return;
             // The in-game record does not cycle. It is saved, it is green, and a stray click on the
