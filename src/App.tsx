@@ -183,7 +183,9 @@ export default function App() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPlayerSelectionOpen, setIsPlayerSelectionOpen] = useState(false);
   const [isManualPathOpen, setIsManualPathOpen] = useState(false);
-  const [pickerMode, setPickerMode] = useState<'append' | 'branch'>('append');
+  const [pickerMode, setPickerMode] = useState<'append' | 'branch' | 'insert'>('append');
+  /** Splice index for the builder in 'insert' mode — where in the open chain the pick lands. */
+  const [evoInsertAt, setEvoInsertAt] = useState<number>(0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2019,6 +2021,11 @@ export default function App() {
           onOpenImportBuild={() => setIsImportBuildOpen(true)}
           canPickFreePlayStyles={canAddPlayStylePick}
           onOpenPlayStylePicker={(target) => setPlayStylePickerTarget(target)}
+          onInsertEvoAt={(after) => {
+            setPickerMode('insert');
+            setEvoInsertAt(after + 1);
+            setIsManualPathOpen(true);
+          }}
           rawBaseOvr={initialOvrData.base}
           rawPlayStyles={playStylesData}
           rawStats={statsData}
@@ -2284,7 +2291,8 @@ export default function App() {
         // it alone and starts a fresh path from the base prefix.
         // The base card takes no edits, so appending from it starts a new build rather than
         // growing the one chip that is meant to stay where it is.
-        editingPath={pickerMode === 'append' && !isBaseCardPath(activePath) ? activePath : null}
+        editingPath={pickerMode !== 'branch' && !isBaseCardPath(activePath) ? activePath : null}
+        insertAt={pickerMode === 'insert' ? evoInsertAt : null}
         lockedPrefix={pickerMode === 'branch' ? basePrefix : []}
         onSave={(path) => {
           const isManual = manualPaths.some(p => p.id === path.id);

@@ -429,6 +429,16 @@ const PlayStyleDiffDisplay = ({ before, after }: { before?: PlayStylesData, afte
   );
 };
 
+/** Where the next pick will land, drawn into the chain so the gap is unmistakable. */
+const InsertionMarker: React.FC = () => (
+  <span
+    title="The evo you pick goes in here"
+    className="shrink-0 px-1.5 py-1 rounded border border-dashed border-fcGreen/70 bg-fcGreen/10 text-fcGreen text-[9.5px] font-bold tracking-wide"
+  >
+    ＋ HERE
+  </span>
+);
+
 interface ManualPathModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -439,6 +449,14 @@ interface ManualPathModalProps {
   baseStats: StatsData;
   basePlayStyles: PlayStylesData;
   editingPath?: EvolutionPath | null;
+  /**
+   * Splice a pick into `editingPath` at this index instead of appending it.
+   *
+   * A chain is laid down once and read many times, and a step deleted out of the middle of one
+   * could only be put back by rebuilding everything after it. Null is the old behaviour: the pick
+   * goes on the end.
+   */
+  insertAt?: number | null;
   // Steps locked in by the chosen base. New paths start seeded with these and can't drop them.
   lockedPrefix?: string[];
   // The pool's must-haves and the stat targets from Filters. The builder never blocks a pick on
@@ -461,6 +479,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   baseStats,
   basePlayStyles,
   editingPath = null,
+  insertAt = null,
   lockedPrefix = [],
   evoFilters,
   assumeChemStyle = false,
@@ -469,6 +488,20 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   onToggleDisabled
 }) => {
   const [selectedChain, setSelectedChain] = useState<string[]>([]);
+  /**
+   * Where a pick lands, and therefore which card it is judged against.
+   *
+   * Appending, the card is the finished chain and the answer is the same as it always was. Inserting,
+   * it is the card as it stands at the cursor — and that is not a detail of presentation: an evo
+   * gated at OVR 91 is grey at the end of a chain that reached 99 and perfectly legal at step two.
+   * Judging candidates against the wrong end of the chain would grey out most of the pool and say
+   * nothing true about any of it.
+   */
+  const cursor = insertAt ?? selectedChain.length;
+  const chainPrefix = selectedChain.slice(0, cursor);
+  const chainSuffix = selectedChain.slice(cursor);
+  const withCandidate = (id: string) => [...chainPrefix, id, ...chainSuffix];
+  const isInserting = insertAt !== null;
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showNotIncluded, setShowNotIncluded] = useState<boolean>(false);
 
@@ -548,6 +581,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     return { isValid: res.isValidChain, result: res };
   }, [selectedChain, baseBio, baseOvr, baseStats, basePlayStyles]);
 
+  // Appending, this is the finished chain and nothing is simulated twice. Inserting, it is the card
+  // at the cursor — see `cursor` above for why that has to be a different reading.
+  const cursorResult = useMemo(
+    () => (isInserting ? simulateEvoChain(chainPrefix, baseBio, baseOvr, baseStats, basePlayStyles) : validationResult.result),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isInserting, chainPrefix.join('|'), validationResult, baseBio, baseOvr, baseStats, basePlayStyles]
+  );
+
   // A few evos deep, the best pick stops being visible one card at a time — what matters is where
   // the chain can still end up. So the same search Analyze uses runs from the current chain as its
   // prefix, shallow enough to land in a second or two, and offers the best continuations whole.
@@ -563,7 +604,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     chainSearchHandle.current?.cancel();
     chainSearchHandle.current = null;
 
-    if (!isOpen) {
+    // Inserting, the block would be answering the wrong question: it offers whole continuations to
+    // append to the end, and the end already has a chain on it that the user is editing around.
+    if (!isOpen || isInserting) {
       setChainRecs([]);
       setIsSearchingChains(false);
       setChainSearchSettled(false);
@@ -618,13 +661,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     // selectedChain is compared by its joined key so a re-render with an equal array can't
     // restart a search that is already running for it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, chainKey, recommendationPool, baseBio, baseOvr, baseStats, basePlayStyles, evoFilters]);
+  }, [isOpen, isInserting, chainKey, recommendationPool, baseBio, baseOvr, baseStats, basePlayStyles, evoFilters]);
 
   if (!isOpen) return null;
 
-  // Picking an evo appends it to the base and hands straight back to the player screen —
-  // the chain is inspected and edited there, not in here.
-  const handleAdd = (id: string) => applyChain([...selectedChain, id]);
+  // Picking an evo drops it in and hands straight back to the player screen — the chain is
+  // inspected and edited there, not in here. Where it drops is `cursor`: the end, unless the
+  // builder was opened on a gap.
+  const handleAdd = (id: string) => applyChain(withCandidate(id));
 
   const applyChain = (chain: string[]) => {
     const result = simulateEvoChain(chain, baseBio, baseOvr, baseStats, basePlayStyles);
@@ -649,10 +693,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     });
   };
 
-  const currentOvr = validationResult.result ? validationResult.result.finalOvr : baseOvr.base;
-  const currentStats = validationResult.result ? validationResult.result.finalStats : baseStats;
-  const currentPlayStyles = validationResult.result ? validationResult.result.finalPlayStyles : basePlayStyles;
-  const currentBio = validationResult.result ? validationResult.result.finalBio : baseBio;
+  const currentOvr = cursorResult ? cursorResult.finalOvr : baseOvr.base;
+  const currentStats = cursorResult ? cursorResult.finalStats : baseStats;
+  const currentPlayStyles = cursorResult ? cursorResult.finalPlayStyles : basePlayStyles;
+  const currentBio = cursorResult ? cursorResult.finalBio : baseBio;
 
   // The player's own profile, when they've switched it on in Filters. Everything downstream is
   // opt-in on this: with it off the builder behaves exactly as it did before.
@@ -699,6 +743,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     let expectedSpread: Record<AccelerateFamily, number> | null = null;
     let expectedScore: PositionScore | null = null;
     let expectedPs: PlayStyleScore | null = null;
+    let breaksStep: { at: number; name: string; reason: string } | null = null;
 
     if (evo && !limitReached) {
       const validation = validateRequirement(evo, currentOvr, currentStats, currentPlayStyles, currentBio);
@@ -707,8 +752,19 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       warnings = validation.warnings;
 
       if (isEligible) {
-        const testRes = simulateEvoChain([...selectedChain, id], baseBio, baseOvr, baseStats, basePlayStyles);
-        if (testRes.isValidChain) {
+        const testRes = simulateEvoChain(withCandidate(id), baseBio, baseOvr, baseStats, basePlayStyles);
+        // A pick legal where it goes can still cost a step further down its own entry — the usual
+        // case being a PlayStyle+ it grants pushing the card past a later evo's gate. That is the
+        // user's call to make, so it is named rather than hidden: filtering these out would rebuild
+        // the very wall that made a deleted step impossible to put back.
+        const brokenIdx = testRes.steps.findIndex(
+          (st, i) => i > cursor && st.validation && st.validation.eligible === false
+        );
+        if (brokenIdx >= 0) {
+          const st = testRes.steps[brokenIdx];
+          breaksStep = { at: brokenIdx, name: st.evoName, reason: st.validation.reasons[0] || 'no longer legal here' };
+        }
+        if (testRes.isValidChain || brokenIdx >= 0) {
           expectedOvr = testRes.finalOvr;
           expectedStats = testRes.finalStats;
           expectedPlayStyles = testRes.finalPlayStyles;
@@ -791,6 +847,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       expectedSpread,
       expectedScore,
       expectedPs,
+      breaksStep,
       posMatchScore
     };
   });
@@ -1028,6 +1085,12 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 {selectedChain.length > 0 && (
                   <span className="text-gray-600 text-[10px] shrink-0">➜</span>
                 )}
+                {isInserting && cursor === 0 && (
+                  <>
+                    <InsertionMarker />
+                    <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                  </>
+                )}
 
                 {selectedChain.map((id, idx) => {
                   // PlayStyle picks are steps too, but they're edited from the player panel —
@@ -1055,7 +1118,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           ))}
                         </div>
                         {idx < selectedChain.length - 1 && (
-                          <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                          <>
+                            <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                            {isInserting && cursor === idx + 1 && (
+                              <>
+                                <InsertionMarker />
+                                <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                              </>
+                            )}
+                          </>
                         )}
                       </React.Fragment>
                     );
@@ -1278,7 +1349,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                         </button>
                       </div>
                       {idx < selectedChain.length - 1 && (
-                        <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                        <>
+                          <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                          {isInserting && cursor === idx + 1 && (
+                            <>
+                              <InsertionMarker />
+                              <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                            </>
+                          )}
+                        </>
                       )}
                     </React.Fragment>
                   );
@@ -1682,7 +1761,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 </div>
               ) : (
                 visiblePool
-                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate, expectedSpread, expectedScore, expectedPs }) => {
+                  .map(({ id, evo, limitReached, isEligible, reasons, warnings, expectedOvr, expectedIgs, expectedFaceStats, expectedStats, expectedPlayStyles, recReasons, expectedFit, expectedAccelerate, expectedSpread, expectedScore, expectedPs, breaksStep }) => {
                   if (!evo) return null;
 
                   const canAdd = !limitReached && isEligible;
@@ -1877,6 +1956,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                       {!canAdd && !limitReached && reasons.length > 0 && (
                         <div className="mt-2 text-[10px] text-red-400/80 bg-red-950/20 p-1.5 rounded pr-8">
                           {reasons[0]} {reasons.length > 1 && `(+${reasons.length - 1} more)`}
+                        </div>
+                      )}
+
+                      {/* Legal where it goes, and it costs a step further down its own entry. Red,
+                          because the chain does not work as it stands afterwards — and still
+                          addable, because removing that later step may well be what you meant. */}
+                      {canAdd && breaksStep && (
+                        <div className="mt-2 flex items-start gap-1.5 text-[10px] text-red-300 bg-red-950/30 border border-red-800/60 p-1.5 rounded pr-8">
+                          <AlertTriangle className="w-3 h-3 shrink-0 mt-px" />
+                          <span>
+                            Breaks step {breaksStep.at + 1} ({breaksStep.name}): {breaksStep.reason}
+                          </span>
                         </div>
                       )}
 

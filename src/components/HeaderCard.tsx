@@ -43,6 +43,8 @@ interface HeaderCardProps {
   canPickFreePlayStyles?: boolean;
   // 'new' adds a pick at the end of the chain; a number edits the node at that index.
   onOpenPlayStylePicker?: (target: PickTarget) => void;
+  /** Open the evo builder to splice a pick in directly after step `after` (-1 = the raw card). */
+  onInsertEvoAt?: (after: number) => void;
   originalIgs: number;
   originalFaceSum: number;
   evoFilters: EvoFilters;
@@ -249,17 +251,59 @@ const PlayStyleNode: React.FC<{
  *
  * It stays a plain arrow until the row is hovered, so a finished chain still reads as a chain.
  */
-const StepArrow: React.FC<{ onInsert?: () => void }> = ({ onInsert }) => {
-  if (!onInsert) return <span className="text-gray-600 text-[10px] shrink-0">➜</span>;
+const StepArrow: React.FC<{ onInsertEvo?: () => void; onInsertPicks?: () => void }> = ({
+  onInsertEvo,
+  onInsertPicks
+}) => {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', away);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+
+  if (!onInsertEvo && !onInsertPicks) return <span className="text-gray-600 text-[10px] shrink-0">➜</span>;
+
+  const item = (label: string, hint: string, run?: () => void) =>
+    run ? (
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(false); run(); }}
+        className="w-full text-left px-2.5 py-1.5 hover:bg-[#2A2D2A] transition-colors"
+      >
+        <div className="text-[11px] font-bold text-gray-200">{label}</div>
+        <div className="text-[9.5px] text-gray-500">{hint}</div>
+      </button>
+    ) : null;
+
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onInsert(); }}
-      title="Add PlayStyles here — inserted at this point, with the steps after it re-checked against the card as it then is"
-      className="shrink-0 w-4 h-5 flex items-center justify-center rounded text-[10px] text-gray-600 hover:text-black hover:bg-fcGreen transition-colors group/arrow"
-    >
-      <span className="group-hover/arrow:hidden">➜</span>
-      <Plus className="w-3 h-3 hidden group-hover/arrow:block" strokeWidth={3} />
-    </button>
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+        title="Insert here"
+        className={`w-4 h-5 flex items-center justify-center rounded text-[10px] transition-colors group/arrow ${
+          open ? 'bg-fcGreen text-black' : 'text-gray-600 hover:text-black hover:bg-fcGreen'
+        }`}
+      >
+        <span className={open ? 'hidden' : 'group-hover/arrow:hidden'}>➜</span>
+        <Plus className={`w-3 h-3 ${open ? 'block' : 'hidden group-hover/arrow:block'}`} strokeWidth={3} />
+      </button>
+      {open && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-30 w-44 rounded-lg border border-gray-700 bg-[#1A1C1A] shadow-xl overflow-hidden">
+          {item('Insert EVO', 'Judged at this point in the chain', onInsertEvo)}
+          {item('Insert PlayStyles', 'From the slots free here', onInsertPicks)}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -291,6 +335,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onOpenImportBuild,
   canPickFreePlayStyles,
   onOpenPlayStylePicker,
+  onInsertEvoAt,
   originalIgs,
   originalFaceSum,
   evoFilters,
@@ -453,6 +498,9 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     path.id === activePathId && canPickFreePlayStyles && onOpenPlayStylePicker
       ? () => onOpenPlayStylePicker({ after: idx })
       : undefined;
+
+  const insertEvoAfter = (path: EvolutionPath, idx: number) =>
+    path.id === activePathId && onInsertEvoAt ? () => onInsertEvoAt(idx) : undefined;
 
   /** The filters in force, in words, for the "nothing matched" note. */
   const activeFilterSummary = React.useMemo(() => {
@@ -1953,7 +2001,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 {renderPath.chainIds.length > 0 ? (
                   // The gap before the first step, where a pick goes in ahead of everything —
                   // `after: -1` being the raw card, the same index the base marker uses for it.
-                  <StepArrow onInsert={insertPickAfter(renderPath, -1)} />
+                  <StepArrow onInsertEvo={insertEvoAfter(renderPath, -1)} onInsertPicks={insertPickAfter(renderPath, -1)} />
                 ) : (
                   <span className="text-[11px] text-gray-600 italic ml-2 shrink-0">
                     {isBaseCardPath(renderPath)
@@ -1978,7 +2026,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           onToggleDone={onSetProgress ? () => onSetProgress(renderPath.id, idx) : undefined}
                         />
                         {idx < renderPath.chainIds.length - 1 && (
-                          <StepArrow onInsert={insertPickAfter(renderPath, idx)} />
+                          <StepArrow onInsertEvo={insertEvoAfter(renderPath, idx)} onInsertPicks={insertPickAfter(renderPath, idx)} />
                         )}
                       </React.Fragment>
                     );
@@ -2336,7 +2384,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         )}
                       </div>
                       {idx < renderPath.chainIds.length - 1 && (
-                        <StepArrow onInsert={insertPickAfter(renderPath, idx)} />
+                        <StepArrow onInsertEvo={insertEvoAfter(renderPath, idx)} onInsertPicks={insertPickAfter(renderPath, idx)} />
                       )}
                     </React.Fragment>
                   );
