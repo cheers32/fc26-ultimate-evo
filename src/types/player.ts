@@ -160,6 +160,15 @@ export interface EvolutionPath {
    */
   discarded?: boolean;
   /**
+   * Tucked into the Discarded drawer.
+   *
+   * Kept apart from `discarded` because they answer different questions: that one is a judgement
+   * about the build, this one is where the chip sits. Ruling a build out does not move it — a chip
+   * that jumps somewhere else the moment you click it costs you your place in the row — so nothing
+   * but a drag ever puts one in the drawer, or takes it back out.
+   */
+  filed?: boolean;
+  /**
    * How far the build has actually been played in game: the index of the last step that's done, so
    * -1 (or absent) is "not started". Evos are applied in chain order, so one pointer says it —
    * everything up to it is done and everything after it isn't.

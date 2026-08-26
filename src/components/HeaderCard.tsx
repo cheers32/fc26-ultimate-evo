@@ -60,11 +60,11 @@ interface HeaderCardProps {
    * Why the last run left the screen untouched, when it did: nothing cleared the bar, or everything
    * that did is already saved on the card. Null when the run produced something.
    */
+  /** Builds already on the card that the last run came back with — ringed in the row. */
+  duplicateIds?: string[];
   analyzeNothing?: {
     reason: 'none' | 'duplicates';
     assumedChem: boolean;
-    /** Builds already on the card that the last run came back with. */
-    duplicateIds?: string[];
     /** Fieldable floors nothing in the pool could reach, worst gap first. */
     short?: { key: string; floor: number; best: number }[];
     /** How many legal chains the search had to look at. Zero is its own answer. */
@@ -103,8 +103,10 @@ interface HeaderCardProps {
   onChangePlayer?: () => void;
   onClearPaths?: () => void;
   onToggleFavoritePath?: (path: EvolutionPath) => void;
-  /** Rule a build out without deleting it — struck through, sorted last, never swept by Clear. */
+  /** Rule a build out without deleting it — struck through, kept, never swept by Clear. */
   onToggleDiscardPath?: (path: EvolutionPath) => void;
+  /** Move a build into the Discarded drawer, or back out. Dragging is the only thing that calls it. */
+  onFilePath?: (pathId: string, filed: boolean) => void;
   onRenamePath?: (pathId: string, name: string) => void;
   /** Promote a build to Current — what you have actually done in game. Keeps the old one. */
   onMakeCurrent?: (pathId: string) => void;
@@ -345,6 +347,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onAnalyze,
   onAnalyzeV2,
   isAnalyzing = false,
+  duplicateIds = [],
   analyzeNothing = null,
   analyzeProgress = 0,
   onCancelAnalyze,
@@ -367,6 +370,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   onDuplicatePath,
   onToggleFavoritePath,
   onToggleDiscardPath,
+  onFilePath,
   onRenamePath,
   onMakeCurrent,
   shareUrlFor,
@@ -500,18 +504,256 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
    * default and counted on the header, so nothing is hidden without saying how much.
    */
   const [showDiscarded, setShowDiscarded] = React.useState(false);
-  const discardedPaths = allPaths.filter(p => p.discarded);
-  const rowPaths = showDiscarded ? allPaths : allPaths.filter(p => !p.discarded);
+  /** The chip being dragged, and whether the drawer is lit up as a target. */
+  const [dragging, setDragging] = React.useState<string | null>(null);
+  const [overDrawer, setOverDrawer] = React.useState(false);
+  const discardedPaths = allPaths.filter(p => p.filed);
+  const rowPaths = allPaths.filter(p => !p.filed);
+
+  const canFile = (path: EvolutionPath) =>
+    !!onFilePath && path.chainIds.length > 0 && !isInGamePath(path) && !isBaseCardPath(path);
+
+  /** Dragging a chip is the only thing that moves one, in either direction. */
+  const dragProps = (path: EvolutionPath) =>
+    canFile(path)
+      ? {
+          draggable: true,
+          onDragStart: (e: React.DragEvent) => {
+            e.dataTransfer.setData('text/plain', path.id);
+            e.dataTransfer.effectAllowed = 'move';
+            setDragging(path.id);
+          },
+          onDragEnd: () => { setDragging(null); setOverDrawer(false); }
+        }
+      : {};
+
+  const dropOnDrawer = {
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOverDrawer(true); },
+    onDragLeave: () => setOverDrawer(false),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setOverDrawer(false);
+      const id = e.dataTransfer.getData('text/plain') || dragging;
+      if (id) onFilePath?.(id, true);
+      setDragging(null);
+    }
+  };
+
+  /** Dropping anywhere in the row itself takes a build back out of the drawer. */
+  const dropOnRow = {
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      const id = e.dataTransfer.getData('text/plain') || dragging;
+      if (id && allPaths.find(p => p.id === id)?.filed) onFilePath?.(id, false);
+      setDragging(null);
+    }
+  };
+
+  /** One build's chip. Lifted out so the drawer can draw the same thing the row does. */
+  const chipOf = (path: EvolutionPath) => (
+    <div
+      key={path.id}
+      {...dragProps(path)}
+      className={`relative flex items-center group ${canFile(path) ? 'cursor-grab active:cursor-grabbing' : ''} ${
+        dragging === path.id ? 'opacity-40' : ''
+      }`}
+    >
+      {renamingKey === `chip:${path.id}` ? (
+        nameInput(path, "w-32 bg-[#121212] border border-fcGreen rounded-lg px-2 py-1 text-[11px] font-bold text-white outline-none")
+      ) : (
+      <button
+        onClick={() => onSelectPath(path.id)}
+        onDoubleClick={() => { if (onRenamePath && path.chainIds.length > 0) startRename('chip', path); }}
+        title={
+          // The reason a build was recommended belongs where the build is, not in a
+          // release note — a shortlist you have to take on faith is one you check by hand.
+          [path.description, path.chainIds.length > 0 && onRenamePath ? 'Double-click to rename' : '']
+            .filter(Boolean)
+            .join('\n\n') || undefined
+        }
+        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all border flex items-center gap-1.5 ${
+          expandedPathIds.includes(path.id)
+            ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
+            : comparePathId === path.id
+            ? 'bg-purple-950/40 text-purple-400 border-purple-500 shadow-sm'
+            // The builds the last run came back with and you already had. Amber, matching
+            // the note that says so, because "you already have these" is not an answer
+            // until you can see which.
+            : duplicateIds.includes(path.id)
+            ? 'bg-amber-950/40 text-amber-200 border-amber-500 shadow-sm'
+            : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
+        } ${path.discarded ? 'opacity-50' : ''}`}
+      >
+        <span className={path.discarded ? 'line-through decoration-2' : ''}>{pathLabel(path)}</span>
+        {/* What the build is worth, on the chip itself, so builds can be told apart without
+            expanding them: the stat total it ends on, and what that is worth where the card
+            plays. Bare numbers — the labels cost more room than they explain, and the two
+            are never confusable at this range. */}
+        {pathIgs(path) !== null && (
+          <span
+            className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-black/40 border border-gray-700 flex items-center gap-1"
+            title={(() => {
+      const s = pathScore(path);
+      return `IGS ${pathIgs(path)}` + (s
+        ? ` · ${s.position} score ${s.score.toFixed(1)}/100 as ${s.plan.name}` +
+          ` · ${s.style ? `on ${s.style}` : 'bare'} · ${s.archetype}${s.fallback ? ' (fallback)' : ''}`
+        : '');
+            })()}
+          >
+            <span className="text-blue-400">{pathIgs(path)}</span>
+            {(() => {
+      const s = pathScore(path);
+      if (!s) return null;
+      // The position is said rather than implied: the same build is worth different
+      // numbers at CB and at CDM, and a bare 98.7 does not say which one it is.
+      return (
+        <>
+          <span className="text-gray-500">{s.position}</span>
+          <span className={getStatColorClass(s.score)}>
+            {s.score.toFixed(1)}
+          </span>
+        </>
+      );
+            })()}
+          </span>
+        )}
+        {/* How far it's been played, on the chip too — a collapsed build should still
+            answer "how much of this is left" without being opened. */}
+        {(path.doneUpTo ?? -1) >= 0 && (
+          <span
+            className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-green-950/50 border border-fcGreen/50 text-fcGreen flex items-center gap-0.5"
+            title={`${Math.min(path.doneUpTo! + 1, path.chainIds.length)} of ${path.chainIds.length} steps done in game`}
+          >
+            <Check className="w-2 h-2" strokeWidth={4} />
+            {Math.min(path.doneUpTo! + 1, path.chainIds.length)}/{path.chainIds.length}
+          </span>
+        )}
+      </button>
+      )}
+      <div className={`absolute -top-1.5 -right-1.5 flex items-center gap-0.5 transition-opacity z-10 ${
+        path.discarded ? '' : 'opacity-0 group-hover:opacity-100'
+      }`}>
+        {discardBadge(path)}
+        {/* Promote it to the record. A plan becomes what you have actually done the moment
+            you finish it in game, and until now that meant rebuilding it by hand on the
+            Current chip. The build you are replacing is kept, because it is the one thing
+            here that cannot be worked out again. */}
+        {onMakeCurrent && path.chainIds.length > 0 && !isInGamePath(path) && !isBaseCardPath(path) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onMakeCurrent(path.id); }}
+            className="rounded-full p-0.5 shadow-sm bg-green-950 text-fcGreen hover:bg-fcGreen hover:text-black"
+            title="Make this Current — what you have actually done in game. The Current build it replaces is kept as a copy."
+          >
+            <CheckCheck className="w-2.5 h-2.5" />
+          </button>
+        )}
+        {onSetComparePathId && activePathId !== path.id && (
+          <button
+            onClick={(e) => {
+      e.stopPropagation();
+      onSetComparePathId(comparePathId === path.id ? null : path.id);
+            }}
+            className={`rounded-full p-0.5 shadow-sm ${comparePathId === path.id ? 'bg-purple-600 text-white' : 'bg-purple-900 text-purple-400 hover:bg-purple-600 hover:text-white'}`}
+            title={comparePathId === path.id ? "Stop Comparing" : "Compare with active path"}
+          >
+            <RefreshCw className="w-2.5 h-2.5" />
+          </button>
+        )}
+      </div>
+      {onRenamePath && path.chainIds.length > 0 && renamingKey !== `chip:${path.id}` && (
+        <button
+          onClick={(e) => { e.stopPropagation(); startRename('chip', path); }}
+          className="absolute -bottom-1.5 -right-1.5 rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-400 hover:bg-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          title="Rename this build"
+        >
+          <Pencil className="w-2.5 h-2.5" />
+        </button>
+      )}
+      {/* Copying is how a variant gets started: the copy opens as the active build, so the
+          next edit lands on it and not on the build it came from. */}
+      {onDuplicatePath && path.chainIds.length > 0 && renamingKey !== `chip:${path.id}` && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDuplicatePath(path.id); }}
+          className="absolute -bottom-1.5 -left-1.5 rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-400 hover:bg-blue-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          title={`Duplicate "${pathLabel(path)}"`}
+        >
+          <Copy className="w-2.5 h-2.5" />
+        </button>
+      )}
+      {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
+        <div className="absolute -top-3 -left-1.5 z-10">
+          <button
+            onClick={(e) => {
+      e.stopPropagation();
+      onToggleFavoritePath(path);
+            }}
+            className={`rounded-full p-0.5 shadow-sm ${STAR_TIERS[starTier(path) - 1].dot}`}
+            title={starTitle(path)}
+          >
+            <Star className={`w-2.5 h-2.5 ${STAR_TIERS[starTier(path) - 1].fill}`} />
+          </button>
+        </div>
+      )}
+      {onDeletePath && isInGamePath(path) && path.chainIds.length > 0 && (
+        <div className="absolute -top-1.5 -right-1.5 opacity-40 hover:opacity-100 transition-opacity z-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); setConfirmDelete(path.id); setDeleteTyped(''); }}
+            className="bg-red-950 text-red-400 rounded-full p-0.5 hover:bg-red-600 hover:text-white shadow-sm"
+            title="Delete the in-game record — asks you to type its name first"
+          >
+            <X className="w-2.5 h-2.5" />
+          </button>
+        </div>
+      )}
+      {(onDeletePath || onToggleFavoritePath || onToggleDiscardPath) && path.chainIds.length > 0 && !path.isFavorite && !isInGamePath(path) && (
+        <div className={`absolute -top-1.5 -left-1.5 flex items-center gap-0.5 transition-opacity z-10 ${
+          path.discarded ? '' : 'opacity-0 group-hover:opacity-100'
+        }`}>
+          {onToggleFavoritePath && (
+            <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleFavoritePath(path);
+      }}
+      className="rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-500 hover:bg-yellow-500 hover:text-black"
+      title={starTitle(path)}
+            >
+      <Star className="w-2.5 h-2.5" />
+            </button>
+          )}
+          {onDeletePath && (
+            <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onDeletePath(path.id);
+      }}
+      className="bg-red-900 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
+      title="Delete Path"
+            >
+      <X className="w-2.5 h-2.5" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   const discardedHeader = (
-    <div className="basis-full mt-1.5 mb-0.5">
+    <div
+      {...dropOnDrawer}
+      className={`basis-full mt-1.5 mb-0.5 rounded transition-colors ${
+        overDrawer ? 'bg-gray-700/40 ring-1 ring-gray-500' : dragging ? 'ring-1 ring-dashed ring-gray-700' : ''
+      }`}
+    >
       <button
         onClick={() => setShowDiscarded(v => !v)}
-        className="flex items-center gap-2 w-full text-left group/disc"
-        title={showDiscarded ? 'Fold the ruled-out builds away' : 'Show the builds you have ruled out'}
+        className="flex items-center gap-2 w-full text-left group/disc px-1 py-0.5"
+        title={showDiscarded ? 'Fold the drawer shut' : 'Open the drawer'}
       >
         <span className="text-[9.5px] uppercase tracking-wider text-gray-500 font-bold group-hover/disc:text-gray-300 transition-colors">
           {showDiscarded ? '▾' : '▸'} Discarded {discardedPaths.length}
+          {dragging && <span className="ml-1 normal-case tracking-normal text-gray-400">— drop here to file it</span>}
         </span>
         <span className="flex-1 h-px bg-gray-800" />
       </button>
@@ -1528,10 +1770,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
               </span>
               {/* Which ones. Without this the note is true and unusable on a card carrying eight
                   saves — the chips are ringed to match, so the eye lands on them either way. */}
-              {(analyzeNothing.duplicateIds || []).length > 0 && (
+              {duplicateIds.length > 0 && (
                 <div className="mt-1 flex flex-wrap items-center gap-1">
                   <span className="text-amber-200/60">It came back with:</span>
-                  {analyzeNothing.duplicateIds!.map(id => {
+                  {duplicateIds.map(id => {
                     const p = allPaths.find(x => x.id === id);
                     return (
                       <span
@@ -1611,14 +1853,13 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
       {/* One chip per build, from the first build on — the row used to appear only once there were
           two, which left a single saved build with nothing to carry its name and its total. */}
       {allPaths.some(p => p.chainIds.length > 0) && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+        <div {...dropOnRow} className="flex flex-wrap items-center gap-1.5 mb-1">
           {rowPaths.map((path, i) => (
             <React.Fragment key={`row-${path.id}`}>
               {/* The run's own results, kept apart from your builds. A fresh Analyze used to drop
                   eight chips into the middle of the row and the builds you had saved were suddenly
                   somewhere in a wall of them. Below the line is what you keep; after it is what
                   this run found, and it is replaced wholesale by the next one. */}
-              {path.discarded && !rowPaths[i - 1]?.discarded && discardedHeader}
               {isFresh(path) && !isFresh(rowPaths[i - 1]) && (
                 <div className="basis-full flex items-center gap-2 mt-1.5 mb-0.5">
                   <span className="text-[9.5px] uppercase tracking-wider text-fuchsia-400/80 font-bold">
@@ -1627,189 +1868,24 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   <span className="flex-1 h-px bg-fuchsia-900/40" />
                 </div>
               )}
-            <div key={path.id} className="relative flex items-center group">
-              {renamingKey === `chip:${path.id}` ? (
-                nameInput(path, "w-32 bg-[#121212] border border-fcGreen rounded-lg px-2 py-1 text-[11px] font-bold text-white outline-none")
-              ) : (
-              <button
-                onClick={() => onSelectPath(path.id)}
-                onDoubleClick={() => { if (onRenamePath && path.chainIds.length > 0) startRename('chip', path); }}
-                title={
-                  // The reason a build was recommended belongs where the build is, not in a
-                  // release note — a shortlist you have to take on faith is one you check by hand.
-                  [path.description, path.chainIds.length > 0 && onRenamePath ? 'Double-click to rename' : '']
-                    .filter(Boolean)
-                    .join('\n\n') || undefined
-                }
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all border flex items-center gap-1.5 ${
-                  expandedPathIds.includes(path.id)
-                    ? 'bg-green-950/40 text-fcGreen border-fcGreen shadow-sm'
-                    : comparePathId === path.id
-                    ? 'bg-purple-950/40 text-purple-400 border-purple-500 shadow-sm'
-                    // The builds the last run came back with and you already had. Amber, matching
-                    // the note that says so, because "you already have these" is not an answer
-                    // until you can see which.
-                    : (analyzeNothing?.duplicateIds || []).includes(path.id)
-                    ? 'bg-amber-950/40 text-amber-200 border-amber-500 shadow-sm'
-                    : 'bg-[#1a1c1a] text-gray-400 border-gray-700 hover:border-gray-500'
-                } ${path.discarded ? 'opacity-50' : ''}`}
-              >
-                <span className={path.discarded ? 'line-through decoration-2' : ''}>{pathLabel(path)}</span>
-                {/* What the build is worth, on the chip itself, so builds can be told apart without
-                    expanding them: the stat total it ends on, and what that is worth where the card
-                    plays. Bare numbers — the labels cost more room than they explain, and the two
-                    are never confusable at this range. */}
-                {pathIgs(path) !== null && (
-                  <span
-                    className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-black/40 border border-gray-700 flex items-center gap-1"
-                    title={(() => {
-                      const s = pathScore(path);
-                      return `IGS ${pathIgs(path)}` + (s
-                        ? ` · ${s.position} score ${s.score.toFixed(1)}/100 as ${s.plan.name}` +
-                          ` · ${s.style ? `on ${s.style}` : 'bare'} · ${s.archetype}${s.fallback ? ' (fallback)' : ''}`
-                        : '');
-                    })()}
-                  >
-                    <span className="text-blue-400">{pathIgs(path)}</span>
-                    {(() => {
-                      const s = pathScore(path);
-                      if (!s) return null;
-                      // The position is said rather than implied: the same build is worth different
-                      // numbers at CB and at CDM, and a bare 98.7 does not say which one it is.
-                      return (
-                        <>
-                          <span className="text-gray-500">{s.position}</span>
-                          <span className={getStatColorClass(s.score)}>
-                            {s.score.toFixed(1)}
-                          </span>
-                        </>
-                      );
-                    })()}
-                  </span>
-                )}
-                {/* How far it's been played, on the chip too — a collapsed build should still
-                    answer "how much of this is left" without being opened. */}
-                {(path.doneUpTo ?? -1) >= 0 && (
-                  <span
-                    className="font-mono text-[9.5px] px-1 py-0.5 rounded bg-green-950/50 border border-fcGreen/50 text-fcGreen flex items-center gap-0.5"
-                    title={`${Math.min(path.doneUpTo! + 1, path.chainIds.length)} of ${path.chainIds.length} steps done in game`}
-                  >
-                    <Check className="w-2 h-2" strokeWidth={4} />
-                    {Math.min(path.doneUpTo! + 1, path.chainIds.length)}/{path.chainIds.length}
-                  </span>
-                )}
-              </button>
-              )}
-              <div className={`absolute -top-1.5 -right-1.5 flex items-center gap-0.5 transition-opacity z-10 ${
-                path.discarded ? '' : 'opacity-0 group-hover:opacity-100'
-              }`}>
-                {discardBadge(path)}
-                {/* Promote it to the record. A plan becomes what you have actually done the moment
-                    you finish it in game, and until now that meant rebuilding it by hand on the
-                    Current chip. The build you are replacing is kept, because it is the one thing
-                    here that cannot be worked out again. */}
-                {onMakeCurrent && path.chainIds.length > 0 && !isInGamePath(path) && !isBaseCardPath(path) && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onMakeCurrent(path.id); }}
-                    className="rounded-full p-0.5 shadow-sm bg-green-950 text-fcGreen hover:bg-fcGreen hover:text-black"
-                    title="Make this Current — what you have actually done in game. The Current build it replaces is kept as a copy."
-                  >
-                    <CheckCheck className="w-2.5 h-2.5" />
-                  </button>
-                )}
-                {onSetComparePathId && activePathId !== path.id && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSetComparePathId(comparePathId === path.id ? null : path.id);
-                    }}
-                    className={`rounded-full p-0.5 shadow-sm ${comparePathId === path.id ? 'bg-purple-600 text-white' : 'bg-purple-900 text-purple-400 hover:bg-purple-600 hover:text-white'}`}
-                    title={comparePathId === path.id ? "Stop Comparing" : "Compare with active path"}
-                  >
-                    <RefreshCw className="w-2.5 h-2.5" />
-                  </button>
-                )}
-              </div>
-              {onRenamePath && path.chainIds.length > 0 && renamingKey !== `chip:${path.id}` && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); startRename('chip', path); }}
-                  className="absolute -bottom-1.5 -right-1.5 rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-400 hover:bg-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  title="Rename this build"
-                >
-                  <Pencil className="w-2.5 h-2.5" />
-                </button>
-              )}
-              {/* Copying is how a variant gets started: the copy opens as the active build, so the
-                  next edit lands on it and not on the build it came from. */}
-              {onDuplicatePath && path.chainIds.length > 0 && renamingKey !== `chip:${path.id}` && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDuplicatePath(path.id); }}
-                  className="absolute -bottom-1.5 -left-1.5 rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-400 hover:bg-blue-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  title={`Duplicate "${pathLabel(path)}"`}
-                >
-                  <Copy className="w-2.5 h-2.5" />
-                </button>
-              )}
-              {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
-                <div className="absolute -top-3 -left-1.5 z-10">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFavoritePath(path);
-                    }}
-                    className={`rounded-full p-0.5 shadow-sm ${STAR_TIERS[starTier(path) - 1].dot}`}
-                    title={starTitle(path)}
-                  >
-                    <Star className={`w-2.5 h-2.5 ${STAR_TIERS[starTier(path) - 1].fill}`} />
-                  </button>
-                </div>
-              )}
-              {onDeletePath && isInGamePath(path) && path.chainIds.length > 0 && (
-                <div className="absolute -top-1.5 -right-1.5 opacity-40 hover:opacity-100 transition-opacity z-10">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(path.id); setDeleteTyped(''); }}
-                    className="bg-red-950 text-red-400 rounded-full p-0.5 hover:bg-red-600 hover:text-white shadow-sm"
-                    title="Delete the in-game record — asks you to type its name first"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              )}
-              {(onDeletePath || onToggleFavoritePath || onToggleDiscardPath) && path.chainIds.length > 0 && !path.isFavorite && !isInGamePath(path) && (
-                <div className={`absolute -top-1.5 -left-1.5 flex items-center gap-0.5 transition-opacity z-10 ${
-                  path.discarded ? '' : 'opacity-0 group-hover:opacity-100'
-                }`}>
-                  {onToggleFavoritePath && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleFavoritePath(path);
-                      }}
-                      className="rounded-full p-0.5 shadow-sm bg-gray-800 text-gray-500 hover:bg-yellow-500 hover:text-black"
-                      title={starTitle(path)}
-                    >
-                      <Star className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                  {onDeletePath && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeletePath(path.id);
-                      }}
-                      className="bg-red-900 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
-                      title="Delete Path"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            {chipOf(path)}
             </React.Fragment>
           ))}
-          {/* Folded shut, so the header is all there is to draw while it is closed. */}
-          {discardedPaths.length > 0 && !showDiscarded && discardedHeader}
+          {/* Its own drawer under the row, so opening or filling it never moves a chip above it.
+              Shown while dragging even when empty, because a drop target you cannot see is one you
+              cannot aim at. */}
+          {(discardedPaths.length > 0 || dragging) && (
+            <>
+              {discardedHeader}
+              {showDiscarded && discardedPaths.length > 0 && (
+                <div className="basis-full flex flex-wrap items-center gap-1.5">
+                  {discardedPaths.map(path => (
+                    <React.Fragment key={`drawer-${path.id}`}>{chipOf(path)}</React.Fragment>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

@@ -745,7 +745,7 @@ export default function App() {
    */
   const starredKey = (paths: EvolutionPath[]) =>
     JSON.stringify(
-      paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>'), p.chemStyle ?? '', p.discarded ? 1 : 0])
+      paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>'), p.chemStyle ?? '', p.discarded ? 1 : 0, p.filed ? 1 : 0])
     );
 
   const starredForPlayer = useMemo(
@@ -965,11 +965,18 @@ export default function App() {
    */
   const [runPathIds, setRunPathIds] = useState<string[]>([]);
 
+  /**
+   * Builds already on the card that the last run came back with.
+   *
+   * Recorded on every run, not only on the ones that found nothing else: a run that turns up three
+   * new builds and re-derives four you already had is telling you something about those four, and
+   * the row is where it has to be said.
+   */
+  const [runDuplicateIds, setRunDuplicateIds] = useState<string[]>([]);
+
   const [analyzeNothing, setAnalyzeNothing] = useState<{
     reason: 'none' | 'duplicates';
     assumedChem: boolean;
-    /** Builds already on the card that this run came back with — highlighted in the row. */
-    duplicateIds?: string[];
     /** Fieldable floors nothing in the pool could reach, worst gap first. */
     short?: { key: string; floor: number; best: number }[];
     /** How many legal chains the search had to look at. Zero is its own answer. */
@@ -1057,10 +1064,7 @@ export default function App() {
     // The base card leads, always, and is never one of the saved ones — it is synthesised on every
     // render so nothing that writes paths can touch it. The record comes second, wherever it was
     // stored, so the two fixed points of the row are always the first two chips.
-    // Ruled out, so out of the way — but still there, which is the difference between discarding a
-    // build and deleting one. Order among themselves is left alone.
-    const sink = (list: EvolutionPath[]) => [...list.filter(p => !p.discarded), ...list.filter(p => p.discarded)];
-    const withDefault = [baseCardPath, record ?? defaultPath, ...sink(kept), ...sink(thisRun)];
+    const withDefault = [baseCardPath, record ?? defaultPath, ...kept, ...thisRun];
     // The in-game record is starred green wherever it came from — a stored copy from before this
     // rule, an edit that dropped the flags, a fresh synthesis. One place to enforce it beats
     // remembering to set it at each of the half-dozen places a path gets written.
@@ -1387,8 +1391,8 @@ export default function App() {
     updateState({
       // Discarded is a decision about a build, not an absence of one — sweeping it away would
       // throw out the record of having ruled it out, which is the whole point of the state.
-      generatedPaths: generatedPaths.filter(p => p.isFavorite || p.discarded || isInGamePath(p)),
-      manualPaths: manualPaths.filter(p => p.isFavorite || p.discarded || isInGamePath(p)),
+      generatedPaths: generatedPaths.filter(p => p.isFavorite || p.discarded || p.filed || isInGamePath(p)),
+      manualPaths: manualPaths.filter(p => p.isFavorite || p.discarded || p.filed || isInGamePath(p)),
       activePathId: DEFAULT_PATH_ID,
       expandedPathIds: [DEFAULT_PATH_ID]
     });
@@ -1609,6 +1613,7 @@ export default function App() {
     analyzeHandle.current?.cancel();
     setIsAnalyzing(true);
     setAnalyzeNothing(null);
+    setRunDuplicateIds([]);
     setRunPathIds([]);
     setAnalyzeProgress(0);
 
@@ -1669,6 +1674,7 @@ export default function App() {
 
         setGeneratedPaths(fresh);
         setRunPathIds(fresh.map(p => p.id));
+        setRunDuplicateIds(duplicateIds);
         // Nothing came back, or everything that did was already on the card — either way the
         // screen is about to look untouched, and that needs saying rather than showing. It used to
         // test only the first of those, so a run that found four builds you had already saved was
@@ -1679,7 +1685,6 @@ export default function App() {
             : {
                 reason: results.length === 0 ? 'none' : 'duplicates',
                 assumedChem: assumeChemStyle,
-                duplicateIds,
                 // Which bar was missed and by how much, so the answer to "now what" is a stat name
                 // rather than another run with a different filter.
                 short: (diagnosis?.floors || []).filter(f => f.best < f.floor).sort(
@@ -1706,6 +1711,7 @@ export default function App() {
   // and drop the last run's verdict with it, since it was about a different card.
   useEffect(() => {
     setAnalyzeNothing(null);
+    setRunDuplicateIds([]);
     return () => analyzeHandle.current?.cancel();
   }, [selectedPlayerId]);
 
@@ -2069,6 +2075,7 @@ export default function App() {
           onAnalyzeV2={() => runAnalyze(2)}
           isAnalyzing={isAnalyzing}
           analyzeNothing={analyzeNothing}
+          duplicateIds={runDuplicateIds}
           analyzeProgress={analyzeProgress}
           onCancelAnalyze={cancelAnalyze}
           evosPool={effectiveEvosPool}
@@ -2105,6 +2112,23 @@ export default function App() {
           onDeletePath={handleDeletePath}
           onDuplicatePath={handleDuplicatePath}
           onSetProgress={handleSetPathProgress}
+          onFilePath={(pathId, filed) => {
+            const path = allPaths.find(p => p.id === pathId);
+            if (!path || isInGamePath(path) || isBaseCardPath(path)) return;
+            // Dragging one into the drawer is the same judgement as the badge, made more firmly, so
+            // it carries the strike with it. Dragging it back out leaves the strike alone — that is
+            // a decision about the build, and this drag was about where it sits.
+            const next = filed ? { filed: true, discarded: true } : { filed: false };
+            const isManual = manualPaths.some(p => p.id === pathId);
+            if (isManual) {
+              updateState({ manualPaths: manualPaths.map(p => (p.id === pathId ? { ...p, ...next } : p)) });
+            } else {
+              updateState({
+                generatedPaths: generatedPaths.filter(p => p.id !== pathId),
+                manualPaths: [...manualPaths, { ...path, ...next, name: keeperName(path) }]
+              });
+            }
+          }}
           onToggleDiscardPath={(path) => {
             // The record's own build is not a proposal and cannot be ruled out.
             if (isInGamePath(path) || isBaseCardPath(path)) return;
