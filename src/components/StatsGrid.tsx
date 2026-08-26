@@ -22,10 +22,14 @@ interface StatsGridProps {
   /**
    * Show the chemistry style's printed boost rather than what the card actually gained.
    *
-   * Off by default, and the default is the honest one: a +6 on a stat sitting at 96 is a +3, and
-   * printing +6 there describes the style rather than the card. Worth keeping switchable because
-   * the printed number is what the style is picked by — two styles that both bottom out against
-   * the ceiling here are not the same style on the next card.
+   * Off by default, and the default is the honest one — a +6 on a stat sitting at 96 is a +3, and
+   * printing +6 there describes the style rather than the card — so it reads the way the game does:
+   * one column, holding where the stat ends up, with the gain marked beside it.
+   *
+   * On, it is the old layout in full: the card's number, the style's printed boost, and the result,
+   * each in its own column. The printed number is what a style is picked by, and seeing all three
+   * is what shows where the ceiling ate the difference — two styles that both bottom out against it
+   * here are not the same style on the next card.
    */
   nominalChemBoost?: boolean;
 }
@@ -167,22 +171,51 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
 
               {/* Column widths here must match the face-stat row above so the two line up */}
               <div className="flex items-center justify-end font-mono">
-                {anyEvoDiff && (
+                {nominalChemBoost ? (
                   <>
                     <span className={`w-6 shrink-0 text-right ${getStatColorClass(activeBase)}`}>{activeBase}</span>
-                    <span className={`w-3.5 shrink-0 text-center text-[9px] ${showEvo || finalVal !== activeBase ? 'text-gray-500' : 'text-transparent'}`}>➜</span>
+
+                    {anyEvoDiff && (
+                      <>
+                        <span className={`w-3.5 shrink-0 text-center text-[9px] ${showEvo ? 'text-gray-500' : 'text-transparent'}`}>➜</span>
+                        <span className={`w-6 shrink-0 text-right ${showEvo ? getStatColorClass(effectiveVal) : 'text-transparent'}`}>
+                          {showEvo ? effectiveVal : '00'}
+                        </span>
+                      </>
+                    )}
+
+                    {anyChemBoost && (
+                      <>
+                        <span className={`font-normal text-[10.5px] ml-1 w-7 shrink-0 text-left tracking-tighter ${shownBoost > 0 ? 'text-fcGreen font-bold' : shownBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                          {shownBoost > 0 ? `+${shownBoost}` : shownBoost < 0 ? `${shownBoost}` : '+0'}
+                        </span>
+
+                        <span className={`w-6 shrink-0 text-right ${boost > 0 ? getStatColorClass(finalVal) : 'text-transparent'}`}>
+                          {boost > 0 ? finalVal : '00'}
+                        </span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {anyEvoDiff && (
+                      <>
+                        <span className={`w-6 shrink-0 text-right ${getStatColorClass(activeBase)}`}>{activeBase}</span>
+                        <span className={`w-3.5 shrink-0 text-center text-[9px] ${showEvo || finalVal !== activeBase ? 'text-gray-500' : 'text-transparent'}`}>➜</span>
+                      </>
+                    )}
+
+                    {anyChemBoost && (
+                      <span className={`font-normal text-[10.5px] mr-1 w-7 shrink-0 text-right tracking-tighter ${shownBoost > 0 ? 'text-fcGreen font-bold' : shownBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                        {shownBoost > 0 ? `+${shownBoost}` : shownBoost < 0 ? `${shownBoost}` : '+0'}
+                      </span>
+                    )}
+
+                    <span className={`w-6 shrink-0 text-right ${showEnd ? getStatColorClass(finalVal) : 'text-transparent'}`}>
+                      {showEnd ? finalVal : '00'}
+                    </span>
                   </>
                 )}
-
-                {anyChemBoost && (
-                  <span className={`font-normal text-[10.5px] mr-1 w-7 shrink-0 text-right tracking-tighter ${shownBoost > 0 ? 'text-fcGreen font-bold' : shownBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
-                    {shownBoost > 0 ? `+${shownBoost}` : shownBoost < 0 ? `${shownBoost}` : '+0'}
-                  </span>
-                )}
-
-                <span className={`w-6 shrink-0 text-right ${showEnd ? getStatColorClass(finalVal) : 'text-transparent'}`}>
-                  {showEnd ? finalVal : '00'}
-                </span>
               </div>
             </div>
           );
@@ -218,24 +251,55 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
               </h3>
 
               <div className={`text-gray-200 flex items-center font-mono shrink-0 ${dense ? 'text-[12px]' : 'text-[15px]'}`}>
-                {anyEvoDiff && (
+                {nominalChemBoost ? (
                   <>
                     <span className={`w-6 shrink-0 text-right ${getStatColorClass(activeBaseFaceVal)}`}>{activeBaseFaceVal}</span>
-                    <span className={`w-3.5 shrink-0 text-center text-[9px] font-normal ${showEvoFace || newFaceVal !== activeBaseFaceVal ? 'text-gray-500' : 'text-transparent'} ${faceIsZeroBoost ? 'text-[8px] text-fcGreen font-bold' : ''}`}>
-                      {faceIsZeroBoost ? '+0' : '➜'}
+
+                    {anyEvoDiff && (
+                      <>
+                        <span className={`w-3.5 shrink-0 text-center text-[9px] font-normal ${showEvoFace ? 'text-gray-500' : 'text-transparent'} ${faceIsZeroBoost ? 'text-[8px] text-fcGreen font-bold' : ''}`}>
+                          {faceIsZeroBoost ? '+0' : '➜'}
+                        </span>
+                        <span className={`w-6 shrink-0 text-right ${showEvoFace ? getStatColorClass(effectiveFaceVal) : 'text-transparent'}`}>
+                          {showEvoFace ? effectiveFaceVal : '00'}
+                        </span>
+                      </>
+                    )}
+
+                    {anyChemBoost && (
+                      <>
+                        <span className={`text-[10.5px] font-normal ml-1 w-7 shrink-0 text-left tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : faceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                          {faceBoost > 0 ? `+${faceBoost}` : faceBoost < 0 ? `${faceBoost}` : '+0'}
+                        </span>
+
+                        <span className={`w-6 shrink-0 text-right ${faceBoost > 0 ? getStatColorClass(newFaceVal) : 'text-transparent'}`}>
+                          {faceBoost > 0 ? newFaceVal : '00'}
+                        </span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {anyEvoDiff && (
+                      <>
+                        <span className={`w-6 shrink-0 text-right ${getStatColorClass(activeBaseFaceVal)}`}>{activeBaseFaceVal}</span>
+                        <span className={`w-3.5 shrink-0 text-center text-[9px] font-normal ${showEvoFace || newFaceVal !== activeBaseFaceVal ? 'text-gray-500' : 'text-transparent'} ${faceIsZeroBoost ? 'text-[8px] text-fcGreen font-bold' : ''}`}>
+                          {faceIsZeroBoost ? '+0' : '➜'}
+                        </span>
+                      </>
+                    )}
+
+                    {anyChemBoost && (
+                      <span className={`text-[10.5px] font-normal mr-1 w-7 shrink-0 text-right tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : faceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                        {faceBoost > 0 ? `+${faceBoost}` : faceBoost < 0 ? `${faceBoost}` : '+0'}
+                      </span>
+                    )}
+
+                    <span className={`w-6 shrink-0 text-right ${showEndFace ? getStatColorClass(newFaceVal) : 'text-transparent'}`}>
+                      {showEndFace ? newFaceVal : '00'}
                     </span>
                   </>
                 )}
-
-                {anyChemBoost && (
-                  <span className={`text-[10.5px] font-normal mr-1 w-7 shrink-0 text-right tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : faceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
-                    {faceBoost > 0 ? `+${faceBoost}` : faceBoost < 0 ? `${faceBoost}` : '+0'}
-                  </span>
-                )}
-
-                <span className={`w-6 shrink-0 text-right ${showEndFace ? getStatColorClass(newFaceVal) : 'text-transparent'}`}>
-                  {showEndFace ? newFaceVal : '00'}
-                </span>
               </div>
             </div>
 

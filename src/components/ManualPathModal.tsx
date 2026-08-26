@@ -41,13 +41,21 @@ const MAX_CHAIN_RECOMMENDATIONS = 2;
 // Pool orderings. Every one of them keeps addable evos above ineligible ones — an ineligible card
 // has no simulated result at all (target OVR / IGS / BS are 0), so sorting it in with the rest
 // would park the whole unusable half of the pool at the top of any ascending sort.
-// The six face stats double as sort modes: "which evo adds the most DRI" is a question the totals
-// can't answer, since a big IGS gain can be spread over stats this card has no use for.
-const STAT_SORTS = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
-type StatSort = typeof STAT_SORTS[number];
-const isStatSort = (mode: SortMode): mode is StatSort => (STAT_SORTS as readonly string[]).includes(mode);
+/**
+ * The six face stats, as filters.
+ *
+ * "Which evo adds DRI" is a question the totals can't answer — a big IGS gain can be spread over
+ * stats this card has no use for — and it used to be asked by sorting, which left the whole pool on
+ * screen with the answer at the top. As filters they take the rest away: pick DEF and PHY and the
+ * grid holds only the evos that add both. They stack rather than replace each other.
+ *
+ * With no sort chosen the list is still ordered by what you filtered on, biggest gain first, so
+ * asking for PAC gives what PAC ↓ used to give and nothing else.
+ */
+const STAT_FILTERS = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
+type FaceFilter = typeof STAT_FILTERS[number];
 
-type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base' | 'fit' | 'score' | StatSort;
+type SortMode = 'default' | 'rec' | 'reqOvr' | 'targetOvr' | 'igs' | 'base' | 'fit' | 'score';
 
 const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
   { mode: 'default', label: 'Default', title: 'Cheapest entry first: required OVR, then target OVR, then base stats' },
@@ -73,12 +81,7 @@ const SORT_OPTIONS: { mode: SortMode; label: string; title: string }[] = [
     title: 'Highest resulting Fit first — the card\'s own PlayStyle and body profile, not raw ' +
       'totals. Picking this turns the Fit calculation on even when Filters has PlayStyle ' +
       'weighting off, so the number you are sorting by is the one shown on each card.'
-  },
-  ...STAT_SORTS.map(stat => ({
-    mode: stat as SortMode,
-    label: `${stat.toUpperCase()} ↓`,
-    title: `Biggest ${stat.toUpperCase()} gain first — what this evo adds to the stat as it stands now`
-  }))
+  }
 ];
 
 /**
@@ -521,6 +524,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // cards, since the archetype turns on acceleration/agility/strength and height.
   const [filterAccelerate, setFilterAccelerate] = useState<AccelerateType | 'all'>('all');
   const [sortMode, setSortMode] = useState<SortMode>('default');
+  /** Which face stats an evo has to add to before it is shown at all — see STAT_FILTERS. */
+  const [statFilters, setStatFilters] = useState<FaceFilter[]>([]);
   const [localViewingEvo, setLocalViewingEvo] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   /** The card the cursor is over, which the pool's own summary highlights. */
@@ -839,12 +844,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     const aMaxOvr = a.evo.requirements.maxOvr || 99;
     const bMaxOvr = b.evo.requirements.maxOvr || 99;
 
-    // Sorting on one face stat ranks by the gain the card is already showing (+9 DRI), not by the
-    // resulting value — an evo that takes a 90 to 92 beats one that takes an 80 to 85 on totals,
-    // but not on what you came here to add.
-    if (isStatSort(sortMode)) {
+    // Having asked for the evos that add DRI, the order to see them in is by how much they add.
+    // The gain, not the resulting value: an evo that takes a 90 to 92 beats one that takes an 80 to
+    // 85 on totals, but not on what you came here to add. Only while no sort is chosen — picking
+    // one is saying you want a different question answered.
+    if (sortMode === 'default' && statFilters.length > 0) {
       const gain = (p: typeof a) =>
-        p.expectedStats ? p.expectedStats[sortMode].baseFace - currentStats[sortMode].baseFace : 0;
+        p.expectedStats
+          ? statFilters.reduce((sum, k) => sum + (p.expectedStats![k].baseFace - currentStats[k].baseFace), 0)
+          : 0;
       const byGain = gain(b) - gain(a);
       if (byGain !== 0) return byGain;
     }
@@ -898,8 +906,21 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
   // One predicate for the grid and for Enter-to-add both, so the evo Enter picks is always the
   // first one in the list the user is actually looking at.
-  const matchesFilters = ({ id, evo, posMatchScore, expectedAccelerate }: typeof poolWithStatus[number]) => {
+  const matchesFilters = ({ id, evo, posMatchScore, expectedAccelerate, expectedStats }: typeof poolWithStatus[number]) => {
     if (!evo) return false;
+    // Every face asked for has to be one this evo actually adds to. Where the card was simulated
+    // that means a real gain — an evo promising +10 PAC to a card already at the ceiling adds
+    // nothing and is not an answer. An ineligible card was never simulated, so there the question
+    // falls back to what the evo declares it would do, and it stays listed as the unreachable
+    // option it is rather than vanishing.
+    if (statFilters.length > 0) {
+      const adds = (key: FaceFilter) =>
+        expectedStats
+          ? expectedStats[key].baseFace > currentStats[key].baseFace
+          : evo.faceBoosts?.[key] !== undefined ||
+            Object.keys(currentStats[key].subs).some(sub => evo.subStatBoosts?.[sub] !== undefined);
+      if (!statFilters.every(adds)) return false;
+    }
     // Off, the grid is exactly the team's pool. On, it also shows what the pool leaves out, so an
     // evo can still be picked by hand.
     if (!showNotIncluded && !canRecommend.has(id)) return false;
@@ -1390,6 +1411,28 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     </button>
                   ))}
                 </div>
+
+                <div className="flex flex-wrap items-center gap-1 bg-[#121212] border border-gray-800 rounded-lg p-0.5">
+                  <span className="text-[9px] font-bold uppercase tracking-wide text-gray-600 px-1">Adds</span>
+                  {STAT_FILTERS.map(stat => {
+                    const on = statFilters.includes(stat);
+                    return (
+                      <button
+                        key={stat}
+                        onClick={() =>
+                          setStatFilters(prev => (on ? prev.filter(s => s !== stat) : [...prev, stat]))
+                        }
+                        title={`Only the evos that add ${stat.toUpperCase()} to this card. Stacks with the others — pick two and an evo has to add both.`}
+                        className={`px-1.5 py-1 text-[10px] font-bold rounded transition-colors whitespace-nowrap ${
+                          on ? 'bg-fcGreen text-black shadow-sm' : 'text-gray-400 hover:bg-[#2A2D2A]'
+                        }`}
+                      >
+                        {stat.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <button
                   onClick={() => { setFilterNewRarity(!filterNewRarity); setFilterNoRarity(false); }}
                   className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
