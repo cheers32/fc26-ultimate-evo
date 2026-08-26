@@ -19,7 +19,6 @@ import { PsPlan, psPlanFor } from './psPlan';
 import {
   BARE_FLOORS,
   BuildTemplate,
-  FIELDABLE,
   FIELDABLE_FLOORS,
   PASS_MARK,
   floorsOf,
@@ -146,15 +145,6 @@ const POSITIONS_COUNTED = 3;
  * the pass mark, so a build cannot make up a failing stat by piling points onto a passing one.
  */
 const valueOf = (v: number) => Math.max(0, v - ENDGAME_TARGET);
-
-/**
- * How far under a fieldable floor a build may be and still be offered.
- *
- * Halfway from the floor to the point where a stat is worth nothing at all (80, as positionScore
- * reads it). A stat that far under really is the reason you stop picking the card; one a few points
- * short is a caveat, and a caveat belongs in the ranking rather than in the bin.
- */
-const FLOOR_TOLERANCE = Math.round((FIELDABLE - 80) / 2);
 
 /** Everything the card has, added up — what a plan's own axes cannot see. */
 const igsOf = (subs: Record<string, number>) => Object.values(subs).reduce((a, b) => a + b, 0);
@@ -973,19 +963,9 @@ export function analyzeEvolutionsV2(
         };
       })
       // Under a plan's own floor is a build you should be told about — it is the plan you asked for,
-      // played short. Under a fieldable floor used to be no build at all, dropped outright, on the
-      // grounds that a card which cannot run or keep the ball is not recommended with a note.
-      //
-      // True of a card that misses by ten. Not true of one that misses by four, and the rule could
-      // not tell them apart: a 193cm centre-back finished at 99 pace, 99 defending and 99 ball
-      // control was thrown away whole for balance 87 against a floor of 93 — and the search then
-      // reported it had found nothing, on a card whose every other number was at the ceiling.
-      //
-      // So the drop now needs a real miss: more than halfway from the floor down to where the stat
-      // stops being worth anything at all. Inside that, the build survives, pays for the gap in its
-      // score, and is ranked below anything that clears — which the tier ordering above already
-      // does, and is the honest way to say "this, with that caveat" rather than saying nothing.
-      .filter(row => !row.s.under.some(u => u.key in FIELDABLE_FLOORS && u.floor - u.value > FLOOR_TOLERANCE))
+      // played short. Under a fieldable floor is not a build at all: a card that cannot run, cannot
+      // last the game or cannot keep the ball is not recommended with a note, it is not recommended.
+      .filter(row => !row.s.under.some(u => u.key in FIELDABLE_FLOORS))
       // The same tie-break again, one level up: two builds the plan scores identically are ordered
       // by which leaves more card behind.
       .sort((a, b) => a.tierIdx - b.tierIdx || b.total - a.total || igsOf(b.subs) - igsOf(a.subs));
