@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult } from '../types/player';
+import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult, PickTarget } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId, openPlayStylesOn, OPEN_GOLD_SLOTS } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, psPlusCapOf, STANDARD_PS_PLUS_SLOTS, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
@@ -42,7 +42,7 @@ interface HeaderCardProps {
   // assignment in-game, so another pick can be made right now.
   canPickFreePlayStyles?: boolean;
   // 'new' adds a pick at the end of the chain; a number edits the node at that index.
-  onOpenPlayStylePicker?: (target: number | 'new') => void;
+  onOpenPlayStylePicker?: (target: PickTarget) => void;
   originalIgs: number;
   originalFaceSum: number;
   evoFilters: EvoFilters;
@@ -239,6 +239,30 @@ const PlayStyleNode: React.FC<{
   );
 };
 
+/**
+ * The arrow between two steps, which is also where a PlayStyle pick can be slid in.
+ *
+ * A chain is laid down once and read many times, and deciding halfway through that a pick belongs
+ * at step three used to mean deleting steps four onward and building them again. The gap between
+ * two steps is exactly the place that decision is about, so that is where the control lives —
+ * rather than a fifth badge on a card whose four corners are already spoken for.
+ *
+ * It stays a plain arrow until the row is hovered, so a finished chain still reads as a chain.
+ */
+const StepArrow: React.FC<{ onInsert?: () => void }> = ({ onInsert }) => {
+  if (!onInsert) return <span className="text-gray-600 text-[10px] shrink-0">➜</span>;
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onInsert(); }}
+      title="Add PlayStyles here — inserted at this point, with the steps after it re-checked against the card as it then is"
+      className="shrink-0 w-4 h-5 flex items-center justify-center rounded text-[10px] text-gray-600 hover:text-black hover:bg-fcGreen transition-colors group/arrow"
+    >
+      <span className="group-hover/arrow:hidden">➜</span>
+      <Plus className="w-3 h-3 hidden group-hover/arrow:block" strokeWidth={3} />
+    </button>
+  );
+};
+
 /** Sub-stat keys as the game prints them, for the one place that has to name one in a sentence. */
 const prettyStat = (key: string) =>
   key.replace(/([A-Z])/g, ' $1').toLowerCase()
@@ -418,6 +442,17 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [showFilters, onOpenEvoPool, onOpenManualPath, onBranchFromBase, canPickFreePlayStyles, onOpenPlayStylePicker, onAnalyze, onClearPaths, onChangePlayer, evosPool]);
+
+  /**
+   * The handler the gap after step `idx` gets, or nothing — which leaves a plain arrow.
+   *
+   * Only on the build actually open: the other rows are there to be compared and switched to, and
+   * an edit control on them would act on a chain the panel below is not describing.
+   */
+  const insertPickAfter = (path: EvolutionPath, idx: number) =>
+    path.id === activePathId && canPickFreePlayStyles && onOpenPlayStylePicker
+      ? () => onOpenPlayStylePicker({ after: idx })
+      : undefined;
 
   /** The filters in force, in words, for the "nothing matched" note. */
   const activeFilterSummary = React.useMemo(() => {
@@ -1941,7 +1976,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           onToggleDone={onSetProgress ? () => onSetProgress(renderPath.id, idx) : undefined}
                         />
                         {idx < renderPath.chainIds.length - 1 && (
-                          <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                          <StepArrow onInsert={insertPickAfter(renderPath, idx)} />
                         )}
                       </React.Fragment>
                     );
@@ -2299,7 +2334,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         )}
                       </div>
                       {idx < renderPath.chainIds.length - 1 && (
-                        <span className="text-gray-600 text-[10px] shrink-0">➜</span>
+                        <StepArrow onInsert={insertPickAfter(renderPath, idx)} />
                       )}
                     </React.Fragment>
                   );

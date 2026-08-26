@@ -355,3 +355,12 @@ export interface Squad {
   /** Slot id -> who stands there. Twenty-three of them, and they are the whole squad. */
   slots: Record<string, SquadSlot>;
 }
+
+/**
+ * Where a PlayStyle pick goes in a chain.
+ *
+ *   n            the pick node already at step n
+ *   'new'        appended at the end
+ *   { after: n } inserted directly after step n
+ */
+export type PickTarget = number | 'new' | { after: number };

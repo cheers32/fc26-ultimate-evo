@@ -58,7 +58,7 @@ import { PlayStylePickerModal } from './components/PlayStylePickerModal';
 import { SquadPitch, ALL_SLOT_IDS, formationOf } from './components/SquadPitch';
 import { ImportPlayerModal } from './components/ImportPlayerModal';
 import { Trophy, Layers } from 'lucide-react';
-import { Squad, SquadSlot, PlayerEvoState } from './types/player';
+import { Squad, SquadSlot, PlayerEvoState, PickTarget } from './types/player';
 
 /** The build a `?path=` link opens into. Fixed, so following the same link twice doesn't stack. */
 const SHARED_PATH_ID = 'shared-path';
@@ -932,7 +932,18 @@ export default function App() {
   const [isEvoPoolOpen, setIsEvoPoolOpen] = useState(false);
   // Which PlayStyle node the picker is editing: an index in the chain, 'new' to add one at the
   // end, or null when it's closed.
-  const [playStylePickerTarget, setPlayStylePickerTarget] = useState<number | 'new' | null>(null);
+  /**
+   * Which PlayStyle pick the picker is open on.
+   *
+   *   n            edit the pick node already at step n
+   *   'new'        append one at the end of the chain
+   *   { after: n } insert one directly after step n
+   *
+   * The third exists because a chain is built once and read many times: wanting a pick in the
+   * middle of a finished build used to mean deleting everything after it and laying the steps
+   * down again, which is a lot of work to undo a decision about where one node sits.
+   */
+  const [playStylePickerTarget, setPlayStylePickerTarget] = useState<PickTarget | null>(null);
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
   const [isEvoLabOpen, setIsEvoLabOpen] = useState(false);
@@ -1423,7 +1434,7 @@ export default function App() {
   const handleSetPlayStyleNode = (
     pathId: string,
     picks: { gold: string[]; silver: string[] },
-    target: number | 'new'
+    target: PickTarget
   ) => {
     const path = allPaths.find(p => p.id === pathId);
     if (!path || isBaseCardPath(path)) return;
@@ -1437,6 +1448,13 @@ export default function App() {
       if (isEmpty) return;
       insertedAt = newChainIds.length;
       newChainIds.push(buildPlayStyleNodeId(picks));
+    } else if (typeof target === 'object') {
+      // Everything after the insertion point shifts up one, and every step is re-simulated below
+      // against the card as it now is at that point — which is the whole reason to insert rather
+      // than append: a pick made here is a pick the later evos have to gate against.
+      if (isEmpty) return;
+      insertedAt = target.after + 1;
+      newChainIds.splice(insertedAt, 0, buildPlayStyleNodeId(picks));
     } else if (isEmpty) {
       removedAt = target;
       newChainIds.splice(target, 1);
@@ -1521,15 +1539,22 @@ export default function App() {
   // What the card looks like just before the pick lands: everything up to that point is locked,
   // and the picks go on top of it. For a new pick that's the end of the chain; for an existing
   // node it's the step before it.
-  const playStylesBeforePick = (target: number | 'new') => {
+  // What the card holds at the moment of the pick — an insert reads the step it follows, an edit
+  // reads the step before the node it is replacing.
+  const stepBeforePick = (target: PickTarget) =>
+    typeof target === 'object' ? target.after : (target as number) - 1;
+
+  const playStylesBeforePick = (target: PickTarget) => {
     if (target === 'new') return chainResult.finalPlayStyles;
-    if (target === 0) return playStylesData;
-    return chainResult.steps[target - 1]?.playStylesAfter || playStylesData;
+    const at = stepBeforePick(target);
+    if (at < 0) return playStylesData;
+    return chainResult.steps[at]?.playStylesAfter || playStylesData;
   };
-  const rarityAtPick = (target: number | 'new') => {
+  const rarityAtPick = (target: PickTarget) => {
     if (target === 'new') return chainResult.finalBio.rarity;
-    if (target === 0) return playerBio.rarity;
-    return chainResult.steps[target - 1]?.bioAfter.rarity || playerBio.rarity;
+    const at = stepBeforePick(target);
+    if (at < 0) return playerBio.rarity;
+    return chainResult.steps[at]?.bioAfter.rarity || playerBio.rarity;
   };
 
   const comparePath = useMemo(() => {
