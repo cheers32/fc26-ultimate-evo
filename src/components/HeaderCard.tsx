@@ -499,6 +499,30 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
    * Only on the build actually open: the other rows are there to be compared and switched to, and
    * an edit control on them would act on a chain the panel below is not describing.
    */
+  /**
+   * Ruled out, beside the star rather than instead of it.
+   *
+   * The two say different things and a build can be both: a shortlist marker you keep, and a
+   * decision you have made about it. Kept visible once it is set — otherwise the only way to take
+   * it back would be to remember which of the struck-through chips you were hovering.
+   */
+  const discardBadge = (path: EvolutionPath) =>
+    onToggleDiscardPath && path.chainIds.length > 0 && !isInGamePath(path) ? (
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleDiscardPath(path); }}
+        title={path.discarded
+          ? `"${pathLabel(path)}" is ruled out — click to bring it back`
+          : `Rule "${pathLabel(path)}" out. It stays on the card, struck through and sorted last, and Clear Unstarred leaves it alone. The star is untouched.`}
+        className={`rounded-full p-0.5 shadow-sm transition-colors ${
+          path.discarded
+            ? 'bg-gray-500 text-white'
+            : 'bg-gray-800 text-gray-500 hover:bg-gray-400 hover:text-black'
+        }`}
+      >
+        <Minus className="w-2.5 h-2.5" strokeWidth={3.5} />
+      </button>
+    ) : null;
+
   const insertPickAfter = (path: EvolutionPath, idx: number) =>
     path.id === activePathId && canPickFreePlayStyles && onOpenPlayStylePicker
       ? () => onOpenPlayStylePicker({ after: idx })
@@ -1704,7 +1728,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 </button>
               )}
               {onToggleFavoritePath && path.chainIds.length > 0 && path.isFavorite && (
-                <div className="absolute -top-3 -left-1.5 z-10">
+                <div className="absolute -top-3 -left-1.5 z-10 flex items-center gap-0.5">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1715,6 +1739,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   >
                     <Star className={`w-2.5 h-2.5 ${STAR_TIERS[starTier(path) - 1].fill}`} />
                   </button>
+                  {discardBadge(path)}
                 </div>
               )}
               {onDeletePath && isInGamePath(path) && path.chainIds.length > 0 && (
@@ -1728,8 +1753,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                   </button>
                 </div>
               )}
-              {(onDeletePath || onToggleFavoritePath) && path.chainIds.length > 0 && !path.isFavorite && !isInGamePath(path) && (
-                <div className="absolute -top-1.5 -left-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              {(onDeletePath || onToggleFavoritePath || onToggleDiscardPath) && path.chainIds.length > 0 && !path.isFavorite && !isInGamePath(path) && (
+                <div className={`absolute -top-1.5 -left-1.5 flex items-center gap-0.5 transition-opacity z-10 ${
+                  path.discarded ? '' : 'opacity-0 group-hover:opacity-100'
+                }`}>
                   {onToggleFavoritePath && (
                     <button
                       onClick={(e) => {
@@ -1742,6 +1769,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                       <Star className="w-2.5 h-2.5" />
                     </button>
                   )}
+                  {discardBadge(path)}
                   {onDeletePath && (
                     <button
                       onClick={(e) => {
