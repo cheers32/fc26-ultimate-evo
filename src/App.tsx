@@ -616,7 +616,8 @@ export default function App() {
   };
 
   const [hoveredChem, setHoveredChem] = useState<string | null>(null);
-  const [lockedChem, setLockedChem] = useState<string | null>(null);
+  // Chem for the two chips that are synthesised rather than stored — see `lockedChem` below.
+  const [scratchChem, setScratchChem] = useState<Record<string, string | null>>({});
   const [evoPreview, setEvoPreview] = useState(false);
 
   const [ovr, setOvr] = useState(initialOvrData);
@@ -741,7 +742,9 @@ export default function App() {
    * server can't look like a change and start a write loop.
    */
   const starredKey = (paths: EvolutionPath[]) =>
-    JSON.stringify(paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>')]));
+    JSON.stringify(
+      paths.map(p => [p.id, p.name, p.starTier ?? 1, p.doneUpTo ?? -1, p.chainIds.join('>'), p.chemStyle ?? ''])
+    );
 
   const starredForPlayer = useMemo(
     () => {
@@ -887,6 +890,37 @@ export default function App() {
   const setGeneratedPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ generatedPaths: typeof val === 'function' ? val(currentState.generatedPaths) : val });
   const setManualPaths = (val: EvolutionPath[] | ((prev: EvolutionPath[]) => EvolutionPath[])) => updateState({ manualPaths: typeof val === 'function' ? val(currentState.manualPaths) : val });
   const setEvoFilters = (val: EvoFilters | ((prev: EvoFilters) => EvoFilters)) => updateState({ evoFilters: typeof val === 'function' ? val(currentState.evoFilters) : val });
+
+  /**
+   * The chemistry style belongs to the build, not to the card.
+   *
+   * "Current wearing Shadow" and the same chain bare are two different answers to what this player
+   * is, and only one of them is on screen. Held as app state it leaked: put a style on one build to
+   * see what it would do, click to another, and that one was wearing it too — with nothing saying
+   * so, and the stat panel describing a card you had not asked about.
+   *
+   * So it is read off the build and written back to it. Opening a build puts its own style on, and
+   * one you never chose a style for opens bare. Base Card and an untouched Current have no stored
+   * path to write to, so theirs last the session and no longer; there is nothing on disk for those
+   * two either way.
+   */
+  const chemScratchKey = `${selectedPlayerId}::${currentState.activePathId}`;
+  const storedActivePath =
+    currentState.manualPaths.find(p => p.id === currentState.activePathId) ||
+    currentState.generatedPaths.find(p => p.id === currentState.activePathId);
+  const lockedChem = storedActivePath ? storedActivePath.chemStyle ?? null : scratchChem[chemScratchKey] ?? null;
+
+  const setLockedChem = (name: string | null) => {
+    const id = currentState.activePathId;
+    if (currentState.manualPaths.some(p => p.id === id)) {
+      updateState({ manualPaths: currentState.manualPaths.map(p => (p.id === id ? { ...p, chemStyle: name } : p)) });
+    } else if (currentState.generatedPaths.some(p => p.id === id)) {
+      updateState({ generatedPaths: currentState.generatedPaths.map(p => (p.id === id ? { ...p, chemStyle: name } : p)) });
+    } else {
+      setScratchChem(prev => ({ ...prev, [chemScratchKey]: name }));
+    }
+  };
+
   const baseIndex = currentState.baseIndex ?? -1;
   const setBaseIndex = (val: number) => updateState({ baseIndex: val });
 
@@ -1953,14 +1987,7 @@ export default function App() {
           expandedPathIds={[activePathId]}
           comparePathId={currentState.comparePathId}
           onSetComparePathId={(id) => updateState({ comparePathId: id })}
-          onSelectPath={(id) => {
-            updateState({ activePathId: id });
-            // A build judged with a chemistry style on is a build about a card wearing it, so
-            // opening it puts the style on. Otherwise the row says stamina 93 while the panel
-            // beneath says 87, and the reader has no way to tell which card is being described.
-            const chosen = allPaths.find(p => p.id === id);
-            if (chosen?.chemStyle) setLockedChem(chosen.chemStyle);
-          }}
+          onSelectPath={(id) => updateState({ activePathId: id })}
           onOpenEvoPool={() => setIsEvoPoolOpen(true)}
           onOpenManualPath={() => { setPickerMode('append'); setIsManualPathOpen(true); }}
           onBranchFromBase={() => { setPickerMode('branch'); setIsManualPathOpen(true); }}
@@ -2282,7 +2309,8 @@ export default function App() {
           onSelectPlayer={(id) => {
             setSelectedPlayerId(id);
             setHoveredChem(null);
-            setLockedChem(null);
+            // Not the locked style: that is the incoming build's own, and clearing it here would
+            // write a null onto the build being left behind.
             setEvoPreview(false);
             setSelectionQueue([-1, -1]);
             const ovrData = allPlayersData[id]?.ovr || playersDatabase['rodri-91'].ovr;
