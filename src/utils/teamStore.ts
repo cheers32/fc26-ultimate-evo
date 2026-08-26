@@ -84,11 +84,51 @@ export function migratePlayerKeys<T>(byId: Record<string, T>): Record<string, T>
   return touched ? out : byId;
 }
 
+/**
+ * Evos that changed id, for the same reason and with the same risk as the players above.
+ *
+ * An evo added from fut.gg carries fut.gg's number, because that is the only number it has. When
+ * FUTBIN indexes the same evo later it gets a different one, and FUTBIN's is the number the library
+ * keeps: it is the source the rest of the data is read from, and two ids for one evo is how the
+ * pool ends up listing it twice.
+ *
+ * The renumber itself is a rename in the library and would be free — except that the old id is
+ * already written into saved builds. A chain step naming an id the library no longer has is a step
+ * that cannot be simulated, which is a build that stops working, on a card the user did not touch.
+ * That has happened once already: 2446, 2463 and 2464 were renumbered without this, and were still
+ * sitting in two teams' evo pools as ids nothing answers to.
+ *
+ * Rewritten on read, like the player ids, so old data stays valid until something writes it back.
+ */
+const EVO_ID_MIGRATIONS: Record<string, string> = {
+  '2446': '1263', // Instant Magnet
+  '2461': '1282', // Eagle Eyed
+  '2463': '1278', // Keep Better Kompany
+  '2464': '1279' // Prime Iconic Attacker
+};
+
+/** A chain step is an evo id or a `ps:` PlayStyle-pick node; only the first kind moves. */
+export function migrateEvoId(id: string): string {
+  return EVO_ID_MIGRATIONS[id] ?? id;
+}
+
 /** Every player id a team holds, moved at once. */
 function migrateTeam(team: TeamState): TeamState {
   return {
     ...team,
-    savedPaths: team.savedPaths ? migratePlayerKeys(team.savedPaths) : team.savedPaths,
+    evoStatuses: team.evoStatuses
+      ? (Object.fromEntries(
+          Object.entries(team.evoStatuses).map(([id, status]) => [migrateEvoId(id), status])
+        ) as EvoStatuses)
+      : team.evoStatuses,
+    savedPaths: team.savedPaths
+      ? Object.fromEntries(
+          Object.entries(migratePlayerKeys(team.savedPaths)).map(([playerId, paths]) => [
+            playerId,
+            paths.map(path => ({ ...path, chainIds: path.chainIds.map(migrateEvoId) }))
+          ])
+        )
+      : team.savedPaths,
     hiddenPlayers: team.hiddenPlayers?.map(migratePlayerId),
     squads: team.squads?.map(squad => ({
       ...squad,

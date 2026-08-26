@@ -100,7 +100,7 @@ import { backToTheSilverAge1249 } from './evolutions/backToTheSilverAge1249';
 import { endgameEchoes1265 } from './evolutions/endgameEchoes1265';
 import { order671276 } from './evolutions/order671276';
 import { leyendaDeMoncada1277 } from './evolutions/leyendaDeMoncada1277';
-import { eagleEyed2461 } from './evolutions/eagleEyed2461';
+import { eagleEyed1282 } from './evolutions/eagleEyed1282';
 import { keepBetterKompany1278 } from './evolutions/keepBetterKompany1278';
 import { primeIconicAttacker1279 } from './evolutions/primeIconicAttacker1279';
 import { guardianOfTheWing1280 } from './evolutions/guardianOfTheWing1280';
@@ -242,7 +242,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1265': endgameEchoes1265,
   '1276': order671276,
   '1277': leyendaDeMoncada1277,
-  '2461': eagleEyed2461,
+  '1282': eagleEyed1282,
   '1278': keepBetterKompany1278,
   '1279': primeIconicAttacker1279,
   '1280': guardianOfTheWing1280,
