@@ -184,9 +184,35 @@ export async function updateTeam(id, patch) {
   const [entity] = await datastore.get(key);
   if (!entity) throw Object.assign(new Error('Team not found'), { status: 404 });
 
+  const { name, squads, id: _ignored, createdAt: _createdAt, _whole, ...state } = patch;
+
+  /**
+   * A whole-map savedPaths write is refused unless it says so.
+   *
+   * This is the shape that lost thirty-seven builds: a window opened before the per-player route
+   * existed still sends every card's builds as they were when it loaded, and this merges at the top
+   * level, so the stale map replaced the real one and five cards were emptied outright. The window
+   * had been open for hours and its owner had no way to know.
+   *
+   * Nothing in the app sends savedPaths this way any more; only an old tab does. Refusing it turns
+   * that tab's next save into a visible error instead of a silent deletion — which is the whole
+   * difference, because an error gets reloaded and a deletion does not get noticed.
+   *
+   * `_whole: true` is the deliberate exception, for the one caller that really does rewrite the map
+   * (purging a card from every team) and reads it fresh immediately beforehand.
+   */
+  if (state.savedPaths !== undefined && !_whole) {
+    throw Object.assign(
+      new Error(
+        'This tab is running an older version of the app and its save would overwrite newer work. ' +
+          'Reload the page and try again — nothing has been changed.'
+      ),
+      { status: 409 }
+    );
+  }
+
   await recordHistory(id, entity, 'patch');
 
-  const { name, squads, id: _ignored, createdAt: _createdAt, ...state } = patch;
   await datastore.save(
     pack(
       {

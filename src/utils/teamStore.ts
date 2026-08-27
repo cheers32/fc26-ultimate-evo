@@ -207,7 +207,9 @@ export async function purgePlayerFromOtherTeams(playerId: string, exceptTeamId: 
       patch.savedPaths = savedPaths;
     }
     if (hiddenPlayers.length !== (team.hiddenPlayers || []).length) patch.hiddenPlayers = hiddenPlayers;
-    if (Object.keys(patch).length > 0) await teamApi.patch(summary.id, patch);
+    // Rewriting the whole map is the point here, and it was read fresh a line ago — see the guard
+    // in updateTeam, which refuses this shape from anyone who does not say they mean it.
+    if (Object.keys(patch).length > 0) await teamApi.patch(summary.id, { ...patch, _whole: true } as never);
 
     for (const squad of team.squads || []) {
       const slots = Object.fromEntries(
