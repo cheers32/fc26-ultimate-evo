@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { playersDatabase } from './data/playersData';
 import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
@@ -487,12 +487,13 @@ export default function App() {
       setActiveSquadId(target.id);
     }
 
+    // chainIds is still written so a client running the old code keeps working; nothing reads it.
     const entry: SquadSlot = { playerId: selectedPlayerId, chainIds: activePath.chainIds };
-    const key = `${entry.playerId}|${entry.chainIds.join('>')}`;
     const slots = { ...target.slots };
-    // One build stands in one place at a time, so leaving the old slot is part of arriving here.
+    // One player stands in one place. It used to be one *build* — the same card could hold two
+    // slots under two plans, which is a useful thing to compare and not a thing a squad can do.
     Object.keys(slots).forEach(id => {
-      if (`${slots[id].playerId}|${slots[id].chainIds.join('>')}` === key) delete slots[id];
+      if (slots[id].playerId === entry.playerId) delete slots[id];
     });
     slots[slotId] = entry;
 
@@ -1268,8 +1269,32 @@ export default function App() {
    * Open the build a slot points at. The build is the player's, so it comes back from their saves —
    * the slot only says which player and which chain.
    */
+  /**
+   * Open the card that stands here, on its record.
+   *
+   * A slot used to carry a copy of whatever chain was open when the player was put there, and
+   * clicking one restored that chain — standing up a build called "From the pitch" when the copy
+   * matched nothing the card still had. So the pitch could show a plan the card had moved on from,
+   * and clicking it added a fourth build to a card that already had three. The slot names a player
+   * now, and the player's record is the answer to what he is.
+   */
+  /**
+   * The chain a card is on, for the pitch.
+   *
+   * The card being edited is read from the workbench rather than from the store, so the pitch moves
+   * as the build does instead of a save later; everyone else is read from what is saved. Absent a
+   * record, the raw card — which is what an empty Current shows on the player screen too.
+   */
+  const currentChainFor = useCallback(
+    (playerId: string): string[] => {
+      if (playerId === selectedPlayerId) return allPaths.find(isInGamePath)?.chainIds ?? [];
+      return (team?.savedPaths?.[playerId] || []).find(isInGamePath)?.chainIds ?? [];
+    },
+    [selectedPlayerId, allPaths, team]
+  );
+
   const openSquadSlot = (entry: SquadSlot) => {
-    setPendingOpen({ playerId: entry.playerId, chainIds: entry.chainIds });
+    setPendingOpen({ playerId: entry.playerId, chainIds: [] });
     setSelectedPlayerId(entry.playerId);
     setEvoPreview(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1277,36 +1302,18 @@ export default function App() {
 
   useEffect(() => {
     if (!pendingOpen || pendingOpen.playerId !== selectedPlayerId) return;
-    const key = pendingOpen.chainIds.join('>');
-    const found = allPaths.find(p => p.chainIds.join('>') === key);
-    if (found) {
-      updateState({ activePathId: found.id, expandedPathIds: [found.id] });
-      setPendingOpen(null);
-      return;
-    }
-    // Still on its way in from the player's saves — wait for the hydration effect rather than
-    // standing up a second copy of the same chain.
-    if ((team?.savedPaths?.[selectedPlayerId] || []).some(p => p.chainIds.join('>') === key)) return;
 
-    const id = `slot-${Date.now()}`;
-    updateState({
-      activePathId: id,
-      expandedPathIds: [id],
-      manualPaths: [
-        ...manualPaths,
-        {
-          id,
-          name: 'From the pitch',
-          description: '',
-          isFavorite: true,
-          starTier: 1,
-          chainIds: pendingOpen.chainIds,
-          steps: simulateEvoChain(pendingOpen.chainIds, playerBio, initialOvrData, statsData, playStylesData).steps
-        }
-      ]
-    });
+    // Wait for the stored record to actually be on screen, not merely for hydration to have begun.
+    // Hydration marks the player before its result lands, so testing that mark selected the empty
+    // Current the card starts on — and the real one, arriving a render later under its own id, was
+    // then never selected. The card opened from the pitch on its base stats.
+    const storedRecord = (team?.savedPaths?.[selectedPlayerId] || []).find(isInGamePath);
+    const record = allPaths.find(isInGamePath);
+    if (storedRecord && record?.id !== storedRecord.id) return;
+
+    if (record) updateState({ activePathId: record.id, expandedPathIds: [record.id] });
     setPendingOpen(null);
-  }, [pendingOpen, selectedPlayerId, allPaths, team, manualPaths, playerBio, initialOvrData, statsData, playStylesData]);
+  }, [pendingOpen, selectedPlayerId, allPaths, team]);
 
   const evoLocked = evoPreview; // Derived state for components that need to know if we are in preview mode
 
@@ -2287,6 +2294,7 @@ export default function App() {
                   currentName={playerBio.name}
                   currentPlayerId={selectedPlayerId}
                   playersById={allPlayersData}
+                  currentChainFor={currentChainFor}
                   assumeChemStyle={assumeChemStyle}
                 />
               }

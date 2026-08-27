@@ -202,6 +202,14 @@ interface SquadPitchProps {
   /** Whoever the workbench has open — his cards on the pitch are marked, so the two views agree. */
   currentPlayerId?: string;
   playersById: Record<string, PlayerData>;
+  /**
+   * The chain a card is actually on — its record — looked up rather than stored on the slot.
+   *
+   * A slot used to carry a copy of the chain that happened to be open when the card was placed, so
+   * the pitch went stale the moment the card moved on and there was no way to tell by looking. It
+   * names a player now and asks for his record every render.
+   */
+  currentChainFor: (playerId: string) => string[];
   /** Read every card here with the best legal chemistry style on. One setting for the whole app. */
   assumeChemStyle?: boolean;
 }
@@ -220,6 +228,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
   currentName,
   currentPlayerId,
   playersById,
+  currentChainFor,
   assumeChemStyle = false
 }) => {
   /** Which slot is being dragged. A squad is only its slots, so that is the only thing to drag. */
@@ -244,7 +253,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
       if (!player) return;
 
       const result = simulateEvoChain(
-        entry.chainIds,
+        currentChainFor(entry.playerId),
         player.bio,
         player.ovr,
         player.stats,
@@ -275,7 +284,7 @@ export const SquadPitch: React.FC<SquadPitchProps> = ({
       });
     });
     return map;
-  }, [squad, playersById, formation, assumeChemStyle]);
+  }, [squad, playersById, currentChainFor, formation, assumeChemStyle]);
 
   /** Every slot is a drop target, so the handlers are the same wherever the slot is drawn. */
   const dropProps = (slotId: string) => ({
