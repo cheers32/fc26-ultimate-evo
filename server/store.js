@@ -29,6 +29,69 @@ const DEFAULT_SQUAD_NAME = 'Default XI';
 const SQUAD = 'evo_squad';
 const LIBRARY = 'evo_library';
 
+/**
+ * Every previous version of a team's state, kept so nothing is ever gone for good.
+ *
+ * The writes here are last-one-wins over the whole document, and a client holding a stale copy can
+ * therefore delete work it never knew about. Narrowing what a write touches makes that rarer; it
+ * cannot make it impossible, and "rarer" is not the promise wanted about a build that took an
+ * evening to find. So the old state is filed before every write, and the answer to losing one
+ * stops being "it is gone" and becomes "which version do you want back".
+ *
+ * The key carries the timestamp, zero-padded so it sorts, which is what lets this be pruned and
+ * listed with plain key ranges — no composite index, nothing to deploy alongside it.
+ */
+const HISTORY = 'evo_team_history';
+
+/** How many versions of a team to keep. Each is a few tens of KB at most. */
+const HISTORY_KEEP = 50;
+
+const historyKey = (teamId, at) =>
+  datastore.key([HISTORY, `${teamId}__${String(at).padStart(15, '0')}`]);
+
+/** Every stored version of one team, oldest first. Key-only range, so it needs no index. */
+async function historyKeys(teamId) {
+  const query = datastore
+    .createQuery(HISTORY)
+    .filter(new PropertyFilter('__key__', '>=', historyKey(teamId, 0)))
+    .filter(new PropertyFilter('__key__', '<', historyKey(teamId, Number.MAX_SAFE_INTEGER)))
+    .select('__key__');
+  const [entities] = await query.run();
+  return entities.map(e => e[datastore.KEY]).sort((a, b) => (a.name < b.name ? -1 : 1));
+}
+
+/**
+ * File the version of a team that is about to be replaced.
+ *
+ * Never allowed to fail the write it precedes: losing the ability to undo a save is bad, refusing
+ * to save because the undo could not be written is worse.
+ */
+async function recordHistory(id, entity, reason) {
+  if (!entity) return;
+  try {
+    const at = now();
+    await datastore.save({
+      key: historyKey(id, at),
+      excludeFromIndexes: ['json'],
+      data: { teamId: id, at, reason: reason || '', name: entity.name || '', json: entity.json || '{}' }
+    });
+    const keys = await historyKeys(id);
+    if (keys.length > HISTORY_KEEP) await datastore.delete(keys.slice(0, keys.length - HISTORY_KEEP));
+  } catch (err) {
+    console.error('history write failed (the save itself is unaffected):', err);
+  }
+}
+
+/** What is on file for a team, newest first. `json` is the whole state as it was then. */
+export async function listTeamHistory(id) {
+  const keys = await historyKeys(id);
+  if (keys.length === 0) return [];
+  const [entities] = await datastore.get(keys);
+  return (entities || [])
+    .map(e => ({ at: e.at, reason: e.reason || '', name: e.name || '', state: JSON.parse(e.json || '{}') }))
+    .sort((a, b) => b.at - a.at);
+}
+
 /** Ids become key names, so they may not be empty or exotic. */
 export const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 
@@ -121,6 +184,8 @@ export async function updateTeam(id, patch) {
   const [entity] = await datastore.get(key);
   if (!entity) throw Object.assign(new Error('Team not found'), { status: 404 });
 
+  await recordHistory(id, entity, 'patch');
+
   const { name, squads, id: _ignored, createdAt: _createdAt, ...state } = patch;
   await datastore.save(
     pack(
@@ -133,6 +198,56 @@ export async function updateTeam(id, patch) {
         }
       },
       { ...unpack(entity), ...state }
+    )
+  );
+  return getTeam(id);
+}
+
+/**
+ * Replace one player's builds, and touch nothing else.
+ *
+ * The whole-document PATCH above is what makes a stale client dangerous: it sends the entire
+ * savedPaths map, built from whatever it had when it loaded, so a save for one card silently
+ * reinstates its old copy of every other card. Here the map is read fresh out of the store and only
+ * the named player is written, so two windows working on two cards cannot overwrite each other at
+ * all — and two windows on the same card lose only that card's newer version, which the history
+ * above still holds.
+ */
+export async function setPlayerPaths(id, playerId, paths) {
+  const key = datastore.key([TEAM, id]);
+  const [entity] = await datastore.get(key);
+  if (!entity) throw Object.assign(new Error('Team not found'), { status: 404 });
+
+  await recordHistory(id, entity, `paths:${playerId}`);
+
+  const state = unpack(entity) || {};
+  const savedPaths = { ...(state.savedPaths || {}) };
+  if (Array.isArray(paths) && paths.length > 0) savedPaths[playerId] = paths;
+  else delete savedPaths[playerId];
+
+  await datastore.save(
+    pack(
+      { key, data: { name: entity.name, createdAt: entity.createdAt || now(), updatedAt: now() } },
+      { ...state, savedPaths }
+    )
+  );
+  return getTeam(id);
+}
+
+/** Put a filed version back. Recorded first, so restoring is itself undoable. */
+export async function restoreTeamVersion(id, at) {
+  const key = datastore.key([TEAM, id]);
+  const [entity] = await datastore.get(key);
+  if (!entity) throw Object.assign(new Error('Team not found'), { status: 404 });
+
+  const [version] = await datastore.get(historyKey(id, at));
+  if (!version) throw Object.assign(new Error('No such version'), { status: 404 });
+
+  await recordHistory(id, entity, 'before-restore');
+  await datastore.save(
+    pack(
+      { key, data: { name: entity.name, createdAt: entity.createdAt || now(), updatedAt: now() } },
+      JSON.parse(version.json || '{}')
     )
   );
   return getTeam(id);

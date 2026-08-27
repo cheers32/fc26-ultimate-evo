@@ -6,9 +6,12 @@ import {
   deleteTeam,
   getLibrary,
   getTeam,
+  listTeamHistory,
   listTeams,
   putLibrary,
+  restoreTeamVersion,
   saveSquad,
+  setPlayerPaths,
   updateTeam
 } from './store.js';
 
@@ -61,6 +64,34 @@ export function createApiRouter() {
   router.patch(
     '/teams/:teamId',
     wrap(async (req, res) => res.json(await updateTeam(checkId(req.params.teamId), req.body || {})))
+  );
+
+  // One player's builds, merged into what is stored rather than replacing the whole map — see
+  // setPlayerPaths. This is what a save from the workbench goes through.
+  router.put(
+    '/teams/:teamId/paths/:playerId',
+    wrap(async (req, res) =>
+      res.json(
+        await setPlayerPaths(
+          checkId(req.params.teamId),
+          checkId(req.params.playerId),
+          Array.isArray(req.body) ? req.body : req.body?.paths || []
+        )
+      )
+    )
+  );
+
+  // Every version of a team that has been replaced, newest first, and the way to put one back.
+  router.get(
+    '/teams/:teamId/history',
+    wrap(async (req, res) => res.json(await listTeamHistory(checkId(req.params.teamId))))
+  );
+
+  router.post(
+    '/teams/:teamId/history/:at/restore',
+    wrap(async (req, res) =>
+      res.json(await restoreTeamVersion(checkId(req.params.teamId), Number(req.params.at)))
+    )
   );
 
   router.delete(

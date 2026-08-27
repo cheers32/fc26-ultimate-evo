@@ -161,6 +161,18 @@ export const teamApi = {
   get: (teamId: string) => request<TeamState>(`/api/teams/${teamId}`),
   patch: (teamId: string, patch: Partial<Omit<TeamState, 'squads'>>) =>
     request<TeamState>(`/api/teams/${teamId}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  /**
+   * One player's builds, merged server-side into whatever is stored now.
+   *
+   * The whole-map PATCH is what let a stale window delete work: it sends every player's builds as
+   * they were when that window loaded. This sends one player and names him, so a save for Vieira
+   * cannot reinstate an old copy of Maldini.
+   */
+  setPlayerPaths: (teamId: string, playerId: string, paths: EvolutionPath[]) =>
+    request<TeamState>(`/api/teams/${teamId}/paths/${playerId}`, {
+      method: 'PUT',
+      body: JSON.stringify(paths)
+    }),
   remove: (teamId: string) => request<{ success: true }>(`/api/teams/${teamId}`, { method: 'DELETE' }),
   saveSquad: (teamId: string, squad: Squad) =>
     request<Squad>(`/api/teams/${teamId}/squads/${squad.id}`, {
@@ -301,6 +313,12 @@ export function useTeam(teamId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Bumped whenever what is stored has been fetched again, so anything that folded the store into
+   * its own state knows to look once more. See the refresh below.
+   */
+  const [loadedAt, setLoadedAt] = useState(0);
+
   useEffect(() => {
     if (!teamId) {
       setTeam(null);
@@ -309,19 +327,41 @@ export function useTeam(teamId: string | null) {
     let active = true;
     setLoading(true);
     setError(null);
-    teamApi
-      .get(teamId)
-      .then(next => {
-        if (active) setTeam(migrateTeam(next));
-      })
-      .catch(err => {
-        if (active) setError(err.message);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+
+    const load = () =>
+      teamApi
+        .get(teamId)
+        .then(next => {
+          if (!active) return;
+          setTeam(migrateTeam(next));
+          setLoadedAt(Date.now());
+        })
+        .catch(err => {
+          if (active) setError(err.message);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+
+    load();
+
+    /**
+     * Fetch again when the window comes back to the front.
+     *
+     * The store used to be read exactly once, when the tab opened, and never again — so a window
+     * left open all evening showed the morning's data, and every save it made sent that morning
+     * back to the server. Coming back to a window is precisely the moment its copy is most likely
+     * to be behind, and the cheapest moment to fix it.
+     */
+    const again = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    window.addEventListener('focus', again);
+    document.addEventListener('visibilitychange', again);
     return () => {
       active = false;
+      window.removeEventListener('focus', again);
+      document.removeEventListener('visibilitychange', again);
     };
   }, [teamId]);
 
@@ -351,9 +391,15 @@ export function useTeam(teamId: string | null) {
           if (paths.length === 0) return;
           savedPaths[playerId] = [...(savedPaths[playerId] || []), ...paths];
         });
-        teamApi
-          .patch(teamId, { savedPaths })
-          .catch(err => console.error('Failed to save imported paths:', err));
+        // One request per player, in order, rather than one PATCH carrying the whole map: the map
+        // would be this window's copy of every other card, and sending it is how an import quietly
+        // reverted work done elsewhere.
+        (async () => {
+          for (const [playerId, paths] of Object.entries(additions)) {
+            if (paths.length === 0) continue;
+            await teamApi.setPlayerPaths(teamId, playerId, savedPaths[playerId]);
+          }
+        })().catch(err => console.error('Failed to save imported paths:', err));
         return { ...prev, savedPaths };
       });
     },
@@ -381,7 +427,7 @@ export function useTeam(teamId: string | null) {
         if (paths.length > 0) savedPaths[playerId] = paths;
         else delete savedPaths[playerId];
         teamApi
-          .patch(teamId, { savedPaths })
+          .setPlayerPaths(teamId, playerId, paths)
           .catch(err => console.error('Failed to save paths:', err));
         return { ...prev, savedPaths };
       });
@@ -425,5 +471,5 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
-  return { team, loading, error, setEvoStatuses, setHiddenPlayers, setSavedPathsForPlayer, addSavedPaths, saveSquad, deleteSquad, rename };
+  return { team, loadedAt, loading, error, setEvoStatuses, setHiddenPlayers, setSavedPathsForPlayer, addSavedPaths, saveSquad, deleteSquad, rename };
 }

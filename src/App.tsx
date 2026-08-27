@@ -126,6 +126,7 @@ export default function App() {
   );
   const {
     team,
+    loadedAt: teamLoadedAt,
     loading: teamLoading,
     error: teamError,
     setEvoStatuses: setTeamEvoStatuses,
@@ -819,6 +820,35 @@ export default function App() {
     setPendingOpen(null);
     setActiveSquadId(null);
   }, [activeTeamId]);
+
+  /**
+   * A fresh read of the store is a reason to look at it again.
+   *
+   * Hydration runs once per player and then refuses to run again, which is right while the store is
+   * only read at startup and wrong the moment it is read again: a window that has just caught up
+   * with another window's work would ignore every build it just fetched. Clearing the marks lets
+   * hydration run once more — and hydration only ever *adds* builds it does not already have, so
+   * catching up cannot take anything off the screen.
+   *
+   * A build deleted in the other window therefore comes back here rather than disappearing. That is
+   * the wrong way round for tidiness and the right way round for the only thing that matters: it
+   * fails towards keeping work rather than towards losing it.
+   */
+  useEffect(() => {
+    if (!teamLoadedAt) return;
+    hydratedPlayers.current = new Set();
+    // And un-settle them, which is what stops the write below from firing in the gap.
+    //
+    // Hydration hands its result over through setState, so it lands a render later, while `team`
+    // has already changed in this one. For that one render the store says three builds and the
+    // workbench still says two — and the persist effect, seeing a difference, wrote the two. The
+    // build this window had just caught up with was deleted again, milliseconds after arriving.
+    //
+    // `settledPlayers` already encodes exactly the right rule — do not write until everything
+    // stored is on screen — it was simply never re-armed, having only ever needed to hold for the
+    // first load. Clearing it makes a refetch a first load again.
+    settledPlayers.current = new Set();
+  }, [teamLoadedAt]);
 
   useEffect(() => {
     // Opening a squad member restores its own build; let that land first rather than racing it.
