@@ -25,6 +25,7 @@ import { threadTheNeedle1157 } from './evolutions/threadTheNeedle1157';
 import { dazzlingDribbler1190 } from './evolutions/dazzlingDribbler1190';
 import { auraFarming1164 } from './evolutions/auraFarming1164';
 import { dynamicDrive1161 } from './evolutions/dynamicDrive1161';
+import { ninetyNineDri1162 } from './evolutions/ninetyNineDri1162';
 import { thePerfectBreak1195 } from './evolutions/thePerfectBreak1195';
 import { futtiesCountdown1151 } from './evolutions/futtiesCountdown1151';
 import { futtiesBlueprintI1183 } from './evolutions/futtiesBlueprintI1183';
@@ -204,6 +205,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1159': eliteMidfielder1159,
   '1160': speedMerchant1160,
   '1161': dynamicDrive1161,
+  '1162': ninetyNineDri1162,
   '1164': auraFarming1164,
   '1176': nationalPride1176,
   '1177': culturedCommander1177,
