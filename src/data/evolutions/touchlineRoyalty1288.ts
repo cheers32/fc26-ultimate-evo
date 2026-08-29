@@ -29,9 +29,9 @@ export const touchlineRoyalty1288: EvolutionDefinition = {
   subStatBoosts: {},
   weakFootBoost: 4,
   // FUTBIN prints Skills +2 and FUT.GG prints +4. Both cap at 5★ so no card in the app can tell
-  // them apart; the higher figure is recorded because it is the one that would matter if a card
-  // ever arrived below 3★.
-  skillMovesBoost: 4,
+  // them apart, and FUTBIN gets it: on the neighbouring Prime Motion page FUT.GG rounded a +31 to
+  // +30 and printed the wrong cap on Finishing, so where the two disagree FUTBIN is the one to take.
+  skillMovesBoost: 2,
   playStylesAdded: { gold: [], silver: [] },
   levels: [
     {
