@@ -139,6 +139,8 @@ import { pocketInspector1252 } from './evolutions/pocketInspector1252';
 import { creativeLicense1253 } from './evolutions/creativeLicense1253';
 import { classOnGrass1254 } from './evolutions/classOnGrass1254';
 import { fidgetSpinner1255 } from './evolutions/fidgetSpinner1255';
+import { unboundTen1284 } from './evolutions/unboundTen1284';
+import { anchorAndAlley1285 } from './evolutions/anchorAndAlley1285';
 import { shutoutSpecialist1286 } from './evolutions/shutoutSpecialist1286';
 import { primeMotion1287 } from './evolutions/primeMotion1287';
 import { touchlineRoyalty1288 } from './evolutions/touchlineRoyalty1288';
@@ -285,6 +287,8 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1253': creativeLicense1253,
   '1254': classOnGrass1254,
   '1255': fidgetSpinner1255,
+  '1284': unboundTen1284,
+  '1285': anchorAndAlley1285,
   '1286': shutoutSpecialist1286,
   '1287': primeMotion1287,
   '1288': touchlineRoyalty1288,
