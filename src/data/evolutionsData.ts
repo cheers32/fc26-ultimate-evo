@@ -139,6 +139,7 @@ import { pocketInspector1252 } from './evolutions/pocketInspector1252';
 import { creativeLicense1253 } from './evolutions/creativeLicense1253';
 import { classOnGrass1254 } from './evolutions/classOnGrass1254';
 import { fidgetSpinner1255 } from './evolutions/fidgetSpinner1255';
+import { touchlineRoyalty1288 } from './evolutions/touchlineRoyalty1288';
 import { ninetyNineSho1256 } from './evolutions/ninetyNineSho1256';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
@@ -282,6 +283,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1253': creativeLicense1253,
   '1254': classOnGrass1254,
   '1255': fidgetSpinner1255,
+  '1288': touchlineRoyalty1288,
   '1256': ninetyNineSho1256
 };
 
