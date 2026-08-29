@@ -144,6 +144,7 @@ import { anchorAndAlley1285 } from './evolutions/anchorAndAlley1285';
 import { shutoutSpecialist1286 } from './evolutions/shutoutSpecialist1286';
 import { primeMotion1287 } from './evolutions/primeMotion1287';
 import { touchlineRoyalty1288 } from './evolutions/touchlineRoyalty1288';
+import { viciousStrike1289 } from './evolutions/viciousStrike1289';
 import { ninetyNineSho1256 } from './evolutions/ninetyNineSho1256';
 
 export const availableEvolutions: Record<string, EvolutionDefinition> = {
@@ -292,6 +293,7 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1286': shutoutSpecialist1286,
   '1287': primeMotion1287,
   '1288': touchlineRoyalty1288,
+  '1289': viciousStrike1289,
   '1256': ninetyNineSho1256
 };
 
