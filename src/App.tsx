@@ -1388,22 +1388,46 @@ export default function App() {
    * one, and only in front of changes to its chain: opening it, ranking it, comparing it are all
    * untouched.
    */
-  const [pendingCurrentEdit, setPendingCurrentEdit] = useState<{ what: string; apply: () => void } | null>(null);
+  const [pendingCurrentEdit, setPendingCurrentEdit] =
+    useState<{ what: string; path: EvolutionPath; apply: (extra?: EvolutionPath) => void } | null>(null);
 
-  const guardCurrent = (path: EvolutionPath | undefined, what: string, apply: () => void) => {
+  /**
+   * `apply` takes an optional extra build to write alongside the edit, and it has to: `updateState`
+   * merges an object computed from this render's closures, so saving a snapshot and then applying
+   * the change would be two writes where the second is built from a list that never had the first
+   * in it. One update or the snapshot disappears.
+   */
+  const guardCurrent = (
+    path: EvolutionPath | undefined,
+    what: string,
+    apply: (extra?: EvolutionPath) => void
+  ) => {
     if (!path || !isInGamePath(path)) { apply(); return; }
-    setPendingCurrentEdit({ what, apply });
+    setPendingCurrentEdit({ what, path, apply });
   };
 
+  /** A snapshot of the record as it stands, kept as its own build. Starred, or Clear would take it. */
+  const snapshotOf = (path: EvolutionPath): EvolutionPath => ({
+    ...path,
+    id: `snapshot-${Date.now()}`,
+    name: `Before ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`,
+    isFavorite: true,
+    starTier: 1,
+    isRecommended: false
+  });
+
   /** The builder's save, once it is allowed through. */
-  const applyManualSave = (path: EvolutionPath) => {
+  /** Whatever manual list an edit is about to write, with the snapshot folded in. */
+  const withExtra = (list: EvolutionPath[], extra?: EvolutionPath) => (extra ? [extra, ...list] : list);
+
+  const applyManualSave = (path: EvolutionPath, extra?: EvolutionPath) => {
     const isManual = manualPaths.some(p => p.id === path.id);
     if (isManual) {
-      setManualPaths(manualPaths.map(p => (p.id === path.id ? path : p)));
+      setManualPaths(withExtra(manualPaths.map(p => (p.id === path.id ? path : p)), extra));
     } else {
       updateState({
         generatedPaths: generatedPaths.filter(p => p.id !== path.id),
-        manualPaths: [...manualPaths, path]
+        manualPaths: withExtra([...manualPaths, path], extra)
       });
     }
     setActivePathId(path.id);
@@ -1429,25 +1453,25 @@ export default function App() {
     const existing = allPaths.find(p => p.id === pathId);
     // Renaming it away is how the record quietly stops being one: the name is what marks it.
     if (existing && isInGamePath(existing) && !isInGamePath({ id: pathId, name: next })) {
-      guardCurrent(existing, `rename it to "${next}", which stops it being your in-game record`, () =>
-        applyRename(pathId, next)
+      guardCurrent(existing, `rename it to "${next}", which stops it being your in-game record`, extra =>
+        applyRename(pathId, next, extra)
       );
       return;
     }
     applyRename(pathId, next);
   };
 
-  const applyRename = (pathId: string, next: string) => {
+  const applyRename = (pathId: string, next: string, extra?: EvolutionPath) => {
     const generated = generatedPaths.find(p => p.id === pathId);
     if (generated) {
       updateState({
         generatedPaths: generatedPaths.filter(p => p.id !== pathId),
-        manualPaths: [...manualPaths, { ...generated, name: next }]
+        manualPaths: withExtra([...manualPaths, { ...generated, name: next }], extra)
       });
       return;
     }
     updateState({
-      manualPaths: manualPaths.map(p => (p.id === pathId ? { ...p, name: next } : p))
+      manualPaths: withExtra(manualPaths.map(p => (p.id === pathId ? { ...p, name: next } : p)), extra)
     });
   };
 
@@ -1499,10 +1523,10 @@ export default function App() {
     const dropping = isPlayStyleNodeId(target.chainIds[index])
       ? 'a PlayStyle pick'
       : availableEvolutions[target.chainIds[index]]?.name || 'a step';
-    guardCurrent(target, `remove ${dropping} from it`, () => applyRemoveNode(pathId, index));
+    guardCurrent(target, `remove ${dropping} from it`, extra => applyRemoveNode(pathId, index, extra));
   };
 
-  const applyRemoveNode = (pathId: string, index: number) => {
+  const applyRemoveNode = (pathId: string, index: number, extra?: EvolutionPath) => {
     const targetPathId = pathId;
     const path = allPaths.find(p => p.id === targetPathId);
     if (!path || isBaseCardPath(path)) return;
@@ -1539,9 +1563,12 @@ export default function App() {
     updateState({
       baseIndex: nextBase,
       generatedPaths: currentState.generatedPaths,
-      manualPaths: wasGenerated
-        ? [...currentState.manualPaths, updated]
-        : currentState.manualPaths.map(p => (p.id === path.id ? updated : p)),
+      manualPaths: withExtra(
+        wasGenerated
+          ? [...currentState.manualPaths, updated]
+          : currentState.manualPaths.map(p => (p.id === path.id ? updated : p)),
+        extra
+      ),
       // Follow the edit. Whatever you were looking at is what you are still looking at.
       activePathId: forkId,
       expandedPathIds: currentState.expandedPathIds.includes(forkId)
@@ -1561,13 +1588,14 @@ export default function App() {
   ) => {
     const found = allPaths.find(p => p.id === pathId);
     if (!found || isBaseCardPath(found)) return;
-    guardCurrent(found, 'change its PlayStyle picks', () => applySetPlayStyleNode(pathId, picks, target));
+    guardCurrent(found, 'change its PlayStyle picks', extra => applySetPlayStyleNode(pathId, picks, target, extra));
   };
 
   const applySetPlayStyleNode = (
     pathId: string,
     picks: { gold: string[]; silver: string[] },
-    target: PickTarget
+    target: PickTarget,
+    extra?: EvolutionPath
   ) => {
     const path = allPaths.find(p => p.id === pathId);
     if (!path || isBaseCardPath(path)) return;
@@ -1617,9 +1645,12 @@ export default function App() {
     updateState({
       baseIndex: nextBase,
       generatedPaths: currentState.generatedPaths.filter(p => p.id !== path.id),
-      manualPaths: isManual
-        ? currentState.manualPaths.map(p => (p.id === path.id ? updated : p))
-        : [...currentState.manualPaths, updated]
+      manualPaths: withExtra(
+        isManual
+          ? currentState.manualPaths.map(p => (p.id === path.id ? updated : p))
+          : [...currentState.manualPaths, updated],
+        extra
+      )
     });
   };
 
@@ -2526,7 +2557,8 @@ export default function App() {
               what: now > was ? `add ${now - was} step${now - was === 1 ? '' : 's'} to it`
                 : now < was ? `drop ${was - now} step${was - now === 1 ? '' : 's'} from it`
                 : 'change its steps',
-              apply: () => applyManualSave(path)
+              path: before,
+              apply: extra => applyManualSave(path, extra)
             });
             setIsManualPathOpen(false);
             return;
@@ -2573,7 +2605,8 @@ export default function App() {
             <p className="text-sm text-gray-400 leading-snug mb-4">
               This is about to <span className="text-amber-300 font-medium">{pendingCurrentEdit.what}</span>.
               Current is what you have actually done in game — unlike every other build on this card,
-              it cannot be found again by Analyze if it is edited away.
+              it cannot be found again by Analyze if it is edited away. <span className="text-gray-300">Duplicate first</span> keeps
+              a starred copy of it as it stands, then makes the change.
             </p>
             <div className="flex items-center justify-end gap-2">
               <button
@@ -2581,6 +2614,18 @@ export default function App() {
                 className="px-3 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white border border-gray-700"
               >
                 Cancel
+              </button>
+              {/* Keep what is there and change it anyway: the record moves on, as it should when
+                  you have actually done the evo, and the state you are leaving is saved as its own
+                  starred build rather than being the thing you have to decide about. */}
+              <button
+                onClick={() => {
+                  pendingCurrentEdit.apply(snapshotOf(pendingCurrentEdit.path));
+                  setPendingCurrentEdit(null);
+                }}
+                className="px-3 py-1.5 rounded-lg text-sm font-bold bg-gray-800 hover:bg-gray-700 text-gray-100 border border-gray-600"
+              >
+                Duplicate first
               </button>
               <button
                 autoFocus
