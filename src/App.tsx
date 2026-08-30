@@ -1379,9 +1379,53 @@ export default function App() {
    * it. The id is kept, so whatever is pointing at this path (the active selection, a starred
    * entry on the team) still is.
    */
+  /**
+   * A change to the record, held until it is confirmed.
+   *
+   * Current is the only build on a card that cannot be rebuilt — Analyze can find a plan again, a
+   * draft can be drawn again, but what has already been spent in game is gone if it is edited away.
+   * Every other build here is meant to be edited freely, so the guard is only ever in front of this
+   * one, and only in front of changes to its chain: opening it, ranking it, comparing it are all
+   * untouched.
+   */
+  const [pendingCurrentEdit, setPendingCurrentEdit] = useState<{ what: string; apply: () => void } | null>(null);
+
+  const guardCurrent = (path: EvolutionPath | undefined, what: string, apply: () => void) => {
+    if (!path || !isInGamePath(path)) { apply(); return; }
+    setPendingCurrentEdit({ what, apply });
+  };
+
+  /** The builder's save, once it is allowed through. */
+  const applyManualSave = (path: EvolutionPath) => {
+    const isManual = manualPaths.some(p => p.id === path.id);
+    if (isManual) {
+      setManualPaths(manualPaths.map(p => (p.id === path.id ? path : p)));
+    } else {
+      updateState({
+        generatedPaths: generatedPaths.filter(p => p.id !== path.id),
+        manualPaths: [...manualPaths, path]
+      });
+    }
+    setActivePathId(path.id);
+    setBaseIndex(path.chainIds.length - 1);
+    if (!evoPreview) setEvoPreview(true);
+  };
+
   const handleRenamePath = (pathId: string, name: string) => {
     const next = name.trim();
     if (!next || isBaseCardPath({ id: pathId })) return;
+    const existing = allPaths.find(p => p.id === pathId);
+    // Renaming it away is how the record quietly stops being one: the name is what marks it.
+    if (existing && isInGamePath(existing) && !isInGamePath({ id: pathId, name: next })) {
+      guardCurrent(existing, `rename it to "${next}", which stops it being your in-game record`, () =>
+        applyRename(pathId, next)
+      );
+      return;
+    }
+    applyRename(pathId, next);
+  };
+
+  const applyRename = (pathId: string, next: string) => {
     const generated = generatedPaths.find(p => p.id === pathId);
     if (generated) {
       updateState({
@@ -1438,6 +1482,15 @@ export default function App() {
   // Drop one evo from the active path. Later steps may stop being eligible without it; the
   // chain simulation surfaces that rather than us silently trimming them.
   const handleRemoveNode = (pathId: string, index: number) => {
+    const target = allPaths.find(p => p.id === pathId);
+    if (!target || isBaseCardPath(target)) return;
+    const dropping = isPlayStyleNodeId(target.chainIds[index])
+      ? 'a PlayStyle pick'
+      : availableEvolutions[target.chainIds[index]]?.name || 'a step';
+    guardCurrent(target, `remove ${dropping} from it`, () => applyRemoveNode(pathId, index));
+  };
+
+  const applyRemoveNode = (pathId: string, index: number) => {
     const targetPathId = pathId;
     const path = allPaths.find(p => p.id === targetPathId);
     if (!path || isBaseCardPath(path)) return;
@@ -1490,6 +1543,16 @@ export default function App() {
   // hold several, since a build can reach a point where PlayStyles are assignable more than once.
   // Saving an empty pick removes that node.
   const handleSetPlayStyleNode = (
+    pathId: string,
+    picks: { gold: string[]; silver: string[] },
+    target: PickTarget
+  ) => {
+    const found = allPaths.find(p => p.id === pathId);
+    if (!found || isBaseCardPath(found)) return;
+    guardCurrent(found, 'change its PlayStyle picks', () => applySetPlayStyleNode(pathId, picks, target));
+  };
+
+  const applySetPlayStyleNode = (
     pathId: string,
     picks: { gold: string[]; silver: string[] },
     target: PickTarget
@@ -1956,6 +2019,24 @@ export default function App() {
     };
   }, [activeChemBoosts, activeBaseStats, previewStats]);
 
+  /**
+   * What the card on screen is worth, and as which plan — read under the chemistry style it is
+   * being shown with, so it describes the same card as the AcceleRATE badge beside it.
+   *
+   * Only sub-stats are scored, so the styled copy does not need its face values recomputed.
+   */
+  const shownScore = useMemo(() => {
+    const styled: StatsData = {};
+    for (const [faceKey, face] of Object.entries(previewStats)) {
+      const subs: typeof face.subs = {};
+      for (const [key, sub] of Object.entries(face.subs)) {
+        subs[key] = { ...sub, base: Math.min(99, sub.base + (activeChemBoosts[key] || 0)) };
+      }
+      styled[faceKey] = { ...face, subs };
+    }
+    return bestScore(styled, previewBio, false);
+  }, [previewStats, activeChemBoosts, previewBio]);
+
   const { originalIgs, originalFaceSum } = useMemo(() => {
     let igs = 0;
     let face = 0;
@@ -2254,6 +2335,28 @@ export default function App() {
                 <span className="text-gray-500 font-medium ml-1.5">· {accelerateType}</span>
               </span>
 
+              {/* What this card is, beside how it moves. The archetype badge says the second; on
+                  its own it never said the first, which is what "why is this score low" is really
+                  asking — the answer is always which plan it was judged as. */}
+              {shownScore && (
+                <span
+                  className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800"
+                  title={
+                    `${shownScore.position} ${shownScore.score.toFixed(1)}/100 as ${shownScore.plan.name}` +
+                    ` · ${shownScore.archetype}${shownScore.fallback ? ` (this plan wants ${shownScore.plan.archetype})` : ''}` +
+                    (shownScore.under.length > 0
+                      ? ` · under ${shownScore.under.map(u => `${u.key} ${u.value}/${u.floor}`).join(', ')}`
+                      : ' · clears every floor')
+                  }
+                >
+                  {shownScore.plan.name} {shownScore.score.toFixed(1)}
+                  <span className="text-gray-500 font-medium ml-1.5">
+                    · {shownScore.archetype}
+                    {shownScore.fallback && `, not ${shownScore.plan.archetype}`}
+                  </span>
+                </span>
+              )}
+
               <div className="font-medium flex items-center font-mono text-[13px] text-gray-300 bg-gray-900/60 px-3 py-1 rounded border border-gray-800">
                 <span>{faceSum.activeBase}/{igs.activeBase}</span>
                 {previewOvr !== activeBaseOvr && (
@@ -2270,6 +2373,11 @@ export default function App() {
                 )}
               </div>
 
+            </div>
+
+            {/* PlayStyles on their own line. On one row with the badges they pushed everything off
+                the end of the screen, and they are the part you scan rather than read. */}
+            <div className="flex flex-wrap items-center gap-3 mb-2 px-1">
               <PlayerSubInfo bio={previewBio} playStyles={previewPlayStyles} isEvo={activePath.chainIds.length > 0} />
             </div>
 
@@ -2397,21 +2505,21 @@ export default function App() {
         insertAt={pickerMode === 'insert' ? evoInsertAt : null}
         lockedPrefix={pickerMode === 'branch' ? basePrefix : []}
         onSave={(path) => {
-          const isManual = manualPaths.some(p => p.id === path.id);
-          if (isManual) {
-            setManualPaths(manualPaths.map(p => p.id === path.id ? path : p));
-          } else {
-            // Editing a path that came from Analyze (or creating a brand new one) makes it
-            // user-owned: it must leave generatedPaths so the next Analyze run (which replaces
-            // generatedPaths wholesale) can't silently discard the edit.
-            updateState({
-              generatedPaths: generatedPaths.filter(p => p.id !== path.id),
-              manualPaths: [...manualPaths, path]
+          const before = allPaths.find(p => p.id === path.id);
+          const changed = (before?.chainIds || []).join('>') !== path.chainIds.join('>');
+          if (changed && before && isInGamePath(before)) {
+            const was = before.chainIds.length;
+            const now = path.chainIds.length;
+            setPendingCurrentEdit({
+              what: now > was ? `add ${now - was} step${now - was === 1 ? '' : 's'} to it`
+                : now < was ? `drop ${was - now} step${was - now === 1 ? '' : 's'} from it`
+                : 'change its steps',
+              apply: () => applyManualSave(path)
             });
+            setIsManualPathOpen(false);
+            return;
           }
-          setActivePathId(path.id);
-          setBaseIndex(path.chainIds.length - 1);
-          if (!evoPreview) setEvoPreview(true);
+          applyManualSave(path);
         }}
         baseBio={playerBio}
         baseOvr={initialOvrData}
@@ -2436,6 +2544,43 @@ export default function App() {
           : EMPTY_PICKS}
         onSave={(picks) => handleSetPlayStyleNode(activePath.id, picks, playStylePickerTarget ?? 'new')}
       />
+
+      {/* Changing the record asks first. Not because editing is wrong — you do finish evos in game
+          and it has to keep up — but because this is the one build on the card that cannot be found
+          again, and every other way of losing it has already been closed off. */}
+      {pendingCurrentEdit && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4"
+          onClick={() => setPendingCurrentEdit(null)}
+        >
+          <div
+            className="bg-gray-900 border border-amber-700/60 rounded-xl w-full max-w-md p-5 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-white mb-1">Change your in-game record?</h3>
+            <p className="text-sm text-gray-400 leading-snug mb-4">
+              This is about to <span className="text-amber-300 font-medium">{pendingCurrentEdit.what}</span>.
+              Current is what you have actually done in game — unlike every other build on this card,
+              it cannot be found again by Analyze if it is edited away.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setPendingCurrentEdit(null)}
+                className="px-3 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white border border-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                autoFocus
+                onClick={() => { pendingCurrentEdit.apply(); setPendingCurrentEdit(null); }}
+                className="px-3 py-1.5 rounded-lg text-sm font-bold bg-amber-600 hover:bg-amber-500 text-black border border-amber-400"
+              >
+                Change it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isPlayerSelectionOpen && (
         <PlayerSelectionModal

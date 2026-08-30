@@ -34,6 +34,17 @@ export function PlayerSelectionModal({
   onEditPlayerAvatar
 }: PlayerSelectionModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  /**
+   * Positions to keep, and every one of them has to be on the card.
+   *
+   * "All of these" rather than "any of these" on purpose: a list of everyone who plays CB *or* CM is
+   * most of the warehouse and answers nothing, while everyone who plays CB *and* CM is the short
+   * list of cards that actually cover two holes at once — which is the question worth asking of a
+   * shelf this size.
+   */
+  const [positionFilter, setPositionFilter] = useState<string[]>([]);
+  /** Keep cards at or above this OVR. 0 is off. */
+  const [minOvr, setMinOvr] = useState(0);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
 
@@ -51,12 +62,31 @@ export function PlayerSelectionModal({
     return hiddenPlayerIds.map(id => shelf[id]).filter(Boolean);
   }, [players, libraryPlayers, hiddenPlayerIds, viewingHidden]);
 
+  /** Positions actually present on the shelf, in the order a squad sheet lists them. */
+  const positionOptions = useMemo(() => {
+    const ORDER = ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'CF', 'ST'];
+    const seen = new Set<string>();
+    for (const p of playersList) {
+      for (const pos of p.bio.primaryPositions.split(',')) {
+        const key = pos.trim().toUpperCase();
+        if (key) seen.add(key);
+      }
+    }
+    return [...ORDER.filter(x => seen.has(x)), ...[...seen].filter(x => !ORDER.includes(x)).sort()];
+  }, [playersList]);
+
   const filteredPlayers = useMemo(() => {
-    return playersList.filter(p => 
-      p.bio.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.bio.club.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [playersList, searchQuery]);
+    const q = searchQuery.toLowerCase();
+    return playersList.filter(p => {
+      if (!p.bio.name.toLowerCase().includes(q) && !p.bio.club.toLowerCase().includes(q)) return false;
+      if (minOvr > 0 && (p.ovr?.base ?? 0) < minOvr) return false;
+      if (positionFilter.length > 0) {
+        const own = new Set(p.bio.primaryPositions.split(',').map(x => x.trim().toUpperCase()));
+        if (!positionFilter.every(pos => own.has(pos))) return false;
+      }
+      return true;
+    });
+  }, [playersList, searchQuery, positionFilter, minOvr]);
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +137,8 @@ export function PlayerSelectionModal({
           onClick={e => e.stopPropagation()}
         >
           
+          {/* Filters. A shelf of this size is not searchable by name alone — the question is
+              usually "who covers this position, at this rating", and that is two controls. */}
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-gray-950/50">
             <div>
@@ -163,6 +195,57 @@ export function PlayerSelectionModal({
               >
                 <X className="w-6 h-6" />
               </button>
+            </div>
+          </div>
+
+          {/* Two controls, because the question this shelf gets asked is almost always "who covers
+              this position, at this rating". Positions are AND-ed: picking CB and CM asks for the
+              cards that cover both, which is a short list worth reading, rather than the union,
+              which is most of the warehouse. */}
+          <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-gray-800 bg-gray-950/30">
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mr-1">Position</span>
+            {positionOptions.map(pos => {
+              const picked = positionFilter.includes(pos);
+              return (
+                <button
+                  key={pos}
+                  onClick={() =>
+                    setPositionFilter(cur => (picked ? cur.filter(x => x !== pos) : [...cur, pos]))
+                  }
+                  className={`px-2 py-1 rounded-md text-[11px] font-bold border transition-colors ${
+                    picked
+                      ? 'bg-fcGreen text-black border-fcGreen/80 shadow-sm'
+                      : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151] hover:text-white'
+                  }`}
+                >
+                  {pos}
+                </button>
+              );
+            })}
+            {positionFilter.length > 0 && (
+              <button
+                onClick={() => setPositionFilter([])}
+                className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold ml-1"
+              >
+                Any
+              </button>
+            )}
+
+            <div className="flex items-center gap-2 ml-auto">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">OVR</label>
+              <select
+                value={minOvr}
+                onChange={e => setMinOvr(Number(e.target.value))}
+                className="bg-gray-900 border border-gray-700 rounded-lg text-sm text-white px-2 py-1.5 focus:outline-none focus:border-fuchsia-500"
+              >
+                <option value={0}>Any</option>
+                {[99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 88, 86, 84, 80].map(v => (
+                  <option key={v} value={v}>{v}+</option>
+                ))}
+              </select>
+              <span className="text-[11px] text-gray-500 tabular-nums">
+                {filteredPlayers.length}/{playersList.length}
+              </span>
             </div>
           </div>
 
