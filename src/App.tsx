@@ -1439,6 +1439,24 @@ export default function App() {
    * Cards this team has actually put evos into, by their in-game record rather than by having a
    * build saved for them — a drafted plan is a card you were thinking about, not one you have used.
    */
+  /**
+   * What each card's OVR actually is right now — its base with its in-game record played onto it.
+   *
+   * The filter that matters on this shelf is "who can still take an evo capped at 96", and an evo
+   * reads the card you have, not the card you bought. Enzo's base is 96 and he is on 98: filtering
+   * his base would have offered him for an evo he is four points too good for.
+   */
+  const currentOvrById = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const [pid, paths] of Object.entries(team?.savedPaths || {})) {
+      const record = (paths || []).find(p => isInGamePath(p) && p.chainIds.length > 0);
+      const card = allPlayersData[pid] || libraryPlayers?.[pid];
+      if (!record || !card) continue;
+      out[pid] = simulateEvoChain(record.chainIds, card.bio, card.ovr, card.stats, card.playStyles).finalOvr;
+    }
+    return out;
+  }, [team, allPlayersData, libraryPlayers]);
+
   const evolvedPlayerIds = useMemo(
     () =>
       Object.entries(team?.savedPaths || {})
@@ -2649,6 +2667,7 @@ export default function App() {
         <PlayerSelectionModal
           players={allPlayersData}
           evolvedPlayerIds={evolvedPlayerIds}
+          currentOvrById={currentOvrById}
           onClose={() => setIsPlayerSelectionOpen(false)}
           onSelectPlayer={(id) => {
             setSelectedPlayerId(id);

@@ -12,6 +12,8 @@ interface PlayerSelectionModalProps {
   hiddenPlayerIds?: string[];
   /** Cards this team has already evolved — those with an in-game record carrying at least one evo. */
   evolvedPlayerIds?: string[];
+  /** Each card's OVR as it stands in game, where this team has a record for it. */
+  currentOvrById?: Record<string, number>;
   onClose: () => void;
   onSelectPlayer: (id: string) => void;
   onOpenImport: () => void;
@@ -28,6 +30,7 @@ export function PlayerSelectionModal({
   libraryPlayers,
   hiddenPlayerIds = [],
   evolvedPlayerIds = [],
+  currentOvrById = {},
   onClose,
   onSelectPlayer,
   onOpenImport,
@@ -46,10 +49,17 @@ export function PlayerSelectionModal({
    * shelf this size.
    */
   const [positionFilter, setPositionFilter] = useState<string[]>([]);
-  /** Keep cards at or above this OVR. 0 is off. */
-  const [minOvr, setMinOvr] = useState(0);
-  /** Only the cards this team has already put evos into. */
-  const [evolvedOnly, setEvolvedOnly] = useState(false);
+  /**
+   * An OVR bound, as `96+` or `96-`. Empty is off.
+   *
+   * Both directions, because both questions get asked of this shelf and they are opposite ones.
+   * "At least" finds the cards worth fielding; "at most" finds the cards still *eligible* — nearly
+   * every evo caps the OVR it accepts, so `97-` is the list of cards a 97-capped evo can still be
+   * spent on, which is otherwise worked out by hand one card at a time.
+   */
+  const [ovrFilter, setOvrFilter] = useState('');
+  /** Only the cards this team has already put evos into. On by default: it is the usual question. */
+  const [evolvedOnly, setEvolvedOnly] = useState(true);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
 
@@ -92,7 +102,12 @@ export function PlayerSelectionModal({
     const q = searchQuery.toLowerCase();
     return playersList.filter(p => {
       if (!p.bio.name.toLowerCase().includes(q) && !p.bio.club.toLowerCase().includes(q)) return false;
-      if (minOvr > 0 && (p.ovr?.base ?? 0) < minOvr) return false;
+      if (ovrFilter) {
+        const bound = Number(ovrFilter.slice(0, -1));
+        // The card as it stands, not as it came: an evo's cap is checked against what you have.
+        const ovr = currentOvrById[p.id] ?? p.ovr?.base ?? 0;
+        if (ovrFilter.endsWith('+') ? ovr < bound : ovr > bound) return false;
+      }
       if (evolvedOnly && !evolved.has(p.id)) return false;
       if (positionFilter.length > 0) {
         const own = new Set(p.bio.primaryPositions.split(',').map(x => x.trim().toUpperCase()));
@@ -100,7 +115,7 @@ export function PlayerSelectionModal({
       }
       return true;
     });
-  }, [playersList, searchQuery, positionFilter, minOvr, evolvedOnly, evolved]);
+  }, [playersList, searchQuery, positionFilter, ovrFilter, evolvedOnly, evolved, currentOvrById]);
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -257,16 +272,30 @@ export function PlayerSelectionModal({
                 />
                 Evolved ({evolvedHere})
               </label>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-2">OVR</label>
+              <label
+                className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-2"
+                title="The card as it stands in game — its base with its Current record played on — since that is what an evo's OVR cap is checked against"
+              >
+                OVR
+              </label>
               <select
-                value={minOvr}
-                onChange={e => setMinOvr(Number(e.target.value))}
+                value={ovrFilter}
+                onChange={e => setOvrFilter(e.target.value)}
                 className="bg-gray-900 border border-gray-700 rounded-lg text-sm text-white px-2 py-1.5 focus:outline-none focus:border-fuchsia-500"
               >
-                <option value={0}>Any</option>
-                {[99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 88, 86, 84, 80].map(v => (
-                  <option key={v} value={v}>{v}+</option>
-                ))}
+                <option value="">Any</option>
+                <optgroup label="At least">
+                  {[99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 88, 86, 84, 80].map(v => (
+                    <option key={`${v}+`} value={`${v}+`}>{v}+</option>
+                  ))}
+                </optgroup>
+                {/* The other direction is the one that answers "who can still do this evo", since
+                    an evo's requirement is a ceiling rather than a floor. */}
+                <optgroup label="At most">
+                  {[98, 97, 96, 95, 94, 93, 92, 91, 90, 88, 86, 84].map(v => (
+                    <option key={`${v}-`} value={`${v}-`}>{v}−</option>
+                  ))}
+                </optgroup>
               </select>
               <span className="text-[11px] text-gray-500 tabular-nums">
                 {filteredPlayers.length}/{playersList.length}
@@ -344,8 +373,14 @@ export function PlayerSelectionModal({
                     )}
                   </div>
                   
-                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-yellow-400 font-bold text-sm border border-yellow-500/20 z-10">
-                    {player.ovr.base}
+                  {/* The card as it stands, with what it started at behind it. Showing the base
+                      while filtering on the current one would have the shelf disagree with itself:
+                      a 96 tile disappearing under "96 and under" because the card is really 98. */}
+                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-yellow-400 font-bold text-sm border border-yellow-500/20 z-10 flex items-baseline gap-1">
+                    {currentOvrById[player.id] && currentOvrById[player.id] !== player.ovr.base && (
+                      <span className="text-[10px] font-medium text-gray-500 line-through">{player.ovr.base}</span>
+                    )}
+                    {currentOvrById[player.id] ?? player.ovr.base}
                   </div>
                   <div className="h-40 bg-gray-900 relative flex items-center justify-center p-4">
                     <img src={player.avatarUrl} alt={player.bio.name} className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300" />
