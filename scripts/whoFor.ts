@@ -9,7 +9,7 @@
  */
 import { simulateEvoChain, validateRequirement } from '../src/utils/evoEngine';
 import { availableEvolutions } from '../src/data/evolutionsData';
-import { BUILD_TEMPLATES, PASS_MARK, floorsOf, templatesAvailable } from '../src/data/buildTemplates';
+import { profileCard } from '../src/utils/cardProfile';
 import { calculateAccelerateFamily, parseHeightCm } from '../src/utils/statUtils';
 import { chemStyles } from '../src/data/chemStyles';
 import { readFileSync } from 'fs';
@@ -68,27 +68,14 @@ for (const p of Object.values(players) as any[]) {
   const openAfter = pool.filter(id => validateRequirement(availableEvolutions[id], after.finalOvr, after.finalStats, after.finalPlayStyles, after.finalBio).eligible).length;
 
   const positions = after.finalBio.primaryPositions.split(',').map((x: string) => x.trim());
-  const fams = archetypes(a, height);
-  let best = '—';
-  let bestScore = -99;
-  let detail = '';
-  for (const t of templatesAvailable(positions, height)) {
-    if (!fams.has(t.archetype) && !(t.controlledFallback && fams.has('Controlled'))) continue;
-    const floors = floorsOf(t);
-    const under = Object.entries(floors).filter(([k, f]) => (a[k] ?? 0) < f);
-    let raw = 0;
-    let total = 0;
-    for (const [k, w] of Object.entries(t.maximise)) {
-      raw += Math.max(0, (a[k] ?? 0) - PASS_MARK) * w;
-      total += w;
-    }
-    const score = (total > 0 ? raw / total : 0) - under.reduce((m, [k, f]) => Math.max(m, f - (a[k] ?? 0)), 0);
-    if (score > bestScore) {
-      bestScore = score;
-      best = t.name;
-      detail = under.length ? `fails ${under.map(([k, f]) => `${k} ${a[k] ?? 0}/${f}`).join(', ')}` : 'all pass';
-    }
-  }
+  // Judged, not planned: what the finished card is, with the archetype reported rather than gating.
+  const profile = profileCard(a, positions, height);
+  const top = profile.fits[0];
+  const best = top ? top.template.name : '—';
+  const bestScore = top ? top.score : -99;
+  const detail = top
+    ? (top.under.length ? `under ${top.under.map(u => `${u.key} ${u.value}/${u.floor}`).join(', ')}` : 'all pass')
+    : '';
 
   rows.push({
     open: `${openBefore}→${openAfter}`,

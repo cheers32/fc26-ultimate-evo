@@ -14,6 +14,7 @@ import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
 import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
+import { profileCard, describeProfile } from './utils/cardProfile';
 import { bestScore, scoreAtPosition } from './utils/positionScore';
 import { playStyleScoreAt } from './utils/playStyleScore';
 import { psPlanFor } from './utils/psPlan';
@@ -1956,6 +1957,25 @@ export default function App() {
     };
   }, [activeChemBoosts, activeBaseStats, previewStats]);
 
+  /**
+   * What this card is, by its numbers, judged with the chemistry style on — the same card the
+   * AcceleRATE badge beside it describes.
+   *
+   * Deliberately not the rules Analyze plans by. Planning has to gate on the archetype, or it
+   * recommends paying for strength a short card can never cash in; judging a card that is already
+   * built must not, or a 174cm destroyer gets called an average playmaker because his frame ruled
+   * out every plan his numbers actually match.
+   */
+  const cardProfile = useMemo(() => {
+    const subs: Record<string, number> = {};
+    for (const face of Object.values(previewStats)) {
+      for (const [key, sub] of Object.entries(face.subs)) {
+        subs[key] = Math.min(99, sub.base + (activeChemBoosts[key] || 0));
+      }
+    }
+    return profileCard(subs, previewBio.primaryPositions.split(','), parseHeightCm(previewBio.height));
+  }, [previewStats, activeChemBoosts, previewBio]);
+
   const { originalIgs, originalFaceSum } = useMemo(() => {
     let igs = 0;
     let face = 0;
@@ -2253,6 +2273,31 @@ export default function App() {
                 {accelerateFamily}
                 <span className="text-gray-500 font-medium ml-1.5">· {accelerateType}</span>
               </span>
+
+              {/* What the card is, not what to build it into. The archetype badge to the left says
+                  how it moves; this says what it is for, and the two together are the sentence that
+                  was missing — "an Anchor CDM's numbers, moving Controlled rather than Lengthy". */}
+              {cardProfile.fits.length > 0 && (
+                <span
+                  className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800"
+                  title={cardProfile.fits
+                    .slice(0, 5)
+                    .map(f => {
+                      const why =
+                        f.archetype === 'reads' ? `reads ${f.template.archetype}`
+                        : f.archetype === 'with-style' ? `${f.template.archetype} with a chem style`
+                        : f.archetype === 'frame' ? `height rules out ${f.template.archetype}`
+                        : `stats short of ${f.template.archetype}`;
+                      return `${f.template.name}  +${f.score.toFixed(1)}  (${why})`;
+                    })
+                    .join('\n')}
+                >
+                  {describeProfile(cardProfile).split(' · ')[0]}
+                  <span className="text-gray-500 font-medium ml-1.5">
+                    · {describeProfile(cardProfile).split(' · ')[1]}
+                  </span>
+                </span>
+              )}
 
               <div className="font-medium flex items-center font-mono text-[13px] text-gray-300 bg-gray-900/60 px-3 py-1 rounded border border-gray-800">
                 <span>{faceSum.activeBase}/{igs.activeBase}</span>
