@@ -1,10 +1,10 @@
 import { PlayerBio, StatsData } from '../types/player';
 import {
+  BUILD_TEMPLATES,
   BuildTemplate,
   FIELDABLE_FLOORS,
   PASS_MARK,
-  floorsOf,
-  templatesAvailable
+  floorsOf
 } from '../data/buildTemplates';
 import { STYLE_OPTIONS, withStyle } from './chem';
 import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './statUtils';
@@ -29,6 +29,15 @@ import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './st
  * It is not read bare. The card is scored under the best chemistry style that still reads the
  * plan's archetype, because that is the card that gets fielded — a stat at 93 and one at 99 are the
  * same stat once a style is on.
+ *
+ * And it does not gate on the frame, which is the difference between judging a card and planning
+ * one. Analyze refuses to plan a Lengthy build for a short card, because following that plan means
+ * paying for strength the card can never cash in as an archetype. A card already built has paid
+ * nothing: a 174cm Matthäus with 99 interceptions, 99 standing tackle and 96 strength has an Anchor
+ * CDM's numbers whatever his height says, and scoring him only against the Explosive plans his
+ * frame allowed rated him 87.9 as a failed ball-winner — a description of the rule, not of him. So
+ * every plan the position allows is scored, and where the archetype is out of reach the reading is
+ * marked `fallback` rather than thrown away.
  *
  * PlayStyles are deliberately not in it yet.
  */
@@ -173,9 +182,7 @@ export function scoreAtPosition(
   const pos = sided ? sided.label : key;
   const wanted = sided ? sided.positions : [key];
   const height = parseHeightCm(bio.height);
-  const plans = templatesAvailable(wanted, height).filter(t =>
-    t.positions.some(p => wanted.includes(p))
-  );
+  const plans = BUILD_TEMPLATES.filter(t => t.positions.some(p => wanted.includes(p)));
   if (plans.length === 0) return null;
 
   const subs = subValues(stats);

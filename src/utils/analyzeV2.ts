@@ -648,10 +648,18 @@ export function analyzeEvolutionsV2(
     return got.filter((p: string) => !basePositions.has(p)).length;
   };
 
-  /** The scores in one currency, which is the only place they are ever added together. */
+  /**
+   * The scores in one currency, which is the only place they are ever added together.
+   *
+   * `before` rather than `score`: what the chain itself delivers, with none of the picks a free
+   * rarity would let you make. Ranking on the picks meant ranking a card that does not exist until
+   * you have made a choice the search made for you — and since a pick fills PlayStyle slots that
+   * later evos gate on, a chain could be promoted for picks that then cost it the very evos that
+   * made it good. What the picker is worth is still reported; it is just not scored.
+   */
   const totalOf = (statScore: number, ps: PsPlan, sim?: FullChainResult | null) =>
     statScore
-    + (psWeight * ps.score) / 100
+    + (psWeight * ps.before) / 100
     + POSITION_WORTH * Math.min(positionsGained(sim ?? null), POSITIONS_COUNTED);
 
   /**
@@ -668,52 +676,24 @@ export function analyzeEvolutionsV2(
    * wins. Only run on rows that are about to be shown — inside the audit the picks stay at the end,
    * where they are a floor on what the PlayStyles are worth rather than the last word.
    */
+  /**
+   * What a chain's PlayStyles come to, with no pick made on your behalf.
+   *
+   * This used to search for the best moment in the chain to spend the free picks and hand the
+   * recommendation back with them already in it. Two things were wrong with that. A pick fills
+   * slots that several evos gate on — `maxPlayStyles`, `maxPlayStylesPlus` — so inserting one can
+   * cost the chain the later evos that made it worth recommending, and a good path disappears for
+   * a reason that has nothing to do with it. And it is a choice with no undo, made silently, on the
+   * one part of a card the player has full control over.
+   *
+   * So the picks are reported and never taken: the row says the chain opens a picker and what it
+   * would be worth, and which PlayStyles the position is short of. Making them is yours.
+   */
   const placePicks = (ids: string[], t: BuildTemplate, style: string | null) => {
-    const evaluate = (chain: string[]) => {
-      const sim = simOfChain(chain);
-      if (!sim) return null;
-      const ps = psOfChain(chain, sim, t, style);
-      return { chain: ps.node ? [...chain, ps.node] : chain, ps };
-    };
-
-    let best = evaluate(ids);
-    const done = simOfChain(ids);
-    if (!best || !done) return null;
-
-    // The picks are chosen against the *finished* card's stats even when they are made early: a
-    // PlayStyle is gated on stats the rest of the chain is about to deliver, and you know that when
-    // you pick. Which slots are free, on the other hand, is a fact about the moment.
-    const fielded = style ? withStyleStats(done.finalStats, chemStyles[style] || {}) : done.finalStats;
-
-    for (let i = 1; i < ids.length; i++) {
-      const sim = simOfChain(ids.slice(0, i));
-      if (!sim || !canPickPlayStyles(sim.finalBio.rarity)) continue;
-      const position = positionFor(
-        t,
-        sim.finalBio.primaryPositions.split(',').map(p => p.trim().toUpperCase()).filter(Boolean)
-      );
-      const picks = bestFreePicks({
-        stats: fielded,
-        playStyles: sim.finalPlayStyles,
-        bio: { ...sim.finalBio, primaryPositions: position },
-        mode: controlModeFor(sim.finalBio)
-      });
-      if (picks.gold.length + picks.silver.length === 0) continue;
-
-      const placed = evaluate([
-        ...ids.slice(0, i),
-        buildPlayStyleNodeId(picks),
-        ...ids.slice(i)
-      ]);
-      if (placed && placed.ps.score > best.ps.score) best = placed;
-    }
-    // Every pick the chain now carries, wherever it was made, so the row can name them; and what
-    // the card's PlayStyles came to with none of them, which is what the picks are worth.
-    const picked = best.chain.filter(isPlayStyleNodeId).flatMap(id => {
-      const { gold, silver } = parsePlayStyleNodeId(id);
-      return [...gold.map(n => `${n}+`), ...silver];
-    });
-    return { ...best, picked, without: psOfChain(ids, done, t, style).before };
+    const sim = simOfChain(ids);
+    if (!sim) return null;
+    const ps = psOfChain(ids, sim, t, style);
+    return { chain: ids, ps, picked: [] as string[], without: ps.before };
   };
 
   interface Row {
@@ -1148,8 +1128,15 @@ export function analyzeEvolutionsV2(
       // or a set you are stuck with and why — the gold slots an evo spent on nothing, or the
       // PlayStyles this position wants that nothing in the chain hands out.
       const psNote = (() => {
-        const at = `PS ${ps.score.toFixed(1)}/100`;
-        const picked = row.placed?.picked ?? [];
+        const at = `PS ${ps.before.toFixed(1)}/100`;
+        // What the picker is worth, said rather than spent. The chain arrives without the picks in
+        // it, so this is an opportunity the row is telling you about, not a step it has taken.
+        if (ps.canPick && ps.picks.gold.length + ps.picks.silver.length > 0) {
+          const worth = ps.score - ps.before;
+          const names = [...ps.picks.gold.map(n => `${n}+`), ...ps.picks.silver];
+          return `${at} · free picks open: ${names.join(', ')} would make it ${ps.score.toFixed(1)}${worth >= 1 ? ` (+${worth.toFixed(1)})` : ''}`;
+        }
+        const picked: string[] = [];
         if (picked.length > 0) {
           // Where the picks sit is part of the instruction, not a detail: taking them mid-chain is
           // what stops the evos after it filling those slots with something you did not choose.

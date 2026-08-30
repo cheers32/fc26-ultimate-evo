@@ -1085,6 +1085,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                 <span className={getStatColorClass(score.score)}>
                   {score.score.toFixed(1)}
                 </span>
+                <span className="text-gray-500 text-[9px] font-medium normal-case">
+                  {score.plan.name}
+                  {score.fallback && <span className="text-amber-500/80" title={`Read as ${score.archetype}; this plan wants ${score.plan.archetype}`}> ·{score.archetype.slice(0, 4)}</span>}
+                </span>
               </div>
             )}
 
