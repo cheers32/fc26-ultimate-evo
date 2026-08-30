@@ -58,8 +58,15 @@ export function PlayerSelectionModal({
    * spent on, which is otherwise worked out by hand one card at a time.
    */
   const [ovrFilter, setOvrFilter] = useState('');
-  /** Only the cards this team has already put evos into. On by default: it is the usual question. */
-  const [evolvedOnly, setEvolvedOnly] = useState(true);
+  /**
+   * Narrow the shelf to the cards this team has already put evos into.
+   *
+   * Off by default, which is the opposite of how it started. The shelf's job is to find the card to
+   * spend the next evo on, and those are mostly the cards that have never had one — hiding them by
+   * default answered the wrong question, and a search for a card the team owns but has not evolved
+   * came back "No players found" as if the card were missing.
+   */
+  const [evolvedOnly, setEvolvedOnly] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
 
@@ -100,7 +107,7 @@ export function PlayerSelectionModal({
 
   const filteredPlayers = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return playersList.filter(p => {
+    const kept = playersList.filter(p => {
       if (!p.bio.name.toLowerCase().includes(q) && !p.bio.club.toLowerCase().includes(q)) return false;
       if (ovrFilter) {
         const bound = Number(ovrFilter.slice(0, -1));
@@ -115,7 +122,22 @@ export function PlayerSelectionModal({
       }
       return true;
     });
+    // Evolved first, so this list reads in the same order as the two sections it is split into and
+    // Enter still picks whatever tile is at the top of the grid.
+    return [...kept.filter(p => evolved.has(p.id)), ...kept.filter(p => !evolved.has(p.id))];
   }, [playersList, searchQuery, positionFilter, ovrFilter, evolvedOnly, evolved, currentOvrById]);
+
+  /**
+   * The shelf in two shelves: what this team has already evolved, and what it has not.
+   *
+   * Split rather than mixed because they are answers to different questions — one is "what did I
+   * already spend evos on", the other "what is still untouched" — and a single grid ordered
+   * evolved-first says so only to someone who already knows the order.
+   */
+  const evolvedShown = useMemo(() => filteredPlayers.filter(p => evolved.has(p.id)), [filteredPlayers, evolved]);
+  const unevolvedShown = useMemo(() => filteredPlayers.filter(p => !evolved.has(p.id)), [filteredPlayers, evolved]);
+  /** Headings only earn their space when there are two sections to tell apart. */
+  const showSectionHeads = evolvedShown.length > 0 && unevolvedShown.length > 0;
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -154,6 +176,120 @@ export function PlayerSelectionModal({
     if (val >= 60) return 'text-orange-400';
     return 'text-red-400';
   };
+
+  /** One tile. Shared by both sections so they cannot drift apart. */
+  const renderCard = (player: PlayerData) => (
+    <button
+      key={player.id}
+      onClick={() => selectPlayer(player.id)}
+      className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden hover:border-fuchsia-500/50 hover:shadow-lg hover:shadow-fuchsia-500/10 transition-all text-left flex flex-col group relative"
+    >
+      {/* Action Buttons */}
+      <div className="absolute top-2 left-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onEditPlayerAvatar && (
+          <button 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setEditingPlayerId(player.id);
+            }} 
+            className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-gray-300 hover:text-white hover:bg-black border border-white/10"
+            title="Edit Player (Photo & PS+ Limit)"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+        {viewingHidden
+          ? onUnhidePlayer && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onUnhidePlayer(player.id);
+                }}
+                className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-fcGreen hover:bg-black border border-fcGreen/30"
+                title="Use this card in this team again"
+              >
+                <Eye className="w-3.5 h-3.5" />
+              </button>
+            )
+          : onHidePlayer && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onHidePlayer(player.id);
+                }}
+                className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-gray-300 hover:text-white hover:bg-black border border-white/10"
+                title="Stop using this card in this team — its builds are kept, and other teams keep the card"
+              >
+                <EyeOff className="w-3.5 h-3.5" />
+              </button>
+            )}
+        {onDeletePlayer && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // Spelled out because it is not the everyday action: hiding is.
+              if (window.confirm(
+                `Delete ${player.bio.name} from the shared library?\n\n` +
+                'Every team loses this card, and every build saved on it goes too. ' +
+                'This cannot be undone.\n\n' +
+                'To stop using it in this team only, close this and use the hide button instead.'
+              )) {
+                onDeletePlayer(player.id);
+              }
+            }}
+            className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-red-400 hover:text-red-500 hover:bg-black border border-red-500/20"
+            title="Delete from the shared library — every team loses this card"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      
+      {/* The card as it stands, with what it started at behind it. Showing the base
+          while filtering on the current one would have the shelf disagree with itself:
+          a 96 tile disappearing under "96 and under" because the card is really 98. */}
+      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-yellow-400 font-bold text-sm border border-yellow-500/20 z-10 flex items-baseline gap-1">
+        {currentOvrById[player.id] && currentOvrById[player.id] !== player.ovr.base && (
+          <span className="text-[10px] font-medium text-gray-500 line-through">{player.ovr.base}</span>
+        )}
+        {currentOvrById[player.id] ?? player.ovr.base}
+      </div>
+      <div className="h-40 bg-gray-900 relative flex items-center justify-center p-4">
+        <img src={player.avatarUrl} alt={player.bio.name} className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300" />
+      </div>
+      <div className="p-3 border-t border-gray-800 bg-gray-950 flex-1 flex flex-col">
+        <h3 className="font-bold text-white text-sm truncate mb-2">{player.bio.name}</h3>
+        
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-x-2 gap-y-1 mt-auto">
+          <div className="flex justify-between items-center text-[10px]">
+            <span className="text-gray-500">PAC</span>
+            <span className={`font-semibold ${getStatColor(player.stats.pac.baseFace)}`}>{player.stats.pac.baseFace}</span>
+          </div>
+          <div className="flex justify-between items-center text-[10px]">
+            <span className="text-gray-500">SHO</span>
+            <span className={`font-semibold ${getStatColor(player.stats.sho.baseFace)}`}>{player.stats.sho.baseFace}</span>
+          </div>
+          <div className="flex justify-between items-center text-[10px]">
+            <span className="text-gray-500">PAS</span>
+            <span className={`font-semibold ${getStatColor(player.stats.pas.baseFace)}`}>{player.stats.pas.baseFace}</span>
+          </div>
+          <div className="flex justify-between items-center text-[10px]">
+            <span className="text-gray-500">DRI</span>
+            <span className={`font-semibold ${getStatColor(player.stats.dri.baseFace)}`}>{player.stats.dri.baseFace}</span>
+          </div>
+          <div className="flex justify-between items-center text-[10px]">
+            <span className="text-gray-500">DEF</span>
+            <span className={`font-semibold ${getStatColor(player.stats.def.baseFace)}`}>{player.stats.def.baseFace}</span>
+          </div>
+          <div className="flex justify-between items-center text-[10px]">
+            <span className="text-gray-500">PHY</span>
+            <span className={`font-semibold ${getStatColor(player.stats.phy.baseFace)}`}>{player.stats.phy.baseFace}</span>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
 
   return (
     <>
@@ -270,7 +406,7 @@ export function PlayerSelectionModal({
                   onChange={e => setEvolvedOnly(e.target.checked)}
                   className="accent-fcGreen w-3.5 h-3.5"
                 />
-                Evolved ({evolvedHere})
+                Evolved only ({evolvedHere})
               </label>
               <label
                 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-2"
@@ -305,120 +441,30 @@ export function PlayerSelectionModal({
 
           {/* Grid */}
           <div className="p-6 overflow-y-auto flex-1">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {filteredPlayers.map(player => (
-                <button
-                  key={player.id}
-                  onClick={() => selectPlayer(player.id)}
-                  className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden hover:border-fuchsia-500/50 hover:shadow-lg hover:shadow-fuchsia-500/10 transition-all text-left flex flex-col group relative"
-                >
-                  {/* Action Buttons */}
-                  <div className="absolute top-2 left-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {onEditPlayerAvatar && (
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setEditingPlayerId(player.id);
-                        }} 
-                        className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-gray-300 hover:text-white hover:bg-black border border-white/10"
-                        title="Edit Player (Photo & PS+ Limit)"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {viewingHidden
-                      ? onUnhidePlayer && (
-                          <button
-                            onClick={e => {
-                              e.stopPropagation();
-                              onUnhidePlayer(player.id);
-                            }}
-                            className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-fcGreen hover:bg-black border border-fcGreen/30"
-                            title="Use this card in this team again"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        )
-                      : onHidePlayer && (
-                          <button
-                            onClick={e => {
-                              e.stopPropagation();
-                              onHidePlayer(player.id);
-                            }}
-                            className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-gray-300 hover:text-white hover:bg-black border border-white/10"
-                            title="Stop using this card in this team — its builds are kept, and other teams keep the card"
-                          >
-                            <EyeOff className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                    {onDeletePlayer && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Spelled out because it is not the everyday action: hiding is.
-                          if (window.confirm(
-                            `Delete ${player.bio.name} from the shared library?\n\n` +
-                            'Every team loses this card, and every build saved on it goes too. ' +
-                            'This cannot be undone.\n\n' +
-                            'To stop using it in this team only, close this and use the hide button instead.'
-                          )) {
-                            onDeletePlayer(player.id);
-                          }
-                        }}
-                        className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-red-400 hover:text-red-500 hover:bg-black border border-red-500/20"
-                        title="Delete from the shared library — every team loses this card"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* The card as it stands, with what it started at behind it. Showing the base
-                      while filtering on the current one would have the shelf disagree with itself:
-                      a 96 tile disappearing under "96 and under" because the card is really 98. */}
-                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-yellow-400 font-bold text-sm border border-yellow-500/20 z-10 flex items-baseline gap-1">
-                    {currentOvrById[player.id] && currentOvrById[player.id] !== player.ovr.base && (
-                      <span className="text-[10px] font-medium text-gray-500 line-through">{player.ovr.base}</span>
-                    )}
-                    {currentOvrById[player.id] ?? player.ovr.base}
-                  </div>
-                  <div className="h-40 bg-gray-900 relative flex items-center justify-center p-4">
-                    <img src={player.avatarUrl} alt={player.bio.name} className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300" />
-                  </div>
-                  <div className="p-3 border-t border-gray-800 bg-gray-950 flex-1 flex flex-col">
-                    <h3 className="font-bold text-white text-sm truncate mb-2">{player.bio.name}</h3>
-                    
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-3 gap-x-2 gap-y-1 mt-auto">
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-gray-500">PAC</span>
-                        <span className={`font-semibold ${getStatColor(player.stats.pac.baseFace)}`}>{player.stats.pac.baseFace}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-gray-500">SHO</span>
-                        <span className={`font-semibold ${getStatColor(player.stats.sho.baseFace)}`}>{player.stats.sho.baseFace}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-gray-500">PAS</span>
-                        <span className={`font-semibold ${getStatColor(player.stats.pas.baseFace)}`}>{player.stats.pas.baseFace}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-gray-500">DRI</span>
-                        <span className={`font-semibold ${getStatColor(player.stats.dri.baseFace)}`}>{player.stats.dri.baseFace}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-gray-500">DEF</span>
-                        <span className={`font-semibold ${getStatColor(player.stats.def.baseFace)}`}>{player.stats.def.baseFace}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-gray-500">PHY</span>
-                        <span className={`font-semibold ${getStatColor(player.stats.phy.baseFace)}`}>{player.stats.phy.baseFace}</span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            {evolvedShown.length > 0 && (
+              <>
+                {showSectionHeads && (
+                  <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">
+                    Evolved ({evolvedShown.length})
+                  </h3>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {evolvedShown.map(renderCard)}
+                </div>
+              </>
+            )}
+            {unevolvedShown.length > 0 && (
+              <>
+                {showSectionHeads && (
+                  <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 mt-8">
+                    Not evolved ({unevolvedShown.length})
+                  </h3>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {unevolvedShown.map(renderCard)}
+                </div>
+              </>
+            )}
             {filteredPlayers.length === 0 && (
               <div className="text-center py-20 text-gray-500">
                 No players found matching "{searchQuery}"
