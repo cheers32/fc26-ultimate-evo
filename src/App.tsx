@@ -1411,6 +1411,18 @@ export default function App() {
     if (!evoPreview) setEvoPreview(true);
   };
 
+  /**
+   * Cards this team has actually put evos into, by their in-game record rather than by having a
+   * build saved for them — a drafted plan is a card you were thinking about, not one you have used.
+   */
+  const evolvedPlayerIds = useMemo(
+    () =>
+      Object.entries(team?.savedPaths || {})
+        .filter(([, paths]) => (paths || []).some(p => isInGamePath(p) && p.chainIds.length > 0))
+        .map(([id]) => id),
+    [team]
+  );
+
   const handleRenamePath = (pathId: string, name: string) => {
     const next = name.trim();
     if (!next || isBaseCardPath({ id: pathId })) return;
@@ -2349,11 +2361,11 @@ export default function App() {
                       : ' · clears every floor')
                   }
                 >
+                  {/* The archetype is on the badge immediately to the left; repeating it here said
+                      the same thing twice and pushed the useful half off the line. Which archetype
+                      the plan wanted, and whether this card has it, stays in the tooltip — it
+                      explains the score without competing with it. */}
                   {shownScore.plan.name} {shownScore.score.toFixed(1)}
-                  <span className="text-gray-500 font-medium ml-1.5">
-                    · {shownScore.archetype}
-                    {shownScore.fallback && `, not ${shownScore.plan.archetype}`}
-                  </span>
                 </span>
               )}
 
@@ -2585,6 +2597,7 @@ export default function App() {
       {isPlayerSelectionOpen && (
         <PlayerSelectionModal
           players={allPlayersData}
+          evolvedPlayerIds={evolvedPlayerIds}
           onClose={() => setIsPlayerSelectionOpen(false)}
           onSelectPlayer={(id) => {
             setSelectedPlayerId(id);

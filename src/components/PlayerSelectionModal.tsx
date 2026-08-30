@@ -10,6 +10,8 @@ interface PlayerSelectionModalProps {
   /** The whole shared catalogue, so hidden cards can still be looked at and brought back. */
   libraryPlayers?: Record<string, PlayerData>;
   hiddenPlayerIds?: string[];
+  /** Cards this team has already evolved — those with an in-game record carrying at least one evo. */
+  evolvedPlayerIds?: string[];
   onClose: () => void;
   onSelectPlayer: (id: string) => void;
   onOpenImport: () => void;
@@ -25,6 +27,7 @@ export function PlayerSelectionModal({
   players,
   libraryPlayers,
   hiddenPlayerIds = [],
+  evolvedPlayerIds = [],
   onClose,
   onSelectPlayer,
   onOpenImport,
@@ -45,6 +48,8 @@ export function PlayerSelectionModal({
   const [positionFilter, setPositionFilter] = useState<string[]>([]);
   /** Keep cards at or above this OVR. 0 is off. */
   const [minOvr, setMinOvr] = useState(0);
+  /** Only the cards this team has already put evos into. */
+  const [evolvedOnly, setEvolvedOnly] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
 
@@ -75,18 +80,27 @@ export function PlayerSelectionModal({
     return [...ORDER.filter(x => seen.has(x)), ...[...seen].filter(x => !ORDER.includes(x)).sort()];
   }, [playersList]);
 
+  const evolved = useMemo(() => new Set(evolvedPlayerIds), [evolvedPlayerIds]);
+  // Counted over what this view can actually show. The team's record may name a card that is hidden
+  // or no longer in the library, and a label promising 38 above a list of 37 is a bug report.
+  const evolvedHere = useMemo(
+    () => playersList.filter(p => evolved.has(p.id)).length,
+    [playersList, evolved]
+  );
+
   const filteredPlayers = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return playersList.filter(p => {
       if (!p.bio.name.toLowerCase().includes(q) && !p.bio.club.toLowerCase().includes(q)) return false;
       if (minOvr > 0 && (p.ovr?.base ?? 0) < minOvr) return false;
+      if (evolvedOnly && !evolved.has(p.id)) return false;
       if (positionFilter.length > 0) {
         const own = new Set(p.bio.primaryPositions.split(',').map(x => x.trim().toUpperCase()));
         if (!positionFilter.every(pos => own.has(pos))) return false;
       }
       return true;
     });
-  }, [playersList, searchQuery, positionFilter, minOvr]);
+  }, [playersList, searchQuery, positionFilter, minOvr, evolvedOnly, evolved]);
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -232,7 +246,18 @@ export function PlayerSelectionModal({
             )}
 
             <div className="flex items-center gap-2 ml-auto">
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">OVR</label>
+              {/* By the in-game record, so this is "cards this team has spent evos on" rather than
+                  "cards someone drafted a plan for". */}
+              <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={evolvedOnly}
+                  onChange={e => setEvolvedOnly(e.target.checked)}
+                  className="accent-fcGreen w-3.5 h-3.5"
+                />
+                Evolved ({evolvedHere})
+              </label>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-2">OVR</label>
               <select
                 value={minOvr}
                 onChange={e => setMinOvr(Number(e.target.value))}
