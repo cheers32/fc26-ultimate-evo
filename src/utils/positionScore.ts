@@ -163,6 +163,28 @@ function scoreAgainst(subs: Record<string, number>, t: BuildTemplate) {
  * still reads that plan's archetype. Null when the position has no plan the card's frame allows —
  * a 176cm card has no Lengthy plan open to it whatever its stats say.
  */
+/**
+ * Every plan a card could be judged as, best first, one entry per plan.
+ *
+ * `bestScore` answers "what is this card worth", which is a maximum, and a maximum cannot say that a
+ * card has become a second thing as well. Enzo's chain took his Anchor CDM reading from 58.6 to 94.1
+ * and left his best plan — Deep-Lying Playmaker, which it never touched — sitting at 96.9, so the
+ * one number he is shown did not move and the upgrade looked like it had bought nothing. The list is
+ * what says otherwise.
+ */
+export function rankedPlans(stats: StatsData, bio: PlayerBio, assumeChem = false): PositionScore[] {
+  const best = new Map<string, PositionScore>();
+  for (const raw of bio.primaryPositions.split(',')) {
+    const pos = raw.trim();
+    if (!pos) continue;
+    for (const reading of readingsAt(stats, bio, pos, assumeChem)) {
+      const held = best.get(reading.plan.id);
+      if (!held || reading.score > held.score) best.set(reading.plan.id, reading);
+    }
+  }
+  return [...best.values()].sort((a, b) => b.score - a.score);
+}
+
 export function scoreAtPosition(
   stats: StatsData,
   bio: PlayerBio,
@@ -177,17 +199,35 @@ export function scoreAtPosition(
    */
   assumeChem = false
 ): PositionScore | null {
+  let best: PositionScore | null = null;
+  let bestIgs = -Infinity;
+  for (const reading of readingsAt(stats, bio, position, assumeChem)) {
+    const igs = reading.igs;
+    if (!best || reading.score > best.score || (reading.score === best.score && igs > bestIgs)) {
+      best = reading;
+      bestIgs = igs;
+    }
+  }
+  return best;
+}
+
+/** One entry per plan open at a position: the plan's best reading of the card, under the best style. */
+function readingsAt(
+  stats: StatsData,
+  bio: PlayerBio,
+  position: string,
+  assumeChem: boolean
+): (PositionScore & { igs: number })[] {
   const key = position.trim().toUpperCase();
   const sided = SIDED[key];
   const pos = sided ? sided.label : key;
   const wanted = sided ? sided.positions : [key];
   const height = parseHeightCm(bio.height);
   const plans = BUILD_TEMPLATES.filter(t => t.positions.some(p => wanted.includes(p)));
-  if (plans.length === 0) return null;
+  if (plans.length === 0) return [];
 
   const subs = subValues(stats);
-  let best: PositionScore | null = null;
-  let bestIgs = -Infinity;
+  const perPlan = new Map<string, PositionScore & { igs: number }>();
 
   for (const plan of plans) {
     for (const [style, boosts] of assumeChem ? STYLE_OPTIONS : BARE_ONLY) {
@@ -203,17 +243,17 @@ export function scoreAtPosition(
 
       const { score, under } = scoreAgainst(styled, plan);
       // Ties go to the reading that leaves more card. Two styles a plan scores identically are not
-      // the same style, and two plans a card scores identically are not the same plan — first past
-      // the post made the answer depend on the order of the tables rather than on the card.
+      // the same style — first past the post made the answer depend on the order of the tables
+      // rather than on the card.
       const igs = Object.values(styled).reduce((a, b) => a + b, 0);
-      if (!best || score > best.score || (score === best.score && igs > bestIgs)) {
-        best = { score, position: pos, plan, style, archetype, fallback, under };
-        bestIgs = igs;
+      const held = perPlan.get(plan.id);
+      if (!held || score > held.score || (score === held.score && igs > held.igs)) {
+        perPlan.set(plan.id, { score, position: pos, plan, style, archetype, fallback, under, igs });
       }
     }
   }
 
-  return best;
+  return [...perPlan.values()];
 }
 
 /** The one reading available when no style may be assumed: the card as it stands. */

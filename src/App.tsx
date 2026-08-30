@@ -14,7 +14,7 @@ import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
 import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
-import { bestScore, scoreAtPosition } from './utils/positionScore';
+import { bestScore, rankedPlans, scoreAtPosition } from './utils/positionScore';
 import { playStyleScoreAt } from './utils/playStyleScore';
 import { psPlanFor } from './utils/psPlan';
 import {
@@ -2077,7 +2077,7 @@ export default function App() {
       }
       styled[faceKey] = { ...face, subs };
     }
-    return bestScore(styled, previewBio, false);
+    return { best: bestScore(styled, previewBio, false), ranked: rankedPlans(styled, previewBio, false) };
   }, [previewStats, activeChemBoosts, previewBio]);
 
   const { originalIgs, originalFaceSum } = useMemo(() => {
@@ -2381,22 +2381,28 @@ export default function App() {
               {/* What this card is, beside how it moves. The archetype badge says the second; on
                   its own it never said the first, which is what "why is this score low" is really
                   asking — the answer is always which plan it was judged as. */}
-              {shownScore && (
+              {shownScore.best && (
                 <span
                   className="font-bold text-sm text-gray-300 bg-gray-900/60 px-2 py-1 rounded border border-gray-800"
                   title={
-                    `${shownScore.position} ${shownScore.score.toFixed(1)}/100 as ${shownScore.plan.name}` +
-                    ` · ${shownScore.archetype}${shownScore.fallback ? ` (this plan wants ${shownScore.plan.archetype})` : ''}` +
-                    (shownScore.under.length > 0
-                      ? ` · under ${shownScore.under.map(u => `${u.key} ${u.value}/${u.floor}`).join(', ')}`
-                      : ' · clears every floor')
+                    // Every plan it could be, not only the one it is best at. A single number is a
+                    // maximum, and a maximum cannot say that a card has become a second thing as
+                    // well — which is exactly what an upgrade that misses the top plan does.
+                    shownScore.ranked
+                      .slice(0, 3)
+                      .map(r =>
+                        `${r.plan.name} ${r.score.toFixed(1)} at ${r.position}` +
+                        ` · ${r.archetype}${r.fallback ? ` (wants ${r.plan.archetype})` : ''}` +
+                        (r.under.length > 0 ? ` · under ${r.under.map(u => `${u.key} ${u.value}/${u.floor}`).join(', ')}` : '')
+                      )
+                      .join('\n')
                   }
                 >
                   {/* The archetype is on the badge immediately to the left; repeating it here said
                       the same thing twice and pushed the useful half off the line. Which archetype
                       the plan wanted, and whether this card has it, stays in the tooltip — it
                       explains the score without competing with it. */}
-                  {shownScore.plan.name} {shownScore.score.toFixed(1)}
+                  {shownScore.best.plan.name} {shownScore.best.score.toFixed(1)}
                 </span>
               )}
 
