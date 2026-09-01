@@ -49,6 +49,12 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
         
         {/* Content */}
         <div className="p-5 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+          {/* What the evo says it is, in its own words. Every evo carries one, and this is the only
+              place it can be read: the pool card behind this has room for a name and a price and
+              nothing else, and the chain workbench only shows the blurb for evos already in a
+              chain — which is too late to be deciding whether you want the evo. */}
+          <p className="text-sm text-gray-400 leading-relaxed">{evo.description}</p>
+
           {/* Requirements */}
           <div>
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Requirements</h3>
