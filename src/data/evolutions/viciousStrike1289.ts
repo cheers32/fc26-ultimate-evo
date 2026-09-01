@@ -68,6 +68,5 @@ export const viciousStrike1289: EvolutionDefinition = {
       ]
     }
   ],
-  trainingTime: '2 Weeks',
   maxRepeatable: 1
 };
