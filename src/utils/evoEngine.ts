@@ -468,7 +468,9 @@ export function applyEvo(
           // shortfall first and the walk stops the moment the target is met.
           if (Math.round(weightedFace()) < targetFace) {
             const order = Object.keys(faceData.subs).sort(
-              (a, b) => faceData.subs[a].base - faceData.subs[b].base
+              (a, b) =>
+                faceData.subs[a].base - faceData.subs[b].base ||
+                faceWeight(faceKey, b, faceData.subs[b].w) - faceWeight(faceKey, a, faceData.subs[a].w)
             );
 
             let progressed = true;
