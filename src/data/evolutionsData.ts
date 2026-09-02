@@ -25,6 +25,7 @@ import { threadTheNeedle1157 } from './evolutions/threadTheNeedle1157';
 import { dazzlingDribbler1190 } from './evolutions/dazzlingDribbler1190';
 import { auraFarming1164 } from './evolutions/auraFarming1164';
 import { dynamicDrive1161 } from './evolutions/dynamicDrive1161';
+import { paceAndGrace1291 } from './evolutions/paceAndGrace1291';
 import { theMasterLock1290 } from './evolutions/theMasterLock1290';
 import { ninetyNineDri1162 } from './evolutions/ninetyNineDri1162';
 import { thePerfectBreak1195 } from './evolutions/thePerfectBreak1195';
@@ -296,7 +297,8 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1288': touchlineRoyalty1288,
   '1289': viciousStrike1289,
   '1256': ninetyNineSho1256,
-  '1290': theMasterLock1290
+  '1290': theMasterLock1290,
+  '1291': paceAndGrace1291
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
