@@ -89,8 +89,16 @@ export const CONTROL_MULTIPLIERS: Record<ControlMode, Record<string, number>> = 
  * cards don't end up tied.
  *
  * Weights are per position and sum to ~1 within the listed set.
+ *
+ * The fallback is 0.01 rather than the 0.02 it started at, because a card carries about 29
+ * sub-stats and a position table names ten of them: at 0.02 the nineteen a position never uses
+ * carried roughly a quarter of the total weight, which is not a tie-break, it is a second opinion.
+ * A centre back was losing real points to his penalties and volleys — van de Ven, 95 defending and
+ * 99 sprint speed, scored below cards he beats on every stat the CB table names, because his
+ * finishing is 52. Halved, the fallback still separates cards that are otherwise identical without
+ * deciding who is the better defender.
  */
-export const DEFAULT_SUBSTAT_WEIGHT = 0.02;
+export const DEFAULT_SUBSTAT_WEIGHT = 0.01;
 
 export const SUBSTAT_WEIGHTS: Record<string, Record<string, number>> = {
   ST: {
@@ -177,12 +185,17 @@ export const SUBSTAT_WEIGHTS: Record<string, Record<string, number>> = {
  * A linear weight can't express that: it values 90 -> 91 the same as 98 -> 99, when the whole
  * point is landing on the ceiling. These pay out on top of the weighted score, ramping from
  * MUST_MAX_FLOOR so a card that is close still gets partial credit.
+ *
+ * The floor is 90 rather than 94 because "close" was drawn too tight to mean anything: at 94 a
+ * card on 93 reactions collected exactly as much as a card on 60, and four of the points between
+ * two otherwise level cards could turn on one sub-stat missing the line by a point. From 90 the
+ * ramp actually ramps.
  */
 export const MUST_MAX_SUBSTATS: Record<string, number> = {
   composure: 2,
   reactions: 2
 };
-export const MUST_MAX_FLOOR = 94;
+export const MUST_MAX_FLOOR = 90;
 
 /**
  * Stamina on a card the player drives themselves is worth far more than the position table says,
