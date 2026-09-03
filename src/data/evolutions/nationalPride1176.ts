@@ -6,7 +6,7 @@ export const nationalPride1176: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1176/national-pride',
   version: 'FC 26',
   description: 'Turn any player into a National Pride player!',
-  descriptionZh: "【准入】OVR ≤94。【收益】稀有度改为 National Pride。【其他】1 级 · Objective Reward。",
+  descriptionZh: "把任何球员变成 National Pride 球员！｜适合：任何位置，只改稀有度（解锁自选 PlayStyle），不加数值。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 94,

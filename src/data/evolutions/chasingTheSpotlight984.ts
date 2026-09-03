@@ -6,7 +6,7 @@ export const chasingTheSpotlight984: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/984/chasing-the-spotlight',
   version: 'FC 26',
   description: 'The spotlight finds those who earn it. Elevate every moment, outshine the rest, and finish with unforgettable authority.',
-  descriptionZh: "【准入】非 CB，OVR ≤92，PS+ ≤3。【收益】OVR +3（顶 94）；速度线 2 项（最高 +3）、射门线 6 项（最高 +8）、传球线 5 项（最高 +5）、盘带线 6 项（最高 +5）、身体线 2 项（最高 +3）；弱脚 +4；花式 +4；PlayStyle+ 2 个（Rapid、Low Driven Shot）；PlayStyle 2 个（Incisive Pass、Gamechanger）。【其他】5 级 · Objective Group Reward。",
+  descriptionZh: "聚光灯只找那些配得上它的人。让每个瞬间都更耀眼，压过所有人，用难忘的权威终结比赛。｜适合：除中卫外都行，全面型进攻卡最合适。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 92,

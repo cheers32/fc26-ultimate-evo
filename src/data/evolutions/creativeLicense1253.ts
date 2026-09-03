@@ -6,7 +6,7 @@ export const creativeLicense1253: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1253/creative-license',
   version: 'FC 26',
   description: "The greatest playmakers make every touch count. Evolve your player and develop the vision and creativity that turns every opportunity into gold. Found in the Pre Season Token Store.",
-  descriptionZh: "【准入】CAM 专用，OVR ≤97，PS+ ≤4。【收益】OVR +4（顶 98）；速度线 2 项（最高 +10）、传球线 6 项（最高 +20）；花式 +4；PlayStyle+ 3 个（Quick Step、Incisive Pass、Pinged Pass）；PlayStyle 3 个（Tiki Taka、Rapid、Inventive）。【其他】3 级 · Tokens — 100 Pre Season Tokens。",
+  descriptionZh: "最伟大的组织者让每次触球都有意义。培养出把每个机会都变成黄金的视野和创造力。来自季前代币商店。｜适合：CAM 专用，传球线为主。",
   cost: 'Tokens — 100 Pre Season Tokens',
   requirements: {
     maxOvr: 97,

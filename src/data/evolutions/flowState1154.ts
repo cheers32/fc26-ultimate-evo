@@ -6,7 +6,7 @@ export const flowState1154: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1154/flow-state',
   version: 'FC 26',
   description: 'Boosts passing and dribbling to help players move smoothly on the ball, link play with confidence, and create space in tight areas.',
-  descriptionZh: "【准入】非 GK，OVR ≤95。【收益】OVR +1（顶 96）；传球面板 +5（顶 96）；盘带面板 +5（顶 96）；PlayStyle 3 个（Incisive Pass、Technical、Tiki Taka）。【其他】1 级 · 可重复 4 次 · Free。",
+  descriptionZh: "提升传球和盘带，帮助球员在球上移动更顺滑、更自信地串联，并在狭小空间创造机会。｜适合：非门将，传球盘带面板各 +5。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

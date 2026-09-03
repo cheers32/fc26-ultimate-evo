@@ -55,9 +55,9 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
               chain — which is too late to be deciding whether you want the evo. */}
           <div className="space-y-2">
             <p className="text-sm text-gray-400 leading-relaxed">{evo.description}</p>
-            {/* The Chinese line is the one with the numbers in it — entry requirements, caps, levels,
-                price — so it sits under the blurb rather than replacing it, and the blurb stays as
-                the game words it for anyone cross-checking against FUTBIN. */}
+            {/* Chinese under English rather than instead of it: the English is the game's own
+                wording, which is what a FUTBIN page will be headed with. The Chinese line carries
+                the part the blurb never says — which position, how big, and what it skips. */}
             {evo.descriptionZh && (
               <p className="text-[13px] text-gray-500 leading-relaxed">{evo.descriptionZh}</p>
             )}

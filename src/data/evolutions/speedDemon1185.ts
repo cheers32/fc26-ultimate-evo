@@ -6,7 +6,7 @@ export const speedDemon1185: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1185/speed-demon',
   version: 'FC 26',
   description: 'Become an absolute speed demon on the pitch.',
-  descriptionZh: "【准入】OVR ≤96，PS+ ≤4。【收益】OVR +1（顶 99）；速度线 2 项（最高 +10）、盘带线 2 项（最高 +10）、身体线 1 项（最高 +10）；弱脚 +4；花式 +4；PlayStyle+ 2 个（Quick Step、Rapid）；PlayStyle 2 个（Quick Step、Rapid）。【其他】2 级 · 100 FUTTIES Tokens。",
+  descriptionZh: "成为球场上彻头彻尾的速度恶魔。｜适合：任何位置，只加速度和少量盘带。",
   cost: '100 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

@@ -11,7 +11,7 @@ export const wallOfFame1261: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1261/wall-of-fame',
   version: 'FC 26',
   description: 'Give your goalkeeper elite end game upgrades and maximum 99 Reflexes to pull off impossible point blank saves when the match is on the line.',
-  descriptionZh: "【准入】GK 专用，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 98）；速度线 2 项（最高 +30）、盘带线 1 项（最高 +30）；弱脚 +4；花式 +4；PlayStyle+ 3 个（Far Reach、Rush Out、Pinged Pass）；PlayStyle 3 个（Far Throw、Footwork、Cross Claimer）。【其他】3 级 · Free。",
+  descriptionZh: "给你的门将精英级的终局升级和满级 99 反应，在比赛悬于一线时做出不可能的近距离扑救。｜适合：门将专用，+30 OVR。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

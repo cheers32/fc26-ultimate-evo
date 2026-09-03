@@ -11,7 +11,7 @@ export const finalTouches1259: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1259/final-touches',
   version: 'FC 26',
   description: 'No fuss, no flashy tricks. Just the clinical upgrades and final touches needed to turn a great player into an elite finisher.',
-  descriptionZh: "【准入】非 GK，OVR ≤96，PS+ ≤4。【收益】OVR +2（顶 97）；射门线 4 项（最高 +5）、传球线 2 项（最高 +5）、盘带线 2 项（最高 +5）；花式 +2；PlayStyle+ 3 个（Finesse Shot、Power Shot、Gamechanger）；PlayStyle 2 个（Low Driven Shot、Dead Ball）。【其他】3 级 · 可重复 4 次 · Free。",
+  descriptionZh: "没有花架子，只有把好球员变成精英终结者所需的临门一脚。｜适合：非门将，射门线为主的小加成。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

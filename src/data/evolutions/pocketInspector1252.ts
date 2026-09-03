@@ -6,7 +6,7 @@ export const pocketInspector1252: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1252/pocket-inspector',
   version: 'FC 26',
   description: "The ultimate defensive upgrade. Keep your opponent's star attacker secure and locked away in your CB's back pocket until the final whistle. Found in the Pre Season Token Store.",
-  descriptionZh: "【准入】CB 专用，OVR ≤97，PS+ ≤4。【收益】OVR +6（顶 98）；防守线 5 项（最高 +20）、身体线 4 项（最高 +20）；弱脚 +4；PlayStyle+ 2 个（Bruiser、Anticipate）；PlayStyle 3 个（Quick Step、Pinged Pass、Slide Tackle）。【其他】3 级 · Tokens — 100 Pre Season Tokens。",
+  descriptionZh: "终极防守升级。把对手的头号攻击手牢牢锁在你中卫的后口袋里直到终场哨。来自季前代币商店。｜适合：CB 专用，只加防守和身体线。",
   cost: 'Tokens — 100 Pre Season Tokens',
   requirements: {
     maxOvr: 97,

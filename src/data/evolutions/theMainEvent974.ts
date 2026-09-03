@@ -6,7 +6,7 @@ export const theMainEvent974: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/974/the-main-event',
   version: 'FC 26',
   description: 'Find in the new Token Store - 2,000 Tokens.',
-  descriptionZh: "【准入】ST 专用，非 CB，OVR ≤92，PS+ ≤3。【收益】OVR +50（顶 97）；速度线 2 项（最高 +50）、射门线 6 项（最高 +45）、传球线 4 项（最高 +50）、盘带线 5 项（最高 +50）、身体线 2 项（最高 +50）；弱脚 +4；花式 +4；PlayStyle+ 2 个（Finesse Shot、Incisive Pass）；PlayStyle 4 个（Low Driven Shot、Gamechanger、Quick Step、First Touch）。【其他】5 级 · 2000 FoF Tokens。",
+  descriptionZh: "为聚光灯而生。强化进攻存在感和决断力，在最关键的时刻站上舞台中央。｜适合：ST 专用，+50 OVR 的彻底改造，拿低分中锋来练最赚。",
   cost: '2000 FoF Tokens',
   requirements: {
     maxOvr: 92,

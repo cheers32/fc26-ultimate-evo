@@ -6,7 +6,7 @@ export const tinyTim1014: EvolutionDefinition = {
   "futbinLink": "https://www.futbin.com/26/evolutions/1014/tiny-tim",
   "version": "FC 26",
   description: "UT Found in the Perfect Volley Objective",
-  descriptionZh: "【准入】ST 专用，OVR ≤91，PS+ ≤3。【收益】OVR +25（顶 93）；速度线 2 项（最高 +15）、射门线 5 项（最高 +35）、传球线 2 项（最高 +30）、盘带线 6 项（最高 +35）、防守线 1 项（最高 +40）、身体线 4 项（最高 +40）；弱脚 +4；PlayStyle+ 2 个（Low Driven Shot、Enforcer）；PlayStyle 4 个（Finesse Shot、Incisive Pass、First Touch、Precision Header）；加位置 LM/RM。【其他】5 级 · Free / Objective。",
+  descriptionZh: "来自 Perfect Volley 目标。｜适合：ST 专用，+25 OVR，射门和盘带线都吃满。",
   "cost": "Free / Objective",
   "requirements": {
     "maxOvr": 91,

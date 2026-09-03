@@ -17,7 +17,7 @@ export const viciousStrike1289: EvolutionDefinition = {
   description:
     'No mercy in the box. Unleash devastating power in front of goal and punish the opposition ' +
     'with clinical finishes every time they leave you space.',
-  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +5（顶 99）；速度线 2 项（最高 +20）、射门线 3 项（最高 +20）、传球线 4 项（最高 +20）、盘带线 3 项（最高 +20）。【其他】2 级 · Free。",
+  descriptionZh: "禁区内绝不留情。在门前释放毁灭性的力量，只要对手给出空间就用干净利落的终结惩罚他们。｜适合：非门将，射门传球盘带线且完全不碰身体，对 Explosive 卡最友好。",
   cost: 'Free',
   requirements: {
     maxOvr: 97,

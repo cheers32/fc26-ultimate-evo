@@ -6,7 +6,7 @@ export const postureCheck1206: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1206/posture-check',
   version: 'FC 26',
   description: 'Found in the FUTTIES Token Store.',
-  descriptionZh: "【准入】CM 专用，OVR ≤96，PS+ ≤4。【收益】OVR +10（顶 97）；传球线 3 项（最高 +25）、防守线 4 项（最高 +28）、身体线 3 项（最高 +25）；弱脚 +4；PlayStyle+ 4 个（Anticipate、Intercept、Bruiser、Pinged Pass）；PlayStyle 2 个（Incisive Pass、Jockey）；加位置 CDM。【其他】3 级 · 100 FUTTIES Tokens。",
+  descriptionZh: "来自 FUTTIES 代币商店。｜适合：CM 专用，传球防守身体三线。",
   cost: '100 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

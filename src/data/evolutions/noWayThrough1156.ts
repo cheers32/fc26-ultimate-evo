@@ -9,7 +9,7 @@ export const noWayThrough1156: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1156/no-way-through',
   version: 'FC 26',
   description: "Build a brick wall between the posts. With feline reflexes and spectacular dives, deny every opponent a chance. Found in the FUTTIES Token Store.",
-  descriptionZh: "【准入】GK 专用，OVR ≤96，PS+ ≤4。【收益】OVR +20（顶 97）；弱脚 +4；花式 +4；PlayStyle+ 4 个（Far Reach+、Footwork+、Rush Out+、Pinged Pass+）；PlayStyle 4 个（Cross Claimer、Deflector、Far Throw、Long Ball Pass）。【其他】3 级 · 100 FUTTIES Tokens。",
+  descriptionZh: "在门柱之间筑起一堵砖墙。用猫科动物般的反应和精彩的飞身扑救，让每个对手都没有机会。来自 FUTTIES 代币商店。｜适合：门将专用，+20 OVR 并送 4 个 PlayStyle+。",
   cost: '100 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

@@ -19,7 +19,7 @@ export const pureCraft1293: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
   description: 'Operate on pure footballing instinct. A comprehensive upgrade to your playmaker’s skill, precision, and sharpness to control the game where it matters most.',
-  descriptionZh: "【准入】CAM 专用，OVR ≤97。【收益】OVR +20（顶 98）；速度面板 +25（顶 96）；盘带面板 +30（顶 98）；防守面板 +20（顶 96）；射门线 5 项（最高 +25）、传球线 6 项（最高 +25）；弱脚 +4。【其他】3 级 · Free。",
+  descriptionZh: "凭纯粹的足球直觉踢球。对你的组织核心的技术、精准和敏锐做一次全面升级，让他在最要紧的地方掌控比赛。｜适合：CAM 专用，免费里最强的一个，+20 OVR 顶 98，但完全不加身体。",
   cost: 'Free',
   requirements: {
     maxOvr: 97,

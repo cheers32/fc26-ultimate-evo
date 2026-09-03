@@ -6,7 +6,7 @@ export const mrUndroppable1187: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1187/mr-undroppable',
   version: 'FC 26',
   description: 'The ultimate club staple.',
-  descriptionZh: "【准入】LB/RB 专用，非 CB，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 98）；速度线 2 项（最高 +30）、射门线 2 项（最高 +30）、传球线 5 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 5 项（最高 +30）、身体线 4 项（最高 +30）；弱脚 +4；花式 +3；PlayStyle+ 4 个（Intercept、Quick Step、Jockey、Bruiser）；稀有度改为 Futties。【其他】5 级 · 200 FUTTIES Tokens。",
+  descriptionZh: "俱乐部的终极常客。永远可靠、极其稳定，需要保证发挥时的边后卫首选。｜适合：LB/RB 专用，+30 OVR，六条线全加。",
   cost: '200 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

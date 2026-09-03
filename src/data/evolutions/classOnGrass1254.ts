@@ -6,7 +6,7 @@ export const classOnGrass1254: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1254/class-on-grass',
   version: 'FC 26',
   description: "True class needs no introduction. Evolve your player and unlock the complete striking game that makes them stand out on every pitch. Found in the Pre Season Token Store.",
-  descriptionZh: "【准入】OVR ≤97，PS+ ≤4。【收益】OVR +30（顶 98）；速度线 2 项（最高 +35）、射门线 4 项（最高 +35）、传球线 3 项（最高 +30）、盘带线 5 项（最高 +30）、身体线 2 项（最高 +35）；弱脚 +4；花式 +5；PlayStyle+ 4 个（Finesse Shot、Low Driven Shot、Power Shot、Rapid）；PlayStyle 4 个（Quick Step、Incisive Pass、Gamechanger、First Touch）；加位置 ST。【其他】5 级 · Tokens — 200 Pre Season Tokens。",
+  descriptionZh: "真正的格调无需介绍。解锁让球员在任何球场上都脱颖而出的完整射手能力。来自季前代币商店。｜适合：任何位置，+30 OVR 且花式 +5。",
   cost: 'Tokens — 200 Pre Season Tokens',
   requirements: {
     maxOvr: 97,

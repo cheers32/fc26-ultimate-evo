@@ -6,7 +6,7 @@ export const furiaCeca1081: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1081/furia-ceca',
   version: 'FC 26',
   description: 'UT Found in the Czechia and Bosnia Objective',
-  descriptionZh: "【准入】LW/LM 专用，OVR ≤92，PS+ ≤3。【收益】OVR +30（顶 94）；速度线 2 项（最高 +30）、射门线 6 项（最高 +45）、传球线 6 项（最高 +30）、盘带线 6 项（最高 +40）、防守线 1 项（最高 +30）、身体线 2 项（最高 +40）；弱脚 +4；PlayStyle+ 3 个（Finesse Shot+、Technical+、Power Shot+）；PlayStyle 3 个（Rapid、First Touch、Gamechanger）。【其他】5 级 · Free / Objective。",
+  descriptionZh: "来自 Czechia 和 Bosnia 目标。｜适合：LW/LM 专用，+30 OVR，还送三个 PlayStyle+。",
   cost: 'Free / Objective',
   requirements: {
     maxOvr: 92,

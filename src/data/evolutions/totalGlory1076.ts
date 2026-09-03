@@ -6,7 +6,7 @@ export const totalGlory1076: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1076/total-glory',
   version: 'FC 26',
   description: "Elevate every aspect of your player's game and give them the final push for total glory.",
-  descriptionZh: "【准入】非 GK，OVR ≤94。【收益】OVR +1（顶 99）；速度面板 +1（顶 95）；射门面板 +1（顶 96）；传球面板 +2（顶 96）；盘带面板 +2（顶 96）；防守面板 +1（顶 96）；身体面板 +1（顶 95）；弱脚 +2；稀有度改为 Glory Hunters。【其他】2 级 · Objective Group Reward。",
+  descriptionZh: "全面提升球员的每一个方面，给他们通往完全荣耀的最后一推。｜适合：非门将，六围各 +1~2，纯收尾补丁。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 94,

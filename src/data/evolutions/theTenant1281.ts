@@ -15,7 +15,7 @@ export const theTenant1281: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1281/the-tenant',
   version: 'FC 26',
   description: "Set up camp in front of goal. Boost your player's offensive arsenal to constantly exploit spaces, force mistakes, and keep the defense pinned back. Found in the store.",
-  descriptionZh: "【准入】非 GK，OVR ≤96。【收益】OVR +10（顶 98）；速度线 2 项（最高 +25）、射门线 5 项（最高 +20）、传球线 5 项（最高 +20）、盘带线 5 项（最高 +20）；花式 +4。【其他】3 级 · Free。",
+  descriptionZh: "在门前扎营。提升球员的进攻武器库，持续利用空当、制造失误，把防线死死压住。来自商店。｜适合：非门将，前场四线全加，前锋前腰。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

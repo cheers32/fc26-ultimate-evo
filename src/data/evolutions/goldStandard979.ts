@@ -6,7 +6,7 @@ export const goldStandard979: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/979/gold-standard',
   version: 'FC 26',
   description: 'Find in the new Token Store - 500 Tokens',
-  descriptionZh: "【准入】OVR ≤92。【收益】OVR +50（顶 94）；速度线 2 项（最高 +50）、射门线 2 项（最高 +50）、传球线 3 项（最高 +50）、盘带线 6 项（最高 +40）、防守线 5 项（最高 +45）、身体线 4 项（最高 +50）；弱脚 +4；稀有度改为 National Pride。【其他】4 级 · 500 FoF Tokens。",
+  descriptionZh: "金标准。全面提升一名球员的各项能力。｜适合：不限位置，六围普遍偏低的卡收益最大。",
   cost: '500 FoF Tokens',
   requirements: {
     maxOvr: 92,

@@ -6,7 +6,7 @@ export const bornStriker1202: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1202/born-striker',
   version: 'FC 26',
   description: 'Apply the ST Position to any player.',
-  descriptionZh: "【准入】OVR ≤96。【收益】加位置 ST。【其他】1 级 · Objective Reward。",
+  descriptionZh: "给任何球员加上 ST 位置。｜适合：任何位置，纯改位置。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

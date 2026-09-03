@@ -6,7 +6,7 @@ export const eliteMidfielder1159: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1159/elite-midfielder',
   version: 'FC 26',
   description: 'Transform your CDM into an elite dominant force with massive boosts across 5 levels.',
-  descriptionZh: "【准入】CDM 专用，非 CB，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 97）；速度面板 +30（顶 92）；射门面板 +25（顶 90）；身体面板 +30（顶 95）；传球线 6 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 5 项（最高 +30）；弱脚 +4；花式 +3；PlayStyle+ 4 个（Intercept+、Pinged Pass+、Tiki Taka+、Anticipate+）；PlayStyle 4 个（Incisive Pass、Technical、Quick Step、Bruiser）。【其他】5 级 · 100 FUTTIES Tokens。",
+  descriptionZh: "用横跨 5 个等级的巨量加成，把你的后腰变成精英级的统治力量。｜适合：CDM 专用，+30 OVR 加三个面板大幅提升，后腰的旗舰改造。",
   cost: '100 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

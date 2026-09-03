@@ -6,7 +6,7 @@ export const streetSoccer988: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/988/street-soccer',
   version: 'FC 26',
   description: "From concrete courts to the biggest stages, showcase how raw talent becomes unstoppable. Found in the Street Soccer Objective.",
-  descriptionZh: "【准入】CM 专用，OVR ≤91，PS+ ≤3。【收益】OVR +35（顶 92）；身体面板 +30（顶 89）；速度线 2 项（最高 +35）、射门线 4 项（最高 +35）、传球线 6 项（最高 +35）、盘带线 6 项（最高 +35）、防守线 5 项（最高 +35）；弱脚 +4；PlayStyle+ 2 个（Intercept、Incisive Pass）；PlayStyle 3 个（Quick Step、Tiki Taka、Finesse Shot）。【其他】5 级 · Objective Group Reward。",
+  descriptionZh: "从水泥地球场到最大的舞台，展示原始天赋如何变得势不可挡。来自 Street Soccer 目标。｜适合：CM 专用，+35 OVR，几乎每条线都加，改造幅度极大。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 91,

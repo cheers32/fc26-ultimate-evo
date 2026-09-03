@@ -6,7 +6,7 @@ export const theFinalPass1084: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1084/the-final-pass',
   version: 'FC 26',
   description: 'Found in the Norway/Belgium Objective',
-  descriptionZh: "【准入】CM 专用，OVR ≤93，PS+ ≤3。【收益】OVR +30（顶 94）；速度线 2 项（最高 +20）、射门线 6 项（最高 +30）、传球线 6 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 2 项（最高 +25）、身体线 1 项（最高 +30）；弱脚 +4；PlayStyle+ 3 个（Incisive Pass、Press Proven、Pinged Pass）；PlayStyle 3 个（Tiki Taka、Inventive、Long Ball Pass）。【其他】5 级 · Objective Reward。",
+  descriptionZh: "来自 Norway/Belgium 目标。｜适合：CM 专用，+30 OVR，前场六线几乎全加。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 93,

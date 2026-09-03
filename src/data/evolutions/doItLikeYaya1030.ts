@@ -6,7 +6,7 @@ export const doItLikeYaya1030: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1030/do-it-like-yaya',
   version: 'FC 26',
   description: 'Dominate the midfield the Yaya way. Power through challenges, glide past pressure with effortless control, and dictate the tempo with commanding presence.',
-  descriptionZh: "【准入】CM 专用，OVR ≤91，PS+ ≤3。【收益】OVR +30（顶 93）；速度线 2 项（最高 +20）、射门线 5 项（最高 +25）、传球线 5 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 5 项（最高 +25）、身体线 4 项（最高 +30）；PlayStyle+ 2 个（Incisive Pass、Pinged Pass）；PlayStyle 1 个（Power Shot）。【其他】5 级 · Objective Reward。",
+  descriptionZh: "用亚亚的方式统治中场：撞开对抗、在压迫中从容盘带、用统治力掌控节奏。｜适合：CM 专用，+30 OVR，六条线全加，B2B 中场的全面改造。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

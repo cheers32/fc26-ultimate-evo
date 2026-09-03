@@ -8,7 +8,7 @@ export const touchlineRoyalty1288: EvolutionDefinition = {
   description:
     'Found in the Pre Season Token Store. Turns a wide midfielder into a touchline threat who ' +
     'stretches the defence and delivers the final ball.',
-  descriptionZh: "【准入】RM 专用，OVR ≤98。【收益】OVR +10（顶 99）；速度面板 +15（顶 97）；射门面板 +15（顶 99）；传球面板 +15（顶 96）；盘带面板 +15（顶 98）；弱脚 +4；花式 +2。【其他】1 级 · Tokens — 200 Pre Season Tokens。",
+  descriptionZh: "来自季前代币商店。把边前卫变成能拉开防线、送出致命传中的边路威胁。｜适合：RM 专用，四个面板各 +15。",
   cost: 'Tokens — 200 Pre Season Tokens',
   // RM only, and the OVR cap comes from FUTBIN's requirements table. FUT.GG lists the position
   // requirement without an OVR one, which would let a 99 through — the stricter of two sources is

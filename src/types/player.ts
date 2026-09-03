@@ -97,11 +97,12 @@ export interface EvolutionDefinition {
   version: 'FC 26';
   description: string;
   /**
-   * A Chinese summary of what the evo asks for and what it gives, shown under the English.
+   * The blurb in Chinese, then a note on who the evo is actually for, separated by a full-width bar.
    *
-   * Generated from this file's own numbers rather than translated from the blurb: the blurb is
-   * marketing and says nothing about caps or entry requirements, which is what you actually read
-   * an evo's page to find out.
+   * The note is the half that earns its place. The blurb is marketing and could be about any evo in
+   * the game; what you want to know standing in front of one is which position it takes, how big the
+   * change is, and what it pointedly does not touch — Pure Craft adds no physical, The Master Lock
+   * adds no dribbling, and neither blurb mentions it.
    */
   descriptionZh?: string;
   cost?: string;

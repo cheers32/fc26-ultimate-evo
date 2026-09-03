@@ -19,7 +19,7 @@ export const goldenSpirit1017: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1017/golden-spirit',
   version: 'FC 26',
   description: 'Blazing acceleration meets ruthless directness. Built to stretch back lines, win foot races, and turn half-chances into goals. Found in the Saudi Arabia Objective.',
-  descriptionZh: "【准入】非 CB/CM，OVR ≤91，PS+ ≤3。【收益】OVR +30（顶 93）；速度线 2 项（最高 +30）、射门线 6 项（最高 +25）、传球线 6 项（最高 +25）、盘带线 6 项（最高 +35）；PlayStyle+ 2 个（Rapid、Quick Step）；PlayStyle 3 个（Low Driven Shot、Pinged Pass、Finesse Shot）。【其他】5 级 · Objective Reward。",
+  descriptionZh: "炽热的加速遇上不留情面的直线冲击。为撕开防线、赢下速度赛跑、把半个机会变成进球而生。来自 Saudi Arabia 目标。｜适合：除中卫和中前卫外都行，+30 OVR，边锋和前锋最合适。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

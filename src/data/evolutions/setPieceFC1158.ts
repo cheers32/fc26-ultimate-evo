@@ -6,7 +6,7 @@ export const setPieceFC1158: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1158/set-piece-fc',
   version: 'FC 26',
   description: 'Turn every deadball into a goal threat and deliver unbelievable quality that will have your fans singing "Set Piece again Ole, Ole!".',
-  descriptionZh: "【准入】非 GK，OVR ≤96，PS+ ≤3。【收益】OVR +1（顶 97）；速度面板 +3（顶 95）；盘带面板 +3（顶 97）；射门线 2 项（最高 +80）、传球线 3 项（最高 +85）；PlayStyle+ 2 个（Finesse Shot+、Low Driven Shot+）。【其他】2 级 · Objective Reward。",
+  descriptionZh: "把每一次死球都变成破门威胁，交出让球迷高唱的定位球质量。｜适合：非门将的定位球主罚者。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

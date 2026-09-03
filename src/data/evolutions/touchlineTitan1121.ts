@@ -6,7 +6,7 @@ export const touchlineTitan1121: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1121/touchline-titan',
   version: 'FC 26',
   description: 'Build an impenetrable wall on the wing. Transform your fullback into a defensive relentless force, bringing unmatched stability and total security to your backline.',
-  descriptionZh: "【准入】RB 专用，非 CB，OVR ≤95，PS+ ≤4。【收益】OVR +30（顶 97）；速度线 2 项（最高 +30）、传球线 5 项（最高 +30）、盘带线 3 项（最高 +30）、防守线 5 项（最高 +30）、身体线 4 项（最高 +30）；PlayStyle+ 4 个（Jockey、Quick Step、Anticipate、Slide Tackle）；稀有度改为 National Pride。【其他】5 级 · 500 FUTTIES Tokens。",
+  descriptionZh: "在边路筑起一道无法穿透的墙。把你的边后卫变成无休止的防守力量，为后防线带来无与伦比的稳定和绝对的安全感。｜适合：RB 专用，+30 OVR，偏防守向。",
   cost: '500 FUTTIES Tokens',
   requirements: {
     maxOvr: 95,

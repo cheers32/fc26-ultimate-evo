@@ -6,7 +6,7 @@ export const bruiseControl1189: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1189/bruise-control',
   version: 'FC 26',
   description: 'The ultimate backline upgrade.',
-  descriptionZh: "【准入】OVR ≤96，PS+ ≤4。【收益】OVR +3（顶 97）；传球线 2 项（最高 +20）、盘带线 2 项（最高 +20）、防守线 5 项（最高 +20）、身体线 4 项（最高 +20）；PlayStyle+ 3 个（Anticipate、Intercept、Bruiser）。【其他】3 级 · Objective Reward。",
+  descriptionZh: "后防线的终极升级。｜适合：任何位置，防守和身体线为主。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

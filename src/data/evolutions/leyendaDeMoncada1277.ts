@@ -14,7 +14,7 @@ export const leyendaDeMoncada1277: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1277/leyenda-de-moncada',
   version: 'FC 26',
   description: 'Transform into a true playmaker who controls the tempo and delivers in decisive moments. Crafted for flawless control, pure class, and footballing perfection.',
-  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +10（顶 98）；速度线 2 项（最高 +12）、射门线 6 项（最高 +15）、传球线 5 项（最高 +15）、盘带线 6 项（最高 +15）、防守线 1 项（最高 +10）、身体线 1 项（最高 +15）；加位置 ST。【其他】Free。",
+  descriptionZh: "变成真正的组织者，掌控节奏并在决定性时刻交出答案。为完美的控制、纯粹的格调和足球意义上的完美而打造。｜适合：非门将，前场线为主。",
   cost: 'Free',
   requirements: {
     maxOvr: 97,

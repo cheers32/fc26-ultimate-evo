@@ -6,7 +6,7 @@ export const dazzlingDribbler1190: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1190/dazzling-dribbler',
   version: 'FC 26',
   description: 'Unlocked by completing the Chime Challenge objective',
-  descriptionZh: "【准入】OVR ≤96，PS+ ≤3。【收益】盘带线 6 项（最高 +10）；弱脚 +3；花式 +4；PlayStyle+ 2 个（Technical+、Rapid+）；PlayStyle 4 个（Quick Step、Incisive Pass、Finesse Shot、Low Driven Shot）。【其他】3 级 · Objective Group Reward。",
+  descriptionZh: "完成 Chime Challenge 目标解锁。｜适合：任何位置，只加盘带线 6 项。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 96,

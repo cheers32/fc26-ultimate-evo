@@ -6,7 +6,7 @@ export const futtiesBlueprintII1194: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1194/futties-blueprint-ii',
   version: 'FC 26',
   description: 'The final touches on your masterclass striker. Inject the ultimate finishing, composure, and raw instinct needed to turn those half-chances into guaranteed goals.',
-  descriptionZh: "【准入】非 GK，OVR ≤97，OVR ≥97，PS+ ≤4。【收益】OVR +1（顶 98）；射门面板 +5（顶 98）；盘带面板 +5（顶 97）；身体面板 +30（顶 83）；传球线 2 项（最高 +50）；花式 +4；PlayStyle+ 1 个（Incisive Pass+）；PlayStyle 1 个（Pinged Pass）。【其他】2 级 · Free。",
+  descriptionZh: "给你的大师级前锋做最后的润色：注入终极的终结、从容和原始本能，把半个机会变成必进球。｜适合：非门将，身体面板 +30 是重头。",
   cost: 'Free',
   requirements: {
     minOvr: 97,

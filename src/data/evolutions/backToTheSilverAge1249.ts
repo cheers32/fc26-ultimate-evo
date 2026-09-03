@@ -15,7 +15,7 @@ export const backToTheSilverAge1249: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1249/back-to-the-silver-age',
   version: 'FC 26',
   description: 'Return to the days when one towering silver striker terrorised defences.',
-  descriptionZh: "【准入】ST 专用，OVR ≤74，PS+ ≤4。【收益】OVR +40（顶 90）；速度线 2 项（最高 +70）、射门线 6 项（最高 +70）、传球线 3 项（最高 +50）、盘带线 6 项（最高 +50）、防守线 1 项（最高 +50）、身体线 3 项（最高 +50）；弱脚 +4；花式 +4；PlayStyle+ 4 个（Finesse Shot、Low Driven Shot、Rapid、First Touch）；PlayStyle 3 个（Pinged Pass、Tiki Taka、Technical）。【其他】5 级 · Free。",
+  descriptionZh: "回到那个高塔银卡中锋恐吓所有防线的年代。｜适合：ST 且 OVR ≤74 的银卡，+40 OVR 顶 90，是全库门槛最低的一个。",
   cost: 'Free',
   requirements: {
     maxOvr: 74,

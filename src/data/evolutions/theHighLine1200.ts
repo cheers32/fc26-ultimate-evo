@@ -6,7 +6,7 @@ export const theHighLine1200: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1200/the-high-line',
   version: 'FC 26',
   description: "Compress the pitch. Boost your defender's defending to choke out the opponent's space, then use elite passing to build right out from the back.",
-  descriptionZh: "【准入】CB 专用，OVR ≤96。【收益】传球面板 +4（顶 93）；防守面板 +6（顶 97）。【其他】1 级 · 可重复 3 次 · 150 Tokens / 30,000 Coins。",
+  descriptionZh: "压缩球场。提升后卫的防守来扼杀对手的空间，再用精英级传球从后场组织。｜适合：CB 专用，防守 +6、传球 +4 面板。",
   cost: '150 Tokens / 30,000 Coins',
   requirements: {
     maxOvr: 96,

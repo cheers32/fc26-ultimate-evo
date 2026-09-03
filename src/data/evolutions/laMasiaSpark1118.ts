@@ -6,7 +6,7 @@ export const laMasiaSpark1118: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1118/la-masia-spark',
   version: 'FC 26',
   description: 'Ignite La Masia magic with electric dribbling, sharp creativity, and fearless wing play, turning a rising talent into a dazzling wide threat ready to shine on the biggest stage.',
-  descriptionZh: "【准入】RM/RW 专用，OVR ≤94，PS+ ≤3。【收益】OVR +30（顶 96）；速度线 2 项（最高 +30）、射门线 5 项（最高 +40）、传球线 6 项（最高 +30）、盘带线 6 项（最高 +40）、身体线 2 项（最高 +20）；弱脚 +4；花式 +4；PlayStyle+ 4 个（Finesse Shot、Technical、Rapid、Inventive）；PlayStyle 3 个（Low Driven Shot、Incisive Pass、Trickster）。【其他】5 级 · 750 Tokens / 250,000 Coins。",
+  descriptionZh: "点燃拉玛西亚的魔力：电光石火的盘带、锐利的创造力和无畏的边路发挥，把新星变成耀眼的边路威胁。｜适合：RM/RW 专用，+30 OVR。",
   cost: '750 Tokens / 250,000 Coins',
   defaultDisabled: true,
   requirements: {

@@ -7,7 +7,7 @@ export const counterCulture1239: EvolutionDefinition = {
   version: 'FC 26',
   description:
     "Skip the long buildup. Upgrade your player's pace, passing, and shooting to catch teams out on the transition and turn fast breaks into instant goals.",
-  descriptionZh: "【准入】非 GK，OVR ≤96，PS+ ≤4。【收益】OVR +3（顶 97）；速度面板 +5（顶 95）；射门面板 +5（顶 97）；传球面板 +5（顶 97）；弱脚 +4；PlayStyle+ 3 个（Low Driven Shot、Finesse Shot、First Touch）；PlayStyle 3 个（Rapid、Gamechanger、Technical）。【其他】2 级 · 可重复 5 次 · Season 10 — Level 1 Reward。",
+  descriptionZh: "跳过冗长的组织。提升速度、传球和射门，在转换中打对手措手不及，把快攻变成即时进球。｜适合：非门将，速度射门传球各 +5，可重复 5 次。",
   cost: 'Season 10 — Level 1 Reward',
   requirements: {
     maxOvr: 96,

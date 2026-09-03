@@ -6,7 +6,7 @@ export const futtiesCountdown1151: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1151/futties-countdown',
   version: 'FC 26',
   description: 'Get ready for FUTTIES with an all-round boost to a qualifying player.',
-  descriptionZh: "【准入】非 GK，OVR ≤94。【收益】OVR +3（顶 96）；速度面板 +5（顶 95）；射门面板 +4（顶 96）；传球面板 +4（顶 96）；盘带面板 +4（顶 96）；防守面板 +4（顶 96）；身体面板 +4（顶 96）。【其他】2 级 · 500 FUTTIES Tokens / 100,000 Coins。",
+  descriptionZh: "为 FUTTIES 做好准备，给合格球员一份全面加成。｜适合：非门将，六围各 +4~5 的平均加成。",
   cost: '500 FUTTIES Tokens / 100,000 Coins',
   trainingTime: '3 Days',
   defaultDisabled: true,

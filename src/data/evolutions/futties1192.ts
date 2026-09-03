@@ -6,7 +6,7 @@ export const futties1192: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1192/futties',
   version: 'FC 26',
   description: 'Turn your favourite player into a FUTTIES player. This item rarity offers two league links to chemistry and full chemistry in position!',
-  descriptionZh: "【准入】OVR ≤96。【收益】稀有度改为 Futties。【其他】1 级 · 可重复 2 次 · 500 Tokens / 100,000 Coins。",
+  descriptionZh: "把你最喜欢的球员变成 FUTTIES 球员。这个稀有度提供两条联赛链接和本位置满契合！｜适合：任何位置，只改稀有度不加数值，可重复 2 次。",
   cost: '500 Tokens / 100,000 Coins',
   requirements: {
     maxOvr: 96

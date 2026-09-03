@@ -12,7 +12,7 @@ export const primeIconicAttacker1279: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1279/prime-iconic-attacker',
   version: 'FC 26',
   description: "True greatness never settles. Elevate your legendary forward past their limits and into their ultimate form. Found in the token store.",
-  descriptionZh: "【准入】ST/LW/RW 专用，OVR ≤97，PS+ ≤4。【收益】OVR +45（顶 98）；速度面板 +40（顶 96）；传球面板 +20（顶 95）；射门线 6 项（最高 +40）、盘带线 6 项（最高 +40）、防守线 1 项（最高 +30）、身体线 4 项（最高 +40）；弱脚 +4；花式 +4。【其他】Tokens — 200。",
+  descriptionZh: "真正的伟大从不满足。把你的传奇前锋推过极限，进入终极形态。来自代币商店。｜适合：ST/LW/RW，+45 OVR 加速度面板 +40，Icon 前锋的顶级改造。",
   cost: 'Tokens — 200',
   requirements: {
     maxOvr: 97,

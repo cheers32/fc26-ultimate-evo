@@ -16,7 +16,7 @@ export const keepBetterKompany1278: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1278/keep-better-kompany',
   version: 'FC 26',
   description: "Your backline was secure, but now it's time to make it elite. Upgrade your defensive rock to ensure your squad Keeps Better Kompany. Found in the token store.",
-  descriptionZh: "【准入】CB 专用，OVR ≤97，PS+ ≤4。【收益】OVR +10（顶 98）；速度面板 +15（顶 96）；射门线 2 项（最高 +30）、传球线 2 项（最高 +15）、盘带线 3 项（最高 +15）、防守线 5 项（最高 +20）、身体线 2 项（最高 +15）；弱脚 +4；花式 +4。【其他】Tokens — 100。",
+  descriptionZh: "你的后防线本来就稳，现在该让它变成精英了。升级你的防守磐石。来自代币商店。｜适合：CB 专用，速度面板 +15 是亮点，慢中卫最需要。",
   cost: 'Tokens — 100',
   requirements: {
     maxOvr: 97,

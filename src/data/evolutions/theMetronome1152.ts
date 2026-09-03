@@ -6,7 +6,7 @@ export const theMetronome1152: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1152/the-metronome',
   version: 'FC 26',
   description: 'Dictate the tempo and dominate the center of the pitch. Transform your versatile midfielder into the ultimate link between defense and attack.',
-  descriptionZh: "【准入】CM 专用，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 98）；速度线 2 项（最高 +30）、射门线 4 项（最高 +30）、传球线 4 项（最高 +35）、盘带线 5 项（最高 +30）、防守线 4 项（最高 +25）；弱脚 +4；花式 +4；PlayStyle+ 4 个（Pinged Pass+、Finesse Shot+、Incisive Pass+、Gamechanger+）；PlayStyle 4 个（Tiki Taka、Technical、Intercept、First Touch）；加位置 CAM；稀有度改为 Futties。【其他】5 级 · 700 FUTTIES Tokens / 200,000 Coins。",
+  descriptionZh: "掌控节奏、统治中路。把你的多面手中场变成连接防守与进攻的终极纽带。｜适合：CM 专用，+30 OVR。",
   cost: '700 FUTTIES Tokens / 200,000 Coins',
   requirements: {
     maxOvr: 96,

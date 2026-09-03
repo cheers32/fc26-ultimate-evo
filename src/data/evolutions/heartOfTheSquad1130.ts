@@ -6,7 +6,7 @@ export const heartOfTheSquad1130: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1130/heart-of-the-squad',
   version: 'FC 26',
   description: 'The heartbeat of the team. Sharp, composed and always driving the squad forward when it matters most.',
-  descriptionZh: "【准入】非 GK，OVR ≤94，PS+ ≤3。【收益】OVR +1（顶 95）；速度线 2 项（最高 +3）、传球线 5 项（最高 +6）、盘带线 6 项（最高 +6）、身体线 1 项（最高 +5）；PlayStyle+ 3 个（Technical、Incisive Pass、Trickster）；PlayStyle 3 个（Technical、Quick Step、Pinged Pass）。【其他】4 级 · 可重复 2 次 · 150 Tokens / 30,000 Coins。",
+  descriptionZh: "球队的心跳。敏锐、从容，在最关键的时候永远推着全队向前。｜适合：非门将，传球盘带线为主，中场。",
   cost: '150 Tokens / 30,000 Coins',
   defaultDisabled: true,
   requirements: {

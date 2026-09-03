@@ -8,7 +8,7 @@ export const memosLegacy986: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/986/memos-legacy',
   version: 'FC 26',
   description: "Inspired by a fearless Mexican shot-stopper, command your box, stay composed under pressure, and turn impossible shots into highlight-reel saves. Found in the Memo's Memories Objective.",
-  descriptionZh: "【准入】GK 专用，OVR ≤91，PS+ ≤3。【收益】OVR +18（顶 92）；速度面板 +15（顶 92）；射门面板 +15（顶 92）；传球面板 +20（顶 92）；盘带面板 +15（顶 92）；身体面板 +15（顶 94）；速度线 2 项（最高 +30）、盘带线 1 项（最高 +15）；弱脚 +4；PlayStyle+ 2 个（Rush Out、Far Reach）；PlayStyle 1 个（Footwork）。【其他】3 级 · Objective Reward。",
+  descriptionZh: "灵感来自那位无所畏惧的墨西哥门神：统治禁区、在压力下保持冷静，把不可能的射门变成集锦级扑救。来自 Memo's Memories 目标。｜适合：门将专用，五围齐涨，低分门将首选。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

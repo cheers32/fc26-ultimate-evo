@@ -17,7 +17,7 @@ export const guardianOfTheWing1280: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1280/guardian-of-the-wing',
   version: 'FC 26',
   description: 'You protected the wing, now become its guardian. Upgrade your wide defender to lock down the flank, win every duel and make sure nothing gets past on your side.',
-  descriptionZh: "【准入】LB/RB 专用，OVR ≤97。【收益】OVR +9（顶 98）；传球面板 +10（顶 95）；速度线 2 项（最高 +20）、盘带线 6 项（最高 +15）、防守线 5 项（最高 +12）、身体线 4 项（最高 +8）；弱脚 +4；花式 +3。【其他】4 级 · 100 FC Points / 25,000 Coins。",
+  descriptionZh: "你守住了边路，现在成为它的守护者。升级你的边路防守者，锁死这一侧、赢下每次对抗，不让任何人从你这边过去。｜适合：LB/RB 专用，加速冲刺各 +20 顶 98 是重头。",
   cost: '100 FC Points / 25,000 Coins',
   requirements: {
     maxOvr: 97,

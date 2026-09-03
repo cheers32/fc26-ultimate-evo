@@ -6,7 +6,7 @@ export const bailOut1198: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1198/bail-out',
   version: 'FC 26',
   description: 'For when your defence completely collapses. Give your keeper the ultimate boost to pull off impossible, controller-saving heroics in the 90th minute.',
-  descriptionZh: "【准入】GK 专用，OVR ≤95，PS+ ≤4。【收益】OVR +30（顶 96）；盘带线 1 项（最高 +30）；弱脚 +4；花式 +4；PlayStyle+ 3 个（Footwork、Deflector、Cross Claimer）；PlayStyle 4 个（Pinged Pass、Far Reach、Rush Out、Trickster）。【其他】3 级 · Free。",
+  descriptionZh: "给你的门将终极加成，在第 90 分钟做出不可能的、拯救手柄的扑救。｜适合：门将专用，+30 OVR。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

@@ -6,7 +6,7 @@ export const primeMarksman1144: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1144/prime-marksman',
   version: 'FC 26',
   description: 'Stay calm under pressure and turn chances into goals.',
-  descriptionZh: "【准入】OVR ≤94，PS+ ≤3。【收益】OVR +1（顶 99）；射门线 3 项（最高 +20）；PlayStyle+ 2 个（Power Shot、Low Driven Shot）。【其他】1 级 · Objective Reward。",
+  descriptionZh: "在压力下保持冷静，把机会变成进球。｜适合：任何位置，只加三项射门 sub，小补丁。",
   cost: 'Objective Reward',
   defaultDisabled: true,
   requirements: {

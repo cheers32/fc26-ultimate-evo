@@ -6,7 +6,7 @@ export const thePowercube1082: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1082/the-powercube',
   version: 'FC 26',
   description: 'UT Found in the Switzerland/Croatia Objective',
-  descriptionZh: "【准入】RM/RW 专用，OVR ≤92，PS+ ≤3。【收益】OVR +30（顶 94）；速度线 2 项（最高 +30）、射门线 6 项（最高 +40）、传球线 4 项（最高 +60）、盘带线 5 项（最高 +40）、身体线 3 项（最高 +40）；PlayStyle+ 3 个（Finesse Shot+、Incisive Pass+、Gamechanger+）；PlayStyle 3 个（Technical、Press Proven、Acrobatic）。【其他】5 级 · Free / Objective。",
+  descriptionZh: "来自 Switzerland/Croatia 目标。｜适合：RM/RW 专用，+30 OVR，送三个 PlayStyle+。",
   cost: 'Free / Objective',
   requirements: {
     maxOvr: 92,

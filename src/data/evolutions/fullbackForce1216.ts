@@ -6,7 +6,7 @@ export const fullbackForce1216: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1216/fullback-force',
   version: 'FC 26',
   description: 'Secure the sidelines with lockdown defense and physical strength. Outlast opponents and shield your team to victory.',
-  descriptionZh: "【准入】RB 专用，非 CB，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 97）；速度线 2 项（最高 +30）、射门线 2 项（最高 +50）、传球线 4 项（最高 +30）、盘带线 4 项（最高 +30）、防守线 4 项（最高 +35）、身体线 3 项（最高 +35）；弱脚 +4；花式 +4；PlayStyle+ 3 个（Bruiser、Pinged Pass、Quick Step）；PlayStyle 3 个（Rapid、Intercept、Power Shot）。【其他】5 级 · 225 Tokens / 175,000 Coins。",
+  descriptionZh: "用锁死式的防守和身体力量守住边线。耗过对手，掩护球队走向胜利。｜适合：RB 专用，+30 OVR，六条线全加，攻守兼顾的边后卫改造。",
   cost: '225 Tokens / 175,000 Coins',
   requirements: {
     maxOvr: 96,

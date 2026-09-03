@@ -7,7 +7,7 @@ export const everythingAtOnce1220: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'Upgrade everything, master both feet and unlock every trick in the book. Why improve one thing when you can become a five-star menace everywhere, all at once?',
-  descriptionZh: "【准入】非 GK，OVR ≤96，PS+ ≤4。【收益】OVR +2（顶 97）；速度面板 +3（顶 95）；射门面板 +2（顶 92）；传球面板 +2（顶 95）；盘带面板 +3（顶 96）；防守面板 +2（顶 94）；身体面板 +4（顶 97）；弱脚 +4；花式 +4；稀有度改为 Futties。【其他】2 级 · 可重复 4 次 · 100 FUTTIES Tokens / 25,000 Coins。",
+  descriptionZh: "什么都升级、双脚都练好、每个花招都解锁。既然能在所有方面都变成五星级的麻烦，为什么只提升一样？｜适合：非门将，六围小幅全加外加双脚花式。",
   cost: '100 FUTTIES Tokens / 25,000 Coins',
   requirements: {
     maxOvr: 96,

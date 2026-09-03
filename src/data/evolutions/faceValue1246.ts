@@ -6,7 +6,7 @@ export const faceValue1246: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1246/face-value',
   version: 'FC 26',
   description: 'Worth more than face value.',
-  descriptionZh: "【准入】非 GK，OVR ≤97，PS+ ≤4。【收益】OVR +7（顶 97）；速度面板 +7（顶 95）；射门面板 +7（顶 95）；传球面板 +10（顶 97）；盘带面板 +7（顶 95）；防守面板 +7（顶 95）；身体面板 +7（顶 95）；弱脚 +4；花式 +4；PlayStyle+ 2 个（Pinged Pass、Tiki Taka）；PlayStyle 2 个（Low Driven Shot、Gamechanger）。【其他】2 级 · Objective Reward — Assist in 20。",
+  descriptionZh: "物超所值。｜适合：非门将，六围各 +7~10 的平均加成。",
   cost: 'Objective Reward — Assist in 20',
   requirements: {
     maxOvr: 97,

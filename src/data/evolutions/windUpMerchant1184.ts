@@ -6,7 +6,7 @@ export const windUpMerchant1184: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1184/wind-up-merchant',
   version: 'FC 26',
   description: "Transform into an elite dark-arts CDM built to stop counter-attacks, master the tactical foul, and live rent-free in your opponent's head. Peak housery.",
-  descriptionZh: "【准入】CDM 专用，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 97）；速度线 2 项（最高 +30）、射门线 2 项（最高 +30）、传球线 3 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 5 项（最高 +40）、身体线 4 项（最高 +40）；弱脚 +4；PlayStyle+ 4 个（Intercept+、Bruiser+、Incisive Pass+、Pinged Pass+）；PlayStyle 2 个（Tiki Taka、Anticipate）；稀有度改为 Futties。【其他】5 级 · 600 FUTTIES Tokens / 175,000 Coins。",
+  descriptionZh: "变成精英级的暗黑艺术后腰：为掐断反击、精通战术犯规、住进对手脑子里而生。｜适合：CDM 专用，+30 OVR，六条线几乎全加。",
   cost: '600 FUTTIES Tokens / 175,000 Coins',
   requirements: {
     maxOvr: 96,

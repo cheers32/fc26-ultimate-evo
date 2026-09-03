@@ -12,7 +12,7 @@ export const deadballMastery1061: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1061/deadball-mastery',
   version: 'FC 26',
   description: 'Only applicable to Diego Forlan',
-  descriptionZh: "【准入】OVR ≤99，PS+ ≤3。【收益】射门线 2 项（最高 +50）、传球线 3 项（最高 +50）；PlayStyle+ 1 个（Dead Ball）。【其他】1 级 · Objective Reward。",
+  descriptionZh: "仅适用于迭戈·弗兰。｜适合：只有弗兰能用，给定位球线和 Dead Ball，任意球专精。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 99,

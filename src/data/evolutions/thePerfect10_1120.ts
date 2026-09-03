@@ -6,7 +6,7 @@ export const thePerfect10_1120: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1120/the-perfect-10',
   version: 'FC 26',
   description: 'Transform into a true playmaker who controls the tempo and delivers in the decisive moments. Become crafted for flawless control, pure class and footballing perfection.',
-  descriptionZh: "【准入】CAM 专用，OVR ≤95，PS+ ≤4。【收益】OVR +50（顶 98）；速度线 2 项（最高 +40）、射门线 6 项（最高 +50）、传球线 6 项（最高 +50）、盘带线 6 项（最高 +50）、防守线 1 项（最高 +50）、身体线 4 项（最高 +50）；花式 +4；PlayStyle+ 4 个（Incisive Pass、Finesse Shot、Technical、First Touch）；稀有度改为 National Pride。【其他】5 级 · 1000 FUTTIES Tokens。",
+  descriptionZh: "变成真正的组织者，掌控节奏并在决定性时刻交出答案。为完美的控制、纯粹的格调和足球意义上的完美而打造。｜适合：CAM 专用，+50 OVR，六线全加，前腰的顶级改造。",
   cost: '1000 FUTTIES Tokens',
   requirements: {
     maxOvr: 95,

@@ -6,7 +6,7 @@ export const tooBasic1205: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1205/too-basic',
   version: 'FC 26',
   description: "Master the fundamentals and prove that the most effective strategy is often the most direct. Some call it basic, we call it brilliant. Found in the FUTTIES Token Store.",
-  descriptionZh: "【准入】OVR ≤96。【收益】OVR +5（顶 97）；速度线 1 项（最高 +15）、射门线 3 项（最高 +15）、传球线 4 项（最高 +15）、盘带线 4 项（最高 +15）、防守线 3 项（最高 +15）、身体线 1 项（最高 +15）；弱脚 +4；花式 +4。【其他】3 级 · 100 FUTTIES Tokens。",
+  descriptionZh: "精通基本功，证明最有效的策略往往是最直接的。有人叫它基础，我们叫它出色。来自 FUTTIES 代币商店。｜适合：任何位置，六条线小幅全加。",
   cost: '100 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

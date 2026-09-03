@@ -7,7 +7,7 @@ export const thePivotPoint1245: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'The ultimate link. Turn your player into a midfield mastermind who shuts down opposition attacks and dictates the tempo going forward.',
-  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +2（顶 99）；速度线 2 项（最高 +3）、传球线 6 项（最高 +3）、盘带线 6 项（最高 +2）、防守线 5 项（最高 +6）、身体线 4 项（最高 +5）；PlayStyle 5 个（Intercept、Pinged Pass、Bruiser、Incisive Pass、Anticipate）。【其他】5 级 · 可重复 8 次 · Free。",
+  descriptionZh: "终极的纽带。把球员变成既能掐断对手进攻、又能掌控进攻节奏的中场大师。｜适合：非门将，五条线全加且可重复 8 次，是全库重复次数最多的。",
   cost: 'Free',
   requirements: {
     maxOvr: 97,

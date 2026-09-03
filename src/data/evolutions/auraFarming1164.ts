@@ -6,7 +6,7 @@ export const auraFarming1164: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1164/aura-farming',
   version: 'FC 26',
   description: 'Defending by vibes alone. Dropping into a delayed stance, backing off, and letting your reputation do the pressing.',
-  descriptionZh: "【准入】CB 专用，OVR ≤96，PS+ ≤3。【收益】OVR +50（顶 97）；速度线 2 项（最高 +50）、传球线 3 项（最高 +50）、盘带线 6 项（最高 +55）、防守线 5 项（最高 +50）、身体线 4 项（最高 +50）；弱脚 +4；花式 +4；PlayStyle+ 3 个（Intercept+、Anticipate+、Bruiser+）；PlayStyle 3 个（Pinged Pass、Quick Step、Block）。【其他】5 级 · SBC Set Reward。",
+  descriptionZh: "纯靠气场防守：延迟站位、后退、让名气替你压迫。｜适合：CB 专用，+50 OVR，改造幅度极大。",
   cost: 'SBC Set Reward',
   requirements: {
     maxOvr: 96,

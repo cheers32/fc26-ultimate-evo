@@ -6,7 +6,7 @@ export const immovableObject1110: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1110/immovable-object',
   version: 'FC 26',
   description: 'Give your player the strength to hold the line. Improve defensive positioning, elevate physical presence, and bring composure to every challenge.',
-  descriptionZh: "【准入】OVR ≤93。【收益】OVR +3（顶 96）；速度线 2 项（最高 +5）、传球线 2 项（最高 +5）、盘带线 4 项（最高 +5）、防守线 5 项（最高 +6）、身体线 4 项（最高 +3）；PlayStyle 5 个（Intercept、Bruiser、Anticipate、Aerial Fortress、Long Ball Pass）。【其他】4 级 · 可重复 3 次 · Season 9 Level 1 Reward。",
+  descriptionZh: "给球员守住防线的力量：改善防守站位、提升身体存在感、在每次对抗中保持冷静。｜适合：任何位置，防守身体线为主，也常被当作链路中间的过桥。",
   cost: 'Season 9 Level 1 Reward',
   requirements: {
     maxOvr: 93,

@@ -6,7 +6,7 @@ export const cbShift1188: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1188/cb-shift',
   version: 'FC 26',
   description: 'Apply the CB position to any qualified player.',
-  descriptionZh: "【准入】非 CB，OVR ≤96。【收益】加位置 CB。【其他】1 级 · Objective Reward。",
+  descriptionZh: "给任何合格球员加上中卫位置。｜适合：任何非中卫，纯改位置。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

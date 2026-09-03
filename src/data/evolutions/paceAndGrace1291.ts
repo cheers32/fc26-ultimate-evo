@@ -19,7 +19,7 @@ export const paceAndGrace1291: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1291/pace--grace',
   version: 'FC 26',
   description: 'Inject lethal velocity and effortless elegance, boosting raw speed and close control to glide past defenders.',
-  descriptionZh: "【准入】OVR ≤97。【收益】OVR +3（顶 99）；速度线 2 项（最高 +5）、盘带线 6 项（最高 +10）；弱脚 +4；花式 +4。【其他】2 级 · 可重复 2 次 · Free。",
+  descriptionZh: "注入致命的速度与轻松的优雅，提升原始速度和贴身控球，让你滑过后卫。｜适合：任何位置，门槛最低（只看 OVR），可重复 2 次，第二级给整个盘带块 +10。",
   cost: 'Free',
   requirements: {
     maxOvr: 97

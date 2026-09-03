@@ -6,7 +6,7 @@ export const lwShift1193: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1193/lw-shift',
   version: 'FC 26',
   description: 'Apply the LW Position to any player.',
-  descriptionZh: "【准入】OVR ≤96。【收益】加位置 LW。【其他】1 级 · Objective Reward。",
+  descriptionZh: "给任何球员加上 LW 位置。｜适合：任何位置，纯改位置。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

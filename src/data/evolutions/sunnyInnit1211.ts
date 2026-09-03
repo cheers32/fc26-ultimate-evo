@@ -6,7 +6,7 @@ export const sunnyInnit1211: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1211/sunny-innit',
   version: 'FC 26',
   description: "Y'alright Neymar, sunny innit?",
-  descriptionZh: "【准入】LW/RW 专用，OVR ≤96，PS+ ≤4。【收益】OVR +25（顶 98）；速度线 2 项（最高 +25）、射门线 6 项（最高 +25）、传球线 5 项（最高 +25）、盘带线 6 项（最高 +25）；弱脚 +4；花式 +4；PlayStyle+ 4 个（Finesse Shot、Technical、Low Driven Shot、Quick Step）；PlayStyle 3 个（Incisive Pass、Trickster、Rapid）。【其他】5 级 · 200 FUTTIES Tokens。",
+  descriptionZh: "你还好吧内马尔，今天天气不错吧？｜适合：LW/RW 专用，+25 OVR。",
   cost: '200 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

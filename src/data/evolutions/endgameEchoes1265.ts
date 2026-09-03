@@ -12,7 +12,7 @@ export const endgameEchoes1265: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1265/endgame-echoes',
   version: 'FC 26',
   description: 'Found in the store.',
-  descriptionZh: "【准入】CDM/CM 专用，OVR ≤97。【收益】OVR +30（顶 98）；速度面板 +30（顶 96）；射门面板 +30（顶 96）；防守面板 +30（顶 99）；传球线 6 项（最高 +35）、盘带线 6 项（最高 +35）、身体线 4 项（最高 +30）；弱脚 +4；花式 +4。【其他】可重复 2 次 · 250 FC Points / 100,000 Coins。",
+  descriptionZh: "来自商店。｜适合：CDM/CM 专用，+30 OVR 加三个面板 +30，可重复 2 次，中场的大改造。",
   cost: '250 FC Points / 100,000 Coins',
   requirements: {
     maxOvr: 97,

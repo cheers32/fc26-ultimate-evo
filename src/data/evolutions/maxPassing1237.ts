@@ -14,7 +14,7 @@ export const maxPassing1237: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1237/max-passing',
   version: 'FC 26',
   description: 'Boost your player to 99 Passing. Season 10 level 27 reward.',
-  descriptionZh: "【准入】非 GK，OVR ≤98。【收益】OVR +2（顶 99）；传球面板 +98（顶 99）。【其他】1 级 · Season 10 — Level 27 Reward。",
+  descriptionZh: "把球员的传球提升到 99。赛季 10 等级 27 奖励。｜适合：非门将，传球面板填满，中场首选，应放链路最后。",
   cost: 'Season 10 — Level 27 Reward',
   requirements: {
     maxOvr: 98,

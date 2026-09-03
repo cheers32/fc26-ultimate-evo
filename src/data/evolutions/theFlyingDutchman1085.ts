@@ -6,7 +6,7 @@ export const theFlyingDutchman1085: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1085/the-flying-dutchman',
   version: 'FC 26',
   description: 'Found in the Netherlands/Portugal Objective',
-  descriptionZh: "【准入】ST/CAM 专用，OVR ≤93，PS+ ≤3。【收益】OVR +25（顶 95）；速度线 2 项（最高 +30）、射门线 5 项（最高 +30）、传球线 4 项（最高 +30）、盘带线 6 项（最高 +30）、身体线 1 项（最高 +30）；弱脚 +4；花式 +4；PlayStyle+ 2 个（Finesse Shot、Incisive Pass）；PlayStyle 3 个（Technical、First Touch、Trickster）。【其他】5 级 · Objective Reward。",
+  descriptionZh: "来自 Netherlands/Portugal 目标。｜适合：ST/CAM，+25 OVR。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 93,

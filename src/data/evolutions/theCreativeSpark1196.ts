@@ -6,7 +6,7 @@ export const theCreativeSpark1196: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1196/the-creative-spark',
   version: 'FC 26',
   description: 'Found in SBCs.',
-  descriptionZh: "【准入】非 ST，OVR ≤96，PS+ ≤4。【收益】OVR +4（顶 97）；速度面板 +4（顶 94）；防守面板 +3（顶 93）；身体面板 +3（顶 94）；射门线 4 项（最高 +6）、传球线 6 项（最高 +7）、盘带线 6 项（最高 +7）；弱脚 +4；花式 +3；PlayStyle 4 个（Pinged Pass、Incisive Pass、Tiki Taka、Long Ball Pass）。【其他】5 级 · SBC Set Reward。",
+  descriptionZh: "来自 SBC。｜适合：除中锋外都行，射门传球盘带三线全加。",
   cost: 'SBC Set Reward',
   requirements: {
     maxOvr: 96,
