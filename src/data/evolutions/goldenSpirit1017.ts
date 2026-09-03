@@ -1,11 +1,24 @@
 import { EvolutionDefinition } from '../../types/player';
 
+/**
+ * The game calls this Golden Sprint; FUTBIN files it as Golden Spirit, which is where the name here
+ * came from and why it read as a missing evo when the two were matched by name. Everything else
+ * lines up level for level against the game's own Rewards tab, so they are one evo, not two, and
+ * `futbinLink` keeps FUTBIN's spelling because that is the page it points at.
+ *
+ * Reactions was recorded as +35 in game and +25 here, which is the only number that was wrong.
+ *
+ * Its caps are what date it — 90 to 95 across the board against the 97s and 98s the current evos
+ * hand out — so it is a way to make a low-90s card usable rather than anything for an end-game one,
+ * which the OVR ceiling of 91 says too. The exclusion is worth reading twice: not CB *or* CM, which
+ * rules out the spine and leaves the flanks and the front line.
+ */
 export const goldenSpirit1017: EvolutionDefinition = {
   id: '1017',
-  name: 'Golden Spirit',
+  name: 'Golden Sprint',
   futbinLink: 'https://www.futbin.com/26/evolutions/1017/golden-spirit',
   version: 'FC 26',
-  description: 'Found in the Saudi Arabia Objective',
+  description: 'Blazing acceleration meets ruthless directness. Built to stretch back lines, win foot races, and turn half-chances into goals. Found in the Saudi Arabia Objective.',
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,
@@ -28,7 +41,7 @@ export const goldenSpirit1017: EvolutionDefinition = {
     longShots: { boost: 25, limit: 90 },
     penalties: { boost: 25, limit: 93 },
     positioning: { boost: 25, limit: 94 },
-    reactions: { boost: 25, limit: 92 },
+    reactions: { boost: 35, limit: 92 },
     shortPass: { boost: 25, limit: 93 },
     freekick: { boost: 25, limit: 92 },
     shotPower: { boost: 25, limit: 90 },
@@ -75,7 +88,7 @@ export const goldenSpirit1017: EvolutionDefinition = {
     {
       name: 'Level 5',
       upgrades: [
-        'Balance +35 (92)', 'Reactions +25 (92)',
+        'Balance +35 (92)', 'Reactions +35 (92)',
         'PlayStyle+: Quick Step (3)', 'PlayStyle: Finesse Shot (8)'
       ]
     }
