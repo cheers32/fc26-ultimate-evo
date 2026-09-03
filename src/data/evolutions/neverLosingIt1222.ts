@@ -6,6 +6,7 @@ export const neverLosingIt1222: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1222/never-losing-it',
   version: 'FC 26',
   description: 'Found in the Gauntlet.',
+  descriptionZh: "【准入】CM 专用，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 97）；射门线 1 项（最高 +30）、传球线 3 项（最高 +30）、盘带线 5 项（最高 +40）、防守线 4 项（最高 +30）、身体线 3 项（最高 +40）；花式 +3；PlayStyle+ 3 个（Intercept、Pinged Pass、Bruiser）；PlayStyle 3 个（Tiki Taka、Incisive Pass、Press Proven）。【其他】4 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

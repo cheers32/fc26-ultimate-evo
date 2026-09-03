@@ -6,6 +6,7 @@ export const unstoppableForce1111: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1111/unstoppable-force',
   version: 'FC 26',
   description: 'Give your player the power to overwhelm any back line. Increase attacking presence, sharpen movement in the final third, and turn pressure into consistent goal threat.',
+  descriptionZh: "【准入】非 CB，OVR ≤94。【收益】OVR +3（顶 97）；速度线 2 项（最高 +5）、射门线 6 项（最高 +3）、传球线 6 项（最高 +3）、盘带线 6 项（最高 +5）、身体线 1 项（最高 +3）；PlayStyle 5 个（Rapid、Incisive Pass、Finesse Shot、Low Driven Shot、Pinged Pass）。【其他】5 级 · 可重复 5 次 · Season 9 Level 2 Reward。",
   cost: 'Season 9 Level 2 Reward',
   requirements: {
     maxOvr: 94,

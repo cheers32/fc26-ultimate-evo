@@ -6,6 +6,7 @@ export const theLandlord1203: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1203/the-landlord',
   version: 'FC 26',
   description: 'Own the backline, collect every loose ball and make attackers pay rent for entering your space. Five PlayStyle+ upgrades turn your centre-back into the true landlord of the pitch.',
+  descriptionZh: "【准入】CB 专用，OVR ≤95，PS+ ≤4。【收益】OVR +15（顶 96）；速度线 2 项（最高 +15）、传球线 4 项（最高 +30）、盘带线 3 项（最高 +30）、防守线 5 项（最高 +25）、身体线 4 项（最高 +30）；弱脚 +4；花式 +4；PlayStyle+ 5 个（Bruiser、Pinged Pass、Block、Anticipate、Relentless）；PlayStyle 4 个（Aerial Fortress、Intercept、Slide Tackle、Jockey）；稀有度改为 Futties。【其他】5 级 · 500 FC Points / 250,000 Coins。",
   cost: '500 FC Points / 250,000 Coins',
   requirements: {
     maxOvr: 95,

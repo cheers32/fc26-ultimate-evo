@@ -7,6 +7,7 @@ export const ninetySevenTimes1250: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'Become the ultimate all-rounder in this EVO, boosting every core attribute and pace while unlocking elite skill moves and a perfect weak foot to dominate the pitch.',
+  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +4（顶 98）；射门面板 +4（顶 97）；传球面板 +4（顶 98）；盘带面板 +4（顶 97）；防守面板 +4（顶 97）；身体面板 +4（顶 97）；速度线 2 项（最高 +4）；弱脚 +4；花式 +4。【其他】2 级 · 150 FC Points / 50,000 Coins。",
   cost: '150 FC Points / 50,000 Coins',
   requirements: {
     maxOvr: 97,

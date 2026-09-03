@@ -14,7 +14,8 @@ export const theTenant1281: EvolutionDefinition = {
   name: 'The Tenant',
   futbinLink: 'https://www.futbin.com/26/evolutions/1281/the-tenant',
   version: 'FC 26',
-  description: 'Found in the store.',
+  description: "Set up camp in front of goal. Boost your player's offensive arsenal to constantly exploit spaces, force mistakes, and keep the defense pinned back. Found in the store.",
+  descriptionZh: "【准入】非 GK，OVR ≤96。【收益】OVR +10（顶 98）；速度线 2 项（最高 +25）、射门线 5 项（最高 +20）、传球线 5 项（最高 +20）、盘带线 5 项（最高 +20）；花式 +4。【其他】3 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

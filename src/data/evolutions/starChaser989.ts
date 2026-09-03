@@ -6,6 +6,7 @@ export const starChaser989: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/989/star-chaser',
   version: 'FC 26',
   description: 'Built for the fast lane. Lock down attackers with relentless defending and explosive pace that leaves challengers in the dust.',
+  descriptionZh: "【准入】OVR ≤91，PS+ ≤3。【收益】OVR +3（顶 93）；速度线 2 项（最高 +10）、防守线 5 项（最高 +10）；弱脚 +4；PlayStyle+ 2 个（Quick Step、Jockey）；PlayStyle 4 个（Intercept、Anticipate、Aerial Fortress、Inventive）。【其他】3 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

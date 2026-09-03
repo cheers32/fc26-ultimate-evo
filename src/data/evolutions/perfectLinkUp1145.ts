@@ -6,6 +6,7 @@ export const perfectLinkUp1145: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1145/perfect-link-up',
   version: 'FC 26',
   description: 'Build smarter play with quick thinking and short passes.',
+  descriptionZh: "【准入】OVR ≤94，PS+ ≤3。【收益】OVR +1（顶 99）；传球线 3 项（最高 +20）；PlayStyle+ 2 个（Pinged Pass、Incisive Pass）。【其他】1 级 · Objective Reward。",
   cost: 'Objective Reward',
   defaultDisabled: true,
   requirements: {

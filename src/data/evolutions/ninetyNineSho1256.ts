@@ -12,6 +12,7 @@ export const ninetyNineSho1256: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1256/99-sho',
   version: 'FC 26',
   description: 'Give 99 Shooting to any eligible player. Sold in a Store pack.',
+  descriptionZh: "【准入】LW/ST/RW 专用，OVR ≤96。【收益】OVR +4（顶 98）；射门线 6 项（最高 +99）。【其他】2 级 · Store Pack。",
   cost: 'Store Pack',
   requirements: {
     maxOvr: 96,

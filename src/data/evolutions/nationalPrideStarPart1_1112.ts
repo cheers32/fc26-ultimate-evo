@@ -6,6 +6,7 @@ export const nationalPrideStarPart1_1112: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1112/make-your-national-pride-star-part-1',
   version: 'FC 26',
   description: "Inspired by the world's greatest international competitions, this Evolution brings elite prestige as you upgrade your player on their path to becoming a 5 PS+ superstar. Complete Part 1 to earn a comprehensive attribute upgrade and unlock the National Pride PlayStyles Lab.",
+  descriptionZh: "【准入】OVR ≤94，PS+ ≤3。【收益】OVR +50（顶 95）；速度线 2 项（最高 +50）、射门线 5 项（最高 +50）、传球线 4 项（最高 +55）、盘带线 5 项（最高 +55）、防守线 4 项（最高 +50）、身体线 3 项（最高 +50）；稀有度改为 National Pride。【其他】4 级 · Season 9 Level 1 Reward。",
   cost: 'Season 9 Level 1 Reward',
   requirements: {
     maxOvr: 94,

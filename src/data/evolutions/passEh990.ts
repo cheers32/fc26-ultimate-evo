@@ -6,6 +6,7 @@ export const passEh990: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/990/pass-eh',
   version: 'FC 26',
   description: 'Slice open defenses with pinpoint vision and effortless distribution that keeps the attack flowing.',
+  descriptionZh: "【准入】OVR ≤91。【收益】OVR +1（顶 99）；传球线 6 项（最高 +7）；弱脚 +4；PlayStyle 4 个（Tiki Taka、Incisive Pass、Pinged Pass、Inventive）。【其他】2 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

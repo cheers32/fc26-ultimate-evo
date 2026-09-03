@@ -15,6 +15,7 @@ export const futtiesFinale1264: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1264/futties-finale',
   version: 'FC 26',
   description: 'Unleash pure attacking power. Elevate your forward with elite upgrades to shooting, passing and dribbling for the final whistle of the summer.',
+  descriptionZh: "【准入】非 GK，OVR ≤97，PS+ ≤4。【收益】OVR +5（顶 98）；射门面板 +10（顶 96）；传球面板 +10（顶 98）；盘带面板 +10（顶 98）；弱脚 +4；花式 +4；PlayStyle+ 1 个（Incisive Pass）。【其他】1 级 · 150 FC Points / 50,000 Coins。",
   cost: '150 FC Points / 50,000 Coins',
   requirements: {
     maxOvr: 97,

@@ -6,6 +6,7 @@ export const threadTheNeedle1157: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1157/thread-the-needle',
   version: 'FC 26',
   description: 'Thread the needle with precision by equipping your player with a collection of passing PlayStyles.',
+  descriptionZh: "【准入】OVR ≤96，PS+ ≤3。【收益】PlayStyle+ 4 个（Incisive Pass+、Pinged Pass+、Tiki Taka+、Long Ball Pass+）。【其他】1 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

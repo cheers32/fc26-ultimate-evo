@@ -6,6 +6,7 @@ export const maxSweat1201: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1201/max-sweat',
   version: 'FC 26',
   description: 'Found in the FUTTIES Daily Login Objective.',
+  descriptionZh: "【准入】RW 专用，非 CB，OVR ≤96，PS+ ≤3。【收益】OVR +30（顶 97）；速度线 2 项（最高 +30）、射门线 6 项（最高 +30）、传球线 5 项（最高 +30）、盘带线 6 项（最高 +30）、身体线 2 项（最高 +20）；弱脚 +3；花式 +5；PlayStyle+ 4 个（Quick Step、Rapid、Finesse Shot、Low Driven Shot）；PlayStyle 3 个（Incisive Pass、Technical、Pinged Pass）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 96,

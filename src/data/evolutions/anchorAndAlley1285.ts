@@ -16,6 +16,7 @@ export const anchorAndAlley1285: EvolutionDefinition = {
   description:
     'Provide total structural stability with crunching tackles, unyielding physical presence, and ' +
     'the vision to spring your team forward.',
+  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +5（顶 99）；传球线 4 项（最高 +20）、防守线 4 项（最高 +20）、身体线 3 项（最高 +20）。【其他】2 级 · 可重复 2 次 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 97,

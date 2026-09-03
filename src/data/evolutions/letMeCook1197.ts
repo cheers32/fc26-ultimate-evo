@@ -6,6 +6,7 @@ export const letMeCook1197: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1197/let-me-cook',
   version: 'FC 26',
   description: 'Move your wide player into the center of the pitch with massive upgrades to passing and dribbling. Get them on the ball and let them cook.',
+  descriptionZh: "【准入】LM/RM 专用，OVR ≤96，PS+ ≤4。【收益】OVR +20（顶 97）；速度线 2 项（最高 +30）、射门线 2 项（最高 +20）、传球线 6 项（最高 +30）、盘带线 6 项（最高 +30）；花式 +4；PlayStyle+ 4 个（Incisive Pass、Finesse Shot、Pinged Pass、Tiki Taka）；PlayStyle 4 个（Quick Step、Low Driven Shot、First Touch、Press Proven）；加位置 CAM。【其他】5 级 · 500 Tokens / 150,000 Coins。",
   cost: '500 Tokens / 150,000 Coins',
   requirements: {
     maxOvr: 96,

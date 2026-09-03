@@ -14,6 +14,7 @@ export const maxPace1236: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1236/max-pace',
   version: 'FC 26',
   description: 'Boost your player to 99 Pace. Season 10 level 28 reward.',
+  descriptionZh: "【准入】非 GK，OVR ≤99。【收益】OVR +2（顶 99）；速度面板 +98（顶 99）。【其他】1 级 · Season 10 — Level 28 Reward。",
   cost: 'Season 10 — Level 28 Reward',
   requirements: {
     maxOvr: 99,

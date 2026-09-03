@@ -6,6 +6,7 @@ export const apexAttacker1247: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1247/apex-attacker',
   version: 'FC 26',
   description: 'Give a player all the tools they need to become a World Class Striker.',
+  descriptionZh: "【准入】OVR ≤97，PS+ ≤4。【收益】弱脚 +4；花式 +4；PlayStyle+ 5 个（Finesse Shot、Low Driven Shot、Incisive Pass、Rapid、Technical）；加位置 ST。【其他】2 级 · Objective Reward — Score in 25。",
   cost: 'Objective Reward — Score in 25',
   requirements: {
     maxOvr: 97,

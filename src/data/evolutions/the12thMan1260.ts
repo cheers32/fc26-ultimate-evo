@@ -11,6 +11,7 @@ export const the12thMan1260: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1260/the-12th-man',
   version: 'FC 26',
   description: 'Celebrate 12 years of FUTTIES with this Evolution. Unlocked by the FUTTIES #12 objective group, in Objectives → Campaign.',
+  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +12（顶 98）；速度面板 +12（顶 96）；射门面板 +12（顶 98）；传球面板 +12（顶 97）；盘带面板 +12（顶 97）；防守面板 +12（顶 95）；身体面板 +12（顶 96）。【其他】1 级 · Objective Group Reward。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 97,

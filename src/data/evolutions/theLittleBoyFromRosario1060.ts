@@ -6,6 +6,7 @@ export const theLittleBoyFromRosario1060: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1060/the-little-boy-from-rosario',
   version: 'FC 26',
   description: 'Harness the powers of a generational talent with unmatched dribbling, inch-perfect through balls, and a magical left foot',
+  descriptionZh: "【准入】RW/RM/ST 专用，OVR ≤92，PS+ ≤3。【收益】OVR +25（顶 94）；射门线 6 项（最高 +35）、传球线 6 项（最高 +35）、盘带线 6 项（最高 +35）、身体线 1 项（最高 +35）；PlayStyle+ 3 个（Tiki Taka、Incisive Pass、Finesse Shot）；PlayStyle 4 个（Quick Step、Pinged Pass、Technical、Inventive）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 92,

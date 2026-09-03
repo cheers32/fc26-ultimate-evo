@@ -6,6 +6,7 @@ export const shutdown1146: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1146/shutdown',
   version: 'FC 26',
   description: 'Take control, block attacks and win duels.',
+  descriptionZh: "【准入】OVR ≤94，PS+ ≤3。【收益】OVR +1（顶 99）；防守线 3 项（最高 +20）；PlayStyle+ 2 个（Jockey、Anticipate）。【其他】1 级 · Objective Reward。",
   cost: 'Objective Reward',
   defaultDisabled: true,
   requirements: {

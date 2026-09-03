@@ -18,6 +18,7 @@ export const unboundTen1284: EvolutionDefinition = {
   description:
     'Unlock complete creative freedom for your attacking midfielder to shatter defensive blocks, ' +
     'score from anywhere, and orchestrate every attack.',
+  descriptionZh: "【准入】CAM 专用，OVR ≤98。【收益】OVR +20（顶 99）；射门面板 +30（顶 98）；盘带面板 +30（顶 99）；速度线 2 项（最高 +30）、传球线 6 项（最高 +30）、身体线 3 项（最高 +30）；弱脚 +4；花式 +4。【其他】3 级 · 250 FC Points / 75,000 Coins。",
   cost: '250 FC Points / 75,000 Coins',
   requirements: {
     maxOvr: 98,

@@ -6,6 +6,7 @@ export const autoDefender1186: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1186/auto-defender',
   version: 'FC 26',
   description: 'Sit back, relax, let the defenders do the job for you.',
+  descriptionZh: "【准入】OVR ≤96，PS+ ≤4。【收益】OVR +1（顶 99）；盘带线 2 项（最高 +10）、防守线 5 项（最高 +10）、身体线 2 项（最高 +10）；弱脚 +4；花式 +3；PlayStyle+ 3 个（Anticipate、Intercept、Jockey）。【其他】3 级 · 100 FUTTIES Tokens。",
   cost: '100 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

@@ -16,6 +16,7 @@ export const instantMagnet1263: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1263/instant-magnet',
   version: 'FC 26',
   description: 'Unlocked by completing the FUTTIES EVO Fun! objective, in Objectives → Campaign.',
+  descriptionZh: "【准入】OVR ≤97，PS+ ≤4。【收益】OVR +1（顶 98）；速度面板 +1（顶 98）；射门面板 +1（顶 98）；传球面板 +2（顶 98）；盘带面板 +2（顶 98）；防守面板 +1（顶 98）；身体面板 +1（顶 98）；花式 +4；PlayStyle+ 1 个（First Touch）。【其他】2 级 · Free / Objective。",
   cost: 'Free / Objective',
   requirements: {
     maxOvr: 97,

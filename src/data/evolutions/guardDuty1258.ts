@@ -10,6 +10,7 @@ export const guardDuty1258: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1258/guard-duty',
   version: 'FC 26',
   description: 'Found in the Upgrades section of SBCs.',
+  descriptionZh: "【准入】OVR ≤97，PS+ ≤4。【收益】OVR +7（顶 98）；速度线 2 项（最高 +10）、传球线 2 项（最高 +10）、盘带线 4 项（最高 +15）、防守线 5 项（最高 +12）、身体线 4 项（最高 +8）；弱脚 +4；PlayStyle+ 3 个（Intercept、Aerial Fortress、Jockey）；PlayStyle 3 个（Bruiser、Anticipate、Pinged Pass）。【其他】4 级 · SBC Set Reward。",
   cost: 'SBC Set Reward',
   requirements: {
     maxOvr: 97,

@@ -7,6 +7,7 @@ export const backShortly1221: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'Some full backs change the game at both ends. Evolve your player and develop the attacking and defensive qualities that make them a constant threat.',
+  descriptionZh: "【准入】LB 专用，OVR ≤95，PS+ ≤4。【收益】OVR +15（顶 96）；速度线 2 项（最高 +20）、射门线 5 项（最高 +25）、传球线 5 项（最高 +25）、防守线 5 项（最高 +20）；弱脚 +4；花式 +4；PlayStyle+ 3 个（Anticipate、Pinged Pass、Rapid）；PlayStyle 3 个（Low Driven Shot、Finesse Shot、Intercept）。【其他】5 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

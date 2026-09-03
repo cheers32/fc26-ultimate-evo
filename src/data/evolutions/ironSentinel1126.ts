@@ -6,6 +6,7 @@ export const ironSentinel1126: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1126/iron-sentinel',
   version: 'FC 26',
   description: 'Forge a midfield enforcer with elite tackling, strength, stamina, and composure. The Iron Sentinel shuts down attacks and controls the game from deep.',
+  descriptionZh: "【准入】CDM 专用，OVR ≤94，PS+ ≤3。【收益】OVR +25（顶 96）；速度线 2 项（最高 +25）、传球线 5 项（最高 +25）、盘带线 6 项（最高 +30）、防守线 5 项（最高 +40）、身体线 4 项（最高 +40）；弱脚 +4；PlayStyle+ 4 个（Intercept、Pinged Pass、Bruiser、Tiki Taka）；PlayStyle 3 个（Incisive Pass、Block、Long Ball Pass）。【其他】5 级 · 400 Tokens / 75,000 Coins。",
   cost: '400 Tokens / 75,000 Coins',
   defaultDisabled: true,
   requirements: {

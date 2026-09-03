@@ -6,6 +6,7 @@ export const theEgyptianKing1029: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1029/the-egyptian-king',
   version: 'FC 26',
   description: "Channel Mohamed Salah's explosive pace, razor-sharp dribbling, and ice-cold finishing to deliver greatness fit for the king.",
+  descriptionZh: "【准入】RW 专用，OVR ≤91，PS+ ≤3。【收益】OVR +20（顶 93）；速度线 2 项（最高 +30）、射门线 6 项（最高 +35）、传球线 5 项（最高 +30）、盘带线 6 项（最高 +35）、身体线 1 项（最高 +30）；PlayStyle+ 2 个（Finesse Shot、Quick Step）；PlayStyle 4 个（Technical、Rapid、Low Driven Shot、Tiki Taka）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

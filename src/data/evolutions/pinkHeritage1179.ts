@@ -6,6 +6,7 @@ export const pinkHeritage1179: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1179/pink-heritage',
   version: 'FC 26',
   description: 'Bring back the unforgettable pink card aura of a fan favourite Ukrainian winger.',
+  descriptionZh: "【准入】LW/LM 专用，非 CB，OVR ≤96，PS+ ≤3。【收益】OVR +30（顶 97）；速度线 2 项（最高 +35）、射门线 6 项（最高 +35）、传球线 4 项（最高 +30）、盘带线 6 项（最高 +35）、身体线 1 项（最高 +30）；弱脚 +3；花式 +4；PlayStyle+ 4 个（Finesse Shot、Rapid、Technical、Low Driven Shot）；PlayStyle 4 个（Incisive Pass、Quick Step、Gamechanger、Pinged Pass）。【其他】5 级 · Objective Group Reward。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 96,

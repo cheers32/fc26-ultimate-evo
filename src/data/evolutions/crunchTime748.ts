@@ -6,6 +6,7 @@ export const crunchTime748: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/748/crunch-time',
   version: 'FC 26',
   description: 'Become built for the moments that can decide a match with Bruiser+ and a defensive boost.',
+  descriptionZh: "【准入】非 GK，OVR ≤91，PS+ ≤2。【收益】防守面板 +2（顶 92）；PlayStyle+ 1 个（Bruiser）。【其他】2 级 · Objective Group Reward — Unbreakable。",
   cost: 'Objective Group Reward — Unbreakable',
   requirements: {
     maxOvr: 91,

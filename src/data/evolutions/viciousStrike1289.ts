@@ -17,6 +17,7 @@ export const viciousStrike1289: EvolutionDefinition = {
   description:
     'No mercy in the box. Unleash devastating power in front of goal and punish the opposition ' +
     'with clinical finishes every time they leave you space.',
+  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +5（顶 99）；速度线 2 项（最高 +20）、射门线 3 项（最高 +20）、传球线 4 项（最高 +20）、盘带线 3 项（最高 +20）。【其他】2 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 97,

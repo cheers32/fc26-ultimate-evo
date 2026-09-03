@@ -18,6 +18,7 @@ export const flipTheSwitch1292: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
   description: 'Turn defensive stops straight into positive momentum. Refine your player’s ability to shut down attacks, keep the ball under heavy pressure, and dictate the tempo from deep.',
+  descriptionZh: "【准入】OVR ≤97。【收益】OVR +2（顶 98）；传球面板 +5（顶 98）；盘带面板 +5（顶 98）；防守面板 +5（顶 97）；弱脚 +4；花式 +4。【其他】1 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 97

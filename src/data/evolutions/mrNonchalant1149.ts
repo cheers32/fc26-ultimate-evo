@@ -6,6 +6,7 @@ export const mrNonchalant1149: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1149/mr-nonchalant',
   version: 'FC 26',
   description: 'Cool under pressure, smooth on the ball. Glide past defenders, pick the perfect pass, and finish with confidence. No rush, no panic, just pure class.',
+  descriptionZh: "【准入】CAM 专用，OVR ≤94，PS+ ≤3。【收益】OVR +20（顶 95）；速度线 2 项（最高 +25）、射门线 3 项（最高 +15）、传球线 6 项（最高 +30）、盘带线 6 项（最高 +30）；花式 +4；PlayStyle+ 4 个（Technical、Finesse Shot、Incisive Pass、Rapid）；PlayStyle 3 个（Tiki Taka、Pinged Pass、Inventive）；加位置 RW。【其他】5 级 · 500 Tokens / 175,000 Coins。",
   cost: '500 Tokens / 175,000 Coins',
   defaultDisabled: true,
   requirements: {

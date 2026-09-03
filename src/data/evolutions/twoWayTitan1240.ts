@@ -7,6 +7,7 @@ export const twoWayTitan1240: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'Dominate both halves. Upgrade your player into an unstoppable powerhouse who rules the defence and seamlessly transitions into the attack.',
+  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +5（顶 98）；速度面板 +5（顶 96）；射门面板 +3（顶 94）；传球面板 +5（顶 97）；盘带面板 +5（顶 96）；防守面板 +6（顶 98）；身体面板 +6（顶 98）；弱脚 +4；花式 +4。【其他】2 级 · 可重复 5 次 · Season 10 — Level 1 Reward。",
   cost: 'Season 10 — Level 1 Reward',
   requirements: {
     maxOvr: 97,

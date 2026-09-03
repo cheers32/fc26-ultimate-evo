@@ -14,6 +14,7 @@ export const maxShooting1238: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1238/max-shooting',
   version: 'FC 26',
   description: 'Upgrade a player to 99 Shooting. Season 10 level 21 reward.',
+  descriptionZh: "【准入】非 GK，OVR ≤98。【收益】OVR +2（顶 99）；射门面板 +98（顶 99）。【其他】1 级 · Season 10 — Level 21 Reward。",
   cost: 'Season 10 — Level 21 Reward',
   requirements: {
     maxOvr: 98,

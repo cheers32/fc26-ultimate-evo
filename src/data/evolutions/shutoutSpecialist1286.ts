@@ -18,6 +18,7 @@ export const shutoutSpecialist1286: EvolutionDefinition = {
   description:
     'Found in the Pre Season Token Store. Bully opposition attackers off the ball, burst through ' +
     'tight midfield scrambles, and completely nullify every counterattack to secure the clean sheet.',
+  descriptionZh: "【准入】非 GK，OVR ≤98。【收益】OVR +10（顶 99）；盘带线 3 项（最高 +30）、防守线 5 项（最高 +32）、身体线 4 项（最高 +32）。【其他】2 级 · Tokens — 100 Pre Season Tokens。",
   cost: 'Tokens — 100 Pre Season Tokens',
   requirements: {
     maxOvr: 98,

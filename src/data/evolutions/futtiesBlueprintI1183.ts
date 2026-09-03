@@ -6,6 +6,7 @@ export const futtiesBlueprintI1183: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1183/futties-blueprint-i',
   version: 'FC 26',
   description: 'The ultimate recipe to cook up a lethal, high-tier striker. Boost key stats to turn your midfield engine into a cold-blooded finisher.',
+  descriptionZh: "【准入】CAM 专用，OVR ≤96，PS+ ≤4。【收益】OVR +50（顶 97）；速度线 2 项（最高 +50）、射门线 6 项（最高 +50）、传球线 1 项（最高 +50）、盘带线 6 项（最高 +50）；弱脚 +4；PlayStyle+ 3 个（Finesse Shot+、Low Driven Shot+、Rapid+）；PlayStyle 5 个（Incisive Pass、Quick Step、Gamechanger、Technical、Tiki Taka）；加位置 ST；稀有度改为 Futties Evo。【其他】5 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

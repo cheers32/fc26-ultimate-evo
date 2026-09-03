@@ -6,6 +6,7 @@ export const iDoAbsolutes1034: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1034/i-do-absolutes',
   version: 'FC 26',
   description: 'No ifs, or maybes. Channel Sadio Mane\'s fearless direct play that made him one of the best football players in the world.',
+  descriptionZh: "【准入】LW 专用，OVR ≤91，PS+ ≤3。【收益】OVR +30（顶 93）；速度线 2 项（最高 +30）、射门线 6 项（最高 +30）、传球线 4 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 1 项（最高 +30）、身体线 2 项（最高 +30）；PlayStyle+ 2 个（Rapid、Low Driven Shot）；PlayStyle 5 个（Quick Step、Technical、Finesse Shot、Gamechanger、Aerial Fortress）；加位置 RM。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

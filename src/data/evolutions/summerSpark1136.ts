@@ -6,6 +6,7 @@ export const summerSpark1136: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1136/summer-spark',
   version: 'FC 26',
   description: "Turn up the heat and light up the pitch. Ignite your player's creativity with sharper dribbling, quicker turns, and pinpoint passing that slices through defences.",
+  descriptionZh: "【准入】非 GK，OVR ≤93，PS+ ≤3。【收益】OVR +1（顶 94）；传球线 4 项（最高 +6）、盘带线 6 项（最高 +6）；PlayStyle+ 2 个（Tiki Taka、Technical）；PlayStyle 2 个（Tiki Taka、Technical）。【其他】3 级 · Free。",
   cost: 'Free',
   defaultDisabled: true,
   requirements: {

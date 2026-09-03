@@ -6,6 +6,7 @@ export const leopardsRoar1032: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1032/leopards-roar',
   version: 'FC 26',
   description: 'Transform a defender into a fearless game-changer. Rock solid in defense, yet dangerous when charging forward.',
+  descriptionZh: "【准入】CB 专用，非 ST，OVR ≤91，PS+ ≤3。【收益】OVR +30（顶 93）；速度线 2 项（最高 +25）、射门线 6 项（最高 +50）、传球线 4 项（最高 +20）、盘带线 6 项（最高 +20）、防守线 1 项（最高 +40）、身体线 4 项（最高 +30）；弱脚 +4；PlayStyle+ 2 个（Quick Step、Intercept）；PlayStyle 3 个（Precision Header、Aerial Fortress、Low Driven Shot）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

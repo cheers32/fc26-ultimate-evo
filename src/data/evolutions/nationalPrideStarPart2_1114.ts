@@ -6,6 +6,7 @@ export const nationalPrideStarPart2_1114: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1114/make-your-national-pride-star-part-2',
   version: 'FC 26',
   description: "Inspired by the world's greatest international competitions, this Evolution brings elite prestige as you upgrade your player on their path to becoming a 5 PS+ superstar. Complete Part 2 to unlock additional attributes alongside maximum pace.",
+  descriptionZh: "【准入】OVR ≤95，OVR ≥95，PS+ ≤3。【收益】OVR +2（顶 97）；速度线 2 项（最高 +50）、射门线 1 项（最高 +10）、传球线 2 项（最高 +10）、盘带线 1 项（最高 +10）、身体线 1 项（最高 +10）；弱脚 +4；花式 +4。【其他】2 级 · Season 9 Level 14 Reward。",
   cost: 'Season 9 Level 14 Reward',
   requirements: {
     maxOvr: 95,

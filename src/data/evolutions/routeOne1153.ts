@@ -6,6 +6,7 @@ export const routeOne1153: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1153/route-one',
   version: 'FC 26',
   description: 'A simple shift to fix your defensive depth. Add the center back position to any player and give their defending stats the precise upgrade needed to anchor your backline.',
+  descriptionZh: "【准入】非 GK，OVR ≤95，PS+ ≤4。【收益】OVR +1（顶 96）；防守面板 +30（顶 95）；PlayStyle+ 2 个（Anticipate+、Pinged Pass+）；PlayStyle 2 个（Intercept、Block）；加位置 CB。【其他】1 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

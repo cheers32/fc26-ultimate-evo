@@ -6,6 +6,7 @@ export const culturedCommander1177: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1177/cultured-commander',
   version: 'FC 26',
   description: 'The most complete defenders do things others simply cannot. Evolve your CB and unlock the technical quality and commanding presence that makes them one of a kind.',
+  descriptionZh: "【准入】CB 专用，OVR ≤95，PS+ ≤4。【收益】OVR +3（顶 96）；传球面板 +2（顶 93）；盘带面板 +2（顶 93）；防守面板 +7（顶 96）；身体面板 +5（顶 96）；弱脚 +3；花式 +3；PlayStyle+ 3 个（Intercept+、Jockey+、Block+）；PlayStyle 3 个（Quick Step、Aerial Fortress、Anticipate）。【其他】2 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

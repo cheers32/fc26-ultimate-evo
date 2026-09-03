@@ -53,7 +53,15 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
               place it can be read: the pool card behind this has room for a name and a price and
               nothing else, and the chain workbench only shows the blurb for evos already in a
               chain — which is too late to be deciding whether you want the evo. */}
-          <p className="text-sm text-gray-400 leading-relaxed">{evo.description}</p>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-400 leading-relaxed">{evo.description}</p>
+            {/* The Chinese line is the one with the numbers in it — entry requirements, caps, levels,
+                price — so it sits under the blurb rather than replacing it, and the blurb stays as
+                the game words it for anyone cross-checking against FUTBIN. */}
+            {evo.descriptionZh && (
+              <p className="text-[13px] text-gray-500 leading-relaxed">{evo.descriptionZh}</p>
+            )}
+          </div>
 
           {/* Requirements */}
           <div>

@@ -6,6 +6,7 @@ export const oxygenTank1016: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1016/oxygen-tank',
   version: 'FC 26',
   description: 'Found in the Republic of Korea Objective',
+  descriptionZh: "【准入】OVR ≤91，PS+ ≤3。【收益】OVR +7（顶 93）；速度面板 +7（顶 91）；射门面板 +7（顶 90）；传球面板 +7（顶 93）；盘带面板 +7（顶 93）；防守面板 +7（顶 92）；身体面板 +7（顶 91）；PlayStyle+ 2 个（Quick Step、Tiki Taka）；PlayStyle 3 个（Relentless、Press Proven、Incisive Pass）。【其他】2 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

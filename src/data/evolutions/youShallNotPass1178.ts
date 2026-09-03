@@ -6,6 +6,7 @@ export const youShallNotPass1178: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1178/you-shall-not-pass',
   version: 'FC 26',
   description: 'Draw a line and dare attackers to cross it.',
+  descriptionZh: "【准入】CB 专用，OVR ≤95，PS+ ≤3。【收益】PlayStyle+ 4 个（Bruiser、Anticipate、Intercept、Quick Step）。【其他】1 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 95,

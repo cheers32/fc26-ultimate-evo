@@ -5,7 +5,8 @@ export const highlandDelivery1080: EvolutionDefinition = {
   "name": "Highland Delivery",
   "futbinLink": "https://www.futbin.com/26/evolutions/1080/highland-delivery",
   "version": "FC 26",
-  "description": "Unlock this Evo by completing 'The Tartan Army' objective.",
+  description: "Unlock this Evo by completing 'The Tartan Army' objective.",
+  descriptionZh: "【准入】OVR ≤92，PS+ ≤3。【收益】OVR +1（顶 93）；传球线 6 项（最高 +15）、身体线 1 项（最高 +15）；弱脚 +4；PlayStyle+ 2 个（Whipped Pass、Incisive Pass）；PlayStyle 4 个（Pinged Pass、Tiki Taka、Long Ball Pass、Inventive）。【其他】3 级 · Free / Objective。",
   "cost": "Free / Objective",
   "requirements": {
     "maxOvr": 92,

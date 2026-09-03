@@ -13,6 +13,7 @@ export const theVanguard1262: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1262/the-vanguard',
   version: 'FC 26',
   description: 'Put your backline in total control. Transform your centre-back into an elite leader with physical and defensive upgrades to read the play early and cut out danger before it starts.',
+  descriptionZh: "【准入】CB 专用，OVR ≤96，PS+ ≤4。【收益】OVR +15（顶 98）；速度线 2 项（最高 +20）、防守线 5 项（最高 +30）、身体线 4 项（最高 +30）；弱脚 +4；PlayStyle+ 3 个（Quick Step、Rapid、Jockey）；PlayStyle 3 个（Bruiser、Anticipate、Slide Tackle）。【其他】4 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

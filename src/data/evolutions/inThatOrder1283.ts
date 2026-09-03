@@ -19,6 +19,7 @@ export const inThatOrder1283: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'Prioritise pure attacking power and elevate your forward to unstoppable heights. Deliver massive offensive boosts to turn your attacker into a match winning force that dominates the final third.',
+  descriptionZh: "【准入】非 GK，OVR ≤96。【收益】OVR +15（顶 98）；射门面板 +20（顶 97）；传球面板 +20（顶 97）；速度线 2 项（最高 +25）、盘带线 6 项（最高 +25）；弱脚 +4；花式 +4。【其他】2 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

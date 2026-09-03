@@ -6,6 +6,7 @@ export const phdInDribbling1015: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1015/phd-in-dribbling',
   version: 'FC 26',
   description: 'Found in the Japan Objective.',
+  descriptionZh: "【准入】非 GK，OVR ≤91，PS+ ≤3。【收益】OVR +1（顶 99）；速度面板 +5（顶 93）；盘带面板 +5（顶 94）；PlayStyle+ 1 个（Technical）。【其他】1 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

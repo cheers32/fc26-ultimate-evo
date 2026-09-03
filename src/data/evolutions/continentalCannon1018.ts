@@ -6,6 +6,7 @@ export const continentalCannon1018: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1018/continental-cannon',
   version: 'FC 26',
   description: 'Asia/Oceania Group Reward',
+  descriptionZh: "【准入】OVR ≤91，PS+ ≤3。【收益】射门线 6 项（最高 +5）、传球线 1 项（最高 +10）、盘带线 1 项（最高 +10）；弱脚 +4；PlayStyle+ 2 个（Finesse Shot、Low Driven Shot）。【其他】3 级 · Objective Group Reward。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 91,

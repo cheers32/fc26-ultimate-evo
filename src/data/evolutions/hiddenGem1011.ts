@@ -5,7 +5,8 @@ export const hiddenGem1011: EvolutionDefinition = {
   name: 'Hidden Gem',
   futbinLink: 'https://www.futbin.com/26/evolutions/1011/hidden-gem',
   version: 'FC 26',
-  description: 'Found in the Uzbekistan/Qatar Objective',
+  description: "Uncover a true hidden gem who elevates dribbling with sharper control, quicker turns, and silky close touches. Found in the Uzbekistan/Qatar Objective.",
+  descriptionZh: "【准入】LM/LW 专用，非 LB，OVR ≤91，PS+ ≤3。【收益】OVR +35（顶 93）；速度线 2 项（最高 +40）、射门线 4 项（最高 +35）、传球线 6 项（最高 +35）、盘带线 6 项（最高 +40）、身体线 1 项（最高 +35）；花式 +4；PlayStyle+ 2 个（Technical、Quick Step）；PlayStyle 5 个（Finesse Shot、Trickster、Pinged Pass、Low Driven Shot、Rapid）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

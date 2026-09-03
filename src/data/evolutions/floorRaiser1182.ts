@@ -6,6 +6,7 @@ export const floorRaiser1182: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1182/floor-raiser',
   version: 'FC 26',
   description: 'True quality has no off switch. Evolve your player and develop the complete game that makes them truly elite.',
+  descriptionZh: "【准入】非 GK，OVR ≤95，PS+ ≤4。【收益】速度面板 +2（顶 95）；射门线 3 项（最高 +3）、传球线 1 项（最高 +20）、盘带线 5 项（最高 +3）、身体线 2 项（最高 +20）；花式 +4；PlayStyle+ 1 个（Low Driven Shot+）；PlayStyle 3 个（Quick Step、Finesse Shot、Technical）。【其他】3 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

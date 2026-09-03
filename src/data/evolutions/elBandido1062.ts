@@ -6,6 +6,7 @@ export const elBandido1062: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1062/el-bandido',
   version: 'FC 26',
   description: 'A creative maestro with a golden left foot, elite vision, deadly long shots, and the flair to unlock any defence with moments of pure magic.',
+  descriptionZh: "【准入】CAM 专用，OVR ≤92，PS+ ≤3。【收益】OVR +20（顶 94）；速度线 2 项（最高 +25）、射门线 6 项（最高 +25）、传球线 6 项（最高 +30）、盘带线 6 项（最高 +30）、身体线 1 项（最高 +30）；花式 +4；PlayStyle+ 3 个（Technical、Incisive Pass、Finesse Shot）；PlayStyle 3 个（Tiki Taka、First Touch、Trickster）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 92,

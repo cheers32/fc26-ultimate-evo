@@ -6,6 +6,7 @@ export const yearOfTheFullbacks1199: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1199/year-of-the-fullbacks',
   version: 'FC 26',
   description: 'Turn back time to 2021! Slide your favourite fullback into the CB role with boosted defence and physical stats to stop any attacker in their tracks.',
+  descriptionZh: "【准入】LB/RB 专用，OVR ≤95，PS+ ≤4。【收益】OVR +8（顶 97）；盘带线 2 项（最高 +20）、防守线 5 项（最高 +20）、身体线 4 项（最高 +20）；弱脚 +4；PlayStyle+ 3 个（Intercept、Anticipate、Aerial Fortress）；PlayStyle 3 个（Pinged Pass、Block、Bruiser）；加位置 CB。【其他】4 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

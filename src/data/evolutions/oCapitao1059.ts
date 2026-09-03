@@ -5,7 +5,8 @@ export const oCapitao1059: EvolutionDefinition = {
   name: 'O Capitão',
   futbinLink: 'https://www.futbin.com/26/evolutions/1059/o-capitao',
   version: 'FC 26',
-  description: 'Found in the Brazil Objective',
+  description: "An attacking fullback with pace, composure, and a thunderous strike. Become solid defensively, fearless going forward, and capable of defining moments on the biggest stage. Found in the Brazil Objective.",
+  descriptionZh: "【准入】RB 专用，非 CB，OVR ≤92，PS+ ≤3。【收益】OVR +50（顶 94）；速度线 2 项（最高 +30）、射门线 6 项（最高 +45）、传球线 5 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 5 项（最高 +30）、身体线 4 项（最高 +30）；PlayStyle+ 2 个（Jockey、Low Driven Shot）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 92,

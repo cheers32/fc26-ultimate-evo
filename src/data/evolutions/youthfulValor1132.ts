@@ -6,6 +6,7 @@ export const youthfulValor1132: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1132/youthful-valor',
   version: 'FC 26',
   description: "Turn young ambition into a fearless wall by strengthening your player's defensive and physical stats.",
+  descriptionZh: "【准入】CM/CDM 专用，OVR ≤93，PS+ ≤3。【收益】OVR +2（顶 95）；防守面板 +7（顶 96）；身体面板 +7（顶 96）；PlayStyle+ 1 个（Anticipate）；PlayStyle 3 个（Anticipate、Intercept、Bruiser）；加位置 CM/CDM。【其他】2 级 · 可重复 2 次 · Free。",
   cost: 'Free',
   defaultDisabled: true,
   requirements: {

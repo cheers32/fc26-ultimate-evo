@@ -14,6 +14,7 @@ export const maxDefending1242: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1242/max-defending',
   version: 'FC 26',
   description: 'Boost your player to 99 Defending. Season 10 level 10 reward.',
+  descriptionZh: "【准入】非 GK，OVR ≤98。【收益】OVR +2（顶 99）；防守面板 +98（顶 99）。【其他】1 级 · Season 10 — Level 10 Reward。",
   cost: 'Season 10 — Level 10 Reward',
   requirements: {
     maxOvr: 98,

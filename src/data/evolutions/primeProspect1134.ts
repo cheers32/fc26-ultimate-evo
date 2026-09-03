@@ -6,6 +6,7 @@ export const primeProspect1134: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1134/prime-prospect',
   version: 'FC 26',
   description: "Catch the football world's attention with dominant performances and rise from a raw prospect to a recognised talent.",
+  descriptionZh: "【准入】非 GK，OVR ≤93，PS+ ≤3。【收益】OVR +2（顶 95）；速度线 2 项（最高 +8）、射门线 6 项（最高 +5）、盘带线 6 项（最高 +10）；PlayStyle+ 2 个（Rapid、Finesse Shot）；PlayStyle 4 个（Rapid、Finesse Shot、Low Driven Shot、Incisive Pass）。【其他】4 级 · 可重复 2 次 · Free。",
   cost: 'Free',
   defaultDisabled: true,
   requirements: {

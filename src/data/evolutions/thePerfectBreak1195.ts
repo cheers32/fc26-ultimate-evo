@@ -6,6 +6,7 @@ export const thePerfectBreak1195: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1195/the-perfect-break',
   version: 'FC 26',
   description: 'Take a quick breather, then return with sharper skills, complete confidence on either foot and the dribbling to leave defenders behind.',
+  descriptionZh: "【准入】非 GK，OVR ≤95。【收益】盘带线 6 项（最高 +8）；弱脚 +4；花式 +4；PlayStyle 2 个（Technical、Trickster）。【其他】2 级 · Free。",
   cost: 'Free',
   trainingTime: '15 Mins',
   requirements: {

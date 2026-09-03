@@ -16,6 +16,7 @@ export const primeMotion1287: EvolutionDefinition = {
     'Found in the Pre Season Token Store. Transform your player into an unstoppable motion threat ' +
     'who weaves through tight spaces, drives forward on the half turn, and creates instant ' +
     'openings in the final third.',
+  descriptionZh: "【准入】非 GK，OVR ≤98。【收益】OVR +10（顶 99）；速度线 2 项（最高 +30）、射门线 6 项（最高 +31）、传球线 4 项（最高 +30）。【其他】2 级 · Tokens — 100 Pre Season Tokens。",
   cost: 'Tokens — 100 Pre Season Tokens',
   requirements: {
     maxOvr: 98,

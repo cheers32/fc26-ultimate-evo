@@ -6,6 +6,7 @@ export const theKiwiWall1012: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1012/the-kiwi-wall',
   version: 'FC 26',
   description: 'Found in the New Zealand Objective!',
+  descriptionZh: "【准入】CB/LB/RB 专用，OVR ≤91。【收益】OVR +12（顶 93）；速度线 2 项（最高 +10）、传球线 3 项（最高 +15）、盘带线 6 项（最高 +10）、防守线 5 项（最高 +15）、身体线 4 项（最高 +15）；弱脚 +4；稀有度改为 National Pride。【其他】4 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 91,

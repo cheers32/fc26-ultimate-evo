@@ -6,6 +6,7 @@ export const rightRoute1204: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1204/right-route',
   version: 'FC 26',
   description: 'Lengthy strides, new territory. Evolve your player and take the right route that changes everything.',
+  descriptionZh: "【准入】ST 专用，OVR ≤95，PS+ ≤4。【收益】OVR +20（顶 96）；速度线 2 项（最高 +25）、射门线 4 项（最高 +20）、传球线 3 项（最高 +20）、盘带线 5 项（最高 +25）、身体线 3 项（最高 +30）；弱脚 +4；PlayStyle+ 3 个（Quick Step、Finesse Shot、Pinged Pass）；PlayStyle 3 个（Low Driven Shot、Rapid、Technical）；加位置 RM。【其他】5 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

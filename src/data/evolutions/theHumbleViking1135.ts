@@ -6,6 +6,7 @@ export const theHumbleViking1135: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1135/the-humble-viking',
   version: 'FC 26',
   description: 'Strength and speed combine with ruthless finishing. Defenders get overpowered, spaces get attacked, and matches are decided in seconds. Staying humble, of course.',
+  descriptionZh: "【准入】ST 专用，OVR ≤94，PS+ ≤3。【收益】OVR +30（顶 96）；速度线 2 项（最高 +35）、射门线 6 项（最高 +35）、传球线 1 项（最高 +35）、盘带线 6 项（最高 +35）、身体线 4 项（最高 +25）；弱脚 +4；PlayStyle+ 4 个（Finesse Shot、Low Driven Shot、Rapid、Precision Header）；PlayStyle 4 个（Quick Step、Gamechanger、Aerial Fortress、Enforcer）。【其他】5 级 · Objective Reward。",
   cost: 'Objective Reward',
   defaultDisabled: true,
   requirements: {

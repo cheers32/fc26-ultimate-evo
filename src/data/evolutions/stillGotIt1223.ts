@@ -8,6 +8,7 @@ export const stillGotIt1223: EvolutionDefinition = {
   // FUTBIN also gates this on "Born before 1996-01-08"; the requirement schema has no age field,
   // so that check is not modelled here — same as the earlier Still Got It (1119).
   description: 'The revival starts here. Evolve your player and unlock the qualities that bring them back to their very best. Also requires the player to be born before 1996-01-08.',
+  descriptionZh: "【准入】非 GK，OVR ≤95，PS+ ≤4。【收益】OVR +15（顶 96）；速度线 2 项（最高 +40）、传球线 3 项（最高 +20）、盘带线 6 项（最高 +20）；弱脚 +4；花式 +4；PlayStyle+ 3 个（Rapid、Low Driven Shot、Gamechanger）；PlayStyle 3 个（Technical、First Touch、Finesse Shot）。【其他】4 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

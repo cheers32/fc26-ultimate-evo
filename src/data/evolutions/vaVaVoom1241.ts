@@ -6,6 +6,7 @@ export const vaVaVoom1241: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1241/va-va-voom',
   version: 'FC 26',
   description: 'Found in the Pre Season Token Store.',
+  descriptionZh: "【准入】非 CB/GK，OVR ≤97，PS+ ≤4。【收益】OVR +30（顶 98）；速度面板 +40（顶 99）；射门线 6 项（最高 +30）、传球线 3 项（最高 +25）、盘带线 6 项（最高 +30）；PlayStyle+ 2 个（Low Driven Shot、Technical）；PlayStyle 2 个（Finesse Shot、First Touch）。【其他】4 级 · Tokens — 1,000 Pre Season Tokens。",
   cost: 'Tokens — 1,000 Pre Season Tokens',
   requirements: {
     maxOvr: 97,

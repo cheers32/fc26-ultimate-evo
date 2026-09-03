@@ -6,6 +6,7 @@ export const signedAndDelivered1191: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1191/signed-and-delivered',
   version: 'FC 26',
   description: "No more misplaced passes. Upgrade your midfielder's passing to drop 50-yard balls onto your striker's feet with pinpoint precision.",
+  descriptionZh: "【准入】非 GK，OVR ≤96。【收益】速度面板 +1（顶 95）；射门面板 +1（顶 94）；传球面板 +4（顶 97）；弱脚 +4；PlayStyle 5 个（Incisive Pass、Inventive、Tiki Taka、Pinged Pass、Long Ball Pass）。【其他】2 级 · 250 FUTTIES Tokens / 50,000 Coins。",
   cost: '250 FUTTIES Tokens / 50,000 Coins',
   requirements: {
     maxOvr: 96,

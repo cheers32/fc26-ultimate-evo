@@ -7,6 +7,7 @@ export const fidgetSpinner1255: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'Defenders never know what’s coming next. Evolve your player to be unpredictable with the ball and lethal in front of goal.',
+  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +10（顶 98）；射门线 3 项（最高 +20）、传球线 5 项（最高 +20）、盘带线 6 项（最高 +20）；花式 +4；PlayStyle 5 个（Trickster、Technical、First Touch、Gamechanger、Inventive）。【其他】4 级 · 200 FC Points / 75,000 Coins。",
   cost: '200 FC Points / 75,000 Coins',
   requirements: {
     maxOvr: 97,

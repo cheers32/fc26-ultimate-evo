@@ -6,6 +6,7 @@ export const carpetFootball1244: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1244/carpet-football',
   version: 'FC 26',
   description: 'Found in the Pre Season Token Store.',
+  descriptionZh: "【准入】非 GK，OVR ≤97，PS+ ≤4。【收益】OVR +30（顶 98）；传球面板 +40（顶 99）；速度线 2 项（最高 +27）、射门线 3 项（最高 +30）、盘带线 6 项（最高 +37）、防守线 4 项（最高 +30）；PlayStyle+ 2 个（Technical、Pinged Pass）；PlayStyle 2 个（Long Ball Pass、Inventive）。【其他】4 级 · Tokens — 500 Pre Season Tokens。",
   cost: 'Tokens — 500 Pre Season Tokens',
   requirements: {
     maxOvr: 97,

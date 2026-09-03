@@ -6,6 +6,7 @@ export const flairFactory1181: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1181/flair-factory',
   version: 'FC 26',
   description: 'The best entertainers always keep defenders guessing. Evolve your player and bring the two footed flair that makes every touch unpredictable.',
+  descriptionZh: "【准入】OVR ≤95，PS+ ≤4。【收益】弱脚 +4；花式 +4；PlayStyle+ 1 个（Technical+）；PlayStyle 1 个（Low Driven Shot）。【其他】1 级 · 可重复 5 次 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 95,

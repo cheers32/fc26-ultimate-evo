@@ -10,7 +10,8 @@ export const order671276: EvolutionDefinition = {
   name: 'Order 67',
   futbinLink: 'https://www.futbin.com/26/evolutions/1276/order-67',
   version: 'FC 26',
-  description: 'Found in the token store.',
+  description: "Order 67 has been issued, awakening a power the pitch has never seen. Found in the token store.",
+  descriptionZh: "【准入】OVR ≤97，PS+ ≤4。【收益】OVR +67（顶 98）；速度面板 +67（顶 96）；射门面板 +67（顶 96）；传球面板 +67（顶 96）；盘带面板 +67（顶 98）；防守面板 +67（顶 96）；身体面板 +67（顶 96）；弱脚 +4；花式 +4。【其他】2 级 · Tokens — 100。",
   cost: 'Tokens — 100',
   requirements: {
     maxOvr: 97,

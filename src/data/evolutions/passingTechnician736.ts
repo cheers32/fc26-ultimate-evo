@@ -12,6 +12,7 @@ export const passingTechnician736: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/736/passing-technician',
   version: 'FC 26',
   description: 'Master the art of the Pass and distribute the ball in a variety of ways. Unlocked by the Passing Mastermind objective group.',
+  descriptionZh: "【准入】OVR ≤91，PS+ ≤2。【收益】PlayStyle+ 1 个（Pinged Pass）；PlayStyle 5 个（Tiki Taka、Incisive Pass、Inventive、Gamechanger、Long Ball Pass）。【其他】2 级 · Objective Group Reward。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 91,

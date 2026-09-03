@@ -5,7 +5,8 @@ export const noEntry1083: EvolutionDefinition = {
   name: 'No Entry',
   futbinLink: 'https://www.futbin.com/26/evolutions/1083/no-entry',
   version: 'FC 26',
-  description: 'Found in the Turkey/Sweden Objective',
+  description: "Shut down the attackers and win every battle with dominant tackling and relentless physicality. Found in the Turkey/Sweden Objective.",
+  descriptionZh: "【准入】CB 专用，OVR ≤92，PS+ ≤3。【收益】OVR +1（顶 93）；防守线 5 项（最高 +10）、身体线 4 项（最高 +10）；PlayStyle+ 3 个（Intercept、Anticipate、Jockey）；PlayStyle 4 个（Bruiser、Block、Aerial Fortress、Slide Tackle）。【其他】3 级 · Objective Reward。",
   cost: 'Objective Reward',
   requirements: {
     maxOvr: 92,

@@ -5,7 +5,8 @@ export const strikeForceIsBack1155: EvolutionDefinition = {
   name: 'Strike Force Is Back!',
   futbinLink: 'https://www.futbin.com/26/evolutions/1155/strike-force-is-back',
   version: 'FC 26',
-  description: 'Found in the FUTTIES Token Store!',
+  description: "Strike Force is back. Turn your attacker into a powerhouse of pace, power, and precision, ready to dominate the box and finish with ruthless efficiency. Found in the FUTTIES Token Store.",
+  descriptionZh: "【准入】ST 专用，OVR ≤96，PS+ ≤4。【收益】OVR +12（顶 97）；速度面板 +12（顶 97）；射门面板 +12（顶 95）；传球面板 +12（顶 92）；盘带面板 +12（顶 96）；防守面板 +12（顶 80）；身体面板 +12（顶 90）；弱脚 +3；花式 +4；PlayStyle+ 3 个（Quick Step+、Finesse Shot+、Low Driven Shot+）；加位置 RW/LW；稀有度改为 Futties。【其他】3 级 · 200 FUTTIES Tokens。",
   cost: '200 FUTTIES Tokens',
   requirements: {
     maxOvr: 96,

@@ -19,6 +19,7 @@ export const eagleEyed1282: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1282/eagle-eyed',
   version: 'FC 26',
   description: 'Unlocked by completing the Wind it Back task in the Ultimate Rewind Completionist objective.',
+  descriptionZh: "【准入】非 GK，OVR ≤97。【收益】OVR +1（顶 98）；速度面板 +3（顶 97）；射门面板 +4（顶 98）；身体面板 +3（顶 98）。【其他】1 级 · Objective Reward — Wind it Back。",
   cost: 'Objective Reward — Wind it Back',
   requirements: {
     maxOvr: 97,

@@ -18,6 +18,7 @@ export const theMasterLock1290: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1290/the-master-lock',
   version: 'FC 26',
   description: 'Trap advancing attackers, reclaim possession in crucial moments, and dictate match flow right from your deep pivot.',
+  descriptionZh: "【准入】CDM 专用，OVR ≤98。【收益】OVR +20（顶 99）；防守面板 +30（顶 99）；身体面板 +30（顶 98）；速度线 2 项（最高 +30）、射门线 4 项（最高 +30）、传球线 5 项（最高 +30）；弱脚 +4；花式 +4。【其他】3 级 · 250 FC Points / 75,000 Coins。",
   cost: '250 FC Points / 75,000 Coins',
   requirements: {
     maxOvr: 98,

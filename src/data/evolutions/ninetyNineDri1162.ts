@@ -15,6 +15,7 @@ export const ninetyNineDri1162: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1162/99-dribbling',
   version: 'FC 26',
   description: 'Give any player a 99 Dribbling boost. Unlocked with an FC 27 pre-order token.',
+  descriptionZh: "【准入】非 GK，OVR ≤99。【收益】盘带面板 +98（顶 99）；花式 +4。【其他】1 级 · FC 27 Pre Order Token。",
   cost: 'FC 27 Pre Order Token',
   requirements: {
     maxOvr: 99,

@@ -6,6 +6,7 @@ export const speedMerchant1160: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1160/speed-merchant',
   version: 'FC 26',
   description: 'Not faster than the cars, just faster than everyone else. Evolve your player and develop the explosive pace that makes them impossible to catch.',
+  descriptionZh: "【准入】非 CB/GK，OVR ≤96，PS+ ≤4。【收益】OVR +15（顶 97）；速度线 2 项（最高 +30）、射门线 5 项（最高 +30）；弱脚 +4；PlayStyle+ 3 个（Rapid+、Low Driven Shot+、Quick Step+）；PlayStyle 3 个（Gamechanger、Power Shot、Enforcer）。【其他】3 级 · 500 FUTTIES Tokens / 100,000 Coins。",
   cost: '500 FUTTIES Tokens / 100,000 Coins',
   requirements: {
     maxOvr: 96,

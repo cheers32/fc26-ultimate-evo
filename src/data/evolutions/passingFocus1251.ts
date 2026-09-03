@@ -7,6 +7,7 @@ export const passingFocus1251: EvolutionDefinition = {
   version: 'FC 26',
   description:
     'Unlock defenses and master dead balls in this EVO, boosting passing, crossing, vision, and curve with a perfected weak foot to deliver game-changing assists.',
+  descriptionZh: "【准入】非 GK，OVR ≤96。【收益】OVR +7（顶 97）；传球线 6 项（最高 +50）；弱脚 +4。【其他】2 级 · Free。",
   cost: 'Free',
   requirements: {
     maxOvr: 96,

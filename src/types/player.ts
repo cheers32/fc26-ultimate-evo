@@ -96,6 +96,14 @@ export interface EvolutionDefinition {
   futbinLink: string;
   version: 'FC 26';
   description: string;
+  /**
+   * A Chinese summary of what the evo asks for and what it gives, shown under the English.
+   *
+   * Generated from this file's own numbers rather than translated from the blurb: the blurb is
+   * marketing and says nothing about caps or entry requirements, which is what you actually read
+   * an evo's page to find out.
+   */
+  descriptionZh?: string;
   cost?: string;
   requirements: EvolutionRequirement;
   ovrBoost: {

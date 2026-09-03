@@ -6,6 +6,7 @@ export const elKaiser987: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/987/el-kaiser',
   version: 'FC 26',
   description: 'Turn defense into dominance. Anticipate every move, crush every challenge, and set the tone from the back with relentless control and elite presence.',
+  descriptionZh: "【准入】CB 专用，OVR ≤91，PS+ ≤3。【收益】OVR +20（顶 93）；速度线 2 项（最高 +20）、射门线 2 项（最高 +50）、传球线 4 项（最高 +50）、盘带线 6 项（最高 +25）、防守线 5 项（最高 +15）、身体线 4 项（最高 +15）；弱脚 +4；PlayStyle+ 2 个（Anticipate、Bruiser）；PlayStyle 3 个（Intercept、Quick Step、Dead Ball）。【其他】5 级 · Objective Group Reward。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 91,

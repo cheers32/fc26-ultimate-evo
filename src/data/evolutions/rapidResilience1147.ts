@@ -6,6 +6,7 @@ export const rapidResilience1147: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1147/rapid-resilience',
   version: 'FC 26',
   description: 'First to the ball, last to give up. Evolve your player and develop the pace, physicality and defensive quality that makes them unbeatable in every duel.',
+  descriptionZh: "【准入】非 GK，OVR ≤93，PS+ ≤3。【收益】OVR +3（顶 95）；速度线 2 项（最高 +7）、防守线 4 项（最高 +7）、身体线 3 项（最高 +7）；PlayStyle+ 3 个（Anticipate、Bruiser、Quick Step）；PlayStyle 3 个（Intercept、Jockey、Block）。【其他】3 级 · Free。",
   cost: 'Free',
   defaultDisabled: true,
   requirements: {

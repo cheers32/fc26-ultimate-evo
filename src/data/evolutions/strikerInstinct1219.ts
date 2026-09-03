@@ -6,6 +6,7 @@ export const strikerInstinct1219: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1219/striker-instinct',
   version: 'FC 26',
   description: 'A clinical finisher in front of the goal.',
+  descriptionZh: "【准入】非 CB，OVR ≤96，PS+ ≤4。【收益】OVR +4（顶 97）；速度线 2 项（最高 +4）、射门线 6 项（最高 +7）、传球线 3 项（最高 +5）、盘带线 6 项（最高 +7）、防守线 1 项（最高 +6）、身体线 4 项（最高 +6）；弱脚 +4；花式 +3；PlayStyle 4 个（Finesse Shot、Low Driven Shot、Power Shot、Gamechanger）。【其他】5 级 · SBC Set Reward。",
   cost: 'SBC Set Reward',
   requirements: {
     maxOvr: 96,

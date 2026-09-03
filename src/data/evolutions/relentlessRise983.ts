@@ -6,6 +6,7 @@ export const relentlessRise983: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/983/relentless-rise',
   version: 'FC 26',
   description: 'UT Found in the Haiti/Panama Objective',
+  descriptionZh: "【准入】ST/LW/RW 专用，OVR ≤91，PS+ ≤3。【收益】OVR +50（顶 92）；速度线 2 项（最高 +35）、射门线 6 项（最高 +35）、传球线 4 项（最高 +35）、盘带线 6 项（最高 +35）、防守线 1 项（最高 +35）、身体线 1 项（最高 +35）；弱脚 +4；花式 +3；PlayStyle+ 2 个（Finesse Shot+、Technical+）；PlayStyle 6 个（Incisive Pass、Low Driven Shot、Tiki Taka、Rapid、Quick Step、Gamechanger）。【其他】5 级 · Free / Objective。",
   cost: 'Free / Objective',
   requirements: {
     maxOvr: 91,

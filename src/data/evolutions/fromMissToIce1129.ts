@@ -6,6 +6,7 @@ export const fromMissToIce1129: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1129/from-miss-to-ice',
   version: 'FC 26',
   description: 'From shaky spot-kick moments to ice-cold finishes, this EVO boosts penalties and composure for a taker who steps up calmer the next time.',
+  descriptionZh: "【准入】非 GK，OVR ≤93。【收益】OVR +3（顶 95）；射门线 3 项（最高 +45）、传球线 1 项（最高 +10）、盘带线 2 项（最高 +25）；弱脚 +2。【其他】2 级 · Free。",
   cost: 'Free',
   defaultDisabled: true,
   requirements: {

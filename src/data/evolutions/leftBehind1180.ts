@@ -6,6 +6,7 @@ export const leftBehind1180: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1180/left-behind',
   version: 'FC 26',
   description: 'The best left backs always had midfielder written all over them. Evolve your player and make the move into central midfield',
+  descriptionZh: "【准入】LB 专用，OVR ≤96，PS+ ≤4。【收益】OVR +30（顶 97）；射门线 3 项（最高 +30）、传球线 5 项（最高 +30）、盘带线 6 项（最高 +30）、防守线 4 项（最高 +30）；弱脚 +4；PlayStyle+ 3 个（Incisive Pass+、Pinged Pass+、Technical+）；PlayStyle 3 个（Intercept、Tiki Taka、First Touch）；加位置 CM。【其他】5 级 · 250 FC Points / 50,000 Coins。",
   cost: '250 FC Points / 50,000 Coins',
   requirements: {
     maxOvr: 96,

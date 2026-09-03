@@ -19,6 +19,7 @@ export const passingTheTest1218: EvolutionDefinition = {
   futbinLink: 'https://www.futbin.com/26/evolutions/1218/passing-the-test',
   version: 'FC 26',
   description: 'Elegant on the ball, relentless of it.',
+  descriptionZh: "【准入】OVR ≤98，PS+ ≤4。【收益】OVR +7（顶 98）；传球面板 +20（顶 98）；防守面板 +5（顶 94）；速度面板 +5（顶 94）；身体面板 +10（顶 95）；射门线 1 项（最高 +10）；弱脚 +4；花式 +4。【其他】1 级 · Objective Group Reward。",
   cost: 'Objective Group Reward',
   requirements: {
     maxOvr: 98,

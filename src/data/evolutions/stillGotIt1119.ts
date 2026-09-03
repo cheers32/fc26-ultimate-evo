@@ -8,6 +8,7 @@ export const stillGotIt1119: EvolutionDefinition = {
   // FUTBIN also gates this on "Born before 1996-07-10"; the requirement schema has no age
   // field, so that check is not modelled here.
   description: 'Dust off the boots and oil the hips. Proves your veteran still has the sauce. Also requires the player to be born before 1996-07-10.',
+  descriptionZh: "【准入】CM/CAM 专用，OVR ≤85，PS+ ≤3。【收益】OVR +50（顶 94）；射门面板 +50（顶 92）；速度线 2 项（最高 +50）、传球线 6 项（最高 +50）、盘带线 6 项（最高 +60）、身体线 3 项（最高 +40）；弱脚 +4；花式 +2；PlayStyle+ 4 个（Incisive Pass、Pinged Pass、Tiki Taka、Press Proven）；PlayStyle 6 个（Rapid、First Touch、Long Ball Pass、Inventive、Whipped Pass、Finesse Shot）。【其他】5 级 · Free。",
   cost: 'Free',
   defaultDisabled: true,
   requirements: {
