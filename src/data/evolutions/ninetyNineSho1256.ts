@@ -9,6 +9,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const ninetyNineSho1256: EvolutionDefinition = {
   id: '1256',
   name: '99 SHO',
+  nameZh: "99 射门",
   futbinLink: 'https://www.futbin.com/26/evolutions/1256/99-sho',
   version: 'FC 26',
   description: 'Give 99 Shooting to any eligible player. Sold in a Store pack.',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theLittleBoyFromRosario1060: EvolutionDefinition = {
   id: '1060',
   name: 'The Little Boy from Rosario',
+  nameZh: "罗萨里奥的小男孩",
   futbinLink: 'https://www.futbin.com/26/evolutions/1060/the-little-boy-from-rosario',
   version: 'FC 26',
   description: 'Harness the powers of a generational talent with unmatched dribbling, inch-perfect through balls, and a magical left foot',

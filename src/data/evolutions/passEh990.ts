@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const passEh990: EvolutionDefinition = {
   id: '990',
   name: 'Pass, Eh',
+  nameZh: "传球，是吧",
   futbinLink: 'https://www.futbin.com/26/evolutions/990/pass-eh',
   version: 'FC 26',
   description: 'Slice open defenses with pinpoint vision and effortless distribution that keeps the attack flowing.',

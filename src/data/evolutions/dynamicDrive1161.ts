@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const dynamicDrive1161: EvolutionDefinition = {
   id: '1161',
   name: 'Dynamic Drive',
+  nameZh: "动力驱动",
   futbinLink: 'https://www.futbin.com/26/evolutions/1161/dynamic-drive',
   version: 'FC 26',
   description: 'Dynamic players change games in an instant. Evolve your player and bring the speed, strength and creativity that makes them a constant threat.',

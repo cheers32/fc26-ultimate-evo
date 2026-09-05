@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const perfectLinkUp1145: EvolutionDefinition = {
   id: '1145',
   name: 'Perfect Link Up',
+  nameZh: "完美串联",
   futbinLink: 'https://www.futbin.com/26/evolutions/1145/perfect-link-up',
   version: 'FC 26',
   description: 'Build smarter play with quick thinking and short passes.',

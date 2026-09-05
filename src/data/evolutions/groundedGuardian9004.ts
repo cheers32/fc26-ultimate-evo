@@ -18,6 +18,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const groundedGuardian9004: EvolutionDefinition = {
   id: '9004',
   name: 'Grounded Guardian',
+  nameZh: "沉稳守护者",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
   description: 'Shield possession with authority across every inch of the pitch, using crisp tackles and smooth turns to outsmart incoming pressure.',

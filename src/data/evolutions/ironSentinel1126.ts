@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const ironSentinel1126: EvolutionDefinition = {
   id: '1126',
   name: 'Iron Sentinel',
+  nameZh: "铁闸哨兵",
   futbinLink: 'https://www.futbin.com/26/evolutions/1126/iron-sentinel',
   version: 'FC 26',
   description: 'Forge a midfield enforcer with elite tackling, strength, stamina, and composure. The Iron Sentinel shuts down attacks and controls the game from deep.',

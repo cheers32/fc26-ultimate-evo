@@ -17,6 +17,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const symphonyInMotion1292: EvolutionDefinition = {
   id: '1292',
   name: 'Symphony in Motion',
+  nameZh: "运动交响曲",
   futbinLink: 'https://www.futbin.com/26/evolutions/1292/symphony-in-motion',
   version: 'FC 26',
   description: 'Conduct every wide attack with pure artistry and unstoppable speed, gliding past fullbacks to deliver the ultimate masterpiece.',

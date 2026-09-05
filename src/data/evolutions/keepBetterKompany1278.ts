@@ -13,6 +13,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const keepBetterKompany1278: EvolutionDefinition = {
   id: '1278',
   name: 'Keep Better Kompany',
+  nameZh: "更好的孔帕尼",
   futbinLink: 'https://www.futbin.com/26/evolutions/1278/keep-better-kompany',
   version: 'FC 26',
   description: "Your backline was secure, but now it's time to make it elite. Upgrade your defensive rock to ensure your squad Keeps Better Kompany. Found in the token store.",

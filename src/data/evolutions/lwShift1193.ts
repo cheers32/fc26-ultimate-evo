@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const lwShift1193: EvolutionDefinition = {
   id: '1193',
   name: 'LW Shift',
+  nameZh: "改左边锋",
   futbinLink: 'https://www.futbin.com/26/evolutions/1193/lw-shift',
   version: 'FC 26',
   description: 'Apply the LW Position to any player.',

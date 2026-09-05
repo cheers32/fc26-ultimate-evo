@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const thePerfectBreak1195: EvolutionDefinition = {
   id: '1195',
   name: 'The Perfect Break',
+  nameZh: "完美休整",
   futbinLink: 'https://www.futbin.com/26/evolutions/1195/the-perfect-break',
   version: 'FC 26',
   description: 'Take a quick breather, then return with sharper skills, complete confidence on either foot and the dribbling to leave defenders behind.',

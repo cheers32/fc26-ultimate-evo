@@ -8,6 +8,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const order671276: EvolutionDefinition = {
   id: '1276',
   name: 'Order 67',
+  nameZh: "67 号命令",
   futbinLink: 'https://www.futbin.com/26/evolutions/1276/order-67',
   version: 'FC 26',
   description: "Order 67 has been issued, awakening a power the pitch has never seen. Found in the token store.",

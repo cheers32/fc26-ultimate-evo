@@ -16,6 +16,9 @@ interface EvoPoolModalProps {
   onClose: () => void;
   evoStatuses: EvoStatuses;
   setEvoStatuses: (statuses: EvoStatuses) => void;
+  /** Which cards are running each evo in game, keyed by evo id. Passed straight to the details modal. */
+  evoUsage?: Record<string, { id: string; name: string }[]>;
+  onSelectPlayer?: (id: string) => void;
 }
 
 type TabMode = 'active' | 'disabled';
@@ -24,6 +27,8 @@ type FilterMode = 'all' | 'included' | 'not-included' | 'required';
 export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
   isOpen,
   onClose,
+  evoUsage,
+  onSelectPlayer,
   evoStatuses,
   setEvoStatuses
 }) => {
@@ -503,7 +508,14 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
       </div>
 
       {/* The eye on every card sets this — without the modal rendered here, clicking it does nothing. */}
-      <EvoDetailsModal evoId={viewingEvo} onClose={() => setViewingEvo(null)} />
+      <EvoDetailsModal
+        evoId={viewingEvo}
+        onClose={() => setViewingEvo(null)}
+        usedBy={viewingEvo ? evoUsage?.[viewingEvo] : undefined}
+        // Jumping to a card is a request to look at that card, so the pool goes with the details
+        // modal — otherwise you land on the player behind a manager still covering the screen.
+        onSelectPlayer={onSelectPlayer && (id => { onSelectPlayer(id); onClose(); })}
+      />
     </div>
   );
 };

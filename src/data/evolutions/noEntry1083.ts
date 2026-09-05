@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const noEntry1083: EvolutionDefinition = {
   id: '1083',
   name: 'No Entry',
+  nameZh: "禁止入内",
   futbinLink: 'https://www.futbin.com/26/evolutions/1083/no-entry',
   version: 'FC 26',
   description: "Shut down the attackers and win every battle with dominant tackling and relentless physicality. Found in the Turkey/Sweden Objective.",

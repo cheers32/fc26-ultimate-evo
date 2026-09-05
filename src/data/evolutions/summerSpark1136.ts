@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const summerSpark1136: EvolutionDefinition = {
   id: '1136',
   name: 'Summer Spark',
+  nameZh: "夏日火花",
   futbinLink: 'https://www.futbin.com/26/evolutions/1136/summer-spark',
   version: 'FC 26',
   description: "Turn up the heat and light up the pitch. Ignite your player's creativity with sharper dribbling, quicker turns, and pinpoint passing that slices through defences.",

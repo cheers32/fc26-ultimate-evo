@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const backShortly1221: EvolutionDefinition = {
   id: '1221',
   name: 'Back Shortly',
+  nameZh: "去而复返",
   futbinLink: 'https://www.futbin.com/26/evolutions/1221/back-shortly',
   version: 'FC 26',
   description:

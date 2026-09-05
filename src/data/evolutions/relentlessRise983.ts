@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const relentlessRise983: EvolutionDefinition = {
   id: '983',
   name: 'Relentless Rise',
+  nameZh: "不懈崛起",
   futbinLink: 'https://www.futbin.com/26/evolutions/983/relentless-rise',
   version: 'FC 26',
   description: 'UT Found in the Haiti/Panama Objective',

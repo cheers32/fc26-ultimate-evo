@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const elBandido1062: EvolutionDefinition = {
   id: '1062',
   name: 'El Bandido',
+  nameZh: "大盗",
   futbinLink: 'https://www.futbin.com/26/evolutions/1062/el-bandido',
   version: 'FC 26',
   description: 'A creative maestro with a golden left foot, elite vision, deadly long shots, and the flair to unlock any defence with moments of pure magic.',

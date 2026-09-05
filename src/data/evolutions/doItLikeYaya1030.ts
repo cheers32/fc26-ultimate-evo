@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const doItLikeYaya1030: EvolutionDefinition = {
   id: '1030',
   name: 'Do it like Yaya',
+  nameZh: "亚亚附体",
   futbinLink: 'https://www.futbin.com/26/evolutions/1030/do-it-like-yaya',
   version: 'FC 26',
   description: 'Dominate the midfield the Yaya way. Power through challenges, glide past pressure with effortless control, and dictate the tempo with commanding presence.',

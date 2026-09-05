@@ -17,6 +17,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const pureCraft9002: EvolutionDefinition = {
   id: '9002',
   name: 'Pure Craft',
+  nameZh: "纯粹匠艺",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
   description: 'Operate on pure footballing instinct. A comprehensive upgrade to your playmaker’s skill, precision, and sharpness to control the game where it matters most.',

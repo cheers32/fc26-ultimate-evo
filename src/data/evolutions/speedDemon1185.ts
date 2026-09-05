@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const speedDemon1185: EvolutionDefinition = {
   id: '1185',
   name: 'Speed Demon',
+  nameZh: "速度恶魔",
   futbinLink: 'https://www.futbin.com/26/evolutions/1185/speed-demon',
   version: 'FC 26',
   description: 'Become an absolute speed demon on the pitch.',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const twoWayTitan1240: EvolutionDefinition = {
   id: '1240',
   name: 'Two-Way Titan',
+  nameZh: "攻守双巨人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1240/two-way-titan',
   version: 'FC 26',
   description:

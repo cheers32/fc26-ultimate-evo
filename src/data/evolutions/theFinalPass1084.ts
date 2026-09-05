@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theFinalPass1084: EvolutionDefinition = {
   id: '1084',
   name: 'The Final Pass',
+  nameZh: "最后一传",
   futbinLink: 'https://www.futbin.com/26/evolutions/1084/the-final-pass',
   version: 'FC 26',
   description: 'Found in the Norway/Belgium Objective',

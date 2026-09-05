@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const floorRaiser1182: EvolutionDefinition = {
   id: '1182',
   name: 'Floor Raiser',
+  nameZh: "下限提升器",
   futbinLink: 'https://www.futbin.com/26/evolutions/1182/floor-raiser',
   version: 'FC 26',
   description: 'True quality has no off switch. Evolve your player and develop the complete game that makes them truly elite.',

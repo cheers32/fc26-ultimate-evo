@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theHumbleViking1135: EvolutionDefinition = {
   id: '1135',
   name: 'The Humble Viking',
+  nameZh: "谦逊的维京人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1135/the-humble-viking',
   version: 'FC 26',
   description: 'Strength and speed combine with ruthless finishing. Defenders get overpowered, spaces get attacked, and matches are decided in seconds. Staying humble, of course.',

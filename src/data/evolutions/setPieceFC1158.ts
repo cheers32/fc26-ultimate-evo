@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const setPieceFC1158: EvolutionDefinition = {
   id: '1158',
   name: 'Set Piece FC',
+  nameZh: "定位球俱乐部",
   futbinLink: 'https://www.futbin.com/26/evolutions/1158/set-piece-fc',
   version: 'FC 26',
   description: 'Turn every deadball into a goal threat and deliver unbelievable quality that will have your fans singing "Set Piece again Ole, Ole!".',

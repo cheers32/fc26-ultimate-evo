@@ -9,6 +9,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const primeIconicAttacker1279: EvolutionDefinition = {
   id: '1279',
   name: 'Prime Iconic Attacker',
+  nameZh: "巅峰传奇攻击手",
   futbinLink: 'https://www.futbin.com/26/evolutions/1279/prime-iconic-attacker',
   version: 'FC 26',
   description: "True greatness never settles. Elevate your legendary forward past their limits and into their ultimate form. Found in the token store.",

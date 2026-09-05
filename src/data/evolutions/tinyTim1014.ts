@@ -2,7 +2,8 @@ import { EvolutionDefinition } from '../../types/player';
 
 export const tinyTim1014: EvolutionDefinition = {
   "id": "1014",
-  "name": "Tiny Tim",
+  name: "Tiny Tim",
+  nameZh: "小蒂姆",
   "futbinLink": "https://www.futbin.com/26/evolutions/1014/tiny-tim",
   "version": "FC 26",
   description: "UT Found in the Perfect Volley Objective",

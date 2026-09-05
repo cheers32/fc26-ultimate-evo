@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const vaVaVoom1241: EvolutionDefinition = {
   id: '1241',
   name: 'Va Va Voom',
+  nameZh: "风风火火",
   futbinLink: 'https://www.futbin.com/26/evolutions/1241/va-va-voom',
   version: 'FC 26',
   description: 'Found in the Pre Season Token Store.',

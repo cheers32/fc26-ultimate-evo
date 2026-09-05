@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const nationalPrideStarPart1_1112: EvolutionDefinition = {
   id: '1112',
   name: 'Make your National Pride Star - Part 1',
+  nameZh: "国家荣耀之星 · 上",
   futbinLink: 'https://www.futbin.com/26/evolutions/1112/make-your-national-pride-star-part-1',
   version: 'FC 26',
   description: "Inspired by the world's greatest international competitions, this Evolution brings elite prestige as you upgrade your player on their path to becoming a 5 PS+ superstar. Complete Part 1 to earn a comprehensive attribute upgrade and unlock the National Pride PlayStyles Lab.",

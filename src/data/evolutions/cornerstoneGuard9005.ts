@@ -14,6 +14,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const cornerstoneGuard9005: EvolutionDefinition = {
   id: '9005',
   name: 'Cornerstone Guard',
+  nameZh: "基石卫士",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
   description: 'Lock down dangerous attackers, hold your line with total discipline, and provide a steady option to recycle possession under pressure.',

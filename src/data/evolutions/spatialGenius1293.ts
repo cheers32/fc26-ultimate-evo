@@ -17,6 +17,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const spatialGenius1293: EvolutionDefinition = {
   id: '1293',
   name: 'Spatial Genius',
+  nameZh: "空间天才",
   futbinLink: 'https://www.futbin.com/26/evolutions/1293/spatial-genius',
   version: 'FC 26',
   description: 'Unlock stubborn defences with razor sharp passing, drift past defenders with effortless close control, and execute clinical finishes from tight angles.',

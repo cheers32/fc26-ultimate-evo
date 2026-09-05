@@ -16,6 +16,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const goldenSpirit1017: EvolutionDefinition = {
   id: '1017',
   name: 'Golden Sprint',
+  nameZh: "黄金冲刺",
   futbinLink: 'https://www.futbin.com/26/evolutions/1017/golden-spirit',
   version: 'FC 26',
   description: 'Blazing acceleration meets ruthless directness. Built to stretch back lines, win foot races, and turn half-chances into goals. Found in the Saudi Arabia Objective.',

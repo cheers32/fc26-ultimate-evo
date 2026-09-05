@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const laMasiaSpark1118: EvolutionDefinition = {
   id: '1118',
   name: 'La Masia Spark',
+  nameZh: "拉玛西亚火花",
   futbinLink: 'https://www.futbin.com/26/evolutions/1118/la-masia-spark',
   version: 'FC 26',
   description: 'Ignite La Masia magic with electric dribbling, sharp creativity, and fearless wing play, turning a rising talent into a dazzling wide threat ready to shine on the biggest stage.',

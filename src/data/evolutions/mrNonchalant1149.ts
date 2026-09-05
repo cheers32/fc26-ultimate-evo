@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const mrNonchalant1149: EvolutionDefinition = {
   id: '1149',
   name: 'Mr. Nonchalant',
+  nameZh: "从容先生",
   futbinLink: 'https://www.futbin.com/26/evolutions/1149/mr-nonchalant',
   version: 'FC 26',
   description: 'Cool under pressure, smooth on the ball. Glide past defenders, pick the perfect pass, and finish with confidence. No rush, no panic, just pure class.',

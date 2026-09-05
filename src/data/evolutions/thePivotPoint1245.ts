@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const thePivotPoint1245: EvolutionDefinition = {
   id: '1245',
   name: 'The Pivot Point',
+  nameZh: "支点",
   futbinLink: 'https://www.futbin.com/26/evolutions/1245/the-pivot-point',
   version: 'FC 26',
   description:

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const windUpMerchant1184: EvolutionDefinition = {
   id: '1184',
   name: 'Wind-Up Merchant',
+  nameZh: "搅局商人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1184/wind-up-merchant',
   version: 'FC 26',
   description: "Transform into an elite dark-arts CDM built to stop counter-attacks, master the tactical foul, and live rent-free in your opponent's head. Peak housery.",

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const bornStriker1202: EvolutionDefinition = {
   id: '1202',
   name: 'Born Striker',
+  nameZh: "天生前锋",
   futbinLink: 'https://www.futbin.com/26/evolutions/1202/born-striker',
   version: 'FC 26',
   description: 'Apply the ST Position to any player.',

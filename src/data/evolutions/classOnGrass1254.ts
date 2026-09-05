@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const classOnGrass1254: EvolutionDefinition = {
   id: '1254',
   name: 'Class on Grass',
+  nameZh: "草上格调",
   futbinLink: 'https://www.futbin.com/26/evolutions/1254/class-on-grass',
   version: 'FC 26',
   description: "True class needs no introduction. Evolve your player and unlock the complete striking game that makes them stand out on every pitch. Found in the Pre Season Token Store.",

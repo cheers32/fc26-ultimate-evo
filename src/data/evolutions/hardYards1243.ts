@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const hardYards1243: EvolutionDefinition = {
   id: '1243',
   name: 'Hard Yards',
+  nameZh: "苦功",
   futbinLink: 'https://www.futbin.com/26/evolutions/1243/hard-yards',
   version: 'FC 26',
   description:

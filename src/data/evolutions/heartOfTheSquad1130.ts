@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const heartOfTheSquad1130: EvolutionDefinition = {
   id: '1130',
   name: 'Heart of the Squad',
+  nameZh: "球队心脏",
   futbinLink: 'https://www.futbin.com/26/evolutions/1130/heart-of-the-squad',
   version: 'FC 26',
   description: 'The heartbeat of the team. Sharp, composed and always driving the squad forward when it matters most.',

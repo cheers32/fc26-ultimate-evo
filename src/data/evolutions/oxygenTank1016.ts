@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const oxygenTank1016: EvolutionDefinition = {
   id: '1016',
   name: 'Oxygen Tank',
+  nameZh: "氧气罐",
   futbinLink: 'https://www.futbin.com/26/evolutions/1016/oxygen-tank',
   version: 'FC 26',
   description: 'Found in the Republic of Korea Objective',

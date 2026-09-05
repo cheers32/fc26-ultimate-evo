@@ -15,6 +15,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const inThatOrder1283: EvolutionDefinition = {
   id: '1283',
   name: 'In That Order',
+  nameZh: "按此顺序",
   futbinLink: 'https://www.futbin.com/26/evolutions/1283/in-that-order',
   version: 'FC 26',
   description:

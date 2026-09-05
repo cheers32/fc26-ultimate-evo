@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const neverLosingIt1222: EvolutionDefinition = {
   id: '1222',
   name: 'Never Losing It',
+  nameZh: "永不丢球",
   futbinLink: 'https://www.futbin.com/26/evolutions/1222/never-losing-it',
   version: 'FC 26',
   description: 'Found in the Gauntlet.',

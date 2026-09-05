@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const phdInDribbling1015: EvolutionDefinition = {
   id: '1015',
   name: 'PhD In Dribbling',
+  nameZh: "盘带博士",
   futbinLink: 'https://www.futbin.com/26/evolutions/1015/phd-in-dribbling',
   version: 'FC 26',
   description: 'Found in the Japan Objective.',

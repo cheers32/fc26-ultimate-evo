@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const counterCulture1239: EvolutionDefinition = {
   id: '1239',
   name: 'Counter Culture',
+  nameZh: "反击文化",
   futbinLink: 'https://www.futbin.com/26/evolutions/1239/counter-culture',
   version: 'FC 26',
   description:

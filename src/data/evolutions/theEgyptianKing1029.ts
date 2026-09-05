@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theEgyptianKing1029: EvolutionDefinition = {
   id: '1029',
   name: 'The Egyptian King',
+  nameZh: "埃及法老",
   futbinLink: 'https://www.futbin.com/26/evolutions/1029/the-egyptian-king',
   version: 'FC 26',
   description: "Channel Mohamed Salah's explosive pace, razor-sharp dribbling, and ice-cold finishing to deliver greatness fit for the king.",

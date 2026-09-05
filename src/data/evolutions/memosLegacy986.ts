@@ -5,6 +5,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const memosLegacy986: EvolutionDefinition = {
   id: '986',
   name: "Memo's Legacy",
+  nameZh: "梅莫的遗产",
   futbinLink: 'https://www.futbin.com/26/evolutions/986/memos-legacy',
   version: 'FC 26',
   description: "Inspired by a fearless Mexican shot-stopper, command your box, stay composed under pressure, and turn impossible shots into highlight-reel saves. Found in the Memo's Memories Objective.",

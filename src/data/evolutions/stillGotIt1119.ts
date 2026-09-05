@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const stillGotIt1119: EvolutionDefinition = {
   id: '1119',
   name: 'Still Got It',
+  nameZh: "宝刀未老",
   futbinLink: 'https://www.futbin.com/26/evolutions/1119/still-got-it',
   version: 'FC 26',
   // FUTBIN also gates this on "Born before 1996-07-10"; the requirement schema has no age

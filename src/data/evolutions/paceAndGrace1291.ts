@@ -16,6 +16,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const paceAndGrace1291: EvolutionDefinition = {
   id: '1291',
   name: 'Pace & Grace',
+  nameZh: "速度与优雅",
   futbinLink: 'https://www.futbin.com/26/evolutions/1291/pace--grace',
   version: 'FC 26',
   description: 'Inject lethal velocity and effortless elegance, boosting raw speed and close control to glide past defenders.',

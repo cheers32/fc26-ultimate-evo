@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const nationalPride1176: EvolutionDefinition = {
   id: '1176',
   name: 'National Pride',
+  nameZh: "国家荣耀",
   futbinLink: 'https://www.futbin.com/26/evolutions/1176/national-pride',
   version: 'FC 26',
   description: 'Turn any player into a National Pride player!',

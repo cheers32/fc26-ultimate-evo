@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const primeMarksman1144: EvolutionDefinition = {
   id: '1144',
   name: 'Prime Marksman',
+  nameZh: "顶级神射手",
   futbinLink: 'https://www.futbin.com/26/evolutions/1144/prime-marksman',
   version: 'FC 26',
   description: 'Stay calm under pressure and turn chances into goals.',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const elKaiser987: EvolutionDefinition = {
   id: '987',
   name: 'El Kaiser',
+  nameZh: "凯撒",
   futbinLink: 'https://www.futbin.com/26/evolutions/987/el-kaiser',
   version: 'FC 26',
   description: 'Turn defense into dominance. Anticipate every move, crush every challenge, and set the tone from the back with relentless control and elite presence.',

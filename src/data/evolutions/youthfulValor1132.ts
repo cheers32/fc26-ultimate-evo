@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const youthfulValor1132: EvolutionDefinition = {
   id: '1132',
   name: 'Youthful Valor',
+  nameZh: "少年血勇",
   futbinLink: 'https://www.futbin.com/26/evolutions/1132/youthful-valor',
   version: 'FC 26',
   description: "Turn young ambition into a fearless wall by strengthening your player's defensive and physical stats.",

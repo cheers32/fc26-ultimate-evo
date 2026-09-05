@@ -16,6 +16,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const magneticMarksman9003: EvolutionDefinition = {
   id: '9003',
   name: 'Magnetic Marksman',
+  nameZh: "磁力射手",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
   description: 'Glue the ball to your feet in tight spaces, bully past defenders using raw strength, and find the back of the net with an effortless, lethal finish.',

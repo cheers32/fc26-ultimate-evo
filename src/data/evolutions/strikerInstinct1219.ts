@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const strikerInstinct1219: EvolutionDefinition = {
   id: '1219',
   name: 'Striker Instinct',
+  nameZh: "射手本能",
   futbinLink: 'https://www.futbin.com/26/evolutions/1219/striker-instinct',
   version: 'FC 26',
   description: 'A clinical finisher in front of the goal.',

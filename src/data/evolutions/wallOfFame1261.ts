@@ -8,6 +8,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const wallOfFame1261: EvolutionDefinition = {
   id: '1261',
   name: 'Wall of Fame',
+  nameZh: "名人堂之墙",
   futbinLink: 'https://www.futbin.com/26/evolutions/1261/wall-of-fame',
   version: 'FC 26',
   description: 'Give your goalkeeper elite end game upgrades and maximum 99 Reflexes to pull off impossible point blank saves when the match is on the line.',

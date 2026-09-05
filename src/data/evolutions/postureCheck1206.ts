@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const postureCheck1206: EvolutionDefinition = {
   id: '1206',
   name: 'Posture Check',
+  nameZh: "体态检查",
   futbinLink: 'https://www.futbin.com/26/evolutions/1206/posture-check',
   version: 'FC 26',
   description: 'Found in the FUTTIES Token Store.',

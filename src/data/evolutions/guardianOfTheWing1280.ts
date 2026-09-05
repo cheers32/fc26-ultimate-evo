@@ -14,6 +14,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const guardianOfTheWing1280: EvolutionDefinition = {
   id: '1280',
   name: 'Guardian of the Wing',
+  nameZh: "边路守护者",
   futbinLink: 'https://www.futbin.com/26/evolutions/1280/guardian-of-the-wing',
   version: 'FC 26',
   description: 'You protected the wing, now become its guardian. Upgrade your wide defender to lock down the flank, win every duel and make sure nothing gets past on your side.',

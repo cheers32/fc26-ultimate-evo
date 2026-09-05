@@ -1457,6 +1457,41 @@ export default function App() {
     return out;
   }, [team, allPlayersData, libraryPlayers]);
 
+  /**
+   * Which cards are running each evo in game, by evo id.
+   *
+   * Read off the same in-game records as `evolvedPlayerIds`, so it says "this is on a card right
+   * now" rather than "someone drafted a plan with it". An evo's page is where you ask whether it is
+   * already spoken for — most are one to a club, and the answer used to mean opening every card.
+   */
+  const evoUsage = useMemo(() => {
+    const out: Record<string, { id: string; name: string }[]> = {};
+    for (const [pid, paths] of Object.entries(team?.savedPaths || {})) {
+      const record = (paths || []).find(p => isInGamePath(p) && p.chainIds.length > 0);
+      if (!record) continue;
+      const card = allPlayersData[pid] || libraryPlayers?.[pid];
+      if (!card) continue;
+      for (const evoId of new Set(record.chainIds)) {
+        (out[evoId] ||= []).push({ id: pid, name: card.bio.name });
+      }
+    }
+    return out;
+  }, [team, allPlayersData, libraryPlayers]);
+
+  /**
+   * Open a card. Shared by the warehouse and by the player names on an evo's page, so arriving from
+   * either leaves the app in the same state rather than one of them forgetting to clear a preview.
+   */
+  const openPlayer = (id: string) => {
+    setSelectedPlayerId(id);
+    setHoveredChem(null);
+    // Not the locked style: that is the incoming build's own, and clearing it here would
+    // write a null onto the build being left behind.
+    setEvoPreview(false);
+    setSelectionQueue([-1, -1]);
+    setOvr(allPlayersData[id]?.ovr || playersDatabase['rodri-91'].ovr);
+  };
+
   const evolvedPlayerIds = useMemo(
     () =>
       Object.entries(team?.savedPaths || {})
@@ -2556,8 +2591,12 @@ export default function App() {
         onClose={() => setIsEvoPoolOpen(false)}
         evoStatuses={evoStatuses}
         setEvoStatuses={setTeamEvoStatuses}
+        evoUsage={evoUsage}
+        onSelectPlayer={openPlayer}
       />
       <ManualPathModal
+        evoUsage={evoUsage}
+        onSelectPlayer={openPlayer}
         isOpen={isManualPathOpen}
         onClose={() => setIsManualPathOpen(false)}
         evosPool={Object.keys(availableEvolutions)}
@@ -2599,6 +2638,8 @@ export default function App() {
       <EvoDetailsModal
         evoId={viewingEvoId}
         onClose={() => setViewingEvoId(null)}
+        usedBy={viewingEvoId ? evoUsage[viewingEvoId] : undefined}
+        onSelectPlayer={openPlayer}
       />
       <PlayStylePickerModal
         isOpen={playStylePickerTarget !== null}
@@ -2669,16 +2710,7 @@ export default function App() {
           evolvedPlayerIds={evolvedPlayerIds}
           currentOvrById={currentOvrById}
           onClose={() => setIsPlayerSelectionOpen(false)}
-          onSelectPlayer={(id) => {
-            setSelectedPlayerId(id);
-            setHoveredChem(null);
-            // Not the locked style: that is the incoming build's own, and clearing it here would
-            // write a null onto the build being left behind.
-            setEvoPreview(false);
-            setSelectionQueue([-1, -1]);
-            const ovrData = allPlayersData[id]?.ovr || playersDatabase['rodri-91'].ovr;
-            setOvr(ovrData);
-          }}
+          onSelectPlayer={openPlayer}
           onOpenImport={() => setIsImportModalOpen(true)}
           libraryPlayers={libraryPlayers}
           hiddenPlayerIds={hiddenPlayers}

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theKiwiWall1012: EvolutionDefinition = {
   id: '1012',
   name: 'The Kiwi Wall',
+  nameZh: "新西兰之墙",
   futbinLink: 'https://www.futbin.com/26/evolutions/1012/the-kiwi-wall',
   version: 'FC 26',
   description: 'Found in the New Zealand Objective!',

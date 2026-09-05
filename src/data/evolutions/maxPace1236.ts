@@ -11,6 +11,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const maxPace1236: EvolutionDefinition = {
   id: '1236',
   name: 'Max Pace',
+  nameZh: "速度拉满",
   futbinLink: 'https://www.futbin.com/26/evolutions/1236/max-pace',
   version: 'FC 26',
   description: 'Boost your player to 99 Pace. Season 10 level 28 reward.',

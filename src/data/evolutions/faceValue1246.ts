@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const faceValue1246: EvolutionDefinition = {
   id: '1246',
   name: 'Face Value',
+  nameZh: "物超所值",
   futbinLink: 'https://www.futbin.com/26/evolutions/1246/face-value',
   version: 'FC 26',
   description: 'Worth more than face value.',

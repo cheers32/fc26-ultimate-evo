@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const streetSoccer988: EvolutionDefinition = {
   id: '988',
   name: 'Street Soccer',
+  nameZh: "街头足球",
   futbinLink: 'https://www.futbin.com/26/evolutions/988/street-soccer',
   version: 'FC 26',
   description: "From concrete courts to the biggest stages, showcase how raw talent becomes unstoppable. Found in the Street Soccer Objective.",

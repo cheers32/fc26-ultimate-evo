@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const flairFactory1181: EvolutionDefinition = {
   id: '1181',
   name: 'Flair Factory',
+  nameZh: "灵气工厂",
   futbinLink: 'https://www.futbin.com/26/evolutions/1181/flair-factory',
   version: 'FC 26',
   description: 'The best entertainers always keep defenders guessing. Evolve your player and bring the two footed flair that makes every touch unpredictable.',

@@ -9,6 +9,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const endgameEchoes1265: EvolutionDefinition = {
   id: '1265',
   name: 'Endgame Echoes',
+  nameZh: "终局回响",
   futbinLink: 'https://www.futbin.com/26/evolutions/1265/endgame-echoes',
   version: 'FC 26',
   description: 'Found in the store.',

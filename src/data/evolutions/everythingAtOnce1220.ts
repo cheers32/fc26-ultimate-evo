@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const everythingAtOnce1220: EvolutionDefinition = {
   id: '1220',
   name: 'Everything at Once',
+  nameZh: "全都要",
   futbinLink: 'https://www.futbin.com/26/evolutions/1220/everything-at-once',
   version: 'FC 26',
   description:

@@ -13,6 +13,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const instantMagnet1263: EvolutionDefinition = {
   id: '1263',
   name: 'Instant Magnet',
+  nameZh: "瞬间磁铁",
   futbinLink: 'https://www.futbin.com/26/evolutions/1263/instant-magnet',
   version: 'FC 26',
   description: 'Unlocked by completing the FUTTIES EVO Fun! objective, in Objectives → Campaign.',

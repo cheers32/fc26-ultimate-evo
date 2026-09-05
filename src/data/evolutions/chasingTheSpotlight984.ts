@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const chasingTheSpotlight984: EvolutionDefinition = {
   id: '984',
   name: 'Chasing the Spotlight',
+  nameZh: "追逐聚光灯",
   futbinLink: 'https://www.futbin.com/26/evolutions/984/chasing-the-spotlight',
   version: 'FC 26',
   description: 'The spotlight finds those who earn it. Elevate every moment, outshine the rest, and finish with unforgettable authority.',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theLandlord1203: EvolutionDefinition = {
   id: '1203',
   name: 'The Landlord',
+  nameZh: "房东",
   futbinLink: 'https://www.futbin.com/26/evolutions/1203/the-landlord',
   version: 'FC 26',
   description: 'Own the backline, collect every loose ball and make attackers pay rent for entering your space. Five PlayStyle+ upgrades turn your centre-back into the true landlord of the pitch.',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const sunnyInnit1211: EvolutionDefinition = {
   id: '1211',
   name: 'Sunny Innit',
+  nameZh: "天气不错吧",
   futbinLink: 'https://www.futbin.com/26/evolutions/1211/sunny-innit',
   version: 'FC 26',
   description: "Y'alright Neymar, sunny innit?",

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const hiddenGem1011: EvolutionDefinition = {
   id: '1011',
   name: 'Hidden Gem',
+  nameZh: "璞玉",
   futbinLink: 'https://www.futbin.com/26/evolutions/1011/hidden-gem',
   version: 'FC 26',
   description: "Uncover a true hidden gem who elevates dribbling with sharper control, quicker turns, and silky close touches. Found in the Uzbekistan/Qatar Objective.",

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const ninetySevenTimes1250: EvolutionDefinition = {
   id: '1250',
   name: '97 Times',
+  nameZh: "97 次",
   futbinLink: 'https://www.futbin.com/26/evolutions/1250/97-times',
   version: 'FC 26',
   description:

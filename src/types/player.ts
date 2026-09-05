@@ -93,6 +93,8 @@ export interface EvolutionLevel {
 export interface EvolutionDefinition {
   id: string; // e.g. '1076', '1159'
   name: string;
+  /** The evo's name in Chinese. Shown under the English, which stays the one FUTBIN is headed with. */
+  nameZh?: string;
   futbinLink: string;
   version: 'FC 26';
   description: string;

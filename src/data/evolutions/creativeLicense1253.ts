@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const creativeLicense1253: EvolutionDefinition = {
   id: '1253',
   name: 'Creative License',
+  nameZh: "创作特权",
   futbinLink: 'https://www.futbin.com/26/evolutions/1253/creative-license',
   version: 'FC 26',
   description: "The greatest playmakers make every touch count. Evolve your player and develop the vision and creativity that turns every opportunity into gold. Found in the Pre Season Token Store.",

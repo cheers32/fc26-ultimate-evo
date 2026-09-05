@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const continentalCannon1018: EvolutionDefinition = {
   id: '1018',
   name: 'Continental Cannon',
+  nameZh: "洲际重炮",
   futbinLink: 'https://www.futbin.com/26/evolutions/1018/continental-cannon',
   version: 'FC 26',
   description: 'Asia/Oceania Group Reward',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const oCapitao1059: EvolutionDefinition = {
   id: '1059',
   name: 'O Capitão',
+  nameZh: "队长",
   futbinLink: 'https://www.futbin.com/26/evolutions/1059/o-capitao',
   version: 'FC 26',
   description: "An attacking fullback with pace, composure, and a thunderous strike. Become solid defensively, fearless going forward, and capable of defining moments on the biggest stage. Found in the Brazil Objective.",

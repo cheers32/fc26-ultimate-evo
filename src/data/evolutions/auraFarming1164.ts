@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const auraFarming1164: EvolutionDefinition = {
   id: '1164',
   name: 'Aura Farming',
+  nameZh: "气场防守",
   futbinLink: 'https://www.futbin.com/26/evolutions/1164/aura-farming',
   version: 'FC 26',
   description: 'Defending by vibes alone. Dropping into a delayed stance, backing off, and letting your reputation do the pressing.',

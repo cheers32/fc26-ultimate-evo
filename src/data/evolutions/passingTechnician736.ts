@@ -9,6 +9,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const passingTechnician736: EvolutionDefinition = {
   id: '736',
   name: 'Passing Technician',
+  nameZh: "传球技师",
   futbinLink: 'https://www.futbin.com/26/evolutions/736/passing-technician',
   version: 'FC 26',
   description: 'Master the art of the Pass and distribute the ball in a variety of ways. Unlocked by the Passing Mastermind objective group.',

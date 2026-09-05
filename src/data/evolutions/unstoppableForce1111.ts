@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const unstoppableForce1111: EvolutionDefinition = {
   id: '1111',
   name: 'Unstoppable Force',
+  nameZh: "势不可挡",
   futbinLink: 'https://www.futbin.com/26/evolutions/1111/unstoppable-force',
   version: 'FC 26',
   description: 'Give your player the power to overwhelm any back line. Increase attacking presence, sharpen movement in the final third, and turn pressure into consistent goal threat.',

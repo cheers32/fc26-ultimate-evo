@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const iDoAbsolutes1034: EvolutionDefinition = {
   id: '1034',
   name: 'I Do Absolutes',
+  nameZh: "绝不含糊",
   futbinLink: 'https://www.futbin.com/26/evolutions/1034/i-do-absolutes',
   version: 'FC 26',
   description: 'No ifs, or maybes. Channel Sadio Mane\'s fearless direct play that made him one of the best football players in the world.',

@@ -12,6 +12,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const futtiesFinale1264: EvolutionDefinition = {
   id: '1264',
   name: 'FUTTIES Finale',
+  nameZh: "FUTTIES 终章",
   futbinLink: 'https://www.futbin.com/26/evolutions/1264/futties-finale',
   version: 'FC 26',
   description: 'Unleash pure attacking power. Elevate your forward with elite upgrades to shooting, passing and dribbling for the final whistle of the summer.',

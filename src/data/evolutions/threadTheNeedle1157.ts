@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const threadTheNeedle1157: EvolutionDefinition = {
   id: '1157',
   name: 'Thread the needle',
+  nameZh: "穿针引线",
   futbinLink: 'https://www.futbin.com/26/evolutions/1157/thread-the-needle',
   version: 'FC 26',
   description: 'Thread the needle with precision by equipping your player with a collection of passing PlayStyles.',

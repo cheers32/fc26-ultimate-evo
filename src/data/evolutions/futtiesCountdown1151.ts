@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const futtiesCountdown1151: EvolutionDefinition = {
   id: '1151',
   name: 'FUTTIES Countdown',
+  nameZh: "FUTTIES 倒计时",
   futbinLink: 'https://www.futbin.com/26/evolutions/1151/futties-countdown',
   version: 'FC 26',
   description: 'Get ready for FUTTIES with an all-round boost to a qualifying player.',

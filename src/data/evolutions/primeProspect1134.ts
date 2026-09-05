@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const primeProspect1134: EvolutionDefinition = {
   id: '1134',
   name: 'Prime Prospect',
+  nameZh: "顶级新秀",
   futbinLink: 'https://www.futbin.com/26/evolutions/1134/prime-prospect',
   version: 'FC 26',
   description: "Catch the football world's attention with dominant performances and rise from a raw prospect to a recognised talent.",

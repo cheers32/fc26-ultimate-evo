@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const crunchTime748: EvolutionDefinition = {
   id: '748',
   name: 'Crunch Time',
+  nameZh: "决胜时刻",
   futbinLink: 'https://www.futbin.com/26/evolutions/748/crunch-time',
   version: 'FC 26',
   description: 'Become built for the moments that can decide a match with Bruiser+ and a defensive boost.',

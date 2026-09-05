@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp, ChevronDown } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
-import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter } from '../types/player';
+import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter, EvolutionDefinition } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, openPlayStylesOn, OPEN_GOLD_SLOTS, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
 import { psPlusCapOf, STANDARD_PS_PLUS_SLOTS } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
@@ -24,6 +24,22 @@ import { useModal } from '../utils/modalStack';
 
 /** See psPlusCapOf: five stopped being generous the day five became standard. */
 const psSlotBaseline = () => (openPlayStylesOn() ? OPEN_GOLD_SLOTS : STANDARD_PS_PLUS_SLOTS);
+
+/**
+ * Evos that hand over a PlayStyle+ and demand a free gold slot to do it.
+ *
+ * This used to be asked as psPlusCapOf against the slot baseline, which is a question about whether
+ * the evo raises the card's ceiling — and under the current rules, where every card already carries
+ * five gold slots, the answer is no for all of them and the filter matched nothing at all.
+ *
+ * The question worth asking survives that rule change: which evos come with a PlayStyle+ attached
+ * and will only take a card that still has somewhere to put it. Those are the ones you have to
+ * sequence around, because spending the fourth slot elsewhere first locks you out of them.
+ */
+const grantsFifthPsPlus = (evo: EvolutionDefinition): boolean =>
+  (evo.playStylesAdded?.gold?.length ?? 0) > 0 &&
+  (evo.playStylesLimit?.gold ?? 0) >= OPEN_GOLD_SLOTS &&
+  (evo.requirements.maxPlayStylesPlus ?? Infinity) < OPEN_GOLD_SLOTS;
 
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
@@ -467,11 +483,16 @@ interface ManualPathModalProps {
   disabledEvos?: string[];
   includedEvos?: string[];
   onToggleDisabled?: (evoId: string) => void;
+  /** Which cards are running each evo in game, keyed by evo id. Passed straight to the details modal. */
+  evoUsage?: Record<string, { id: string; name: string }[]>;
+  onSelectPlayer?: (id: string) => void;
 }
 
 export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   isOpen,
   onClose,
+  evoUsage,
+  onSelectPlayer,
   evosPool,
   onSave,
   baseBio,
@@ -539,9 +560,13 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
    *
    * Grouped by the gate's own value rather than by what this card currently is, so the list means
    * the same thing whichever card is open.
+   *
+   * The row runs to 99 because the top two buckets are the ones worth asking about: only twelve
+   * evos still accept a 98 and four accept a 99, so once a card is up there the question stops being
+   * "which of these is best" and becomes "which of these will still have me".
    */
   const [gatePsPlus, setGatePsPlus] = useState<3 | 4 | 5 | null>(null);
-  const [gateOvr, setGateOvr] = useState<95 | 96 | 97 | null>(null);
+  const [gateOvr, setGateOvr] = useState<95 | 96 | 97 | 98 | 99 | null>(null);
   const [filterNewPosition, setFilterNewPosition] = useState(false);
   // The inverse of the two above. Each pair is a three-way choice, so turning one on clears its
   // opposite instead of leaving a combination that matches nothing.
@@ -552,6 +577,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // one, and both are "eligible".
   const [filterFitPosition, setFilterFitPosition] = useState(false);
   const [filterRepeatable, setFilterRepeatable] = useState(false);
+  /**
+   * Only the evos whose OVR ceiling is 99.
+   *
+   * Two thirds of the library stops at 98 or lower, and an evo that caps at 97 is not just a
+   * smaller upgrade — run it and the card is parked below 99 for good, because nothing later
+   * lifts an OVR its own ceiling already covers. That is a different question from the entry
+   * gate next to it: `gateOvr` asks what an evo still accepts, this asks how high it can leave
+   * you. Evos that grant no OVR at all are excluded — a ceiling of 99 on a +0 promises nothing.
+   */
+  const [filterOvr99, setFilterOvr99] = useState(false);
   // Narrows the pool to the evos that leave the card on one chosen AcceleRATE archetype — the
   // question "which of these keeps me Explosive" can't be answered from the face stats on the
   // cards, since the archetype turns on acceleration/agility/strength and height.
@@ -983,7 +1018,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     if (!showNotIncluded && !canRecommend.has(id)) return false;
     if (searchQuery && !evo.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterNewRarity && !evo.rarityChange) return false;
-    if (filterFifthPsPlus && !psPlusCapOf(evo, psSlotBaseline())) return false;
+    if (filterFifthPsPlus && !grantsFifthPsPlus(evo)) return false;
     if (gatePsPlus !== null) {
       const gate = evo.requirements.maxPlayStylesPlus;
       // 5 is "no PlayStyle+ gate at all" — nothing in the library caps at five, so an evo that
@@ -1001,6 +1036,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     // An evo you can run more than once is a different kind of pick — the same card again rather
     // than a new one — so it is worth being able to see only those.
     if (filterRepeatable && (evo.maxRepeatable ?? 1) <= 1) return false;
+    if (filterOvr99 && !(evo.ovrBoost.limit === 99 && evo.ovrBoost.boost > 0)) return false;
     // Only an addable evo has a resulting archetype at all: an ineligible or maxed-out card was
     // never simulated, so asking for one archetype drops it from the list rather than listing it
     // under a heading it can't answer to.
@@ -1520,20 +1556,19 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   New Rarity
                 </button>
-                {/* Nothing in the library caps above five, so under the current rules this would
-                    always come back empty — a filter that can only ever return nothing is worse
-                    than no filter. */}
-                {psSlotBaseline() < 5 && (
+                {/* Hidden until now, because the old reading of this filter — does the evo raise the
+                    card's gold cap — could only ever come back empty once every card carried five.
+                    Asked as "does it hand one over, and does it need a slot free", it has eleven
+                    answers and is worth a chip again. */}
                 <button
                   onClick={() => setFilterFifthPsPlus(!filterFifthPsPlus)}
-                  title="Only evos that take the card past four PlayStyle+ — the one slot nothing else can give it"
+                  title="Only evos that come with a PlayStyle+ attached and require a free gold slot to enter — spend the slot elsewhere first and these are gone"
                   className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
                     filterFifthPsPlus ? 'bg-amber-400 text-black border-amber-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
                   }`}
                 >
                   5th PS+
                 </button>
-                )}
                 {([3, 4, 5] as const).map(n => (
                   <button
                     key={`gps-${n}`}
@@ -1548,7 +1583,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     ≤{n} PS+
                   </button>
                 ))}
-                {([95, 96, 97] as const).map(n => (
+                {([95, 96, 97, 98, 99] as const).map(n => (
                   <button
                     key={`govr-${n}`}
                     onClick={() => setGateOvr(gateOvr === n ? null : n)}
@@ -1605,6 +1640,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   }`}
                 >
                   ↻ Repeatable
+                </button>
+                <button
+                  onClick={() => setFilterOvr99(!filterOvr99)}
+                  title="Only evos whose OVR ceiling is 99 — the ones that don't park the card below it"
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterOvr99 ? 'bg-sky-400 text-black border-sky-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  OVR → 99
                 </button>
                 {/* The one filter that isn't a yes/no: five archetypes, and picking one is a
                     different question from picking another, so it gets a select rather than five
@@ -2001,6 +2045,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
       </div>
 
       <EvoDetailsModal
+        usedBy={localViewingEvo ? evoUsage?.[localViewingEvo] : undefined}
+        // As in the pool: asking for another card means the builder is done, so it closes with the
+        // details modal rather than leaving you on a new player behind an old card's chain.
+        onSelectPlayer={onSelectPlayer && (id => { onSelectPlayer(id); onClose(); })}
         evoId={localViewingEvo}
         onClose={() => setLocalViewingEvo(null)}
         onAddEvo={(() => {

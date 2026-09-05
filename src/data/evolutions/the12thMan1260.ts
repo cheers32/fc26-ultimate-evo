@@ -8,6 +8,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const the12thMan1260: EvolutionDefinition = {
   id: '1260',
   name: 'The 12th Man',
+  nameZh: "第 12 人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1260/the-12th-man',
   version: 'FC 26',
   description: 'Celebrate 12 years of FUTTIES with this Evolution. Unlocked by the FUTTIES #12 objective group, in Objectives → Campaign.',

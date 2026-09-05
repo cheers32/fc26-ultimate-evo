@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const yearOfTheFullbacks1199: EvolutionDefinition = {
   id: '1199',
   name: 'Year of the Fullbacks',
+  nameZh: "边后卫之年",
   futbinLink: 'https://www.futbin.com/26/evolutions/1199/year-of-the-fullbacks',
   version: 'FC 26',
   description: 'Turn back time to 2021! Slide your favourite fullback into the CB role with boosted defence and physical stats to stop any attacker in their tracks.',

@@ -8,6 +8,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const finalTouches1259: EvolutionDefinition = {
   id: '1259',
   name: 'Final Touches',
+  nameZh: "最后的润色",
   futbinLink: 'https://www.futbin.com/26/evolutions/1259/final-touches',
   version: 'FC 26',
   description: 'No fuss, no flashy tricks. Just the clinical upgrades and final touches needed to turn a great player into an elite finisher.',

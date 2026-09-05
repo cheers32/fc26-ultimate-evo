@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const carpetFootball1244: EvolutionDefinition = {
   id: '1244',
   name: 'Carpet Football',
+  nameZh: "贴地足球",
   futbinLink: 'https://www.futbin.com/26/evolutions/1244/carpet-football',
   version: 'FC 26',
   description: 'Found in the Pre Season Token Store.',

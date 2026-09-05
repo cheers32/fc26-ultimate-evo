@@ -16,6 +16,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const flipTheSwitch9001: EvolutionDefinition = {
   id: '9001',
   name: 'Flip the Switch',
+  nameZh: "扭转开关",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
   description: 'Turn defensive stops straight into positive momentum. Refine your player’s ability to shut down attacks, keep the ball under heavy pressure, and dictate the tempo from deep.',

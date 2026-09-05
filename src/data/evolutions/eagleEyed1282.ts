@@ -16,6 +16,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const eagleEyed1282: EvolutionDefinition = {
   id: '1282',
   name: 'Eagle Eyed',
+  nameZh: "鹰眼",
   futbinLink: 'https://www.futbin.com/26/evolutions/1282/eagle-eyed',
   version: 'FC 26',
   description: 'Unlocked by completing the Wind it Back task in the Ultimate Rewind Completionist objective.',

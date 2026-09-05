@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const immovableObject1110: EvolutionDefinition = {
   id: '1110',
   name: 'Immovable Object',
+  nameZh: "不动如山",
   futbinLink: 'https://www.futbin.com/26/evolutions/1110/immovable-object',
   version: 'FC 26',
   description: 'Give your player the strength to hold the line. Improve defensive positioning, elevate physical presence, and bring composure to every challenge.',

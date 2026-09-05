@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const futties1192: EvolutionDefinition = {
   id: '1192',
   name: 'FUTTIES',
+  nameZh: "FUTTIES",
   futbinLink: 'https://www.futbin.com/26/evolutions/1192/futties',
   version: 'FC 26',
   description: 'Turn your favourite player into a FUTTIES player. This item rarity offers two league links to chemistry and full chemistry in position!',

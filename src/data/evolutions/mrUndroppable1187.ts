@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const mrUndroppable1187: EvolutionDefinition = {
   id: '1187',
   name: 'Mr. Undroppable',
+  nameZh: "雷打不动先生",
   futbinLink: 'https://www.futbin.com/26/evolutions/1187/mr-undroppable',
   version: 'FC 26',
   description: 'The ultimate club staple.',

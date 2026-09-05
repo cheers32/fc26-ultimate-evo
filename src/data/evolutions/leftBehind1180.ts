@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const leftBehind1180: EvolutionDefinition = {
   id: '1180',
   name: 'Left behind',
+  nameZh: "被留在身后",
   futbinLink: 'https://www.futbin.com/26/evolutions/1180/left-behind',
   version: 'FC 26',
   description: 'The best left backs always had midfielder written all over them. Evolve your player and make the move into central midfield',

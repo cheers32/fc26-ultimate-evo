@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const furiaCeca1081: EvolutionDefinition = {
   id: '1081',
   name: 'Furia Ceca',
+  nameZh: "盲目狂怒",
   futbinLink: 'https://www.futbin.com/26/evolutions/1081/furia-ceca',
   version: 'FC 26',
   description: 'UT Found in the Czechia and Bosnia Objective',

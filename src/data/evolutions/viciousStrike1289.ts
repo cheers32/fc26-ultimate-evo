@@ -12,6 +12,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const viciousStrike1289: EvolutionDefinition = {
   id: '1289',
   name: 'Vicious Strike',
+  nameZh: "凶狠一击",
   futbinLink: 'https://www.futbin.com/26/evolutions/1289/vicious-strike',
   version: 'FC 26',
   description:

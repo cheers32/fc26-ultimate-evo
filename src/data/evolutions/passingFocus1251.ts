@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const passingFocus1251: EvolutionDefinition = {
   id: '1251',
   name: 'Passing Focus',
+  nameZh: "传球专注",
   futbinLink: 'https://www.futbin.com/26/evolutions/1251/passing-focus',
   version: 'FC 26',
   description:

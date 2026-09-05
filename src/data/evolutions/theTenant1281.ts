@@ -12,6 +12,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theTenant1281: EvolutionDefinition = {
   id: '1281',
   name: 'The Tenant',
+  nameZh: "房客",
   futbinLink: 'https://www.futbin.com/26/evolutions/1281/the-tenant',
   version: 'FC 26',
   description: "Set up camp in front of goal. Boost your player's offensive arsenal to constantly exploit spaces, force mistakes, and keep the defense pinned back. Found in the store.",

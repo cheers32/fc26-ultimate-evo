@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const starChaser989: EvolutionDefinition = {
   id: '989',
   name: 'Star Chaser',
+  nameZh: "追星者",
   futbinLink: 'https://www.futbin.com/26/evolutions/989/star-chaser',
   version: 'FC 26',
   description: 'Built for the fast lane. Lock down attackers with relentless defending and explosive pace that leaves challengers in the dust.',

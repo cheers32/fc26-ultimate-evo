@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const routeOne1153: EvolutionDefinition = {
   id: '1153',
   name: 'Route One',
+  nameZh: "一号路线",
   futbinLink: 'https://www.futbin.com/26/evolutions/1153/route-one',
   version: 'FC 26',
   description: 'A simple shift to fix your defensive depth. Add the center back position to any player and give their defending stats the precise upgrade needed to anchor your backline.',

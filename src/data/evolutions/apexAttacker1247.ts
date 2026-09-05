@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const apexAttacker1247: EvolutionDefinition = {
   id: '1247',
   name: 'Apex Attacker',
+  nameZh: "顶级攻击手",
   futbinLink: 'https://www.futbin.com/26/evolutions/1247/apex-attacker',
   version: 'FC 26',
   description: 'Give a player all the tools they need to become a World Class Striker.',

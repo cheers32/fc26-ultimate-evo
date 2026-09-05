@@ -10,6 +10,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theVanguard1262: EvolutionDefinition = {
   id: '1262',
   name: 'The Vanguard',
+  nameZh: "先锋",
   futbinLink: 'https://www.futbin.com/26/evolutions/1262/the-vanguard',
   version: 'FC 26',
   description: 'Put your backline in total control. Transform your centre-back into an elite leader with physical and defensive upgrades to read the play early and cut out danger before it starts.',

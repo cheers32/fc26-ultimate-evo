@@ -12,6 +12,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const ninetyNineDri1162: EvolutionDefinition = {
   id: '1162',
   name: '99 Dribbling',
+  nameZh: "99 盘带",
   futbinLink: 'https://www.futbin.com/26/evolutions/1162/99-dribbling',
   version: 'FC 26',
   description: 'Give any player a 99 Dribbling boost. Unlocked with an FC 27 pre-order token.',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const eliteMidfielder1159: EvolutionDefinition = {
   id: '1159',
   name: 'Elite Midfielder',
+  nameZh: "精英中场",
   futbinLink: 'https://www.futbin.com/26/evolutions/1159/elite-midfielder',
   version: 'FC 26',
   description: 'Transform your CDM into an elite dominant force with massive boosts across 5 levels.',

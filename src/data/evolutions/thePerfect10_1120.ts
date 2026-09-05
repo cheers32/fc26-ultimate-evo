@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const thePerfect10_1120: EvolutionDefinition = {
   id: '1120',
   name: 'The Perfect 10',
+  nameZh: "完美 10 号",
   futbinLink: 'https://www.futbin.com/26/evolutions/1120/the-perfect-10',
   version: 'FC 26',
   description: 'Transform into a true playmaker who controls the tempo and delivers in the decisive moments. Become crafted for flawless control, pure class and footballing perfection.',

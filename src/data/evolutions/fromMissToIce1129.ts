@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const fromMissToIce1129: EvolutionDefinition = {
   id: '1129',
   name: 'From Miss to Ice',
+  nameZh: "从射失到冰冷",
   futbinLink: 'https://www.futbin.com/26/evolutions/1129/from-miss-to-ice',
   version: 'FC 26',
   description: 'From shaky spot-kick moments to ice-cold finishes, this EVO boosts penalties and composure for a taker who steps up calmer the next time.',

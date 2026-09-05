@@ -11,6 +11,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const anchorAndAlley1285: EvolutionDefinition = {
   id: '1285',
   name: 'Anchor & Alley',
+  nameZh: "铁锚与走廊",
   futbinLink: 'https://www.futbin.com/26/evolutions/1285/anchor--alley',
   version: 'FC 26',
   description:

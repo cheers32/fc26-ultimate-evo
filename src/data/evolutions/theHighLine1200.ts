@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theHighLine1200: EvolutionDefinition = {
   id: '1200',
   name: 'The High Line',
+  nameZh: "高位防线",
   futbinLink: 'https://www.futbin.com/26/evolutions/1200/the-high-line',
   version: 'FC 26',
   description: "Compress the pitch. Boost your defender's defending to choke out the opponent's space, then use elite passing to build right out from the back.",

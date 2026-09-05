@@ -10,6 +10,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const primeMotion1287: EvolutionDefinition = {
   id: '1287',
   name: 'Prime Motion',
+  nameZh: "巅峰律动",
   futbinLink: 'https://www.futbin.com/26/evolutions/1287/prime-motion',
   version: 'FC 26',
   description:

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const rapidResilience1147: EvolutionDefinition = {
   id: '1147',
   name: 'Rapid Resilience',
+  nameZh: "迅捷韧性",
   futbinLink: 'https://www.futbin.com/26/evolutions/1147/rapid-resilience',
   version: 'FC 26',
   description: 'First to the ball, last to give up. Evolve your player and develop the pace, physicality and defensive quality that makes them unbeatable in every duel.',

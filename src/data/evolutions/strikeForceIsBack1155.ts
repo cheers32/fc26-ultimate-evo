@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const strikeForceIsBack1155: EvolutionDefinition = {
   id: '1155',
   name: 'Strike Force Is Back!',
+  nameZh: "锋线回归！",
   futbinLink: 'https://www.futbin.com/26/evolutions/1155/strike-force-is-back',
   version: 'FC 26',
   description: "Strike Force is back. Turn your attacker into a powerhouse of pace, power, and precision, ready to dominate the box and finish with ruthless efficiency. Found in the FUTTIES Token Store.",

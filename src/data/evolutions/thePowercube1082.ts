@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const thePowercube1082: EvolutionDefinition = {
   id: '1082',
   name: 'The Powercube',
+  nameZh: "能量魔方",
   futbinLink: 'https://www.futbin.com/26/evolutions/1082/the-powercube',
   version: 'FC 26',
   description: 'UT Found in the Switzerland/Croatia Objective',

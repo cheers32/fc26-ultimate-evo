@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const futtiesBlueprintII1194: EvolutionDefinition = {
   id: '1194',
   name: 'FUTTIES Blueprint II',
+  nameZh: "FUTTIES 蓝图 II",
   futbinLink: 'https://www.futbin.com/26/evolutions/1194/futties-blueprint-ii',
   version: 'FC 26',
   description: 'The final touches on your masterclass striker. Inject the ultimate finishing, composure, and raw instinct needed to turn those half-chances into guaranteed goals.',

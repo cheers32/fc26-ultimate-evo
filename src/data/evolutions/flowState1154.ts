@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const flowState1154: EvolutionDefinition = {
   id: '1154',
   name: 'Flow State',
+  nameZh: "心流状态",
   futbinLink: 'https://www.futbin.com/26/evolutions/1154/flow-state',
   version: 'FC 26',
   description: 'Boosts passing and dribbling to help players move smoothly on the ball, link play with confidence, and create space in tight areas.',

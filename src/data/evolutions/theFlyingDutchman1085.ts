@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theFlyingDutchman1085: EvolutionDefinition = {
   id: '1085',
   name: 'The Flying Dutchman',
+  nameZh: "飞翔的荷兰人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1085/the-flying-dutchman',
   version: 'FC 26',
   description: 'Found in the Netherlands/Portugal Objective',

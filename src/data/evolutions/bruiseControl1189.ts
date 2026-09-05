@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const bruiseControl1189: EvolutionDefinition = {
   id: '1189',
   name: 'Bruise Control',
+  nameZh: "淤青管控",
   futbinLink: 'https://www.futbin.com/26/evolutions/1189/bruise-control',
   version: 'FC 26',
   description: 'The ultimate backline upgrade.',

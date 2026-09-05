@@ -11,6 +11,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const maxDefending1242: EvolutionDefinition = {
   id: '1242',
   name: 'Max Defending',
+  nameZh: "防守拉满",
   futbinLink: 'https://www.futbin.com/26/evolutions/1242/max-defending',
   version: 'FC 26',
   description: 'Boost your player to 99 Defending. Season 10 level 10 reward.',

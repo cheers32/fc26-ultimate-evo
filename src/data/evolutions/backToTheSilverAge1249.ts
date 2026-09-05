@@ -12,6 +12,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const backToTheSilverAge1249: EvolutionDefinition = {
   id: '1249',
   name: 'Back to the Silver Age',
+  nameZh: "重返银卡时代",
   futbinLink: 'https://www.futbin.com/26/evolutions/1249/back-to-the-silver-age',
   version: 'FC 26',
   description: 'Return to the days when one towering silver striker terrorised defences.',

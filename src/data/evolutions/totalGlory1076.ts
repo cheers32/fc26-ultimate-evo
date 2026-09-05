@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const totalGlory1076: EvolutionDefinition = {
   id: '1076',
   name: 'Total Glory',
+  nameZh: "完全荣耀",
   futbinLink: 'https://www.futbin.com/26/evolutions/1076/total-glory',
   version: 'FC 26',
   description: "Elevate every aspect of your player's game and give them the final push for total glory.",

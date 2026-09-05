@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const nationalPrideStarPart2_1114: EvolutionDefinition = {
   id: '1114',
   name: 'Make Your National Pride Star - Part 2',
+  nameZh: "国家荣耀之星 · 下",
   futbinLink: 'https://www.futbin.com/26/evolutions/1114/make-your-national-pride-star-part-2',
   version: 'FC 26',
   description: "Inspired by the world's greatest international competitions, this Evolution brings elite prestige as you upgrade your player on their path to becoming a 5 PS+ superstar. Complete Part 2 to unlock additional attributes alongside maximum pace.",

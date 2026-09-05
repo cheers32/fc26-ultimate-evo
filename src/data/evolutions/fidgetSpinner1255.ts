@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const fidgetSpinner1255: EvolutionDefinition = {
   id: '1255',
   name: 'Fidget Spinner',
+  nameZh: "指尖陀螺",
   futbinLink: 'https://www.futbin.com/26/evolutions/1255/fidget-spinner',
   version: 'FC 26',
   description:

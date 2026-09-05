@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const touchlineRoyalty1288: EvolutionDefinition = {
   id: '1288',
   name: 'Touchline Royalty',
+  nameZh: "边线王者",
   futbinLink: 'https://www.futbin.com/26/evolutions/1288/touchline-royalty',
   version: 'FC 26',
   description:

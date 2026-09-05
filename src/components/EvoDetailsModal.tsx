@@ -5,7 +5,26 @@ import { getPlayStyleIconUrl } from '../utils/playstyles';
 import { useModal } from '../utils/modalStack';
 
 import { Plus } from 'lucide-react';
-export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | null; onClose: () => void; onAddEvo?: (id: string) => void }) => {
+export const EvoDetailsModal = ({
+  evoId,
+  onClose,
+  onAddEvo,
+  usedBy,
+  onSelectPlayer
+}: {
+  evoId: string | null;
+  onClose: () => void;
+  onAddEvo?: (id: string) => void;
+  /**
+   * The cards running this evo in game right now — its in-game record, not a drafted plan.
+   *
+   * Most evos are one to a club, so "is this already spoken for" is the question an evo's page gets
+   * asked most often, and answering it used to mean opening cards one at a time until you found it.
+   */
+  usedBy?: { id: string; name: string }[];
+  /** Opens one of those cards. Absent where the modal has no card view to send you to. */
+  onSelectPlayer?: (id: string) => void;
+}) => {
   useModal(!!evoId, { onClose });
 
   useEffect(() => {
@@ -28,7 +47,10 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
       <div className="bg-[#1a1c1a] border border-gray-700 w-full max-w-lg rounded-2xl flex flex-col max-h-[90vh] shadow-2xl" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-[#1f211f] rounded-t-2xl">
-          <h2 className="text-xl font-bold text-white tracking-wide">{evo.name}</h2>
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold text-white tracking-wide truncate">{evo.name}</h2>
+            {evo.nameZh && <p className="text-xs text-gray-500 mt-0.5 truncate">{evo.nameZh}</p>}
+          </div>
           <div className="flex items-center gap-3">
             {onAddEvo && (
               <button 
@@ -62,6 +84,37 @@ export const EvoDetailsModal = ({ evoId, onClose, onAddEvo }: { evoId: string | 
               <p className="text-[13px] text-gray-500 leading-relaxed">{evo.descriptionZh}</p>
             )}
           </div>
+
+          {/* Who is already running it. Above the requirements on purpose: whether the evo is spent
+              decides whether the rest of the page is worth reading. */}
+          {usedBy && usedBy.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+                In game on {usedBy.length === 1 ? 'this card' : `these ${usedBy.length} cards`}
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {usedBy.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      if (!onSelectPlayer) return;
+                      onSelectPlayer(p.id);
+                      onClose();
+                    }}
+                    disabled={!onSelectPlayer}
+                    title={onSelectPlayer ? `Open ${p.name}` : undefined}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
+                      onSelectPlayer
+                        ? 'bg-fcGreen/10 border-fcGreen/40 text-fcGreen hover:bg-fcGreen hover:text-black cursor-pointer'
+                        : 'bg-[#121212] border-gray-800 text-gray-300 cursor-default'
+                    }`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Requirements */}
           <div>

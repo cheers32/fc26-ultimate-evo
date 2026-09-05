@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const pocketInspector1252: EvolutionDefinition = {
   id: '1252',
   name: 'Pocket Inspector',
+  nameZh: "口袋检查官",
   futbinLink: 'https://www.futbin.com/26/evolutions/1252/pocket-inspector',
   version: 'FC 26',
   description: "The ultimate defensive upgrade. Keep your opponent's star attacker secure and locked away in your CB's back pocket until the final whistle. Found in the Pre Season Token Store.",

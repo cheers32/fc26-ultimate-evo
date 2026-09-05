@@ -6,6 +6,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const noWayThrough1156: EvolutionDefinition = {
   id: '1156',
   name: 'No Way Through',
+  nameZh: "无路可走",
   futbinLink: 'https://www.futbin.com/26/evolutions/1156/no-way-through',
   version: 'FC 26',
   description: "Build a brick wall between the posts. With feline reflexes and spectacular dives, deny every opponent a chance. Found in the FUTTIES Token Store.",

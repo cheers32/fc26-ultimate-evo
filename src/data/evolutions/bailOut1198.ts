@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const bailOut1198: EvolutionDefinition = {
   id: '1198',
   name: 'Bail Out',
+  nameZh: "力挽狂澜",
   futbinLink: 'https://www.futbin.com/26/evolutions/1198/bail-out',
   version: 'FC 26',
   description: 'For when your defence completely collapses. Give your keeper the ultimate boost to pull off impossible, controller-saving heroics in the 90th minute.',

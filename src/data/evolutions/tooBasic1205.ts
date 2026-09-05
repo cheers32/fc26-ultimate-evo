@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const tooBasic1205: EvolutionDefinition = {
   id: '1205',
   name: 'Too Basic',
+  nameZh: "太基础了",
   futbinLink: 'https://www.futbin.com/26/evolutions/1205/too-basic',
   version: 'FC 26',
   description: "Master the fundamentals and prove that the most effective strategy is often the most direct. Some call it basic, we call it brilliant. Found in the FUTTIES Token Store.",

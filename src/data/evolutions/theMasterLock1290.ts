@@ -15,6 +15,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theMasterLock1290: EvolutionDefinition = {
   id: '1290',
   name: 'The Master Lock',
+  nameZh: "大师之锁",
   futbinLink: 'https://www.futbin.com/26/evolutions/1290/the-master-lock',
   version: 'FC 26',
   description: 'Trap advancing attackers, reclaim possession in crucial moments, and dictate match flow right from your deep pivot.',

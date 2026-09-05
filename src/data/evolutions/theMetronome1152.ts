@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theMetronome1152: EvolutionDefinition = {
   id: '1152',
   name: 'The Metronome',
+  nameZh: "节拍器",
   futbinLink: 'https://www.futbin.com/26/evolutions/1152/the-metronome',
   version: 'FC 26',
   description: 'Dictate the tempo and dominate the center of the pitch. Transform your versatile midfielder into the ultimate link between defense and attack.',

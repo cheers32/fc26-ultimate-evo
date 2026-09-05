@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const pinkHeritage1179: EvolutionDefinition = {
   id: '1179',
   name: 'Pink Heritage',
+  nameZh: "粉色传承",
   futbinLink: 'https://www.futbin.com/26/evolutions/1179/pink-heritage',
   version: 'FC 26',
   description: 'Bring back the unforgettable pink card aura of a fan favourite Ukrainian winger.',

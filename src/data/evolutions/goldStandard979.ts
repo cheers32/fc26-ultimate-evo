@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const goldStandard979: EvolutionDefinition = {
   id: '979',
   name: 'Gold Standard',
+  nameZh: "金标准",
   futbinLink: 'https://www.futbin.com/26/evolutions/979/gold-standard',
   version: 'FC 26',
   description: 'Find in the new Token Store - 500 Tokens',

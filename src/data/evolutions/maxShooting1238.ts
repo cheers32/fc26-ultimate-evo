@@ -11,6 +11,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const maxShooting1238: EvolutionDefinition = {
   id: '1238',
   name: 'Max Shooting',
+  nameZh: "射门拉满",
   futbinLink: 'https://www.futbin.com/26/evolutions/1238/max-shooting',
   version: 'FC 26',
   description: 'Upgrade a player to 99 Shooting. Season 10 level 21 reward.',

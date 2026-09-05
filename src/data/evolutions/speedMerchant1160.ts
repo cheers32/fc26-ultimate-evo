@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const speedMerchant1160: EvolutionDefinition = {
   id: '1160',
   name: 'Speed Merchant',
+  nameZh: "速度商人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1160/speed-merchant',
   version: 'FC 26',
   description: 'Not faster than the cars, just faster than everyone else. Evolve your player and develop the explosive pace that makes them impossible to catch.',

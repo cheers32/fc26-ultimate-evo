@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const autoDefender1186: EvolutionDefinition = {
   id: '1186',
   name: 'Auto Defender',
+  nameZh: "自动防守",
   futbinLink: 'https://www.futbin.com/26/evolutions/1186/auto-defender',
   version: 'FC 26',
   description: 'Sit back, relax, let the defenders do the job for you.',

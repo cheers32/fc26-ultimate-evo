@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theCreativeSpark1196: EvolutionDefinition = {
   id: '1196',
   name: 'The Creative Spark',
+  nameZh: "创造火花",
   futbinLink: 'https://www.futbin.com/26/evolutions/1196/the-creative-spark',
   version: 'FC 26',
   description: 'Found in SBCs.',

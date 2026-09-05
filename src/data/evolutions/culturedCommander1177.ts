@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const culturedCommander1177: EvolutionDefinition = {
   id: '1177',
   name: 'Cultured Commander',
+  nameZh: "儒雅统帅",
   futbinLink: 'https://www.futbin.com/26/evolutions/1177/cultured-commander',
   version: 'FC 26',
   description: 'The most complete defenders do things others simply cannot. Evolve your CB and unlock the technical quality and commanding presence that makes them one of a kind.',

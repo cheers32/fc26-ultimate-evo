@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const leopardsRoar1032: EvolutionDefinition = {
   id: '1032',
   name: "Leopard's Roar",
+  nameZh: "猎豹咆哮",
   futbinLink: 'https://www.futbin.com/26/evolutions/1032/leopards-roar',
   version: 'FC 26',
   description: 'Transform a defender into a fearless game-changer. Rock solid in defense, yet dangerous when charging forward.',

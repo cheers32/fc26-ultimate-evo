@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const fullbackForce1216: EvolutionDefinition = {
   id: '1216',
   name: 'Fullback Force',
+  nameZh: "边卫之力",
   futbinLink: 'https://www.futbin.com/26/evolutions/1216/fullback-force',
   version: 'FC 26',
   description: 'Secure the sidelines with lockdown defense and physical strength. Outlast opponents and shield your team to victory.',

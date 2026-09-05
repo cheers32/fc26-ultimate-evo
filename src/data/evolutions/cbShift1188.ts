@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const cbShift1188: EvolutionDefinition = {
   id: '1188',
   name: 'CB Shift',
+  nameZh: "改中卫",
   futbinLink: 'https://www.futbin.com/26/evolutions/1188/cb-shift',
   version: 'FC 26',
   description: 'Apply the CB position to any qualified player.',

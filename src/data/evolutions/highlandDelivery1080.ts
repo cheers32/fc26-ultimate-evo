@@ -2,7 +2,8 @@ import { EvolutionDefinition } from '../../types/player';
 
 export const highlandDelivery1080: EvolutionDefinition = {
   "id": "1080",
-  "name": "Highland Delivery",
+  name: "Highland Delivery",
+  nameZh: "高地快递",
   "futbinLink": "https://www.futbin.com/26/evolutions/1080/highland-delivery",
   "version": "FC 26",
   description: "Unlock this Evo by completing 'The Tartan Army' objective.",

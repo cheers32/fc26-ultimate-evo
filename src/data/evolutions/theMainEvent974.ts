@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const theMainEvent974: EvolutionDefinition = {
   id: '974',
   name: 'The Main Event',
+  nameZh: "主秀之夜",
   futbinLink: 'https://www.futbin.com/26/evolutions/974/the-main-event',
   version: 'FC 26',
   description: 'Find in the new Token Store - 2,000 Tokens.',

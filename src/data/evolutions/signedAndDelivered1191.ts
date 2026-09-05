@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const signedAndDelivered1191: EvolutionDefinition = {
   id: '1191',
   name: 'Signed and Delivered',
+  nameZh: "签收送达",
   futbinLink: 'https://www.futbin.com/26/evolutions/1191/signed-and-delivered',
   version: 'FC 26',
   description: "No more misplaced passes. Upgrade your midfielder's passing to drop 50-yard balls onto your striker's feet with pinpoint precision.",

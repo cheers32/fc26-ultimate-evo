@@ -9,6 +9,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const deadballMastery1061: EvolutionDefinition = {
   id: '1061',
   name: 'Deadball Mastery',
+  nameZh: "死球大师",
   futbinLink: 'https://www.futbin.com/26/evolutions/1061/deadball-mastery',
   version: 'FC 26',
   description: 'Only applicable to Diego Forlan',

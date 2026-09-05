@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const rightRoute1204: EvolutionDefinition = {
   id: '1204',
   name: 'Right Route',
+  nameZh: "正确路线",
   futbinLink: 'https://www.futbin.com/26/evolutions/1204/right-route',
   version: 'FC 26',
   description: 'Lengthy strides, new territory. Evolve your player and take the right route that changes everything.',

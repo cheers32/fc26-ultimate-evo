@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const touchlineTitan1121: EvolutionDefinition = {
   id: '1121',
   name: 'Touchline Titan',
+  nameZh: "边线巨人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1121/touchline-titan',
   version: 'FC 26',
   description: 'Build an impenetrable wall on the wing. Transform your fullback into a defensive relentless force, bringing unmatched stability and total security to your backline.',

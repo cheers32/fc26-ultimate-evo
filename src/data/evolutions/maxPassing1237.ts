@@ -11,6 +11,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const maxPassing1237: EvolutionDefinition = {
   id: '1237',
   name: 'Max Passing',
+  nameZh: "传球拉满",
   futbinLink: 'https://www.futbin.com/26/evolutions/1237/max-passing',
   version: 'FC 26',
   description: 'Boost your player to 99 Passing. Season 10 level 27 reward.',

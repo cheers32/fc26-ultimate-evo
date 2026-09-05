@@ -11,6 +11,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const leyendaDeMoncada1277: EvolutionDefinition = {
   id: '1277',
   name: 'Leyenda de Moncada',
+  nameZh: "蒙卡达传奇",
   futbinLink: 'https://www.futbin.com/26/evolutions/1277/leyenda-de-moncada',
   version: 'FC 26',
   description: 'Transform into a true playmaker who controls the tempo and delivers in decisive moments. Crafted for flawless control, pure class, and footballing perfection.',

@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const dazzlingDribbler1190: EvolutionDefinition = {
   id: '1190',
   name: 'Dazzling Dribbler',
+  nameZh: "炫目盘带手",
   futbinLink: 'https://www.futbin.com/26/evolutions/1190/dazzling-dribbler',
   version: 'FC 26',
   description: 'Unlocked by completing the Chime Challenge objective',

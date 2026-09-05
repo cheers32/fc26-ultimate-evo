@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const maxSweat1201: EvolutionDefinition = {
   id: '1201',
   name: 'Max Sweat',
+  nameZh: "极限汗水",
   futbinLink: 'https://www.futbin.com/26/evolutions/1201/max-sweat',
   version: 'FC 26',
   description: 'Found in the FUTTIES Daily Login Objective.',

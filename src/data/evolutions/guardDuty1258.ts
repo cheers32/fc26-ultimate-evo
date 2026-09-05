@@ -7,6 +7,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const guardDuty1258: EvolutionDefinition = {
   id: '1258',
   name: 'Guard Duty',
+  nameZh: "值守任务",
   futbinLink: 'https://www.futbin.com/26/evolutions/1258/guard-duty',
   version: 'FC 26',
   description: 'Found in the Upgrades section of SBCs.',

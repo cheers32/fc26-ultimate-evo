@@ -16,6 +16,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const passingTheTest1218: EvolutionDefinition = {
   id: '1218',
   name: 'Passing the Test',
+  nameZh: "通过考验",
   futbinLink: 'https://www.futbin.com/26/evolutions/1218/passing-the-test',
   version: 'FC 26',
   description: 'Elegant on the ball, relentless of it.',

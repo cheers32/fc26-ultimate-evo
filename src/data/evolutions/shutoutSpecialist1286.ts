@@ -13,6 +13,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const shutoutSpecialist1286: EvolutionDefinition = {
   id: '1286',
   name: 'Shutout Specialist',
+  nameZh: "零封专家",
   futbinLink: 'https://www.futbin.com/26/evolutions/1286/shutout-specialist',
   version: 'FC 26',
   description:

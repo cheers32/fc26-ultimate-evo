@@ -3,6 +3,7 @@ import { EvolutionDefinition } from '../../types/player';
 export const shutdown1146: EvolutionDefinition = {
   id: '1146',
   name: 'Shutdown',
+  nameZh: "一夫当关",
   futbinLink: 'https://www.futbin.com/26/evolutions/1146/shutdown',
   version: 'FC 26',
   description: 'Take control, block attacks and win duels.',
