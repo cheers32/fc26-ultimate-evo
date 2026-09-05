@@ -9,12 +9,13 @@ import { EvolutionDefinition } from '../../types/player';
  * six dribbling stats already sit — prorating spends a +30 face very differently on a 78 than on a
  * 92. Pace is a face boost too, capped at 96.
  *
- * The id is provisional. FUTBIN has not listed this evo, so the number follows Flip the Switch
- * rather than FUTBIN's own, and `futbinLink` points at the index instead of a page that does not
- * exist. Both want correcting once it appears there.
+ * The id is provisional and deliberately outside FUTBIN's range. It was 1293 first, chosen to
+ * follow Flip the Switch, and FUTBIN then handed 1293 to Spatial Genius — so guessing inside a
+ * live numbering scheme collides. 9002 cannot. `futbinLink` points at the index rather than a page
+ * that does not exist; both want correcting once FUTBIN lists the evo.
  */
-export const pureCraft1293: EvolutionDefinition = {
-  id: '1293',
+export const pureCraft9002: EvolutionDefinition = {
+  id: '9002',
   name: 'Pure Craft',
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',

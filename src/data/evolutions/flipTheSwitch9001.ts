@@ -8,12 +8,13 @@ import { EvolutionDefinition } from '../../types/player';
  * point or two apiece after the caps bite. The two star ratings are the real payload — five-star
  * weak foot and five-star skills for free is worth more than the numbers on most cards.
  *
- * The id is provisional. FUTBIN has not listed this evo, so the number is the next one after Pace
- * & Grace rather than FUTBIN's own, and `futbinLink` points at the index instead of a page that
- * does not exist. Both want correcting once it appears there.
+ * The id is provisional and deliberately outside FUTBIN's range. It was 1292 first, chosen as the
+ * next number after Pace & Grace, and FUTBIN then handed 1292 to Symphony in Motion — so guessing
+ * inside a live numbering scheme collides. 9001 cannot. `futbinLink` points at the index rather
+ * than a page that does not exist; both want correcting once FUTBIN lists the evo.
  */
-export const flipTheSwitch1292: EvolutionDefinition = {
-  id: '1292',
+export const flipTheSwitch9001: EvolutionDefinition = {
+  id: '9001',
   name: 'Flip the Switch',
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',

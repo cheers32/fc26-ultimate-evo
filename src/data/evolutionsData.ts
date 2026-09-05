@@ -25,8 +25,10 @@ import { threadTheNeedle1157 } from './evolutions/threadTheNeedle1157';
 import { dazzlingDribbler1190 } from './evolutions/dazzlingDribbler1190';
 import { auraFarming1164 } from './evolutions/auraFarming1164';
 import { dynamicDrive1161 } from './evolutions/dynamicDrive1161';
-import { flipTheSwitch1292 } from './evolutions/flipTheSwitch1292';
-import { pureCraft1293 } from './evolutions/pureCraft1293';
+import { flipTheSwitch9001 } from './evolutions/flipTheSwitch9001';
+import { symphonyInMotion1292 } from './evolutions/symphonyInMotion1292';
+import { spatialGenius1293 } from './evolutions/spatialGenius1293';
+import { pureCraft9002 } from './evolutions/pureCraft9002';
 import { paceAndGrace1291 } from './evolutions/paceAndGrace1291';
 import { theMasterLock1290 } from './evolutions/theMasterLock1290';
 import { ninetyNineDri1162 } from './evolutions/ninetyNineDri1162';
@@ -301,8 +303,10 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '1256': ninetyNineSho1256,
   '1290': theMasterLock1290,
   '1291': paceAndGrace1291,
-  '1292': flipTheSwitch1292,
-  '1293': pureCraft1293
+  '1292': symphonyInMotion1292,
+  '1293': spatialGenius1293,
+  '9001': flipTheSwitch9001,
+  '9002': pureCraft9002
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
