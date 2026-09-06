@@ -322,23 +322,24 @@ export function psPlusCapOf(
 }
 
 /**
- * Evos that hand over a PlayStyle+ and demand a free gold slot to do it.
+ * Evos that will take a card already carrying four PlayStyle+ and put another one on it — of their
+ * choosing, not yours.
  *
- * Asked this way rather than through psPlusCapOf, which compares the evo's cap against how many
- * slots a card holds — a question whose answer became "no" for everything the day every card
- * carried five, leaving both the filter and the chain badge that used it permanently empty.
+ * Two wrong answers preceded this one. psPlusCapOf asks whether the evo raises the card's ceiling,
+ * which became "no" for everything the day every card carried five slots, leaving the filter and
+ * the chain badge that used it permanently empty. Reading the evo's own printed gold cap instead
+ * was closer but still wrong: Carpet Football prints a cap of four and grants Technical and Pinged
+ * Pass, and since effectiveGoldLimit takes the larger of the evo's cap and the five every card now
+ * holds, that grant lands in a fifth slot anyway. The printed cap decides nothing.
  *
- * The interesting property survives that rule change and is entirely internal to the evo: its own
- * gold cap is above the old four, it actually grants a gold PlayStyle, and its entry gate sits below
- * that cap — so it will only take a card with somewhere to put what it is about to give. Spend the
- * slot elsewhere first and these are the evos you have locked yourself out of.
+ * What decides it is the entry gate. An evo that still accepts a card carrying four is an evo whose
+ * grant has to go somewhere, and the only place left is the fifth slot — filled with its pick
+ * rather than a free one. Forty-seven evos answer to that.
  */
 export function grantsFifthPsPlus(evo: import('../types/player').EvolutionDefinition): boolean {
-  const cap = evo.playStylesLimit?.gold ?? 0;
   return (
-    cap > STANDARD_PS_PLUS_SLOTS &&
-    (evo.playStylesAdded?.gold?.length ?? 0) > 0 &&
-    (evo.requirements.maxPlayStylesPlus ?? Infinity) < cap
+    (evo.requirements.maxPlayStylesPlus ?? 0) >= STANDARD_PS_PLUS_SLOTS &&
+    (evo.playStylesAdded?.gold?.length ?? 0) > 0
   );
 }
 

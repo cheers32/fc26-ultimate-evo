@@ -1224,9 +1224,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             {grantsFifthPsPlus(evo) && (
                               <span
                                 className="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/60 text-[8.5px] font-bold tracking-wide"
-                                title={`Fills the ${evo.playStylesLimit?.gold}th PlayStyle+ slot with one of its own (${(evo.playStylesAdded?.gold || []).join(', ')}) — and only accepts a card carrying ${evo.requirements.maxPlayStylesPlus} or fewer, so it has to come before anything that spends the slot`}
+                                title={`Will put a PlayStyle+ of its own choosing on a card already carrying four (${(evo.playStylesAdded?.gold || []).join(', ')}) — the fifth slot goes to its pick rather than yours`}
                               >
-                                ★ forced {evo.playStylesLimit?.gold}th PS+
+                                ★ forced PS+
                               </span>
                             )}
                             {evo.positionsAdded && evo.positionsAdded.length > 0 && (
@@ -1962,9 +1962,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             {grantsFifthPsPlus(evo) && (
                               <span
                                 className="px-1.5 py-0.5 rounded text-[9px] border font-bold bg-amber-950/60 text-amber-300 border-amber-700/60 whitespace-nowrap"
-                                title={`Fills the ${evo.playStylesLimit?.gold}th PlayStyle+ slot with one of its own (${(evo.playStylesAdded?.gold || []).join(', ')}) — and only accepts a card carrying ${evo.requirements.maxPlayStylesPlus} or fewer, so it has to come before anything that spends the slot`}
+                                title={`Will put a PlayStyle+ of its own choosing on a card already carrying four (${(evo.playStylesAdded?.gold || []).join(', ')}) — the fifth slot goes to its pick rather than yours`}
                               >
-                                ★ forced {evo.playStylesLimit?.gold}th PS+
+                                ★ forced PS+
                               </span>
                             )}
                           </div>
