@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, Upload, Edit2, Trash2, Eye, EyeOff, UserPlus, UserMinus, Library } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { X, Search, Upload, Edit2, Trash2, Eye, EyeOff, UserPlus, UserMinus, Library, Users } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { EditPlayerModal } from './EditPlayerModal';
 import { useModal } from '../utils/modalStack';
@@ -86,13 +86,17 @@ export function PlayerSelectionModal({
    */
   const viewingHidden = showHidden && hiddenPlayerIds.length > 0;
 
-  const playersList = useMemo(() => {
-    if (!viewingHidden) return Object.values(players);
-    // The hidden ones are exactly what this team's list has been cut down from, so they have to be
-    // read off the shared catalogue rather than out of `players`.
+  const teamList = useMemo(() => Object.values(players), [players]);
+  /**
+   * The other shelf: cards the library holds that this team is not using. They have to be read off
+   * the shared catalogue rather than out of `players`, which is exactly what they are missing from.
+   */
+  const otherList = useMemo(() => {
     const shelf = libraryPlayers || players;
     return hiddenPlayerIds.map(id => shelf[id]).filter(Boolean);
-  }, [players, libraryPlayers, hiddenPlayerIds, viewingHidden]);
+  }, [players, libraryPlayers, hiddenPlayerIds]);
+
+  const playersList = viewingHidden ? otherList : teamList;
 
   /** Positions actually present on the shelf, in the order a squad sheet lists them. */
   const positionOptions = useMemo(() => {
@@ -115,9 +119,13 @@ export function PlayerSelectionModal({
     [playersList, evolved]
   );
 
-  const filteredPlayers = useMemo(() => {
-    const q = searchQuery.toLowerCase();
-    const kept = playersList.filter(p => {
+  /**
+   * One predicate, applied to both shelves, so the counts beside the two buttons are the same
+   * question asked twice rather than two questions that happen to look alike.
+   */
+  const matches = useCallback(
+    (p: PlayerData) => {
+      const q = searchQuery.toLowerCase();
       if (!p.bio.name.toLowerCase().includes(q) && !p.bio.club.toLowerCase().includes(q)) return false;
       if (ovrFilter) {
         const bound = Number(ovrFilter.slice(0, -1));
@@ -131,11 +139,26 @@ export function PlayerSelectionModal({
         if (!positionFilter.every(pos => own.has(pos))) return false;
       }
       return true;
-    });
+    },
+    [searchQuery, positionFilter, ovrFilter, evolvedOnly, evolved, currentOvrById]
+  );
+
+  /**
+   * How many cards each shelf holds for the search as typed.
+   *
+   * Printed on both buttons rather than only the totals, because the question a search asks is
+   * "where is this card" and a bare `Library (41)` never answered it: searching a card the team
+   * does not have came back "No players found" with no sign that the shelf next door has it.
+   */
+  const teamMatchCount = useMemo(() => teamList.filter(matches).length, [teamList, matches]);
+  const otherMatchCount = useMemo(() => otherList.filter(matches).length, [otherList, matches]);
+
+  const filteredPlayers = useMemo(() => {
+    const kept = playersList.filter(matches);
     // Evolved first, so this list reads in the same order as the two sections it is split into and
     // Enter still picks whatever tile is at the top of the grid.
     return [...kept.filter(p => evolved.has(p.id)), ...kept.filter(p => !evolved.has(p.id))];
-  }, [playersList, searchQuery, positionFilter, ovrFilter, evolvedOnly, evolved, currentOvrById]);
+  }, [playersList, matches, evolved]);
 
   /**
    * The shelf in two shelves: what this team has already evolved, and what it has not.
@@ -338,18 +361,40 @@ export function PlayerSelectionModal({
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Both shelves, both counted for the search as typed. The counts are the point:
+                  looking for a card is looking for it anywhere, and the old single button printed
+                  the library's total, which said nothing about whether the card being searched for
+                  was in there. A match waiting on the shelf you are not looking at is called out in
+                  green so it reads as somewhere to go rather than a number. */}
               {hiddenPlayerIds.length > 0 && (
-                <button
-                  onClick={() => setShowHidden(v => !v)}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap ${
-                    viewingHidden
-                      ? 'bg-gray-800 border-gray-600 text-white'
-                      : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {rosterMode ? <Library className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                  {rosterMode ? 'Library' : 'Hidden'} ({hiddenPlayerIds.length})
-                </button>
+                <div className="flex items-center rounded-lg border border-gray-700 overflow-hidden shrink-0">
+                  {([false, true] as const).map(hidden => {
+                    const on = viewingHidden === hidden;
+                    const count = hidden ? otherMatchCount : teamMatchCount;
+                    const label = hidden ? (rosterMode ? 'In library' : 'Hidden') : 'In team';
+                    const elsewhere = !on && count > 0;
+                    return (
+                      <button
+                        key={String(hidden)}
+                        onClick={() => setShowHidden(hidden)}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                          on
+                            ? 'bg-gray-800 text-white'
+                            : elsewhere
+                              ? 'bg-gray-900 text-fcGreen hover:bg-gray-800'
+                              : 'bg-gray-900 text-gray-500 hover:text-white'
+                        }`}
+                      >
+                        {hidden
+                          ? rosterMode
+                            ? <Library className="w-4 h-4" />
+                            : <EyeOff className="w-4 h-4" />
+                          : <Users className="w-4 h-4" />}
+                        {label} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
               )}
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -487,7 +532,20 @@ export function PlayerSelectionModal({
             )}
             {filteredPlayers.length === 0 && (
               <div className="text-center py-20 text-gray-500">
-                No players found matching "{searchQuery}"
+                <p>No players found matching "{searchQuery}"</p>
+                {/* The whole reason the counts are up there: an empty shelf is only the answer if
+                    the other one is empty too. Offered as the button that switches, so finding the
+                    card and going to it are the same click. */}
+                {(viewingHidden ? teamMatchCount : otherMatchCount) > 0 && (
+                  <button
+                    onClick={() => setShowHidden(!viewingHidden)}
+                    className="mt-3 px-3 py-1.5 rounded-lg border border-fcGreen/40 bg-fcGreen/10 text-fcGreen text-sm font-semibold hover:bg-fcGreen hover:text-black transition-colors"
+                  >
+                    {viewingHidden
+                      ? `${teamMatchCount} in this team →`
+                      : `${otherMatchCount} in the ${rosterMode ? 'library' : 'hidden cards'} →`}
+                  </button>
+                )}
               </div>
             )}
           </div>
