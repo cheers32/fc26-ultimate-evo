@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult, PickTarget } from '../types/player';
-import { isPlayStyleNodeId, parsePlayStyleNodeId, openPlayStylesOn, OPEN_GOLD_SLOTS } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, psPlusCapOf, STANDARD_PS_PLUS_SLOTS, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
+import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, grantsFifthPsPlus, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
@@ -11,9 +11,6 @@ import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { availableEvolutions } from '../data/evolutionsData';
 import { ExternalLink, Loader2, Zap, Settings, Plus, Layers, X, Settings2, Minus, Star, Eye, RefreshCw, GitBranch, Trash2, Wand2, Users, Pencil, Copy, Check, CheckCheck, Link2 } from 'lucide-react';
 import { PlayerSubInfo } from './PlayerSubInfo';
-
-/** See psPlusCapOf: five stopped being generous the day five became standard. */
-const psSlotBaseline = () => (openPlayStylesOn() ? OPEN_GOLD_SLOTS : STANDARD_PS_PLUS_SLOTS);
 
 
 interface HeaderCardProps {
@@ -2184,7 +2181,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                               finished chain shows it without opening them. */}
                           {(evo.rarityChange
                             || maxRepeat > 1
-                            || psPlusCapOf(evo, psSlotBaseline())
+                            || grantsFifthPsPlus(evo)
                             || (evo.positionsAdded && evo.positionsAdded.length > 0)
                             || (evo.requirements.positions && evo.requirements.positions.length > 0)
                             || displayExcludedPositions(evo).length > 0) && (
@@ -2204,12 +2201,19 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                   → {evo.rarityChange}
                                 </span>
                               )}
-                              {psPlusCapOf(evo, psSlotBaseline()) && (
+                              {/* The evo arrives with a PlayStyle+ of its own and will only take a
+                                  card with a slot free for it. Worth saying on the step rather than
+                                  in the evo's page, because it is a fact about the order of the
+                                  chain: put this after something that fills the slot and the step
+                                  stops being legal. And the PlayStyle it brings is its choice, not
+                                  yours, so it can cost PS score on a card that wanted a different
+                                  one. */}
+                              {grantsFifthPsPlus(evo) && (
                                 <span
                                   className="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/60 text-[8.5px] font-bold tracking-wide"
-                                  title={`Takes the card to ${psPlusCapOf(evo, psSlotBaseline())} PlayStyle+ slots — one more than a card normally holds`}
+                                  title={`Fills the ${evo.playStylesLimit?.gold}th PlayStyle+ slot with one of its own (${(evo.playStylesAdded?.gold || []).join(', ')}) — and only accepts a card carrying ${evo.requirements.maxPlayStylesPlus} or fewer, so it has to come before anything that spends the slot`}
                                 >
-                                  {psPlusCapOf(evo, psSlotBaseline())}× PS+
+                                  ★ forced {evo.playStylesLimit?.gold}th PS+
                                 </span>
                               )}
                               {evo.positionsAdded && evo.positionsAdded.length > 0 && (

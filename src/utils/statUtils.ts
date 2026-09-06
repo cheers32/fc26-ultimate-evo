@@ -321,6 +321,27 @@ export function psPlusCapOf(
   return cap !== undefined && cap > baseline ? cap : null;
 }
 
+/**
+ * Evos that hand over a PlayStyle+ and demand a free gold slot to do it.
+ *
+ * Asked this way rather than through psPlusCapOf, which compares the evo's cap against how many
+ * slots a card holds — a question whose answer became "no" for everything the day every card
+ * carried five, leaving both the filter and the chain badge that used it permanently empty.
+ *
+ * The interesting property survives that rule change and is entirely internal to the evo: its own
+ * gold cap is above the old four, it actually grants a gold PlayStyle, and its entry gate sits below
+ * that cap — so it will only take a card with somewhere to put what it is about to give. Spend the
+ * slot elsewhere first and these are the evos you have locked yourself out of.
+ */
+export function grantsFifthPsPlus(evo: import('../types/player').EvolutionDefinition): boolean {
+  const cap = evo.playStylesLimit?.gold ?? 0;
+  return (
+    cap > STANDARD_PS_PLUS_SLOTS &&
+    (evo.playStylesAdded?.gold?.length ?? 0) > 0 &&
+    (evo.requirements.maxPlayStylesPlus ?? Infinity) < cap
+  );
+}
+
 export function displayExcludedPositions(evo: import('../types/player').EvolutionDefinition): string[] {
   return (evo.requirements.excludedPositions || []).filter(pos => pos !== 'GK');
 }

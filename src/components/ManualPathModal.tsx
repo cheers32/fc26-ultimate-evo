@@ -3,8 +3,8 @@ import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp, ChevronDown } fro
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter, EvolutionDefinition } from '../types/player';
-import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, openPlayStylesOn, OPEN_GOLD_SLOTS, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
-import { psPlusCapOf, STANDARD_PS_PLUS_SLOTS } from '../utils/statUtils';
+import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
+import { grantsFifthPsPlus } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import {
@@ -22,24 +22,6 @@ import { PositionScore, bestScore, scoreAtPosition } from '../utils/positionScor
 import { PlayStyleScore, playStyleScoreAt } from '../utils/playStyleScore';
 import { useModal } from '../utils/modalStack';
 
-/** See psPlusCapOf: five stopped being generous the day five became standard. */
-const psSlotBaseline = () => (openPlayStylesOn() ? OPEN_GOLD_SLOTS : STANDARD_PS_PLUS_SLOTS);
-
-/**
- * Evos that hand over a PlayStyle+ and demand a free gold slot to do it.
- *
- * This used to be asked as psPlusCapOf against the slot baseline, which is a question about whether
- * the evo raises the card's ceiling — and under the current rules, where every card already carries
- * five gold slots, the answer is no for all of them and the filter matched nothing at all.
- *
- * The question worth asking survives that rule change: which evos come with a PlayStyle+ attached
- * and will only take a card that still has somewhere to put it. Those are the ones you have to
- * sequence around, because spending the fourth slot elsewhere first locks you out of them.
- */
-const grantsFifthPsPlus = (evo: EvolutionDefinition): boolean =>
-  (evo.playStylesAdded?.gold?.length ?? 0) > 0 &&
-  (evo.playStylesLimit?.gold ?? 0) >= OPEN_GOLD_SLOTS &&
-  (evo.requirements.maxPlayStylesPlus ?? Infinity) < OPEN_GOLD_SLOTS;
 
 
 // How many evos may carry the thumbs-up at once. Every evo that trips any heuristic used to be
@@ -1209,7 +1191,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                         {/* What this step asks for and turns the card into, same badges as the pool
                             below and the chain on the player panel. */}
                         {(evo.rarityChange
-                          || psPlusCapOf(evo, psSlotBaseline())
+                          || grantsFifthPsPlus(evo)
                           || (evo.positionsAdded && evo.positionsAdded.length > 0)
                           || (evo.requirements.positions && evo.requirements.positions.length > 0)
                           || displayExcludedPositions(evo).length > 0) && (
@@ -1229,14 +1211,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 → {evo.rarityChange}
                               </span>
                             )}
-                            {/* The scarcest thing an evo hands over: a slot the card could not
-                                otherwise hold, and cannot get any other way. */}
-                            {psPlusCapOf(evo, psSlotBaseline()) && (
+                            {/* Comes with a PlayStyle+ of its own and only accepts a card with the
+                                slot still free — so it constrains the order of the chain, and the
+                                PlayStyle it fills the slot with is its pick rather than yours. */}
+                            {grantsFifthPsPlus(evo) && (
                               <span
                                 className="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/60 text-[8.5px] font-bold tracking-wide"
-                                title={`Takes the card to ${psPlusCapOf(evo, psSlotBaseline())} PlayStyle+ slots — one more than a card normally holds`}
+                                title={`Fills the ${evo.playStylesLimit?.gold}th PlayStyle+ slot with one of its own (${(evo.playStylesAdded?.gold || []).join(', ')}) — and only accepts a card carrying ${evo.requirements.maxPlayStylesPlus} or fewer, so it has to come before anything that spends the slot`}
                               >
-                                {psPlusCapOf(evo, psSlotBaseline())}× PS+
+                                ★ forced {evo.playStylesLimit?.gold}th PS+
                               </span>
                             )}
                             {evo.positionsAdded && evo.positionsAdded.length > 0 && (
@@ -1958,6 +1941,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             {evo.maxRepeatable && evo.maxRepeatable > 1 && (
                               <span className={`px-1.5 py-0.5 rounded text-[9px] border font-bold ${canAdd ? 'bg-fcGold/20 text-fcGold border-fcGold/40' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
                                 Repeatable: {evo.maxRepeatable}
+                              </span>
+                            )}
+                            {/* It arrives with a PlayStyle+ of its own and only accepts a card with
+                                the slot still free, so it constrains where in a chain it can go —
+                                and the PlayStyle filling that slot is its pick, not yours, which is
+                                why one of these can cost PS score on a card that wanted another. */}
+                            {grantsFifthPsPlus(evo) && (
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[9px] border font-bold bg-amber-950/60 text-amber-300 border-amber-700/60 whitespace-nowrap"
+                                title={`Fills the ${evo.playStylesLimit?.gold}th PlayStyle+ slot with one of its own (${(evo.playStylesAdded?.gold || []).join(', ')}) — and only accepts a card carrying ${evo.requirements.maxPlayStylesPlus} or fewer, so it has to come before anything that spends the slot`}
+                              >
+                                ★ forced {evo.playStylesLimit?.gold}th PS+
                               </span>
                             )}
                           </div>
