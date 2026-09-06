@@ -810,6 +810,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     }
     if (evoFilters.newRarity) parts.push('a new rarity');
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
+    if (evoFilters.noForcedPsPlus) parts.push('no forced PlayStyle+');
     if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
     if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
     if (evoFilters.analyzeReadings === 'bare') parts.push('bare recommendations only');
@@ -837,6 +838,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.newPosition) count++;
     if (evoFilters.noRarityChange) count++;
     if (evoFilters.noPositionChange) count++;
+    if (evoFilters.noForcedPsPlus) count++;
     // One narrowing, however many archetypes are ticked — the badge counts filters, not values.
     if (evoFilters.accelerate && evoFilters.accelerate.length > 0) count++;
     if (evoFilters.accelerateFamily && evoFilters.accelerateFamily.length > 0) count++;
@@ -1339,6 +1341,21 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           Keep Positions
+                        </label>
+                        {/* Not a "keep" in the same sense — the slot it fills is one the card had
+                            free — but it belongs with them: all three say leave something of mine
+                            alone. */}
+                        <label
+                          className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
+                          title="Leave out the evos that come with a PlayStyle+ of their own and only take a card with the gold slot free — the PlayStyle is their pick, not yours"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.noForcedPsPlus}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, noForcedPsPlus: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          No Forced PS+
                         </label>
                       </div>
                       {/* How a chain may spend its steps. Both on unless you say otherwise, because

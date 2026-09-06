@@ -10,7 +10,7 @@ import {
   fitScore
 } from './fitScore';
 import { POSITION_WEIGHTS } from './positionWeights';
-import { faceWeight } from './statUtils';
+import { faceWeight, grantsFifthPsPlus } from './statUtils';
 
 // Rarities that unlock free PlayStyle assignment in-game. Once a card is one of these,
 // running another rarity-changing evo just overwrites the string for no extra benefit —
@@ -970,6 +970,11 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
       const maxAllowed = oneUse ? 1 : evo.maxRepeatable || 1;
 
       if (count >= maxAllowed) continue;
+
+      // Judged per evo rather than on the finished chain, unlike the rarity and position filters:
+      // what is objected to is the evo spending the gold slot on a PlayStyle of its own choosing,
+      // and that happens whatever else the chain does afterwards.
+      if (filters?.noForcedPsPlus && grantsFifthPsPlus(evo)) continue;
 
       // Rarity does not stack — a second evo granting a rarity the chain already granted spends a
       // step on nothing. Only the rarity each evo *gives* is compared; two evos that both turn the

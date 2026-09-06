@@ -299,6 +299,16 @@ export interface EvoFilters {
   noRarityChange?: boolean;
   noPositionChange?: boolean;
   /**
+   * Leave out the evos that arrive with a PlayStyle+ of their own and only accept a card with the
+   * gold slot still free.
+   *
+   * They are not simply generous: the PlayStyle they put in that slot is their pick, so on a card
+   * that wanted a different one the trade is a slot for something it did not ask for — Class on
+   * Grass costs a card PS score on the way to a higher OVR. Off by default, because for most cards
+   * a free PlayStyle+ is worth having; on, for the ones where the slot is already spoken for.
+   */
+  noForcedPsPlus?: boolean;
+  /**
    * Rank by "fit" — the player's own PlayStyle/sub-stat profile — instead of by raw stat totals.
    * Off by default: it changes what every recommendation in the app means, so it is opt-in.
    */
