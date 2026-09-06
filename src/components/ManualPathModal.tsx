@@ -590,6 +590,41 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
    * way of it.
    */
   const [poolView, setPoolView] = useState<'numbers' | 'quality'>('numbers');
+
+  /**
+   * The cards already running an evo in game, printed on the evo.
+   *
+   * Most evos are one to a club, so "is this spent" is a question asked of every card in the pool
+   * while planning — and the answer was only on the evo's own page, one click and one dismissal at
+   * a time. Names are clickable for the same reason they are there, and stop the click reaching the
+   * card underneath, which would open the evo instead of the player.
+   */
+  const usedByLine = (evoId: string, compact: boolean) => {
+    const users = evoUsage?.[evoId];
+    if (!users || users.length === 0) return null;
+    return (
+      <div className={`flex flex-wrap items-center gap-1 ${compact ? 'text-[8.5px]' : 'text-[9px]'}`} title={`In game on ${users.map(u => u.name).join(', ')}`}>
+        <span className="text-fcGreen/70 font-bold">IN GAME</span>
+        {users.map(u => (
+          <button
+            key={u.id}
+            onClick={e => {
+              e.stopPropagation();
+              if (!onSelectPlayer) return;
+              onSelectPlayer(u.id);
+              onClose();
+            }}
+            disabled={!onSelectPlayer}
+            className={`px-1 py-0.5 rounded border font-bold whitespace-nowrap bg-fcGreen/10 border-fcGreen/40 text-fcGreen ${
+              onSelectPlayer ? 'hover:bg-fcGreen hover:text-black cursor-pointer' : 'cursor-default'
+            }`}
+          >
+            {u.name}
+          </button>
+        ))}
+      </div>
+    );
+  };
   // Narrows the pool to the evos that leave the card on one chosen AcceleRATE archetype — the
   // question "which of these keeps me Explosive" can't be answered from the face stats on the
   // cards, since the archetype turns on acceleration/agility/strength and height.
@@ -1909,6 +1944,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                           </div>
                         )}
 
+                        {usedByLine(id, true)}
+
                         {/* Three pips a face, the way a chemistry style states itself: what the evo
                             leans on, not what this card would gain from it. */}
                         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-0.5">
@@ -2106,6 +2143,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                               </span>
                             )}
                           </div>
+                          {usedByLine(id, false)}
                           {canAdd && expectedStats && expectedPlayStyles && (
                             <div className="mt-2 pt-2 border-t border-gray-800/50">
                               <div className="grid grid-cols-3 gap-1.5 mt-1">
