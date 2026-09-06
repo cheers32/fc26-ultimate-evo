@@ -899,6 +899,37 @@ export function forEachChain(
           }
         }
 
+        // The end-game floors, as one switch. Absent reads as on.
+        //
+        // The last two are why this is a flag and not a set of min/max bounds: they are conditions
+        // on what the build became. A card that comes out Explosive is being read on agility over
+        // strength, so strength past 89 is spending the archetype to buy a stat; a Lengthy one is
+        // read the other way and agility past 95 does the same. Neither can be expressed as a bound
+        // on a stat, because whether it applies depends on the finished chain.
+        if (filters.endgameProfile !== false) {
+          const subOf = (key: string): number => {
+            for (const face of Object.values(state.stats)) {
+              const hit = face.subs?.[key];
+              if (hit) return hit.base;
+            }
+            return 0;
+          };
+          const agility = subOf('agility');
+          if (
+            agility < 92 ||
+            subOf('stamina') < 94 ||
+            subOf('reactions') < 97 ||
+            subOf('composure') < 97 ||
+            (state.stats.pac?.baseFace || 0) < 93
+          ) {
+            passesFilters = false;
+          } else {
+            const family = accelerateFamilyOf(state.stats, state.bio);
+            if (family === 'Explosive' && subOf('strength') > 89) passesFilters = false;
+            if (family === 'Lengthy' && agility > 95) passesFilters = false;
+          }
+        }
+
         if (filters.requiredEvos && filters.requiredEvos.length > 0) {
           const hasAllRequired = filters.requiredEvos.every(evoId => currentChainIds.includes(evoId));
           if (!hasAllRequired) passesFilters = false;

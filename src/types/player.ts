@@ -312,6 +312,19 @@ export interface EvoFilters {
    */
   noForcedPsPlus?: boolean;
   /**
+   * The end-game profile: one switch for the floors a finished card is judged against here.
+   *
+   * Agility 92, stamina 94, reactions 97, composure 97 and 93 pace, plus two that depend on what
+   * the build turns into rather than on a number alone — an Explosive card may not carry more than
+   * 89 strength, and a Lengthy one no more than 95 agility, since past those the archetype is being
+   * given away by the very stats that define it.
+   *
+   * Kept as a flag rather than written out as stat bounds because those two cannot be said in
+   * min/max at all: they are conditions on the chain's own AcceleRATE, which is not known until the
+   * chain is finished.
+   */
+  endgameProfile?: boolean;
+  /**
    * Rank by "fit" — the player's own PlayStyle/sub-stat profile — instead of by raw stat totals.
    * Off by default: it changes what every recommendation in the app means, so it is opt-in.
    */

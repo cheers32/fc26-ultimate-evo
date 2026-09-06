@@ -811,6 +811,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.newRarity) parts.push('a new rarity');
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
     if (evoFilters.noForcedPsPlus === false) parts.push('forced PlayStyle+ allowed');
+    if (evoFilters.endgameProfile === false) parts.push('end-game floors off');
     if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
     if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
     if (evoFilters.analyzeReadings === 'bare') parts.push('bare recommendations only');
@@ -1355,6 +1356,18 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />
                           No Forced PS+
+                        </label>
+                        <label
+                          className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
+                          title="End-game floors: agility 92, stamina 94, reactions 97, composure 97, pace 93 — plus strength at most 89 on a build that comes out Explosive, and agility at most 95 on one that comes out Lengthy"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={draftFilters.endgameProfile !== false}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, endgameProfile: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          Endgame Floors
                         </label>
                       </div>
                       {/* How a chain may spend its steps. Both on unless you say otherwise, because
