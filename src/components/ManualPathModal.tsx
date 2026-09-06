@@ -1752,17 +1752,28 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   ⏳ ≤7d
                 </button>
-                <button
-                  onClick={() => setPoolView(poolView === 'numbers' ? 'quality' : 'numbers')}
-                  title={poolView === 'numbers'
-                    ? 'Switch to the card-free reading: what each evo is, rather than what it does to this player'
-                    : 'Back to the numbers this evo would put on this card'}
-                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
-                    poolView === 'quality' ? 'bg-violet-400 text-black border-violet-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
-                  }`}
-                >
-                  {poolView === 'quality' ? '◧ Quality' : '◧ Numbers'}
-                </button>
+                {/* Both readings on show rather than one button that renames itself — with a
+                    single label there is no telling whether it names the view you are in or the one
+                    you would get. */}
+                <div className="inline-flex rounded-lg border border-gray-700/50 overflow-hidden">
+                  {([
+                    ['numbers', 'Numbers', 'What this evo would do to the card in front of you'],
+                    ['quality', 'Quality', 'What this evo is, free of any card: entry, ceiling, expiry, and how hard it leans on each face']
+                  ] as const).map(([mode, label, hint]) => (
+                    <button
+                      key={mode}
+                      onClick={() => setPoolView(mode)}
+                      title={hint}
+                      className={`px-2 py-1.5 text-[10px] font-bold transition-colors ${
+                        poolView === mode
+                          ? 'bg-violet-400 text-black'
+                          : 'bg-[#2A2D2A] text-gray-400 hover:bg-[#374151] hover:text-white'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <button
                   onClick={() => setShowNotIncluded(!showNotIncluded)}
                   title="Show or hide not included evos"
