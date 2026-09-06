@@ -1263,6 +1263,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                         {(evo.rarityChange
                           || grantsFifthPsPlus(evo)
                           || reachesNinetyNine(evo)
+                          || daysUntilExpiry(evo) !== null
                           || (evo.positionsAdded && evo.positionsAdded.length > 0)
                           || (evo.requirements.positions && evo.requirements.positions.length > 0)
                           || displayExcludedPositions(evo).length > 0) && (
@@ -2125,6 +2126,27 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 </div>
                               </div>
                             )}
+                            {/* First in the row, because a deadline outranks anything the evo
+                                gives: the others say whether you want it, this says whether the
+                                question is still open. */}
+                            {(() => {
+                              const days = daysUntilExpiry(evo);
+                              if (days === null) return null;
+                              return (
+                                <span
+                                  title={`Expires ${new Date(`${evo.expiresAt}T00:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`}
+                                  className={`px-1.5 py-0.5 rounded text-[9px] border font-bold whitespace-nowrap ${
+                                    days <= 2
+                                      ? 'bg-red-950/60 text-red-300 border-red-700/60'
+                                      : days <= 7
+                                      ? 'bg-amber-950/60 text-amber-300 border-amber-700/60'
+                                      : 'bg-black/40 text-gray-400 border-gray-800'
+                                  }`}
+                                >
+                                  {days <= 0 ? 'expired' : `${days}d left`}
+                                </span>
+                              );
+                            })()}
                             {evo.requirements.positions && evo.requirements.positions.length > 0 && (
                               <span className="px-1.5 py-0.5 bg-red-950/40 rounded text-[9px] text-red-400 border border-red-900/50 font-bold whitespace-nowrap">
                                 Req Pos: {evo.requirements.positions.join(', ')}
