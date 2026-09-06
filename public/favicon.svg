@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- A solid green tile rather than a drawing: at 16px in a tab strip the only thing that
+       survives is the colour block and one bold shape, so the mark is the app's own green with
+       a pair of upgrade chevrons cut out of it. -->
+  <rect width="32" height="32" rx="7" fill="#1ED760"/>
+  <path d="M16 5.5 L25.5 15 L21.5 15 L21.5 15 L16 9.5 L10.5 15 L6.5 15 Z" fill="#0A0D0A"/>
+  <path d="M16 14.5 L25.5 24 L21.5 24 L16 18.5 L10.5 24 L6.5 24 Z" fill="#0A0D0A"/>
+</svg>
