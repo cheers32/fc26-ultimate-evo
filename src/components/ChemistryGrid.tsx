@@ -113,8 +113,11 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     const out = new Map<string, number>();
     for (const name of names) {
       const styled = withStyleStats(previewStats, chemStyles[name] || {});
+      // Locked to the one position, archetype gate off — see `ignoreArchetype`. Falling through
+      // to bestScore here is what put a CM number in a table of CAM numbers, so the fallback is
+      // only for a position with no plans at all, which no style can change.
       const s = scorePosition
-        ? scoreAtPosition(styled, bio, scorePosition) ?? bestScore(styled, bio)
+        ? scoreAtPosition(styled, bio, scorePosition, false, true) ?? bestScore(styled, bio)
         : bestScore(styled, bio);
       if (s) out.set(name, s.score);
     }

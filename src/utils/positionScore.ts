@@ -197,11 +197,25 @@ export function scoreAtPosition(
    * is the card as it would be fielded — 96 and 99 are the same stat once a +3 is on it — and the
    * style it assumed is named in the result so the number can be checked.
    */
-  assumeChem = false
+  assumeChem = false,
+  /**
+   * Score the position's plans whatever archetype the card reads.
+   *
+   * Off by default: a Lengthy card being scored as an Explosive Maradona CAM is a reading of a card
+   * that does not exist, and the gate exists to refuse it.
+   *
+   * On for the chemistry grid, where every style is being compared at one position and the grid
+   * already groups them by the archetype each one produces. There the gate did the opposite of its
+   * job: it disqualified all of a position's plans, the caller fell through to "score this card
+   * wherever it is best", and a style's number quietly became a different position's — Zidane's
+   * Hawk read 88.9 as a Box-to-Box CM in a table of CAM scores. The grouping states the archetype;
+   * the number states the fit.
+   */
+  ignoreArchetype = false
 ): PositionScore | null {
   let best: PositionScore | null = null;
   let bestIgs = -Infinity;
-  for (const reading of readingsAt(stats, bio, position, assumeChem)) {
+  for (const reading of readingsAt(stats, bio, position, assumeChem, ignoreArchetype)) {
     const igs = reading.igs;
     if (!best || reading.score > best.score || (reading.score === best.score && igs > bestIgs)) {
       best = reading;
@@ -216,7 +230,8 @@ function readingsAt(
   stats: StatsData,
   bio: PlayerBio,
   position: string,
-  assumeChem: boolean
+  assumeChem: boolean,
+  ignoreArchetype = false
 ): (PositionScore & { igs: number })[] {
   const key = position.trim().toUpperCase();
   const sided = SIDED[key];
@@ -239,7 +254,7 @@ function readingsAt(
       // recommendations make, and marked the same way, so a Controlled reading never quietly passes
       // for the real thing.
       const fallback = archetype !== plan.archetype;
-      if (fallback && archetype !== 'Controlled') continue;
+      if (fallback && archetype !== 'Controlled' && !ignoreArchetype) continue;
 
       const { score, under } = scoreAgainst(styled, plan);
       // Ties go to the reading that leaves more card. Two styles a plan scores identically are not
