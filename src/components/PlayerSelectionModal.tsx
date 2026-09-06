@@ -372,7 +372,6 @@ export function PlayerSelectionModal({
                     const on = viewingHidden === hidden;
                     const count = hidden ? otherMatchCount : teamMatchCount;
                     const label = hidden ? (rosterMode ? 'Not in team' : 'Hidden') : 'In team';
-                    const elsewhere = !on && count > 0;
                     return (
                       <button
                         key={String(hidden)}
@@ -389,11 +388,13 @@ export function PlayerSelectionModal({
                             : <EyeOff className="w-4 h-4" />
                           : <Users className="w-4 h-4" />}
                         {label}{' '}
-                        {/* Only the count carries the "there is something over here" colour, and
-                            only while this is not the side being read. Colouring the whole button
-                            put the brighter half on the shelf you are *not* looking at, which reads
-                            as the selected one — the selection has to be the loudest thing here. */}
-                        <span className={elsewhere ? 'text-fcGreen font-bold' : undefined}>({count})</span>
+                        {/* The count belongs to its own button and is lit with it. Colouring the
+                            other side's number to say "there is something over here" put the one
+                            bright thing in the pair on the shelf not being shown, which reads as
+                            the selection twice over — first the whole button, then just the digits.
+                            Where the other shelf has the match, the empty state says so with a
+                            button that goes there, which is the place to say it. */}
+                        <span className={on ? 'text-white font-bold' : 'text-gray-600'}>({count})</span>
                       </button>
                     );
                   })}
