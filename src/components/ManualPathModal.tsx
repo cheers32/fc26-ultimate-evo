@@ -202,7 +202,7 @@ const getEvoRecommendation = ({
     // Asked to leave the card's rarity/positions alone: an evo that changes them is still
     // addable by hand, but it is never what the app suggests doing next.
     const evo = availableEvolutions[evoId];
-    if (filters.noForcedPsPlus && evo && grantsFifthPsPlus(evo)) {
+    if (filters.noForcedPsPlus !== false && evo && grantsFifthPsPlus(evo)) {
       blocked = true;
       reasons.push('fills the gold slot with a PlayStyle+ of its own, and Filters asks not to');
     }
@@ -564,15 +564,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   const [filterFitPosition, setFilterFitPosition] = useState(false);
   const [filterRepeatable, setFilterRepeatable] = useState(false);
   /**
-   * Only the evos whose OVR ceiling is 99.
+   * The OVR ceiling an evo can leave the card on, as a four-way choice.
    *
-   * Two thirds of the library stops at 98 or lower, and an evo that caps at 97 is not just a
-   * smaller upgrade — run it and the card is parked below 99 for good, because nothing later
-   * lifts an OVR its own ceiling already covers. That is a different question from the entry
-   * gate next to it: `gateOvr` asks what an evo still accepts, this asks how high it can leave
-   * you. Evos that grant no OVR at all are excluded — a ceiling of 99 on a +0 promises nothing.
+   * A different question from the entry gate next to it: `gateOvr` asks what an evo still accepts,
+   * this asks how high it can leave you. It matters because an evo that caps at 97 is not merely a
+   * smaller upgrade — run it and the card is parked below that for good, since nothing later lifts
+   * an OVR its own ceiling already covers. Two thirds of the library stops at 98 or lower, so
+   * "which of these can still reach 99" and "which of these stop me at 97" are both real questions.
+   *
+   * Evos that grant no OVR at all are excluded whichever is picked: a ceiling on a +0 promises
+   * nothing.
    */
-  const [filterOvr99, setFilterOvr99] = useState(false);
+  const [filterOvrCeiling, setFilterOvrCeiling] = useState<96 | 97 | 98 | 99 | null>(null);
   // Narrows the pool to the evos that leave the card on one chosen AcceleRATE archetype — the
   // question "which of these keeps me Explosive" can't be answered from the face stats on the
   // cards, since the archetype turns on acceleration/agility/strength and height.
@@ -1022,7 +1025,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     // An evo you can run more than once is a different kind of pick — the same card again rather
     // than a new one — so it is worth being able to see only those.
     if (filterRepeatable && (evo.maxRepeatable ?? 1) <= 1) return false;
-    if (filterOvr99 && !(evo.ovrBoost.limit === 99 && evo.ovrBoost.boost > 0)) return false;
+    if (filterOvrCeiling !== null && !(evo.ovrBoost.limit === filterOvrCeiling && evo.ovrBoost.boost > 0)) return false;
     // Only an addable evo has a resulting archetype at all: an ineligible or maxed-out card was
     // never simulated, so asking for one archetype drops it from the list rather than listing it
     // under a heading it can't answer to.
@@ -1628,15 +1631,20 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                 >
                   ↻ Repeatable
                 </button>
-                <button
-                  onClick={() => setFilterOvr99(!filterOvr99)}
-                  title="Only evos whose OVR ceiling is 99 — the ones that don't park the card below it"
-                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
-                    filterOvr99 ? 'bg-sky-400 text-black border-sky-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
-                  }`}
-                >
-                  OVR → 99
-                </button>
+                {([99, 98, 97, 96] as const).map(n => (
+                  <button
+                    key={`ceil-${n}`}
+                    onClick={() => setFilterOvrCeiling(filterOvrCeiling === n ? null : n)}
+                    title={`Only evos whose OVR ceiling is ${n}${
+                      n === 99 ? ' — the ones that do not park the card below it' : ` — run one and the card stops at ${n}`
+                    }`}
+                    className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                      filterOvrCeiling === n ? 'bg-sky-400 text-black border-sky-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                    }`}
+                  >
+                    OVR → {n}
+                  </button>
+                ))}
                 {/* The one filter that isn't a yes/no: five archetypes, and picking one is a
                     different question from picking another, so it gets a select rather than five
                     more toggles in a row that is already long. */}

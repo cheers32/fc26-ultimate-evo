@@ -304,8 +304,11 @@ export interface EvoFilters {
    *
    * They are not simply generous: the PlayStyle they put in that slot is their pick, so on a card
    * that wanted a different one the trade is a slot for something it did not ask for — Class on
-   * Grass costs a card PS score on the way to a higher OVR. Off by default, because for most cards
-   * a free PlayStyle+ is worth having; on, for the ones where the slot is already spoken for.
+   * Grass costs a card PS score on the way to a higher OVR.
+   *
+   * Absent reads as on, like the two repeat filters: a slot filled with someone else's choice is a
+   * cost often enough that it should be opted into rather than out of. Set it to false to let those
+   * evos back into the search.
    */
   noForcedPsPlus?: boolean;
   /**
