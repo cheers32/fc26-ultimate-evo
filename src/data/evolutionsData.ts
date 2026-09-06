@@ -30,6 +30,7 @@ import { symphonyInMotion1292 } from './evolutions/symphonyInMotion1292';
 import { magneticMarksman9003 } from './evolutions/magneticMarksman9003';
 import { groundedGuardian9004 } from './evolutions/groundedGuardian9004';
 import { cornerstoneGuard9005 } from './evolutions/cornerstoneGuard9005';
+import { elMatador9006 } from './evolutions/elMatador9006';
 import { spatialGenius1293 } from './evolutions/spatialGenius1293';
 import { pureCraft9002 } from './evolutions/pureCraft9002';
 import { paceAndGrace1291 } from './evolutions/paceAndGrace1291';
@@ -312,7 +313,8 @@ export const availableEvolutions: Record<string, EvolutionDefinition> = {
   '9002': pureCraft9002,
   '9003': magneticMarksman9003,
   '9004': groundedGuardian9004,
-  '9005': cornerstoneGuard9005
+  '9005': cornerstoneGuard9005,
+  '9006': elMatador9006
 };
 
 export const defaultEvolutionPaths: EvolutionPath[] = [
