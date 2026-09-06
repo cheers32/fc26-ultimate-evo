@@ -1948,12 +1948,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
                         {/* Three pips a face, the way a chemistry style states itself: what the evo
                             leans on, not what this card would gain from it. */}
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-0.5">
+                        {/* Three across, two down — the order the game prints them in, so the eye
+                            lands on the same stat it would on a card. */}
+                        <div className="grid grid-cols-3 gap-x-1.5 gap-y-1 mt-0.5">
                           {(['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).map(face => {
                             const pips = evoFacePips(evo, face);
                             return (
-                              <div key={face} className="flex items-center justify-between">
-                                <span className={`text-[8.5px] font-bold ${pips > 0 ? 'text-gray-400' : 'text-gray-700'}`}>
+                              <div key={face} className="flex flex-col items-center gap-0.5">
+                                {/* The label reads the same whether the evo touches that face or
+                                    not — dimming it made a card look half-empty when what it was
+                                    saying is simply "nothing here", which the pips already say. */}
+                                <span className="text-[8.5px] font-bold leading-none text-gray-400">
                                   {face.toUpperCase()}
                                 </span>
                                 <span className="flex gap-0.5">
