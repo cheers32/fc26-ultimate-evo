@@ -462,18 +462,19 @@ export function applyEvo(
           };
 
           // 2. Rounding down, and sub-stats clamped at the cap, can leave the weighted face short
-          // of the target. Below 99 EA makes it up by walking the sub-stats in ascending order of
-          // value, handing out one point at a time and re-checking after every point, so the
-          // cheapest stats absorb the shortfall first and the walk stops the moment the target is
-          // met. Ronaldo's 94 DRI to 97 lands one short and the point goes to Dribbling; Zidane's
-          // 93 SHO to 98 lands one short and it goes to Shot Power.
+          // of the target. EA makes it up by walking the sub-stats in a fixed ascending order of
+          // value — cheapest first, ties to the heavier weight — handing out one point per stat per
+          // pass and re-checking after every single point, so the walk stops the moment the target
+          // is met. Zidane's 96 DRI to 99 scales to 88/90/99/99/99/99 weighting to 97.45 and comes
+          // out of seven passes at 95/97/99/99/99/99, weighting to exactly 98.50: the least that
+          // rounds to 99, which is where the game leaves it too.
           //
-          // A target of 99 gets no walk at all. The face is printed at 99 whatever the sub-stats
-          // weight to, and in game they are simply left where the scaling put them: Zidane's 98 DRI
-          // to 99 stays 91/91/98/99/99/99 weighting to 97.75, and Havertz's Unbound Ten stays
-          // 95/96/98/99/99/99 weighting to 98.40 — a tenth short of the target, with Agility one
-          // point away from covering it, and still untouched.
-          if (targetFace < subStatCap && Math.round(weightedFace()) < targetFace) {
+          // A one-point face gain is the exception: nothing is topped up, and the sub-stats stay
+          // where the scaling put them even when a single point would cover the shortfall. Zidane's
+          // 98 DRI to 99 stays 91/91/98/99/99/99 weighting to 97.75, and Havertz's Unbound Ten
+          // stays 95/96/98/99/99/99 weighting to 98.40 — a tenth short, with Agility one point away
+          // from covering it, and still untouched. Every gain of two or more reconciles.
+          if (targetFace - faceData.baseFace > 1 && Math.round(weightedFace()) < targetFace) {
             const order = Object.keys(faceData.subs).sort(
               (a, b) =>
                 faceData.subs[a].base - faceData.subs[b].base ||

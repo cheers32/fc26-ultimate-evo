@@ -44,6 +44,18 @@ export interface TeamState extends TeamSummary {
    * team's builds for that card untouched, so it can be undone.
    */
   hiddenPlayers?: string[];
+  /**
+   * The cards this team is made of, by id — its roster.
+   *
+   * The catalogue is global and one import serves every team, so as it grew past a hundred cards
+   * "everything, minus what I hid" stopped being a team: every import landed in all four teams at
+   * once and had to be hidden out of three of them. A roster says which cards this team is made
+   * of, and the shared library is browsed to add more.
+   *
+   * Absent means the old behaviour — the whole library, minus `hiddenPlayers` — so a team that has
+   * never been curated is left exactly as it was.
+   */
+  roster?: string[];
 }
 
 const ACTIVE_TEAM_KEY = 'futEvo_active_team';
@@ -408,6 +420,16 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
+  /** Replaces this team's roster. An empty array is a team with no cards, not a team with all of them. */
+  const setRoster = useCallback(
+    (roster: string[]) => {
+      if (!teamId) return;
+      setTeam(prev => (prev ? { ...prev, roster } : prev));
+      teamApi.patch(teamId, { roster }).catch(err => console.error('Failed to save roster:', err));
+    },
+    [teamId]
+  );
+
   const setHiddenPlayers = useCallback(
     (hiddenPlayers: string[]) => {
       if (!teamId) return;
@@ -473,5 +495,5 @@ export function useTeam(teamId: string | null) {
     [teamId]
   );
 
-  return { team, loadedAt, loading, error, setEvoStatuses, setHiddenPlayers, setSavedPathsForPlayer, addSavedPaths, saveSquad, deleteSquad, rename };
+  return { team, loadedAt, loading, error, setEvoStatuses, setRoster, setHiddenPlayers, setSavedPathsForPlayer, addSavedPaths, saveSquad, deleteSquad, rename };
 }

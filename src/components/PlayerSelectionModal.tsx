@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, Upload, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { X, Search, Upload, Edit2, Trash2, Eye, EyeOff, UserPlus, UserMinus, Library } from 'lucide-react';
 import { PlayerData } from '../types/player';
 import { EditPlayerModal } from './EditPlayerModal';
 import { useModal } from '../utils/modalStack';
@@ -9,7 +9,16 @@ interface PlayerSelectionModalProps {
   players: Record<string, PlayerData>;
   /** The whole shared catalogue, so hidden cards can still be looked at and brought back. */
   libraryPlayers?: Record<string, PlayerData>;
+  /**
+   * The library ids this team is not using. Under a roster that is the rest of the catalogue —
+   * the cards waiting to be added; without one it is the cards hidden out of the team.
+   */
   hiddenPlayerIds?: string[];
+  /**
+   * Whether this team keeps an explicit roster. It only changes what the second view is called and
+   * what its button says — a card is added and dropped through the same two handlers either way.
+   */
+  rosterMode?: boolean;
   /** Cards this team has already evolved — those with an in-game record carrying at least one evo. */
   evolvedPlayerIds?: string[];
   /** Each card's OVR as it stands in game, where this team has a record for it. */
@@ -29,6 +38,7 @@ export function PlayerSelectionModal({
   players,
   libraryPlayers,
   hiddenPlayerIds = [],
+  rosterMode = false,
   evolvedPlayerIds = [],
   currentOvrById = {},
   onClose,
@@ -206,9 +216,9 @@ export function PlayerSelectionModal({
                   onUnhidePlayer(player.id);
                 }}
                 className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-fcGreen hover:bg-black border border-fcGreen/30"
-                title="Use this card in this team again"
+                title={rosterMode ? 'Add this card to this team' : 'Use this card in this team again'}
               >
-                <Eye className="w-3.5 h-3.5" />
+                {rosterMode ? <UserPlus className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             )
           : onHidePlayer && (
@@ -218,9 +228,13 @@ export function PlayerSelectionModal({
                   onHidePlayer(player.id);
                 }}
                 className="bg-black/60 backdrop-blur-sm p-1.5 rounded text-gray-300 hover:text-white hover:bg-black border border-white/10"
-                title="Stop using this card in this team — its builds are kept, and other teams keep the card"
+                title={
+                  rosterMode
+                    ? 'Drop this card from this team — its builds are kept, and the library keeps the card'
+                    : 'Stop using this card in this team — its builds are kept, and other teams keep the card'
+                }
               >
-                <EyeOff className="w-3.5 h-3.5" />
+                {rosterMode ? <UserMinus className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               </button>
             )}
         {onDeletePlayer && (
@@ -308,11 +322,17 @@ export function PlayerSelectionModal({
           <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-gray-950/50">
             <div>
               <h2 className="text-2xl font-bold text-white mb-1">
-                {viewingHidden ? 'Not used by this team' : 'Player Warehouse'}
+                {viewingHidden
+                  ? rosterMode
+                    ? 'Shared library'
+                    : 'Not used by this team'
+                  : 'Player Warehouse'}
               </h2>
               <p className="text-sm text-gray-400">
                 {viewingHidden
-                  ? 'These cards are still in the shared library, and their builds are still saved'
+                  ? rosterMode
+                    ? 'Every card the library holds that this team is not using — add one to put it in the team'
+                    : 'These cards are still in the shared library, and their builds are still saved'
                   : 'Select a player to begin evolution'}
               </p>
             </div>
@@ -327,8 +347,8 @@ export function PlayerSelectionModal({
                       : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-white'
                   }`}
                 >
-                  <EyeOff className="w-4 h-4" />
-                  Hidden ({hiddenPlayerIds.length})
+                  {rosterMode ? <Library className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  {rosterMode ? 'Library' : 'Hidden'} ({hiddenPlayerIds.length})
                 </button>
               )}
               <div className="relative">

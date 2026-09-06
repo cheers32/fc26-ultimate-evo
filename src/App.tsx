@@ -131,6 +131,7 @@ export default function App() {
     error: teamError,
     setEvoStatuses: setTeamEvoStatuses,
     setHiddenPlayers,
+    setRoster,
     setSavedPathsForPlayer,
     addSavedPaths,
     saveSquad: persistSquad,
@@ -238,12 +239,23 @@ export default function App() {
    * thing undoing it costs is putting the card back on the pitch.
    */
   const hidePlayerForTeam = (id: string) => {
+    if (roster) {
+      if (!roster.includes(id)) return;
+      setRoster(roster.filter(pId => pId !== id));
+      leaveCard(id);
+      return;
+    }
     if (hiddenPlayers.includes(id)) return;
     setHiddenPlayers([...hiddenPlayers, id]);
     leaveCard(id);
   };
 
   const unhidePlayerForTeam = (id: string) => {
+    if (roster) {
+      if (roster.includes(id)) return;
+      setRoster([...roster, id]);
+      return;
+    }
     setHiddenPlayers(hiddenPlayers.filter(pId => pId !== id));
   };
 
@@ -368,13 +380,39 @@ export default function App() {
   }, [customPlayers, deletedDatabasePlayers]);
 
   const hiddenPlayers = useMemo(() => team?.hiddenPlayers || [], [team?.hiddenPlayers]);
+  /**
+   * This team's roster, or undefined for a team that has never been curated.
+   *
+   * The two are read the same way everywhere else — `allPlayersData` is the cards this team uses —
+   * so the difference lives here and nowhere above it.
+   */
+  const roster = useMemo(() => team?.roster, [team?.roster]);
 
   /** The cards this team actually uses — everything the app works from. */
   const allPlayersData = useMemo(() => {
+    if (roster) {
+      // Named cards only, and only the ones the library still has: a roster can outlive a card
+      // that was deleted from the catalogue by another team.
+      const picked: Record<string, PlayerData> = {};
+      roster.forEach(id => {
+        if (libraryPlayers[id]) picked[id] = libraryPlayers[id];
+      });
+      return picked;
+    }
     const visible = { ...libraryPlayers };
     hiddenPlayers.forEach(id => delete visible[id]);
     return visible;
-  }, [libraryPlayers, hiddenPlayers]);
+  }, [libraryPlayers, hiddenPlayers, roster]);
+
+  /**
+   * What the shelf's second view holds: everything in the shared library this team is not using.
+   * Under a roster that is the rest of the catalogue — the cards there to be added; without one it
+   * is the hidden list, as before.
+   */
+  const notInTeam = useMemo(
+    () => (roster ? Object.keys(libraryPlayers).filter(id => !roster.includes(id)) : hiddenPlayers),
+    [roster, libraryPlayers, hiddenPlayers]
+  );
 
   /**
    * A squad is its pitch and nothing else: eleven on it, twelve beside it, twenty-three slots each
@@ -2715,7 +2753,8 @@ export default function App() {
           onSelectPlayer={openPlayer}
           onOpenImport={() => setIsImportModalOpen(true)}
           libraryPlayers={libraryPlayers}
-          hiddenPlayerIds={hiddenPlayers}
+          hiddenPlayerIds={notInTeam}
+          rosterMode={!!roster}
           onHidePlayer={hidePlayerForTeam}
           onUnhidePlayer={unhidePlayerForTeam}
           onDeletePlayer={deletePlayerFromLibrary}
