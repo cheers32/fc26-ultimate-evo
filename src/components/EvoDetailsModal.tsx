@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { X, Plus, Trash2, RotateCcw, ExternalLink } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
-import { daysUntilExpiry, reachableOvrCeiling } from '../utils/statUtils';
+import { daysUntilExpiry, reachableOvrCeiling, evoFacePips } from '../utils/statUtils';
 import { useModal } from '../utils/modalStack';
 
 const FACE_LABELS: Record<string, string> = {
@@ -153,6 +153,41 @@ export const EvoDetailsModal = ({
                 FUTBIN <ExternalLink className="w-3 h-3" />
               </a>
             )}
+          </div>
+
+          {/* What the evo leans on, three pips a face, the way a chemistry style states itself.
+              The numbers are all below in Upgrades; this says at a glance which lines the evo is
+              actually about, which a list of twenty sub-stat boosts does not.
+
+              Deliberately about the evo and not about the card in front of it: a +20 on a face is
+              three pips whether the card is at 60 there or already at the cap. What this card would
+              gain from it is the workbench's job. */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">What it leans on</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {(['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).map(face => {
+                const pips = evoFacePips(evo, face);
+                return (
+                  <div
+                    key={face}
+                    className="p-2 rounded border bg-[#121212] border-gray-800 flex flex-col items-center justify-center gap-1.5"
+                  >
+                    {/* Undimmed either way — dimming the untouched faces made the panel look
+                        half-broken when all it is saying is "nothing here", which the empty pips
+                        already say. */}
+                    <span className="text-[11px] font-bold leading-none text-gray-400">{face.toUpperCase()}</span>
+                    <span className="flex gap-1">
+                      {[0, 1, 2].map(i => (
+                        <span
+                          key={i}
+                          className={`w-3 h-3 rounded-sm ${i < pips ? 'bg-fcGreen' : 'bg-gray-800'}`}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Who is already running it. Above the requirements on purpose: whether the evo is spent
