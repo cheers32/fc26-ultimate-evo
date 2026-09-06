@@ -453,16 +453,45 @@ export function applyEvo(
             subData.base = Math.min(Math.round(subData.base * scale), subStatCap);
           });
 
-          // EA does not top the sub-stats back up to the target. The face is printed at the
-          // target regardless (see `explicitFace` below), and the sub-stats are left wherever the
-          // proportional scaling put them — which is why an official panel routinely shows a face
-          // of 99 over sub-stats that only weight to 98.4.
+          const weightedFace = () => {
+            let sum = 0;
+            Object.entries(faceData.subs).forEach(([subKey, s]: any) => {
+              sum += s.base * faceWeight(faceKey, subKey, s.w);
+            });
+            return sum;
+          };
+
+          // 2. Rounding down, and sub-stats clamped at the cap, can leave the weighted face short
+          // of the target. Below 99 EA makes it up by walking the sub-stats in ascending order of
+          // value, handing out one point at a time and re-checking after every point, so the
+          // cheapest stats absorb the shortfall first and the walk stops the moment the target is
+          // met. Ronaldo's 94 DRI to 97 lands one short and the point goes to Dribbling; Zidane's
+          // 93 SHO to 98 lands one short and it goes to Shot Power.
           //
-          // The engine used to hand out points until the weighted average reached the target. On a
-          // face whose heavy sub-stats already sit at 99 there is nothing left to give, so the
-          // whole shortfall landed on the one or two cheap stats: Zidane's 98 DRI going to 99 threw
-          // Agility from 90 to 96 instead of 91, and Havertz's Unbound Ten did the same. Both cards
-          // read 91/91/98/99/99/99 and 95/96/98/99/99/99 in game — plain scaling, no top-up.
+          // A target of 99 gets no walk at all. The face is printed at 99 whatever the sub-stats
+          // weight to, and in game they are simply left where the scaling put them: Zidane's 98 DRI
+          // to 99 stays 91/91/98/99/99/99 weighting to 97.75, and Havertz's Unbound Ten stays
+          // 95/96/98/99/99/99 weighting to 98.40 — a tenth short of the target, with Agility one
+          // point away from covering it, and still untouched.
+          if (targetFace < subStatCap && Math.round(weightedFace()) < targetFace) {
+            const order = Object.keys(faceData.subs).sort(
+              (a, b) =>
+                faceData.subs[a].base - faceData.subs[b].base ||
+                faceWeight(faceKey, b, faceData.subs[b].w) - faceWeight(faceKey, a, faceData.subs[a].w)
+            );
+
+            let progressed = true;
+            outer: while (Math.round(weightedFace()) < targetFace && progressed) {
+              progressed = false;
+              for (const subKey of order) {
+                const subData = faceData.subs[subKey];
+                if (subData.base >= subStatCap) continue;
+                subData.base += 1;
+                progressed = true;
+                if (Math.round(weightedFace()) >= targetFace) break outer;
+              }
+            }
+          }
         }
       } else {
         Object.keys(faceData.subs).forEach((subKey) => {
