@@ -1979,11 +1979,16 @@ export default function App() {
 
     // 2. Determine Preview
     if (compareChainResult) {
-      // Comparison Mode: Base is comparePath (full), Preview is activePath (full) — the diff
-      // reads as "the other path → your active path" rather than the reverse.
-      const baseFinalStep = compareChainResult.steps[compareChainResult.steps.length - 1];
-      const previewFinalStep = chainResult.steps[chainResult.steps.length - 1];
-      
+      // Comparison Mode: Base is the active path, Preview is the path being compared against, so
+      // the diff reads "where I am now → where that path would put me".
+      //
+      // It used to run the other way, and every chip was the answer to a question nobody asks: a
+      // green +1 beside Interceptions meant the path you are *not* on is one worse, which is the
+      // gain read backwards. Comparing is done to decide whether to switch, so the arrow points
+      // the way the switch would go.
+      const baseFinalStep = chainResult.steps[chainResult.steps.length - 1];
+      const previewFinalStep = compareChainResult.steps[compareChainResult.steps.length - 1];
+
       if (baseFinalStep) {
         aBaseStats = baseFinalStep.statsAfter;
         aBaseOvr = baseFinalStep.ovrAfter;
@@ -1992,8 +1997,8 @@ export default function App() {
       } else {
         aBaseStats = statsData;
         aBaseOvr = initialOvrData.base;
-        // No steps on the compare path, so its "final" is the raw card (plus any free picks).
-        aPlayStyles.base = JSON.parse(JSON.stringify(compareChainResult.finalPlayStyles.base));
+        // No steps on the active path, so its "final" is the raw card (plus any free picks).
+        aPlayStyles.base = JSON.parse(JSON.stringify(chainResult.finalPlayStyles.base));
         aBaseBio = playerBio;
       }
       
