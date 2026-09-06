@@ -146,10 +146,13 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
             const allowedBoost = activeEvo.subStatBoosts[subKey].boost;
             const limit = activeEvo.subStatBoosts[subKey].limit;
             utilChip = calculateChip(activeBase, allowedBoost, limit, Math.max(0, diff), false);
-          } else if (activeEvo && activeEvo.faceBoosts?.[faceKey]) {
-            const allowedBoost = activeEvo.faceBoosts[faceKey].boost;
-            const limit = activeEvo.faceBoosts[faceKey].limit;
-            utilChip = calculateChip(activeBase, allowedBoost, limit, Math.max(0, diff), false);
+          } else if (activeEvo && activeEvo.faceBoosts?.[faceKey] && diff > 0) {
+            // A face boost has no per-sub allowance to state. The evo promises the face a number
+            // and the engine spreads it across the subs by prorating, so printing the face's own
+            // "+98 up to 99" beside a sub that moved 4 invited reading it as what that sub was
+            // allowed — it never was. The gain is the only figure here that means anything; the
+            // allowance and cap belong to the face and are printed once, on its header.
+            utilChip = { text: `+${diff}`, className: 'text-fcGreen border-fcGreen/40 bg-green-950/40 border px-1.5' };
           } else if (diff > 0) {
             utilChip = { text: `+${diff}`, className: 'text-fcGreen border-fcGreen bg-green-950/40 border px-1.5' };
           } else if (diff < 0) {
@@ -249,6 +252,15 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
               }`}>
                 {baseFaceData.label}
               </h3>
+
+              {/* The face boost stated where it applies: one number for the whole face, rather than
+                  repeated beside every sub it gets spread across. */}
+              {activeEvo?.faceBoosts?.[faceKey] && (
+                <span className="text-[8.5px] font-bold px-1 py-0.5 rounded shrink-0 text-fcGreen border border-fcGreen/40 bg-green-950/40">
+                  +{activeEvo.faceBoosts[faceKey].boost}
+                  <span className="text-gray-500 font-normal"> ≤{activeEvo.faceBoosts[faceKey].limit}</span>
+                </span>
+              )}
 
               <div className={`text-gray-200 flex items-center font-mono shrink-0 ${dense ? 'text-[12px]' : 'text-[15px]'}`}>
                 {nominalChemBoost ? (
