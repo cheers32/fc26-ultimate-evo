@@ -371,7 +371,7 @@ export function PlayerSelectionModal({
                   {([false, true] as const).map(hidden => {
                     const on = viewingHidden === hidden;
                     const count = hidden ? otherMatchCount : teamMatchCount;
-                    const label = hidden ? (rosterMode ? 'In library' : 'Hidden') : 'In team';
+                    const label = hidden ? (rosterMode ? 'Not in team' : 'Hidden') : 'In team';
                     const elsewhere = !on && count > 0;
                     return (
                       <button
@@ -379,10 +379,8 @@ export function PlayerSelectionModal({
                         onClick={() => setShowHidden(hidden)}
                         className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
                           on
-                            ? 'bg-gray-800 text-white'
-                            : elsewhere
-                              ? 'bg-gray-900 text-fcGreen hover:bg-gray-800'
-                              : 'bg-gray-900 text-gray-500 hover:text-white'
+                            ? 'bg-gray-700 text-white'
+                            : 'bg-transparent text-gray-500 hover:bg-gray-800 hover:text-white'
                         }`}
                       >
                         {hidden
@@ -390,7 +388,12 @@ export function PlayerSelectionModal({
                             ? <Library className="w-4 h-4" />
                             : <EyeOff className="w-4 h-4" />
                           : <Users className="w-4 h-4" />}
-                        {label} ({count})
+                        {label}{' '}
+                        {/* Only the count carries the "there is something over here" colour, and
+                            only while this is not the side being read. Colouring the whole button
+                            put the brighter half on the shelf you are *not* looking at, which reads
+                            as the selected one — the selection has to be the loudest thing here. */}
+                        <span className={elsewhere ? 'text-fcGreen font-bold' : undefined}>({count})</span>
                       </button>
                     );
                   })}
@@ -543,7 +546,7 @@ export function PlayerSelectionModal({
                   >
                     {viewingHidden
                       ? `${teamMatchCount} in this team →`
-                      : `${otherMatchCount} in the ${rosterMode ? 'library' : 'hidden cards'} →`}
+                      : `${otherMatchCount} not in this team →`}
                   </button>
                 )}
               </div>
