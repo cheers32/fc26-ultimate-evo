@@ -810,7 +810,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     }
     if (evoFilters.newRarity) parts.push('a new rarity');
     if (evoFilters.noRarityChange) parts.push('rarity unchanged');
-    if (evoFilters.noForcedPsPlus === false) parts.push('forced PlayStyle+ allowed');
+    if (evoFilters.noForcedPsPlus) parts.push('no forced PlayStyle+');
     if (evoFilters.endgameProfile === false) parts.push('end-game floors off');
     if (evoFilters.oneUsePerEvo === false) parts.push('evos may repeat');
     if (evoFilters.oneEvoPerRarity === false) parts.push('rarities may repeat');
@@ -839,6 +839,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (evoFilters.newPosition) count++;
     if (evoFilters.noRarityChange) count++;
     if (evoFilters.noPositionChange) count++;
+    if (evoFilters.noForcedPsPlus) count++;
     // One narrowing, however many archetypes are ticked — the badge counts filters, not values.
     if (evoFilters.accelerate && evoFilters.accelerate.length > 0) count++;
     if (evoFilters.accelerateFamily && evoFilters.accelerateFamily.length > 0) count++;
@@ -1351,7 +1352,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         >
                           <input
                             type="checkbox"
-                            checked={draftFilters.noForcedPsPlus !== false}
+                            checked={!!draftFilters.noForcedPsPlus}
                             onChange={(e) => setDraftFilters({ ...draftFilters, noForcedPsPlus: e.target.checked })}
                             className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
                           />

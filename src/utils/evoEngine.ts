@@ -1004,9 +1004,9 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
 
       // Judged per evo rather than on the finished chain, unlike the rarity and position filters:
       // what is objected to is the evo spending the gold slot on a PlayStyle of its own choosing,
-      // and that happens whatever else the chain does afterwards. Absent reads as on, so a search
-      // run with no filters at all leaves these out too.
-      if (filters?.noForcedPsPlus !== false && grantsFifthPsPlus(evo)) continue;
+      // and that happens whatever else the chain does afterwards. Off unless asked for: it covers
+      // forty-seven evos, enough that defaulting it on hid most of the strong answers.
+      if (filters?.noForcedPsPlus && grantsFifthPsPlus(evo)) continue;
 
       // Rarity does not stack — a second evo granting a rarity the chain already granted spends a
       // step on nothing. Only the rarity each evo *gives* is compared; two evos that both turn the

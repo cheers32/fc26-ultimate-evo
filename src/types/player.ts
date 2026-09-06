@@ -306,9 +306,9 @@ export interface EvoFilters {
    * that wanted a different one the trade is a slot for something it did not ask for — Class on
    * Grass costs a card PS score on the way to a higher OVR.
    *
-   * Absent reads as on, like the two repeat filters: a slot filled with someone else's choice is a
-   * cost often enough that it should be opted into rather than out of. Set it to false to let those
-   * evos back into the search.
+   * Off unless asked for. It was briefly on by default, and once the predicate widened from eleven
+   * evos to forty-seven — Elite Midfielder and Wind-Up Merchant among them — a default-on version
+   * was quietly removing most of the good answers rather than a handful of awkward ones.
    */
   noForcedPsPlus?: boolean;
   /**

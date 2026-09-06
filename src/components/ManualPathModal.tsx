@@ -202,7 +202,7 @@ const getEvoRecommendation = ({
     // Asked to leave the card's rarity/positions alone: an evo that changes them is still
     // addable by hand, but it is never what the app suggests doing next.
     const evo = availableEvolutions[evoId];
-    if (filters.noForcedPsPlus !== false && evo && grantsFifthPsPlus(evo)) {
+    if (filters.noForcedPsPlus && evo && grantsFifthPsPlus(evo)) {
       blocked = true;
       reasons.push('fills the gold slot with a PlayStyle+ of its own, and Filters asks not to');
     }
