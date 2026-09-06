@@ -589,6 +589,16 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
    * that suits a plan is a different job from comparing two on one card, and the numbers get in the
    * way of it.
    */
+  /**
+   * Only the evos about to go.
+   *
+   * Seven days because that is the window in which the decision changes: past it there is another
+   * weekend to think it over, inside it the choice is use it or lose it. Evos with no date are the
+   * ones already settled — none of them are claimable — so they are out of this reading entirely
+   * rather than treated as never expiring.
+   */
+  const [filterExpiringSoon, setFilterExpiringSoon] = useState(false);
+
   const [poolView, setPoolView] = useState<'numbers' | 'quality'>('numbers');
 
   /**
@@ -1075,6 +1085,10 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     // than a new one — so it is worth being able to see only those.
     if (filterRepeatable && (evo.maxRepeatable ?? 1) <= 1) return false;
     if (filterOvrCeiling !== null && !(evo.ovrBoost.boost > 0 && reachableOvrCeiling(evo) === filterOvrCeiling)) return false;
+    if (filterExpiringSoon) {
+      const days = daysUntilExpiry(evo);
+      if (days === null || days < 0 || days > 7) return false;
+    }
     // Only an addable evo has a resulting archetype at all: an ineligible or maxed-out card was
     // never simulated, so asking for one archetype drops it from the list rather than listing it
     // under a heading it can't answer to.
@@ -1728,6 +1742,15 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     }`}
                   />
                 </div>
+                <button
+                  onClick={() => setFilterExpiringSoon(!filterExpiringSoon)}
+                  title="Only the evos with seven days or fewer left — use it or lose it. Evos with no date left on them are settled already and are not in this reading."
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    filterExpiringSoon ? 'bg-red-400 text-black border-red-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  ⏳ ≤7d
+                </button>
                 <button
                   onClick={() => setPoolView(poolView === 'numbers' ? 'quality' : 'numbers')}
                   title={poolView === 'numbers'
