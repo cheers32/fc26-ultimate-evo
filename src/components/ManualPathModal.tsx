@@ -4,7 +4,7 @@ import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter, EvolutionDefinition } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
-import { grantsFifthPsPlus, reachesNinetyNine } from '../utils/statUtils';
+import { grantsFifthPsPlus, reachesNinetyNine, reachableOvrCeiling } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import {
@@ -573,7 +573,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
    * "which of these can still reach 99" and "which of these stop me at 97" are both real questions.
    *
    * Evos that grant no OVR at all are excluded whichever is picked: a ceiling on a +0 promises
-   * nothing.
+   * nothing. And the ceiling asked about is the one an evo can actually reach — its own limit and
+   * the OVR it still accepts, whichever binds first — rather than the number it prints. PhD In
+   * Dribbling prints none, which reads as 99, and takes a card of at most 91 to 92.
    */
   const [filterOvrCeiling, setFilterOvrCeiling] = useState<96 | 97 | 98 | 99 | null>(null);
   // Narrows the pool to the evos that leave the card on one chosen AcceleRATE archetype — the
@@ -1025,7 +1027,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     // An evo you can run more than once is a different kind of pick — the same card again rather
     // than a new one — so it is worth being able to see only those.
     if (filterRepeatable && (evo.maxRepeatable ?? 1) <= 1) return false;
-    if (filterOvrCeiling !== null && !(evo.ovrBoost.limit === filterOvrCeiling && evo.ovrBoost.boost > 0)) return false;
+    if (filterOvrCeiling !== null && !(evo.ovrBoost.boost > 0 && reachableOvrCeiling(evo) === filterOvrCeiling)) return false;
     // Only an addable evo has a resulting archetype at all: an ineligible or maxed-out card was
     // never simulated, so asking for one archetype drops it from the list rather than listing it
     // under a heading it can't answer to.

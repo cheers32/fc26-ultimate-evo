@@ -344,15 +344,26 @@ export function grantsFifthPsPlus(evo: import('../types/player').EvolutionDefini
 }
 
 /**
- * Evos that can leave a card on 99 — a ceiling of 99 and something to give.
+ * The highest OVR an evo can actually leave a card on.
+ *
+ * Not the printed ceiling. An evo's boost is capped twice over — by its own limit, and by the OVR
+ * it still accepts, since it cannot add to a card it will not take. PhD In Dribbling prints no
+ * ceiling at all, which reads here as 99, and gives +1 to a card of at most 91: the best it can
+ * ever produce is 92. Reading the limit alone badged it as reaching 99.
+ */
+export function reachableOvrCeiling(evo: import('../types/player').EvolutionDefinition): number {
+  return Math.min((evo.requirements.maxOvr ?? 99) + evo.ovrBoost.boost, evo.ovrBoost.limit);
+}
+
+/**
+ * Evos that can leave a card on 99.
  *
  * The number is already in formatEvoTerms, printed as "(+30 98)" among a row of other figures, and
  * that is exactly the problem: the ceiling is the one term that decides whether a card is finished
- * at 98 for good, and it reads there as just another number. Two thirds of the library stops below
- * 99, so the ones that do not are worth marking rather than parsing.
+ * below 99 for good, and it reads there as just another number.
  */
 export function reachesNinetyNine(evo: import('../types/player').EvolutionDefinition): boolean {
-  return evo.ovrBoost.limit === 99 && evo.ovrBoost.boost > 0;
+  return evo.ovrBoost.boost > 0 && reachableOvrCeiling(evo) === 99;
 }
 
 export function displayExcludedPositions(evo: import('../types/player').EvolutionDefinition): string[] {
