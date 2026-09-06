@@ -512,6 +512,8 @@ export const EvoPoolModal: React.FC<EvoPoolModalProps> = ({
         evoId={viewingEvo}
         onClose={() => setViewingEvo(null)}
         usedBy={viewingEvo ? evoUsage?.[viewingEvo] : undefined}
+        onToggleDisabled={id => setEvoStatuses({ ...evoStatuses, [id]: evoStatuses[id] === 'disabled' ? 'included' : 'disabled' })}
+        isDisabled={!!viewingEvo && evoStatuses[viewingEvo] === 'disabled'}
         // Jumping to a card is a request to look at that card, so the pool goes with the details
         // modal — otherwise you land on the player behind a manager still covering the screen.
         onSelectPlayer={onSelectPlayer && (id => { onSelectPlayer(id); onClose(); })}

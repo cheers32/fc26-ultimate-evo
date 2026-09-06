@@ -2640,6 +2640,8 @@ export default function App() {
         onClose={() => setViewingEvoId(null)}
         usedBy={viewingEvoId ? evoUsage[viewingEvoId] : undefined}
         onSelectPlayer={openPlayer}
+        onToggleDisabled={toggleEvoDisabled}
+        isDisabled={!!viewingEvoId && disabledEvos.includes(viewingEvoId)}
       />
       <PlayStylePickerModal
         isOpen={playStylePickerTarget !== null}

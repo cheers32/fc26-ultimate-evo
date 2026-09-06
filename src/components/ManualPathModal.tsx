@@ -2290,6 +2290,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
 
       <EvoDetailsModal
         usedBy={localViewingEvo ? evoUsage?.[localViewingEvo] : undefined}
+        onToggleDisabled={onToggleDisabled}
+        isDisabled={!!localViewingEvo && disabledEvos.includes(localViewingEvo)}
         // As in the pool: asking for another card means the builder is done, so it closes with the
         // details modal rather than leaving you on a new player behind an old card's chain.
         onSelectPlayer={onSelectPlayer && (id => { onSelectPlayer(id); onClose(); })}
