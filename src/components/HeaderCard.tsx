@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult, PickTarget } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, grantsFifthPsPlus, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, grantsFifthPsPlus, reachesNinetyNine, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
 import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
@@ -2212,6 +2212,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           {(evo.rarityChange
                             || maxRepeat > 1
                             || grantsFifthPsPlus(evo)
+                            || reachesNinetyNine(evo)
                             || (evo.positionsAdded && evo.positionsAdded.length > 0)
                             || (evo.requirements.positions && evo.requirements.positions.length > 0)
                             || displayExcludedPositions(evo).length > 0) && (
@@ -2244,6 +2245,14 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                                   title={`Will put a PlayStyle+ of its own choosing on a card already carrying four (${(evo.playStylesAdded?.gold || []).join(', ')}) — the fifth slot goes to its pick rather than yours`}
                                 >
                                   ★ forced PS+
+                                </span>
+                              )}
+                              {reachesNinetyNine(evo) && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-700/60 text-[8.5px] font-bold tracking-wide"
+                                  title={`Its OVR ceiling is 99, so it does not park the card below it — +${evo.ovrBoost.boost} up to 99`}
+                                >
+                                  OVR → 99
                                 </span>
                               )}
                               {evo.positionsAdded && evo.positionsAdded.length > 0 && (

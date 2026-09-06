@@ -4,7 +4,7 @@ import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter, EvolutionDefinition } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
-import { grantsFifthPsPlus } from '../utils/statUtils';
+import { grantsFifthPsPlus, reachesNinetyNine } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import {
@@ -1199,6 +1199,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                             below and the chain on the player panel. */}
                         {(evo.rarityChange
                           || grantsFifthPsPlus(evo)
+                          || reachesNinetyNine(evo)
                           || (evo.positionsAdded && evo.positionsAdded.length > 0)
                           || (evo.requirements.positions && evo.requirements.positions.length > 0)
                           || displayExcludedPositions(evo).length > 0) && (
@@ -1227,6 +1228,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 title={`Will put a PlayStyle+ of its own choosing on a card already carrying four (${(evo.playStylesAdded?.gold || []).join(', ')}) — the fifth slot goes to its pick rather than yours`}
                               >
                                 ★ forced PS+
+                              </span>
+                            )}
+                            {reachesNinetyNine(evo) && (
+                              <span
+                                className="px-1.5 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-700/60 text-[8.5px] font-bold tracking-wide"
+                                title={`Its OVR ceiling is 99, so it does not park the card below it — +${evo.ovrBoost.boost} up to 99`}
+                              >
+                                OVR → 99
                               </span>
                             )}
                             {evo.positionsAdded && evo.positionsAdded.length > 0 && (
@@ -1965,6 +1974,14 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                                 title={`Will put a PlayStyle+ of its own choosing on a card already carrying four (${(evo.playStylesAdded?.gold || []).join(', ')}) — the fifth slot goes to its pick rather than yours`}
                               >
                                 ★ forced PS+
+                              </span>
+                            )}
+                            {reachesNinetyNine(evo) && (
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[9px] border font-bold bg-sky-950/60 text-sky-300 border-sky-700/60 whitespace-nowrap"
+                                title={`Its OVR ceiling is 99, so it does not park the card below it — +${evo.ovrBoost.boost} up to 99`}
+                              >
+                                OVR → 99
                               </span>
                             )}
                           </div>
