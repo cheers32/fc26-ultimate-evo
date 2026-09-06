@@ -6,6 +6,7 @@ export const twoWayTitan1240: EvolutionDefinition = {
   nameZh: "攻守双巨人",
   futbinLink: 'https://www.futbin.com/26/evolutions/1240/two-way-titan',
   version: 'FC 26',
+  expiresAt: '2026-09-23',
   description:
     'Dominate both halves. Upgrade your player into an unstoppable powerhouse who rules the defence and seamlessly transitions into the attack.',
   descriptionZh: "统治上下半场。把球员升级成既能统治防守、又能无缝转入进攻的全能怪物。｜适合：非门将，六围全 +3~6，可重复 5 次，B2B 中场最对味。",

@@ -6,6 +6,7 @@ export const pocketInspector1252: EvolutionDefinition = {
   nameZh: "口袋检查官",
   futbinLink: 'https://www.futbin.com/26/evolutions/1252/pocket-inspector',
   version: 'FC 26',
+  expiresAt: '2026-09-25',
   description: "The ultimate defensive upgrade. Keep your opponent's star attacker secure and locked away in your CB's back pocket until the final whistle. Found in the Pre Season Token Store.",
   descriptionZh: "终极防守升级。把对手的头号攻击手牢牢锁在你中卫的后口袋里直到终场哨。来自季前代币商店。｜适合：CB 专用，只加防守和身体线。",
   cost: 'Tokens — 100 Pre Season Tokens',

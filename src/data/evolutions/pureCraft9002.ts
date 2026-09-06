@@ -20,6 +20,7 @@ export const pureCraft9002: EvolutionDefinition = {
   nameZh: "纯粹匠艺",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
+  expiresAt: '2026-10-05',
   description: 'Operate on pure footballing instinct. A comprehensive upgrade to your playmaker’s skill, precision, and sharpness to control the game where it matters most.',
   descriptionZh: "凭纯粹的足球直觉踢球。对你的组织核心的技术、精准和敏锐做一次全面升级，让他在最要紧的地方掌控比赛。｜适合：CAM 专用，免费里最强的一个，+20 OVR 顶 98，但完全不加身体。",
   cost: 'Free',

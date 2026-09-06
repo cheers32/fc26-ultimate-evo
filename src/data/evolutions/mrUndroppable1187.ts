@@ -6,6 +6,7 @@ export const mrUndroppable1187: EvolutionDefinition = {
   nameZh: "雷打不动先生",
   futbinLink: 'https://www.futbin.com/26/evolutions/1187/mr-undroppable',
   version: 'FC 26',
+  expiresAt: '2026-09-11',
   description: 'The ultimate club staple.',
   descriptionZh: "俱乐部的终极常客。永远可靠、极其稳定，需要保证发挥时的边后卫首选。｜适合：LB/RB 专用，+30 OVR，六条线全加。",
   cost: '200 FUTTIES Tokens',

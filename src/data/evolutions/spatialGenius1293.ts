@@ -20,6 +20,7 @@ export const spatialGenius1293: EvolutionDefinition = {
   nameZh: "空间天才",
   futbinLink: 'https://www.futbin.com/26/evolutions/1293/spatial-genius',
   version: 'FC 26',
+  expiresAt: '2026-09-15',
   description: 'Unlock stubborn defences with razor sharp passing, drift past defenders with effortless close control, and execute clinical finishes from tight angles.',
   descriptionZh: "用锋利的传球撕开顽固的防线，用轻松的贴身控球晃过后卫，从刁钻角度打进冷静的一球。｜适合：不挑位置、免费、可重复 2 次，OVR 只 +5 所以不占后续 evo 的准入空间；只加射门传球和球感十项，完全不碰速度、防守和身体，也就不会破坏加速类型。",
   cost: 'Free',

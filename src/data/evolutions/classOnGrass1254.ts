@@ -6,6 +6,7 @@ export const classOnGrass1254: EvolutionDefinition = {
   nameZh: "草上格调",
   futbinLink: 'https://www.futbin.com/26/evolutions/1254/class-on-grass',
   version: 'FC 26',
+  expiresAt: '2026-09-25',
   description: "True class needs no introduction. Evolve your player and unlock the complete striking game that makes them stand out on every pitch. Found in the Pre Season Token Store.",
   descriptionZh: "真正的格调无需介绍。解锁让球员在任何球场上都脱颖而出的完整射手能力。来自季前代币商店。｜适合：任何位置，+30 OVR 且花式 +5。",
   cost: 'Tokens — 200 Pre Season Tokens',

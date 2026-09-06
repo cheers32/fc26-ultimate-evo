@@ -6,6 +6,7 @@ export const touchlineRoyalty1288: EvolutionDefinition = {
   nameZh: "边线王者",
   futbinLink: 'https://www.futbin.com/26/evolutions/1288/touchline-royalty',
   version: 'FC 26',
+  expiresAt: '2026-10-09',
   description:
     'Found in the Pre Season Token Store. Turns a wide midfielder into a touchline threat who ' +
     'stretches the defence and delivers the final ball.',

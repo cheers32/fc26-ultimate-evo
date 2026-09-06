@@ -19,6 +19,7 @@ export const magneticMarksman9003: EvolutionDefinition = {
   nameZh: "磁力射手",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
+  expiresAt: '2026-10-16',
   description: 'Glue the ball to your feet in tight spaces, bully past defenders using raw strength, and find the back of the net with an effortless, lethal finish.',
   descriptionZh: "在狭小空间里把球粘在脚下，用纯粹的力量顶开后卫，然后轻描淡写地把球送进网窝。｜适合：不挑位置、免费，射术/远射/力量/反应/球控各 +30 且不封顶；OVR 只 +5 所以不占后续 evo 的准入空间，支点中锋最对味 —— 但它加的是力量不是速度，会把加速类型往 Lengthy 推。",
   cost: 'Objective Reward',

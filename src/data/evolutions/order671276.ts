@@ -11,6 +11,7 @@ export const order671276: EvolutionDefinition = {
   nameZh: "67 号命令",
   futbinLink: 'https://www.futbin.com/26/evolutions/1276/order-67',
   version: 'FC 26',
+  expiresAt: '2026-10-02',
   description: "Order 67 has been issued, awakening a power the pitch has never seen. Found in the token store.",
   descriptionZh: "67 号命令已经下达，唤醒了球场从未见过的力量。来自代币商店。｜适合：任何位置，六围各 +67 全部填满，是全库最暴力的一个。",
   cost: 'Tokens — 100',

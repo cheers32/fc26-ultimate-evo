@@ -14,6 +14,7 @@ export const anchorAndAlley1285: EvolutionDefinition = {
   nameZh: "铁锚与走廊",
   futbinLink: 'https://www.futbin.com/26/evolutions/1285/anchor--alley',
   version: 'FC 26',
+  expiresAt: '2026-09-07',
   description:
     'Provide total structural stability with crunching tackles, unyielding physical presence, and ' +
     'the vision to spring your team forward.',

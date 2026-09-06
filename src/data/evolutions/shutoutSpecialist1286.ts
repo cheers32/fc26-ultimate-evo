@@ -16,6 +16,7 @@ export const shutoutSpecialist1286: EvolutionDefinition = {
   nameZh: "零封专家",
   futbinLink: 'https://www.futbin.com/26/evolutions/1286/shutout-specialist',
   version: 'FC 26',
+  expiresAt: '2026-10-09',
   description:
     'Found in the Pre Season Token Store. Bully opposition attackers off the ball, burst through ' +
     'tight midfield scrambles, and completely nullify every counterattack to secure the clean sheet.',

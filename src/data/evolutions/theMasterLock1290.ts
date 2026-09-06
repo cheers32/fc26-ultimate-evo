@@ -18,6 +18,7 @@ export const theMasterLock1290: EvolutionDefinition = {
   nameZh: "大师之锁",
   futbinLink: 'https://www.futbin.com/26/evolutions/1290/the-master-lock',
   version: 'FC 26',
+  expiresAt: '2026-09-09',
   description: 'Trap advancing attackers, reclaim possession in crucial moments, and dictate match flow right from your deep pivot.',
   descriptionZh: "困住压上的攻击手、在关键时刻夺回球权，从你的后腰位置掌控比赛节奏。｜适合：CDM 专用，+20 OVR 顶 99，防守身体面板各 +30，但完全不碰盘带。",
   cost: '250 FC Points / 75,000 Coins',

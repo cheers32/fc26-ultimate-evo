@@ -6,6 +6,7 @@ export const hardYards1243: EvolutionDefinition = {
   nameZh: "苦功",
   futbinLink: 'https://www.futbin.com/26/evolutions/1243/hard-yards',
   version: 'FC 26',
+  expiresAt: '2026-09-23',
   description:
     'The hard yards are earned, never given. Develop the qualities that make a player a force in every duel, every sprint and every moment that matters.',
   descriptionZh: "苦功是挣来的，不是给的。培养出让球员在每次对抗、每次冲刺、每个关键时刻都是一股力量的品质。｜适合：非门将，速度传球防守身体各 +5，可重复 5 次。",

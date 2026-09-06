@@ -97,6 +97,13 @@ export interface EvolutionDefinition {
   nameZh?: string;
   futbinLink: string;
   version: 'FC 26';
+  /**
+   * The day the evo stops being claimable, as an ISO date.
+   *
+   * The date rather than the days left, because days left is wrong tomorrow. Only the evos that are
+   * currently on the shelf carry one — for everything else the question is already settled.
+   */
+  expiresAt?: string;
   description: string;
   /**
    * The blurb in Chinese, then a note on who the evo is actually for, separated by a full-width bar.

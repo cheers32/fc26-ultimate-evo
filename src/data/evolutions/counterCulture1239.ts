@@ -6,6 +6,7 @@ export const counterCulture1239: EvolutionDefinition = {
   nameZh: "反击文化",
   futbinLink: 'https://www.futbin.com/26/evolutions/1239/counter-culture',
   version: 'FC 26',
+  expiresAt: '2026-09-23',
   description:
     "Skip the long buildup. Upgrade your player's pace, passing, and shooting to catch teams out on the transition and turn fast breaks into instant goals.",
   descriptionZh: "跳过冗长的组织。提升速度、传球和射门，在转换中打对手措手不及，把快攻变成即时进球。｜适合：非门将，速度射门传球各 +5，可重复 5 次。",

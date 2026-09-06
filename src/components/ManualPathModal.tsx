@@ -4,7 +4,7 @@ import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
 import { EvolutionPath, PlayerBio, OvrData, StatsData, PlayStylesData, EvoFilters, StatFilter, EvolutionDefinition } from '../types/player';
 import { simulateEvoChain, validateRequirement, isPlayStyleNodeId, parsePlayStyleNodeId, getPositionScore, effectiveGoldLimit, effectiveSilverLimit } from '../utils/evoEngine';
-import { grantsFifthPsPlus, reachesNinetyNine, reachableOvrCeiling } from '../utils/statUtils';
+import { grantsFifthPsPlus, reachesNinetyNine, reachableOvrCeiling, evoFacePips, daysUntilExpiry } from '../utils/statUtils';
 import { runEvoSearch, EvoSearchHandle } from '../utils/runEvoSearch';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
 import {
@@ -578,6 +578,18 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
    * Dribbling prints none, which reads as 99, and takes a card of at most 91 to 92.
    */
   const [filterOvrCeiling, setFilterOvrCeiling] = useState<96 | 97 | 98 | 99 | null>(null);
+
+  /**
+   * Which reading the pool cards give.
+   *
+   * The default answers "what does this do to my card" — every number on it is this evo applied to
+   * the player in front of you. The other answers "what is this evo", and is deliberately free of
+   * the card: entry, ceiling, expiry, what it demands and what it grants, and how hard it leans on
+   * each face as nought to three pips rather than a figure. Scanning a hundred evos for the one
+   * that suits a plan is a different job from comparing two on one card, and the numbers get in the
+   * way of it.
+   */
+  const [poolView, setPoolView] = useState<'numbers' | 'quality'>('numbers');
   // Narrows the pool to the evos that leave the card on one chosen AcceleRATE archetype — the
   // question "which of these keeps me Explosive" can't be answered from the face stats on the
   // cards, since the archetype turns on acceleration/agility/strength and height.
@@ -1682,6 +1694,17 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   />
                 </div>
                 <button
+                  onClick={() => setPoolView(poolView === 'numbers' ? 'quality' : 'numbers')}
+                  title={poolView === 'numbers'
+                    ? 'Switch to the card-free reading: what each evo is, rather than what it does to this player'
+                    : 'Back to the numbers this evo would put on this card'}
+                  className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
+                    poolView === 'quality' ? 'bg-violet-400 text-black border-violet-300 shadow-sm' : 'bg-[#2A2D2A] text-gray-400 border-gray-700/50 hover:bg-[#374151]'
+                  }`}
+                >
+                  {poolView === 'quality' ? '◧ Quality' : '◧ Numbers'}
+                </button>
+                <button
                   onClick={() => setShowNotIncluded(!showNotIncluded)}
                   title="Show or hide not included evos"
                   className={`px-2 py-1.5 text-[10px] font-bold rounded-lg border transition-colors ${
@@ -1800,7 +1823,9 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
               </div>
             )}
 
-            <div className="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className={`p-4 grid gap-3 ${poolView === 'quality'
+              ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6'
+              : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4'}`}>
               {visiblePool.length === 0 ? (
                 <div className="text-center py-6 text-gray-600 text-sm md:col-span-3 lg:col-span-4">
                   {poolWithStatus.length === 0
@@ -1824,6 +1849,100 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   const recRank = recommendedRank.get(id);
                   const isRec = canAdd && recRank !== undefined;
                   
+                  if (poolView === 'quality') {
+                    const days = daysUntilExpiry(evo);
+                    const stamina = evo.subStatBoosts?.stamina;
+                    const chips: string[] = [];
+                    if ((evo.maxRepeatable ?? 1) > 1) chips.push(`×${evo.maxRepeatable}`);
+                    if (evo.requirements.positions?.length) chips.push(`${evo.requirements.positions.join('/')} only`);
+                    if (excludedPositions.length) chips.push(`no ${excludedPositions.join('/')}`);
+                    if (evo.positionsAdded?.length) chips.push(`add ${evo.positionsAdded.join('/')}`);
+                    return (
+                      <div
+                        key={id}
+                        className={`relative bg-[#161816] border rounded-xl p-2.5 shadow-md flex flex-col gap-1.5 transition-colors cursor-pointer ${
+                          canAdd ? 'border-gray-800 hover:border-violet-500/50' : 'border-gray-800/30 opacity-60'
+                        } ${isOutOfPool ? 'opacity-40 grayscale' : ''}`}
+                        onClick={() => setLocalViewingEvo(id)}
+                      >
+                        <div className="min-w-0">
+                          <h4 className={`font-bold text-[11px] leading-tight truncate ${canAdd ? 'text-gray-200' : 'text-gray-500'}`}>{evo.name}</h4>
+                          {evo.nameZh && <p className="text-[9px] text-gray-600 truncate">{evo.nameZh}</p>}
+                        </div>
+
+                        {/* Entry and ceiling, the two numbers that decide whether an evo is for this
+                            card at all — and the only two kept, since neither depends on the card. */}
+                        <div className="flex items-center gap-1 text-[9px] font-bold">
+                          <span className="px-1 py-0.5 rounded bg-black/40 text-gray-400 border border-gray-800">req {evo.requirements.maxOvr ?? 99}</span>
+                          {evo.ovrBoost.boost > 0 && (
+                            <span className={`px-1 py-0.5 rounded border ${
+                              reachableOvrCeiling(evo) === 99
+                                ? 'bg-sky-950/60 text-sky-300 border-sky-700/60'
+                                : 'bg-black/40 text-gray-400 border-gray-800'
+                            }`}>
+                              → {reachableOvrCeiling(evo)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Only the evos still on the shelf carry a date. Days first: it is what the
+                            decision turns on, and the date is there to check it against the game. */}
+                        {days !== null && (
+                          <div className={`text-[9px] font-bold ${days <= 2 ? 'text-red-400' : days <= 7 ? 'text-amber-400' : 'text-gray-500'}`}>
+                            {days <= 0 ? 'expired' : `${days}d left`}
+                            <span className="text-gray-600 font-normal ml-1">
+                              {new Date(`${evo.expiresAt}T00:00:00`).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                            </span>
+                          </div>
+                        )}
+
+                        {(chips.length > 0 || grantsFifthPsPlus(evo)) && (
+                          <div className="flex flex-wrap gap-1">
+                            {chips.map(c => (
+                              <span key={c} className="px-1 py-0.5 rounded text-[8.5px] font-bold bg-black/40 text-gray-400 border border-gray-800 whitespace-nowrap">{c}</span>
+                            ))}
+                            {grantsFifthPsPlus(evo) && (
+                              <span className="px-1 py-0.5 rounded text-[8.5px] font-bold bg-amber-950/60 text-amber-300 border border-amber-700/60 whitespace-nowrap">
+                                force 5th PS+
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Three pips a face, the way a chemistry style states itself: what the evo
+                            leans on, not what this card would gain from it. */}
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-0.5">
+                          {(['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const).map(face => {
+                            const pips = evoFacePips(evo, face);
+                            return (
+                              <div key={face} className="flex items-center justify-between">
+                                <span className={`text-[8.5px] font-bold ${pips > 0 ? 'text-gray-400' : 'text-gray-700'}`}>
+                                  {face.toUpperCase()}
+                                </span>
+                                <span className="flex gap-0.5">
+                                  {[0, 1, 2].map(i => (
+                                    <span
+                                      key={i}
+                                      className={`w-1.5 h-1.5 rounded-[1px] ${i < pips ? 'bg-fcGreen' : 'bg-gray-800'}`}
+                                    />
+                                  ))}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Called out on its own because it is the one sub-stat that decides whether
+                            a card lasts the match, and it is buried inside PHY where two pips of
+                            strength look the same as two pips of it. */}
+                        <div className={`flex items-center justify-between text-[8.5px] font-bold border-t border-gray-800/60 pt-1 ${stamina ? 'text-fcGreen' : 'text-gray-700'}`}>
+                          <span>STAMINA</span>
+                          <span>{stamina ? `+${stamina.boost}${stamina.limit < 99 ? ` (${stamina.limit})` : ''}` : 'none'}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div 
                       key={id}

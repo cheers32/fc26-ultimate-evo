@@ -17,6 +17,7 @@ export const cornerstoneGuard9005: EvolutionDefinition = {
   nameZh: "基石卫士",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
+  expiresAt: '2026-10-16',
   description: 'Lock down dangerous attackers, hold your line with total discipline, and provide a steady option to recycle possession under pressure.',
   descriptionZh: "锁死危险的攻击手，用绝对的纪律守住防线，并在压力下提供稳定的出球点。｜适合：LB/RB 专用，免费。最特别的是它不设 OVR 上限 —— 在几乎所有 evo 都卡 96/97 的情况下，这是终局边后卫还能吃到的少数之一。代价是加成不大（+10 OVR、全线 +20），也不送弱脚花式。",
   cost: 'Objective Reward',

@@ -16,6 +16,7 @@ export const unboundTen1284: EvolutionDefinition = {
   nameZh: "无拘 10 号",
   futbinLink: 'https://www.futbin.com/26/evolutions/1284/unbound-ten',
   version: 'FC 26',
+  expiresAt: '2026-09-07',
   description:
     'Unlock complete creative freedom for your attacking midfielder to shatter defensive blocks, ' +
     'score from anywhere, and orchestrate every attack.',

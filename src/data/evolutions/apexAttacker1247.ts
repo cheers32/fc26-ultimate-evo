@@ -6,6 +6,7 @@ export const apexAttacker1247: EvolutionDefinition = {
   nameZh: "顶级攻击手",
   futbinLink: 'https://www.futbin.com/26/evolutions/1247/apex-attacker',
   version: 'FC 26',
+  expiresAt: '2026-09-23',
   description: 'Give a player all the tools they need to become a World Class Striker.',
   descriptionZh: "给球员成为世界级中锋所需的一切工具。｜适合：任何位置，不加数值，纯送弱脚花式和五个 PlayStyle。",
   cost: 'Objective Reward — Score in 25',

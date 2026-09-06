@@ -19,6 +19,7 @@ export const flipTheSwitch9001: EvolutionDefinition = {
   nameZh: "扭转开关",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
+  expiresAt: '2026-10-05',
   description: 'Turn defensive stops straight into positive momentum. Refine your player’s ability to shut down attacks, keep the ball under heavy pressure, and dictate the tempo from deep.',
   descriptionZh: "把防守拦截直接转化为向前的势头。磨炼球员掐断进攻、在重压下护球、并从后场掌控节奏的能力。｜适合：任何位置，无挑战一键完成，真正的价值是白送的五星弱脚和五星花式。",
   cost: 'Free',

@@ -6,6 +6,7 @@ export const creativeLicense1253: EvolutionDefinition = {
   nameZh: "创作特权",
   futbinLink: 'https://www.futbin.com/26/evolutions/1253/creative-license',
   version: 'FC 26',
+  expiresAt: '2026-09-25',
   description: "The greatest playmakers make every touch count. Evolve your player and develop the vision and creativity that turns every opportunity into gold. Found in the Pre Season Token Store.",
   descriptionZh: "最伟大的组织者让每次触球都有意义。培养出把每个机会都变成黄金的视野和创造力。来自季前代币商店。｜适合：CAM 专用，传球线为主。",
   cost: 'Tokens — 100 Pre Season Tokens',

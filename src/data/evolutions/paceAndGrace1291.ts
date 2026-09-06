@@ -19,6 +19,7 @@ export const paceAndGrace1291: EvolutionDefinition = {
   nameZh: "速度与优雅",
   futbinLink: 'https://www.futbin.com/26/evolutions/1291/pace--grace',
   version: 'FC 26',
+  expiresAt: '2026-09-12',
   description: 'Inject lethal velocity and effortless elegance, boosting raw speed and close control to glide past defenders.',
   descriptionZh: "注入致命的速度与轻松的优雅，提升原始速度和贴身控球，让你滑过后卫。｜适合：任何位置，门槛最低（只看 OVR），可重复 2 次，第二级给整个盘带块 +10。",
   cost: 'Free',

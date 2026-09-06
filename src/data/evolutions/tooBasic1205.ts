@@ -6,6 +6,7 @@ export const tooBasic1205: EvolutionDefinition = {
   nameZh: "太基础了",
   futbinLink: 'https://www.futbin.com/26/evolutions/1205/too-basic',
   version: 'FC 26',
+  expiresAt: '2026-09-18',
   description: "Master the fundamentals and prove that the most effective strategy is often the most direct. Some call it basic, we call it brilliant. Found in the FUTTIES Token Store.",
   descriptionZh: "精通基本功，证明最有效的策略往往是最直接的。有人叫它基础，我们叫它出色。来自 FUTTIES 代币商店。｜适合：任何位置，六条线小幅全加。",
   cost: '100 FUTTIES Tokens',

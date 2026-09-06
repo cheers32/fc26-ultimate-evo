@@ -12,6 +12,7 @@ export const primeIconicAttacker1279: EvolutionDefinition = {
   nameZh: "巅峰传奇攻击手",
   futbinLink: 'https://www.futbin.com/26/evolutions/1279/prime-iconic-attacker',
   version: 'FC 26',
+  expiresAt: '2026-10-02',
   description: "True greatness never settles. Elevate your legendary forward past their limits and into their ultimate form. Found in the token store.",
   descriptionZh: "真正的伟大从不满足。把你的传奇前锋推过极限，进入终极形态。来自代币商店。｜适合：ST/LW/RW，+45 OVR 加速度面板 +40，Icon 前锋的顶级改造。",
   cost: 'Tokens — 200',

@@ -20,6 +20,7 @@ export const symphonyInMotion1292: EvolutionDefinition = {
   nameZh: "运动交响曲",
   futbinLink: 'https://www.futbin.com/26/evolutions/1292/symphony-in-motion',
   version: 'FC 26',
+  expiresAt: '2026-09-14',
   description: 'Conduct every wide attack with pure artistry and unstoppable speed, gliding past fullbacks to deliver the ultimate masterpiece.',
   descriptionZh: "以纯粹的艺术性和无可阻挡的速度指挥每一次边路进攻，滑过边后卫，交出终极杰作。｜适合：LW/LM 专用，准入 OVR ≤98 几乎不设限，+20 OVR 顶 99 加三个面板各 +30，是边锋的大改造；但敏捷是唯一不碰的球感项，防守完全不加。",
   cost: '250 FC Points / 75,000 Coins',

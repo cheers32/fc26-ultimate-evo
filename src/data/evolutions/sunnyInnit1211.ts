@@ -6,6 +6,7 @@ export const sunnyInnit1211: EvolutionDefinition = {
   nameZh: "天气不错吧",
   futbinLink: 'https://www.futbin.com/26/evolutions/1211/sunny-innit',
   version: 'FC 26',
+  expiresAt: '2026-09-18',
   description: "Y'alright Neymar, sunny innit?",
   descriptionZh: "你还好吧内马尔，今天天气不错吧？｜适合：LW/RW 专用，+25 OVR。",
   cost: '200 FUTTIES Tokens',

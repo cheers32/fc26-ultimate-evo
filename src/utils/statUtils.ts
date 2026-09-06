@@ -366,6 +366,59 @@ export function reachesNinetyNine(evo: import('../types/player').EvolutionDefini
   return evo.ovrBoost.boost > 0 && reachableOvrCeiling(evo) === 99;
 }
 
+/**
+ * How hard an evo pushes on one face, as a property of the evo rather than of any card.
+ *
+ * A face boost states it outright. Otherwise it is the sub-stat boosts under that face, each worth
+ * what the face weighting says it is — +35 dribbling moves the face a great deal more than +35
+ * balance does, and a reading that counted them the same would call every evo strong everywhere.
+ *
+ * What it deliberately is not is what a given card would gain: caps and the card's own numbers
+ * decide that, and this is the answer to "what is this evo for", which does not change per player.
+ */
+export function evoFaceStrength(
+  evo: import('../types/player').EvolutionDefinition,
+  face: string
+): number {
+  const faceBoost = evo.faceBoosts?.[face];
+  if (faceBoost) return faceBoost.boost;
+  let weighted = 0;
+  for (const [sub, weight] of Object.entries(FACE_WEIGHTS[face] || {})) {
+    const boost = evo.subStatBoosts?.[sub];
+    if (boost) weighted += boost.boost * weight;
+  }
+  return weighted;
+}
+
+/**
+ * The same reading as nought to three pips, the way a chemistry style states itself.
+ *
+ * Round thresholds rather than tertiles of the library: under ten is a nudge, ten to twenty-five is
+ * a real gain, and past twenty-five the evo is rebuilding that face. Splitting on those lands at
+ * roughly 35/25/40 across every face of every evo, which is even enough to read.
+ */
+export function evoFacePips(
+  evo: import('../types/player').EvolutionDefinition,
+  face: string
+): 0 | 1 | 2 | 3 {
+  const strength = evoFaceStrength(evo, face);
+  if (strength <= 0) return 0;
+  if (strength < 10) return 1;
+  if (strength < 25) return 2;
+  return 3;
+}
+
+/** Days until an evo expires, or null where it carries no date. Negative once it is gone. */
+export function daysUntilExpiry(
+  evo: import('../types/player').EvolutionDefinition,
+  now: Date = new Date()
+): number | null {
+  if (!evo.expiresAt) return null;
+  const end = new Date(`${evo.expiresAt}T00:00:00`);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((end.getTime() - today.getTime()) / 86400000);
+}
+
 export function displayExcludedPositions(evo: import('../types/player').EvolutionDefinition): string[] {
   return (evo.requirements.excludedPositions || []).filter(pos => pos !== 'GK');
 }

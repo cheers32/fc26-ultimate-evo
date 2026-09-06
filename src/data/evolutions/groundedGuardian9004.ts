@@ -21,6 +21,7 @@ export const groundedGuardian9004: EvolutionDefinition = {
   nameZh: "沉稳守护者",
   futbinLink: 'https://www.futbin.com/26/evolutions',
   version: 'FC 26',
+  expiresAt: '2026-10-16',
   description: 'Shield possession with authority across every inch of the pitch, using crisp tackles and smooth turns to outsmart incoming pressure.',
   descriptionZh: "在球场每一寸用权威护住球权，用干净的抢断和流畅的转身化解迎面而来的压迫。｜适合：不挑位置、免费、3 级；防守四项各 +30 紧挨着射门力量 +30，是攻守两头一起补的组合，最适合需要两头跑的中场。OVR 只 +5 不占空间，也完全不碰速度和身体，加速类型不受影响。",
   cost: 'Objective Reward',

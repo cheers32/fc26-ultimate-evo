@@ -16,6 +16,7 @@ export const keepBetterKompany1278: EvolutionDefinition = {
   nameZh: "更好的孔帕尼",
   futbinLink: 'https://www.futbin.com/26/evolutions/1278/keep-better-kompany',
   version: 'FC 26',
+  expiresAt: '2026-10-02',
   description: "Your backline was secure, but now it's time to make it elite. Upgrade your defensive rock to ensure your squad Keeps Better Kompany. Found in the token store.",
   descriptionZh: "你的后防线本来就稳，现在该让它变成精英了。升级你的防守磐石。来自代币商店。｜适合：CB 专用，速度面板 +15 是亮点，慢中卫最需要。",
   cost: 'Tokens — 100',

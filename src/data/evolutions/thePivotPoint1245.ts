@@ -6,6 +6,7 @@ export const thePivotPoint1245: EvolutionDefinition = {
   nameZh: "支点",
   futbinLink: 'https://www.futbin.com/26/evolutions/1245/the-pivot-point',
   version: 'FC 26',
+  expiresAt: '2026-09-23',
   description:
     'The ultimate link. Turn your player into a midfield mastermind who shuts down opposition attacks and dictates the tempo going forward.',
   descriptionZh: "终极的纽带。把球员变成既能掐断对手进攻、又能掌控进攻节奏的中场大师。｜适合：非门将，五条线全加且可重复 8 次，是全库重复次数最多的。",

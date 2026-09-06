@@ -15,6 +15,7 @@ export const viciousStrike1289: EvolutionDefinition = {
   nameZh: "凶狠一击",
   futbinLink: 'https://www.futbin.com/26/evolutions/1289/vicious-strike',
   version: 'FC 26',
+  expiresAt: '2026-09-08',
   description:
     'No mercy in the box. Unleash devastating power in front of goal and punish the opposition ' +
     'with clinical finishes every time they leave you space.',
