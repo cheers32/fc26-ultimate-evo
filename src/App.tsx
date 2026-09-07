@@ -2128,7 +2128,12 @@ export default function App() {
       const activeBaseFaceVal = baseFaceData.baseFace;
       const effectiveFaceVal = previewFaceData.baseFace;
       const faceBoost = Math.round(totalFaceValChem) - Math.round(totalFaceValBase);
-      const newFaceVal = effectiveFaceVal + faceBoost;
+      // A face stat stops at 99 the way a sub-stat does. Without the clamp a card whose face is
+      // already printed at its cap picked the chemistry style's gain up on top of it and read
+      // 100: the evo prints the face at the target it promised, the style's gain is measured off
+      // the sub-stats underneath, and adding the second to the first goes past a ceiling neither
+      // of them crosses on its own.
+      const newFaceVal = Math.min(99, effectiveFaceVal + faceBoost);
 
       currentActiveBaseFace += activeBaseFaceVal;
       currentEffectiveFace += effectiveFaceVal;

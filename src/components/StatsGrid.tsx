@@ -235,8 +235,17 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
         const faceIsZeroBoost = effectiveFaceVal === activeBaseFaceVal && anySubEvoFaceDiff;
 
         const faceBoost = Math.round(totalFaceValChem) - Math.round(totalFaceValBase);
-        const newFaceVal = effectiveFaceVal + faceBoost;
+        // A face stat stops at 99 the way a sub-stat does. Without the clamp a card whose face is
+        // already printed at its cap picked the chemistry style's gain up on top of it and read
+        // 100: the evo prints the face at the target it promised, the style's gain is measured off
+        // the sub-stats underneath, and adding the second to the first goes past a ceiling neither
+        // of them crosses on its own.
+        const newFaceVal = Math.min(99, effectiveFaceVal + faceBoost);
         const showEndFace = !anyEvoDiff || showEvoFace || newFaceVal !== activeBaseFaceVal;
+        // What the style is printed as, or what the face actually got out of it — the same split
+        // the sub rows make. They differ exactly where the 99 ceiling eats the difference, which is
+        // where a face already at the cap was reading "+3" over a number that had not moved.
+        const shownFaceBoost = nominalChemBoost ? faceBoost : newFaceVal - effectiveFaceVal;
 
         return (
           <div
@@ -302,8 +311,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
                     )}
 
                     {anyChemBoost && (
-                      <span className={`text-[10.5px] font-normal mr-1 w-7 shrink-0 text-right tracking-tighter ${faceBoost > 0 ? 'text-fcGreen font-bold' : faceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
-                        {faceBoost > 0 ? `+${faceBoost}` : faceBoost < 0 ? `${faceBoost}` : '+0'}
+                      <span className={`text-[10.5px] font-normal mr-1 w-7 shrink-0 text-right tracking-tighter ${shownFaceBoost > 0 ? 'text-fcGreen font-bold' : shownFaceBoost < 0 ? 'text-red-500 font-bold' : 'text-transparent'}`}>
+                        {shownFaceBoost > 0 ? `+${shownFaceBoost}` : shownFaceBoost < 0 ? `${shownFaceBoost}` : '+0'}
                       </span>
                     )}
 
