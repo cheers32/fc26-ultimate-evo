@@ -5,11 +5,16 @@ import { EvolutionDefinition } from '../../types/player';
  * requirement at all — the only gate is OVR 97, which on a free evo makes it one of the widest
  * doors in the pool.
  *
- * Read off the EA Web App rather than FUTBIN. The Web App prints one cumulative Upgrades list for
- * all three carousel cards (Level 1, Level 2, Final Upgrade), so the split between the two levels
- * is not published on that screen and is not invented here — `levels` carries the total, named as
- * such. Five of the eleven stats are printed with a cap of 98; the rest are uncapped and only the
- * 99 ceiling holds them, which the `display: none` on their max-value cells says outright.
+ * Read off the EA Web App rather than FUTBIN. The carousel's first frame is headed "Summary" and
+ * prints the evo's total; stepping it with the arrow re-heads it "Level 1 of 2" and "Level 2 of 2"
+ * and prints that level alone. Clicking the card labels does not step it — only the arrow does,
+ * which is what made the first reading of this evo look like one shared list.
+ *
+ * The two levels come to the summary's thirteen lines exactly, so nothing here is inferred: the
+ * OVR and the Skill Moves both land at level 1, shooting and the two ball-winning stats with them,
+ * and level 2 is the rest of the defending block and the physical one. Five of the eleven stats
+ * print a cap of 98; the rest print none — their max-value cells are display:none — so only the 99
+ * ceiling holds them.
  */
 export const tacticalTank1295: EvolutionDefinition = {
   id: '1295',
@@ -51,14 +56,18 @@ export const tacticalTank1295: EvolutionDefinition = {
   },
   levels: [
     {
-      // Two levels in game; the Web App prints only the total, so that is what is recorded.
-      name: 'Levels 1–2 (total)',
+      name: 'Level 1',
       upgrades: [
         'OVR +5', 'Skill Moves +4',
-        'Jumping +20 (98)', 'Stamina +20 (98)', 'Strength +20',
-        'Interceptions +20', 'Heading Acc. +20', 'Def. Aware +20 (98)',
-        'Stand Tackle +20', 'Slide Tackle +20',
-        'Finishing +20 (98)', 'Long Shots +20', 'Volleys +20 (98)'
+        'Finishing +20 (98)', 'Long Shots +20', 'Volleys +20 (98)',
+        'Interceptions +20', 'Heading Acc. +20'
+      ]
+    },
+    {
+      name: 'Level 2',
+      upgrades: [
+        'Def. Aware +20 (98)', 'Stand Tackle +20', 'Slide Tackle +20',
+        'Jumping +20 (98)', 'Stamina +20 (98)', 'Strength +20'
       ]
     }
   ],
