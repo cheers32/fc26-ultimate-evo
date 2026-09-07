@@ -692,17 +692,13 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
           </button>
         </div>
       )}
-      {onDeletePath && isInGamePath(path) && path.chainIds.length > 0 && (
-        <div className="absolute -top-1.5 -right-1.5 opacity-40 hover:opacity-100 transition-opacity z-10">
-          <button
-            onClick={(e) => { e.stopPropagation(); setConfirmDelete(path.id); setDeleteTyped(''); }}
-            className="bg-red-950 text-red-400 rounded-full p-0.5 hover:bg-red-600 hover:text-white shadow-sm"
-            title="Delete the in-game record — asks you to type its name first"
-          >
-            <X className="w-2.5 h-2.5" />
-          </button>
-        </div>
-      )}
+      {/* No delete on the in-game record.
+          It used to sit here, and at the same -top-1.5 -right-1.5 as the compare/promote cluster
+          above — two absolutely positioned elements in one corner, stacked on each other and
+          spilling onto the next chip along. It was also the one control on the row that could throw
+          away the only thing on a card that cannot be worked out again: Current is what you have
+          actually done in game, and everything else is a plan that can be rebuilt from its chain.
+          Replacing it is what `Make this Current` is for, and that keeps the old one as a copy. */}
       {(onDeletePath || onToggleFavoritePath || onToggleDiscardPath) && path.chainIds.length > 0 && !path.isFavorite && !isInGamePath(path) && (
         <div className={`absolute -top-1.5 -left-1.5 flex items-center gap-0.5 transition-opacity z-10 ${
           path.discarded ? '' : 'opacity-0 group-hover:opacity-100'
@@ -1922,6 +1918,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
 
       {/* Typed rather than clicked. Every other build here is a proposal that can be made again;
           this one is the record of evos already spent, and there is no undo for it. */}
+      {/* The type-the-name confirmation for deleting an in-game record. Nothing opens it any more —
+          the chip's delete button is gone (see above) — and it is kept rather than deleted because
+          it is the whole guard rail: if that button is ever wanted back, on a chip or in a menu,
+          the safe way to do it already exists and only needs pointing at. */}
       {confirmDelete && onDeletePath && (() => {
         const target = allPaths.find(p => p.id === confirmDelete);
         if (!target) return null;
