@@ -118,6 +118,21 @@ export function floorsOf(t: BuildTemplate): Record<string, number> {
 
 const SHARP = { reactions: 0.06, composure: 0.06 };
 
+/**
+ * Balance carries weight in midfield, Aggression barely any.
+ *
+ * The midfield plans used to price neither: Balance appeared only in the dribbling-led attacking
+ * templates, so two cards identical but for it scored the same, and Aggression sat at .07–.08 as
+ * though it decided duels. It does not — it drives how eagerly the AI presses, not who wins the
+ * ball — while Balance is what keeps a midfielder upright receiving under contact, which is most of
+ * what one does. Rodri with 99 Balance and 95 Heading was being ranked below the same card with 96
+ * Balance and 99 Heading, and on the pitch it is the other way round.
+ *
+ * Held to .08, which is real but below any of the defending stats: a holding midfielder is still
+ * judged first on whether he wins the ball. The centre-back plans are left alone — heading and the
+ * physical side are the job there, not a rounding error.
+ */
+
 export const BUILD_TEMPLATES: BuildTemplate[] = [
   // ---- Centre-back -----------------------------------------------------------------------------
   {
@@ -200,7 +215,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Anchor CDM',
     positions: ['CDM', 'CM'],
     archetype: 'Lengthy',
-    maximise: { defAwareness: 0.18, standTackle: 0.16, interceptions: 0.13, strength: 0.11, headingAcc: 0.09, shortPass: 0.08, stamina: 0.08, aggression: 0.07, ...SHARP },
+    maximise: { defAwareness: 0.18, standTackle: 0.16, interceptions: 0.13, strength: 0.11, balance: 0.08, shortPass: 0.08, stamina: 0.08, headingAcc: 0.05, aggression: 0.02, ...SHARP },
     must: ['defAwareness', 'standTackle', 'interceptions', 'strength', 'stamina'],
     roles: ['Holding', 'Centre-Half'],
     blurb: 'Sits in front of the back four and does not move.'
@@ -210,7 +225,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Ball-Winner',
     positions: ['CDM', 'CM'],
     archetype: 'Explosive',
-    maximise: { interceptions: 0.17, standTackle: 0.16, defAwareness: 0.14, stamina: 0.12, agility: 0.1, acceleration: 0.11, shortPass: 0.06, aggression: 0.08, ...SHARP },
+    maximise: { interceptions: 0.17, standTackle: 0.16, defAwareness: 0.14, stamina: 0.12, acceleration: 0.11, agility: 0.1, balance: 0.08, shortPass: 0.06, aggression: 0.02, ...SHARP },
     must: ['interceptions', 'standTackle', 'defAwareness', 'stamina', 'agility'],
     avoid: ['strength'],
     roles: ['Holding', 'Box-To-Box'],
@@ -235,7 +250,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Box-to-Box Engine',
     positions: ['CM', 'CDM'],
     archetype: 'Lengthy',
-    maximise: { stamina: 0.17, strength: 0.13, shortPass: 0.12, standTackle: 0.12, sprintSpeed: 0.11, dribbling: 0.1, interceptions: 0.1, longShots: 0.03, ...SHARP },
+    maximise: { stamina: 0.17, strength: 0.13, shortPass: 0.12, standTackle: 0.12, sprintSpeed: 0.11, dribbling: 0.1, interceptions: 0.1, balance: 0.08, longShots: 0.03, ...SHARP },
     must: ['stamina', 'shortPass', 'standTackle', 'strength', 'composure'],
     roles: ['Box-To-Box'],
     blurb: 'Covers both boxes and is still there at ninety.'
@@ -245,7 +260,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Engine CM',
     positions: ['CM', 'CDM'],
     archetype: 'Explosive',
-    maximise: { stamina: 0.17, acceleration: 0.13, dribbling: 0.13, shortPass: 0.13, agility: 0.11, standTackle: 0.11, ballControl: 0.1, ...SHARP },
+    maximise: { stamina: 0.17, acceleration: 0.13, dribbling: 0.13, shortPass: 0.13, agility: 0.11, standTackle: 0.11, ballControl: 0.1, balance: 0.08, ...SHARP },
     must: ['stamina', 'acceleration', 'shortPass', 'dribbling', 'standTackle'],
     avoid: ['strength'],
     roles: ['Box-To-Box', 'Playmaker'],
