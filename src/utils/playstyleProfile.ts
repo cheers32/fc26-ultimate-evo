@@ -18,9 +18,30 @@ export type ControlMode = 'manual' | 'ai';
 /** Positions played by the person, not the AI, unless a card says otherwise. */
 export const MANUAL_BY_DEFAULT = ['CAM', 'LW', 'RW', 'ST', 'CF', 'LM', 'RM'];
 
+/**
+ * Weighted by where the card actually plays, rather than by whether any listed position is one a
+ * person usually holds the stick for.
+ *
+ * `.some()` was the rule, and one secondary position flipped the whole card: Dumfries is a right
+ * back who also lists RM, so he was read as a hand-controlled winger — which cut Anticipate to 0.6
+ * and Jockey to 0.6 on a fullback whose whole job is defending, and the note on Anticipate calling
+ * it the single best PlayStyle on an AI defender never once applied to one.
+ *
+ * The primary position counts full and the others half, the same way position weighting works
+ * everywhere else here, and a tie goes to the AI: a card that is half a winger is still a card the
+ * AI is holding most of the time.
+ */
 export function defaultControlMode(primaryPositions: string): ControlMode {
-  const positions = primaryPositions.split(',').map(p => p.trim().toUpperCase());
-  return positions.some(p => MANUAL_BY_DEFAULT.includes(p)) ? 'manual' : 'ai';
+  const positions = primaryPositions.split(',').map(p => p.trim().toUpperCase()).filter(Boolean);
+  if (positions.length === 0) return 'ai';
+  let manual = 0;
+  let total = 0;
+  positions.forEach((pos, idx) => {
+    const weight = idx === 0 ? 1 : 0.5;
+    total += weight;
+    if (MANUAL_BY_DEFAULT.includes(pos)) manual += weight;
+  });
+  return manual > total / 2 ? 'manual' : 'ai';
 }
 
 /**
