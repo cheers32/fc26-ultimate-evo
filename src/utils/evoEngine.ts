@@ -1,4 +1,5 @@
 import { EvolutionDefinition, ChainValidation, StatsData, OvrData, PlayStylesData, PlayerBio, EvolutionPath, ChainStepResult, EvoFilters } from '../types/player';
+import { resolveEvo, parseEvoNodeId } from './evoLevels';
 import { availableEvolutions } from '../data/evolutionsData';
 import {
   accelerateFamilyOf,
@@ -741,7 +742,7 @@ export function simulateEvoChain(
       continue;
     }
 
-    const evo = availableEvolutions[evoId];
+    const evo = resolveEvo(evoId);
     if (!evo) continue;
 
     // How many times this evo already appears earlier in the chain.
@@ -749,9 +750,14 @@ export function simulateEvoChain(
     // The search enforces the repeat limit itself, so it never proposes a chain that breaks it —
     // but a hand-built one could, and did: nothing here checked, so the builder would happily stack
     // a one-use evo twice and simulate the second as if it had applied.
+    //
+    // Counted on the base id, so a step run to four levels and the same evo run whole are still one
+    // evo against its repeat limit — the game does not hand out a second copy because you stopped
+    // short on the first.
+    const baseId = parseEvoNodeId(evoId).evoId;
     let usedBefore = 0;
     for (let i = 0; i < index; i++) {
-      if (chainIds[i] === evoId) usedBefore++;
+      if (parseEvoNodeId(chainIds[i]).evoId === baseId) usedBefore++;
     }
     const repeatLimit = evo.maxRepeatable ?? 1;
 
@@ -994,14 +1000,14 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
     if (currentChainIds.length >= prefixChainIds.length + maxDepth) return;
 
     for (const evoId of poolIds) {
-      const evo = availableEvolutions[evoId];
+      const evo = resolveEvo(evoId);
       if (!evo) continue;
 
       // Counted in a loop rather than with .filter().length — this runs once per pool
       // entry per node, so the throwaway arrays add up to millions of allocations.
       let count = 0;
       for (let i = 0; i < currentChainIds.length; i++) {
-        if (currentChainIds[i] === evoId) count++;
+        if (parseEvoNodeId(currentChainIds[i]).evoId === parseEvoNodeId(evoId).evoId) count++;
       }
       // Absent reads as on: both were added after builds were saved, and an old filter set should
       // behave the way the app behaves now.
@@ -1022,7 +1028,7 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
       if (filters?.oneEvoPerRarity !== false && evo.rarityChange) {
         let rarityTaken = false;
         for (let i = 0; i < currentChainIds.length; i++) {
-          if (availableEvolutions[currentChainIds[i]]?.rarityChange === evo.rarityChange) {
+          if (resolveEvo(currentChainIds[i])?.rarityChange === evo.rarityChange) {
             rarityTaken = true;
             break;
           }
@@ -1055,7 +1061,7 @@ if (filters.blockedEvos && filters.blockedEvos.length > 0) {
       seedState = { ...seedState, playStyles: applyFreePlayStyles(seedState.playStyles, parsePlayStyleNodeId(evoId)) };
       continue;
     }
-    const evo = availableEvolutions[evoId];
+    const evo = resolveEvo(evoId);
     if (!evo) continue;
     seedState = applyEvo(seedState, evo).state;
   }
@@ -1194,7 +1200,7 @@ export function analyzeEvolutions(
   return recommendedPaths.map(({ cand, name }, idx) => {
     const full = simulateEvoChain(cand.chainIds, baseBio, baseOvr, baseStats, basePlayStyles);
     
-    const evoNames = cand.chainIds.map(id => availableEvolutions[id]?.name || id).join(' ➜ ');
+    const evoNames = cand.chainIds.map(id => resolveEvo(id)?.name || id).join(' ➜ ');
     
     // Format: Name: OVR/IGS/EvosCount (e.g. CB1: 97/2750/4)
     const formattedName = `${name}: ${cand.ovr}/${cand.igs}/${cand.chainIds.length}`;

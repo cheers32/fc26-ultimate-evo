@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { resolveEvo, parseEvoNodeId, supportsPartialLevels } from '../utils/evoLevels';
 import { X, Plus, Trash2, RotateCcw, ExternalLink } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
@@ -15,7 +16,8 @@ export const EvoDetailsModal = ({
   usedBy,
   onSelectPlayer,
   onToggleDisabled,
-  isDisabled
+  isDisabled,
+  onSetLevels
 }: {
   evoId: string | null;
   onClose: () => void;
@@ -32,6 +34,13 @@ export const EvoDetailsModal = ({
   /** Switch the evo out of this team's pool, or back into it. The pool card's bin, on the page. */
   onToggleDisabled?: (id: string) => void;
   isDisabled?: boolean;
+  /**
+   * Run the evo part-way, for the step this page was opened from. Null is all of it.
+   *
+   * Absent where there is no step to change — the pool's pages are about the evo itself, and how
+   * far you took it is a fact about one card's chain rather than about the evo.
+   */
+  onSetLevels?: (levels: number | null) => void;
 }) => {
   useModal(!!evoId, { onClose });
 
@@ -47,8 +56,14 @@ export const EvoDetailsModal = ({
   }, [evoId, onAddEvo]);
 
   if (!evoId) return null;
-  const evo = availableEvolutions[evoId];
+  // The page is about the whole evo even when the step it came from stops short, so the levels
+  // below can show what is being left on the table rather than pretending it does not exist.
+  const { evoId: baseEvoId, levels: doneLevels } = parseEvoNodeId(evoId);
+  const evo = resolveEvo(baseEvoId);
   if (!evo) return null;
+  const totalLevels = evo.levels?.length ?? 0;
+  const canSplit = supportsPartialLevels(evo) && totalLevels > 1;
+  const runTo = doneLevels ?? totalLevels;
 
   return (
     <div id="evo-details-modal" className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onClick={onClose}>
@@ -355,11 +370,48 @@ export const EvoDetailsModal = ({
               with it, and the totals above cannot say which. */}
           {evo.levels && evo.levels.length > 0 && (
             <div>
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Levels</h3>
+              <div className="flex items-center justify-between mb-3 gap-3">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Levels</h3>
+                {/* Stopping short is a real build, not a mistake: Mr. Undroppable hands out Agility
+                    at level five, and a fullback who stops at four keeps the strength-over-agility
+                    lead his AcceleRATE is made of. Nothing forces you to claim every level in game,
+                    so nothing should force it here. */}
+                {canSplit && onSetLevels && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-gray-500 font-semibold mr-0.5">Run to</span>
+                    {Array.from({ length: totalLevels }, (_, i) => i + 1).map(n => (
+                      <button
+                        key={n}
+                        onClick={() => onSetLevels(n === totalLevels ? null : n)}
+                        className={`w-6 h-6 rounded text-[11px] font-bold border transition-colors ${
+                          runTo === n
+                            ? 'bg-fcGreen text-black border-fcGreen'
+                            : 'bg-[#121212] text-gray-400 border-gray-800 hover:text-white hover:border-gray-600'
+                        }`}
+                        title={n === totalLevels ? 'All levels' : `Stop after level ${n}`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {canSplit && runTo < totalLevels && (
+                <p className="text-[11px] text-amber-300/90 mb-2">
+                  Running {runTo} of {totalLevels} levels — the greyed lines below are not applied.
+                </p>
+              )}
               <div className="flex flex-col gap-2">
-                {evo.levels.map((level, i) => (
-                  <div key={level.name || i} className="bg-[#121212] rounded-lg border border-gray-800 p-2.5">
-                    <div className="text-[11px] font-bold text-gray-300 mb-1.5">{level.name || `Level ${i + 1}`}</div>
+                {evo.levels.map((level, i) => {
+                  const skipped = canSplit && i + 1 > runTo;
+                  return (
+                  <div key={level.name || i} className={`bg-[#121212] rounded-lg border p-2.5 transition-opacity ${
+                    skipped ? 'border-gray-900 opacity-40' : 'border-gray-800'
+                  }`}>
+                    <div className="text-[11px] font-bold text-gray-300 mb-1.5">
+                      {level.name || `Level ${i + 1}`}
+                      {skipped && <span className="ml-2 text-[9.5px] font-semibold text-amber-400/80">not run</span>}
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       {level.upgrades.map((u, j) => (
                         <span
@@ -375,7 +427,8 @@ export const EvoDetailsModal = ({
                       ))}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { resolveEvo } from '../utils/evoLevels';
 import { X, Plus, Trash2, AlertTriangle, Eye, Wand2, ThumbsUp, ChevronDown } from 'lucide-react';
 import { availableEvolutions } from '../data/evolutionsData';
 import { EvoDetailsModal } from './EvoDetailsModal';
@@ -201,7 +202,7 @@ const getEvoRecommendation = ({
 
     // Asked to leave the card's rarity/positions alone: an evo that changes them is still
     // addable by hand, but it is never what the app suggests doing next.
-    const evo = availableEvolutions[evoId];
+    const evo = resolveEvo(evoId);
     if (filters.noForcedPsPlus && evo && grantsFifthPsPlus(evo)) {
       blocked = true;
       reasons.push('fills the gold slot with a PlayStyle+ of its own, and Filters asks not to');
@@ -806,7 +807,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     : null;
 
   const poolWithStatus = evosPool.map((id) => {
-    const evo = availableEvolutions[id];
+    const evo = resolveEvo(id);
     const count = selectedChain.filter(eid => eid === id).length;
     const maxAllowed = evo?.maxRepeatable || 1;
     const limitReached = count >= maxAllowed;
@@ -939,7 +940,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
   // shortlist narrowed by a filter set in another modal just looks arbitrary.
   const missingRequired = (evoFilters?.requiredEvos || []).filter(reqId => !selectedChain.includes(reqId));
   const filterTargets: string[] = [
-    ...missingRequired.map(reqId => `must have ${availableEvolutions[reqId]?.name || reqId}`),
+    ...missingRequired.map(reqId => `must have ${resolveEvo(reqId)?.name || reqId}`),
     ...([
       ['OVR', evoFilters?.ovr],
       ['PAC', evoFilters?.pac],
@@ -981,8 +982,8 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
     // While Fit Position is on it is the point of the list, so it outranks the chosen sort.
     if (filterFitPosition && a.posMatchScore !== b.posMatchScore) return b.posMatchScore - a.posMatchScore;
 
-    const aMaxOvr = a.evo.requirements.maxOvr || 99;
-    const bMaxOvr = b.evo.requirements.maxOvr || 99;
+    const aMaxOvr = a.evo?.requirements.maxOvr ?? 99;
+    const bMaxOvr = b.evo?.requirements.maxOvr ?? 99;
 
     // Having asked for the evos that add DRI, the order to see them in is by how much they add.
     // The gain, not the resulting value: an evo that takes a 90 to 92 beats one that takes an 80 to
@@ -1220,7 +1221,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                     );
                   }
 
-                  const evo = availableEvolutions[id];
+                  const evo = resolveEvo(id);
                   if (!evo) return null;
                   const stepResult = validationResult.result!.steps[idx];
                   if (!stepResult) return null;
@@ -1812,7 +1813,7 @@ export const ManualPathModal: React.FC<ManualPathModalProps> = ({
                   {chainRecs.map(rec => {
                     const added = rec.chainIds
                       .slice(selectedChain.length)
-                      .map(stepId => availableEvolutions[stepId]?.name || stepId);
+                      .map(stepId => resolveEvo(stepId)?.name || stepId);
                     const last = rec.steps?.[rec.steps.length - 1];
                     const finalOvr = last ? last.ovrAfter : currentOvr;
                     const finalIgs = last

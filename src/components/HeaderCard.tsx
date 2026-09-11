@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolveEvo, parseEvoNodeId } from '../utils/evoLevels';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult, PickTarget } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
 import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, grantsFifthPsPlus, reachesNinetyNine, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
@@ -109,7 +110,9 @@ interface HeaderCardProps {
   onMakeCurrent?: (pathId: string) => void;
   /** The link that reopens this build on someone else's screen. */
   shareUrlFor?: (path: EvolutionPath) => string;
-  onViewEvo?: (evoId: string) => void;
+  /** Opens an evo's page. `stepIndex` is where in this path the step sits, so the page can
+   *  change how many of the evo's levels that step runs. */
+  onViewEvo?: (evoId: string, stepIndex?: number) => void;
   // Index of the step new builds start from (-1 = raw card), and a setter for picking one.
   baseIndex?: number;
   onSetBase?: (pathId: string, index: number) => void;
@@ -790,7 +793,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     if (!evoFilters) return [];
     const parts: string[] = [];
     (evoFilters.requiredEvos || []).forEach(id =>
-      parts.push(`must include ${availableEvolutions[id]?.name || id}`)
+      parts.push(`must include ${resolveEvo(id)?.name || id}`)
     );
     if (evoFilters.templateIds && evoFilters.templateIds.length > 0) {
       const names = evoFilters.templateIds
@@ -1018,7 +1021,10 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
   const playerIdMatch = futbinLink ? futbinLink.match(/\/player\/(\d+)/) : null;
   const futbinPlayerId = playerIdMatch ? playerIdMatch[1] : '';
   // FUTBIN only knows about real evos, so PlayStyle steps are left out of the builder URL.
-  const futbinChain = (path: EvolutionPath) => path.chainIds.filter(id => !isPlayStyleNodeId(id));
+  // FUTBIN's builder knows nothing about stopping an evo short, so the level suffix comes off:
+  // the link is to the evo, and how far this build takes it is ours to know.
+  const futbinChain = (path: EvolutionPath) =>
+    path.chainIds.filter(id => !isPlayStyleNodeId(id)).map(id => parseEvoNodeId(id).evoId);
   const builderLink = (path: EvolutionPath) => futbinPlayerId && futbinChain(path).length > 0
     ? `https://www.futbin.com/26/evolutions/builder/${futbinPlayerId}_${futbinChain(path).join('_')}?includeExpired=false`
     : null;
@@ -2133,7 +2139,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                     );
                   }
 
-                  const evo = availableEvolutions[id];
+                  const evo = resolveEvo(id);
                   if (!evo) return null;
 
                   const isStepActive = selectedNodes.includes(idx);
@@ -2449,7 +2455,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                         </button>
                         {onViewEvo && (
                           <button
-                            onClick={(e) => { e.stopPropagation(); onViewEvo(id); }}
+                            onClick={(e) => { e.stopPropagation(); onViewEvo(id, idx); }}
                             className="absolute -top-1.5 -right-1.5 p-0.5 bg-blue-900/90 text-blue-400 hover:bg-blue-600 hover:text-white rounded-full opacity-0 group-hover/node:opacity-100 transition-opacity z-10 shadow-sm"
                             title="View Evolution Details"
                           >

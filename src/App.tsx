@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { resolveEvo, parseEvoNodeId, makeEvoNodeId } from './utils/evoLevels';
 import { playersDatabase } from './data/playersData';
 import { chemStyles } from './data/chemStyles';
 import { defaultEvolutionPaths, availableEvolutions } from './data/evolutionsData';
@@ -1017,6 +1018,8 @@ export default function App() {
   const [playStylePickerTarget, setPlayStylePickerTarget] = useState<PickTarget | null>(null);
   // 'append' grows the active path in place; 'branch' spins a new path off the chosen base.
   const [viewingEvoId, setViewingEvoId] = useState<string | null>(null);
+  /** Which step of the active path the evo page was opened from, so it can change that step's levels. */
+  const [viewingEvoStep, setViewingEvoStep] = useState<number | null>(null);
   const [isEvoLabOpen, setIsEvoLabOpen] = useState(false);
   /**
    * Why the last Analyze run left the screen looking untouched, if it did.
@@ -1509,7 +1512,9 @@ export default function App() {
       if (!record) continue;
       const card = allPlayersData[pid] || libraryPlayers?.[pid];
       if (!card) continue;
-      for (const evoId of new Set(record.chainIds)) {
+      // Keyed on the base id: an evo run to four levels on one card and whole on another is the
+      // same evo spoken for twice, which is what this list is asked.
+      for (const evoId of new Set(record.chainIds.map(id => parseEvoNodeId(id).evoId))) {
         (out[evoId] ||= []).push({ id: pid, name: card.bio.name });
       }
     }
@@ -1613,7 +1618,7 @@ export default function App() {
     if (!target || isBaseCardPath(target)) return;
     const dropping = isPlayStyleNodeId(target.chainIds[index])
       ? 'a PlayStyle pick'
-      : availableEvolutions[target.chainIds[index]]?.name || 'a step';
+      : resolveEvo(target.chainIds[index])?.name || 'a step';
     guardCurrent(target, `remove ${dropping} from it`, extra => applyRemoveNode(pathId, index, extra));
   };
 
@@ -1666,6 +1671,49 @@ export default function App() {
         ? currentState.expandedPathIds
         : [...currentState.expandedPathIds, forkId]
     });
+  };
+
+  /**
+   * Run one step of the active path part-way — or all the way again.
+   *
+   * Only the id at that index changes, so unlike removing a step nothing after it shifts and the
+   * base marker and the progress marker are left where they are.
+   */
+  const setStepLevels = (index: number, levels: number | null) => {
+    const path = activePath;
+    if (!path || isBaseCardPath(path)) return;
+    const nodeId = path.chainIds[index];
+    if (!nodeId) return;
+    const { evoId } = parseEvoNodeId(nodeId);
+    const total = resolveEvo(evoId)?.levels?.length ?? 0;
+    const nextId = makeEvoNodeId(evoId, levels, total);
+    if (nextId === nodeId) return;
+    const newChainIds = [...path.chainIds];
+    newChainIds[index] = nextId;
+    const steps = simulateEvoChain(newChainIds, playerBio, initialOvrData, statsData, playStylesData).steps;
+    const wasGenerated = currentState.generatedPaths.some(p => p.id === path.id);
+    const forkId = wasGenerated ? `custom-${Date.now()}` : path.id;
+    const updated: EvolutionPath = {
+      ...path,
+      id: forkId,
+      name: wasGenerated ? `${keeperName(path)} (edited)` : path.name,
+      isFavorite: wasGenerated ? false : path.isFavorite,
+      starTier: wasGenerated ? undefined : path.starTier,
+      chainIds: newChainIds,
+      steps
+    };
+    updateState({
+      generatedPaths: currentState.generatedPaths,
+      manualPaths: wasGenerated
+        ? [...currentState.manualPaths, updated]
+        : currentState.manualPaths.map(p => (p.id === path.id ? updated : p)),
+      activePathId: forkId,
+      expandedPathIds: currentState.expandedPathIds.includes(forkId)
+        ? currentState.expandedPathIds
+        : [...currentState.expandedPathIds, forkId]
+    });
+    // The page stays open on what it is now showing.
+    setViewingEvoId(nextId);
   };
 
   // Writes a PlayStyle pick into the chain. `target` is the index of the node being edited, or
@@ -2225,7 +2273,7 @@ export default function App() {
 
     if (previewNode - baseNode === 1) {
       // A PlayStyle node has no boosts to chip against — there's no evo behind it.
-      return availableEvolutions[activePath.chainIds[previewNode]] || null;
+      return resolveEvo(activePath.chainIds[previewNode]) || null;
     }
     
     // For multi-step diffs, aggregate the limits and boosts!
@@ -2234,7 +2282,7 @@ export default function App() {
     
     for (let i = baseNode + 1; i <= previewNode; i++) {
       const evoId = activePath.chainIds[i];
-      const evo = availableEvolutions[evoId];
+      const evo = resolveEvo(evoId);
       if (evo) {
          Object.keys(evo.subStatBoosts).forEach(subKey => {
             if (!aggregatedBoosts[subKey]) {
@@ -2450,7 +2498,7 @@ export default function App() {
           onMakeCurrent={handleMakeCurrent}
           shareUrlFor={(path) => buildShareUrl(selectedPlayerId, path.chainIds)}
           onClearPaths={handleClearPaths}
-          onViewEvo={(id) => setViewingEvoId(id)}
+          onViewEvo={(id, stepIndex) => { setViewingEvoId(id); setViewingEvoStep(stepIndex ?? null); }}
           baseIndex={safeBaseIndex}
           onSetBase={(pathId, idx) => {
             // There is one starting point on a card, not one per path, so choosing a step on
@@ -2685,11 +2733,12 @@ export default function App() {
       />
       <EvoDetailsModal
         evoId={viewingEvoId}
-        onClose={() => setViewingEvoId(null)}
+        onClose={() => { setViewingEvoId(null); setViewingEvoStep(null); }}
         usedBy={viewingEvoId ? evoUsage[viewingEvoId] : undefined}
         onSelectPlayer={openPlayer}
         onToggleDisabled={toggleEvoDisabled}
-        isDisabled={!!viewingEvoId && disabledEvos.includes(viewingEvoId)}
+        isDisabled={!!viewingEvoId && disabledEvos.includes(parseEvoNodeId(viewingEvoId).evoId)}
+        onSetLevels={viewingEvoStep === null ? undefined : (levels) => setStepLevels(viewingEvoStep, levels)}
       />
       <PlayStylePickerModal
         isOpen={playStylePickerTarget !== null}
