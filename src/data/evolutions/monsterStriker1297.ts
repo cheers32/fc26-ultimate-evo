@@ -19,6 +19,8 @@ export const monsterStriker1297: EvolutionDefinition = {
   nameZh: "怪物中锋",
   futbinLink: 'https://www.futbin.com/26/evolutions/1297/monster-striker',
   version: 'FC 26',
+  // Seven days, off the game's own countdown. FUTBIN's "2 Weeks" is how long the evo runs.
+  expiresAt: '2026-09-18',
   description:
     'Build a striker defenders will fear. Add the power, presence and finishing to turn your ' +
     'forward into a true monster in and around the box.',
