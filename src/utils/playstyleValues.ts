@@ -110,22 +110,34 @@ export const PLAYSTYLE_VALUES: Record<string, PlayStyleValue> = {
     gateSkillMoves: 4,
     overlaps: ['Technical']
   },
+  /**
+   * The pace pair is barely archetype-penalised, and the penalty used to be half.
+   *
+   * Pairing a style with the matching archetype amplifies what the card is already good at; the
+   * opposite pairing patches what the archetype costs it. Neither case is stronger than the other,
+   * and the heavy penalty asserted that the first one is. On a Lengthy card with 99 Sprint Speed,
+   * Rapid was scoring at full value into a top end that is already pinned while Quick Step, which
+   * fixes the sluggish start that being Lengthy buys, was scored at half — and the position score
+   * beside it had already paid the card for being Lengthy, so the archetype was being counted twice.
+   *
+   * Kept slightly above nothing, because the amplifying pairing is still the safer default.
+   */
   'Quick Step': {
     axes: { pac: 0.8, dri: 0.2 },
     tier: 'core',
     gate: { acceleration: 82 },
     accelerate: {
       prefers: ['Explosive', 'Mostly Explosive', 'Controlled Explosive', 'Controlled'],
-      penalty: 0.5
+      penalty: 0.9
     },
     overlaps: ['Rapid'],
-    note: 'The acceleration half of the pace pair — wants an agile, explosive card.'
+    note: 'The acceleration half of the pace pair — the burst a Lengthy card does not have.'
   },
   'Rapid': {
     axes: { pac: 0.7, dri: 0.3 },
     tier: 'core',
     gate: { sprintSpeed: 85 },
-    accelerate: { prefers: ['Lengthy', 'Mostly Lengthy', 'Controlled Lengthy'], penalty: 0.55 },
+    accelerate: { prefers: ['Lengthy', 'Mostly Lengthy', 'Controlled Lengthy'], penalty: 0.9 },
     overlaps: ['Quick Step'],
     note: 'The top-speed half — wants a lengthy card that can actually run away from people.'
   },
