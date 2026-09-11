@@ -62,5 +62,5 @@ export const theLastSpark1296: EvolutionDefinition = {
       ]
     }
   ],
-  maxRepeatable: 1
+  maxRepeatable: 5
 };
