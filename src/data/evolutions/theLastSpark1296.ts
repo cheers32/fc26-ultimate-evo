@@ -16,7 +16,9 @@ export const theLastSpark1296: EvolutionDefinition = {
   nameZh: "最后的火花",
   futbinLink: 'https://www.futbin.com/26/evolutions/1296/the-last-spark',
   version: 'FC 26',
-  expiresAt: '2026-09-25',
+  // FUTBIN's "2 Weeks" is how long the evo runs, not how much of it is left — the game says seven
+  // days, and that is the number worth having on a card.
+  expiresAt: '2026-09-18',
   description:
     'Provide the definitive flash of brilliance with an extra gear of speed, thread incisive ' +
     'passes through tight windows, and deliver precise strikes under pressure.',
