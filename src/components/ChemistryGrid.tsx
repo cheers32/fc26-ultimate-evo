@@ -126,6 +126,25 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
 
   const scoreFor = (name: string) => scoreOf?.get(name);
 
+  /**
+   * The card's best position when it is not the one being scored, with the best style there.
+   *
+   * Read off the same styled cards the grid is built from, so the number quoted is one of the
+   * numbers this grid would show if it were pointed at that position.
+   */
+  const elsewhere = React.useMemo(() => {
+    if (!bio || !previewStats || !scorePosition) return null;
+    const bare = bestScore(previewStats, bio);
+    if (!bare || bare.position.toUpperCase() === scorePosition.toUpperCase()) return null;
+    let best: { name: string; score: number } | null = null;
+    for (const name of names) {
+      const styled = withStyleStats(previewStats, chemStyles[name] || {});
+      const s = scoreAtPosition(styled, bio, bare.position, false, true);
+      if (s && (!best || s.score > best.score)) best = { name, score: s.score };
+    }
+    return best ? { position: bare.position, ...best } : null;
+  }, [bio, previewStats, scorePosition, names, chemStyles]);
+
   /** One dense lookup grid of styles; shared by both groupings. */
   const styleGrid = (items: string[]) => {
     // Ordered by what they are worth here rather than by raw stat total, and the best one or two in
@@ -206,8 +225,20 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
           </span>
         </label>
       )}
+      {/* Which position these numbers are for. Every style here is scored at one position, and the
+          badge above the grid shows the card's *best* position, which is not always the same one —
+          a card whose primary position is not its best read as though chemistry had cost it points.
+          When they differ, the better position is named along with what it would be worth there,
+          so the answer is one line away instead of a squad edit away. */}
+      {elsewhere && (
+        <div className="text-[9px] text-amber-300/80 leading-snug -mb-1">
+          Scored at {scorePosition}. Better at {elsewhere.position}: {elsewhere.name} {elsewhere.score.toFixed(1)}
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
-        <div className="text-[9px] font-bold uppercase tracking-wider text-fcGreen/70">In game · FC 26</div>
+        <div className="text-[9px] font-bold uppercase tracking-wider text-fcGreen/70">
+          In game · FC 26{scorePosition ? <span className="text-gray-600 font-semibold"> · at {scorePosition}</span> : null}
+        </div>
         {ACCELERATE_FAMILIES.map(family => {
           const items = groupedByFamily[family];
           if (!items || items.length === 0) return null;

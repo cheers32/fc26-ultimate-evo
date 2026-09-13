@@ -2551,7 +2551,15 @@ export default function App() {
                       the same thing twice and pushed the useful half off the line. Which archetype
                       the plan wanted, and whether this card has it, stays in the tooltip — it
                       explains the score without competing with it. */}
-                  {shownScore.best.plan.name} {shownScore.best.score.toFixed(1)}
+                  {/* The position is on the badge because the page shows more than one of them at
+                      once: this is the card's best position, while the verdict and the chemistry
+                      grid below read the one it plays at. Henry is a 96.6 Power Winger at LW and an
+                      86.8 Ronaldo ST at ST, and with the position left off, the grid beneath —
+                      scored at ST, topping out at 94.8 — read as though a chemistry style had made
+                      him worse. */}
+                  {shownScore.best.plan.name}{' '}
+                  <span className="text-gray-500 font-semibold">{shownScore.best.position}</span>{' '}
+                  {shownScore.best.score.toFixed(1)}
                 </span>
               )}
 
