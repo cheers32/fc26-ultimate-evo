@@ -33,7 +33,12 @@ export const thePerfect10_1120: EvolutionDefinition = {
     curve: { boost: 50, limit: 95 },
     longPass: { boost: 50, limit: 97 },
     shortPass: { boost: 50, limit: 98 },
-    freekick: { boost: 50, limit: 94 },
+    // 95, not 94. Kaká's PAS line pins it: Symphony in Motion scales his 96 face to 99, and for
+    // FK Acc. to land on the 98 the game prints, the value going into that scale has to be between
+    // 94.55 and 95.5 — which is 95 and nothing else. At 94 the face came up a tenth short and the
+    // reconciliation walk handed the point to Crossing instead, printing 98/97 where the game says
+    // 97/98. Every other cap in this evo checks out against the same card.
+    freekick: { boost: 50, limit: 95 },
     vision: { boost: 50, limit: 96 },
     finishing: { boost: 50, limit: 95 },
     headingAcc: { boost: 50, limit: 88 },
