@@ -2119,19 +2119,8 @@ export default function App() {
     const slotPos = onPitch
       ? formationOf(squad?.formation).slots.find(slot => slot.id === onPitch[0])?.pos
       : undefined;
-    if (slotPos) return slotPos;
-    // Off the pitch there is no fact about where the card plays, and whichever position its list
-    // happens to print first is a weak stand-in for one. Henry is "ST, LW" and 9.8 points better at
-    // LW, so the verdict and the chemistry grid both answered about the position he is worse at
-    // while the badge above them named the one he is good at — a grid topping out at 94.8 sitting
-    // under a 100.0. The card's best position comes from the same stats the rest of the page reads,
-    // so they agree now. A squad slot still wins: that is a fact, and this is only a guess.
-    return (
-      bestScore(previewStats, previewBio)?.position ||
-      previewBio.primaryPositions.split(',')[0]?.trim() ||
-      'ST'
-    );
-  }, [squads, activeSquadId, selectedPlayerId, previewBio, previewStats]);
+    return slotPos || previewBio.primaryPositions.split(',')[0]?.trim() || 'ST';
+  }, [squads, activeSquadId, selectedPlayerId, previewBio.primaryPositions]);
 
   /** The previewed card scored there — every badge on the page reads this one position. */
   const previewScore = useMemo(
