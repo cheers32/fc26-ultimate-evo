@@ -1372,6 +1372,23 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
                           />
                           Endgame Floors
                         </label>
+                        {/* Off by default and slow on purpose. The search thins candidates three
+                            times — a shortlist cut on a provisional score, a merge of builds that
+                            look alike, and a cap on how many each plan shows — and all three are
+                            fine until the end, where every build scores within a point of every
+                            other and the winner is decided by the thinning rather than the score. */}
+                        <label
+                          className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
+                          title="Search wide and show everything: keeps 400 candidates a plan instead of 30, stops merging builds that look alike, and lists 10 a plan instead of 4. Use it at the end, when every build is within a point of the next and the best one is being thinned out. Slower, much slower on a full pool."
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!draftFilters.endgameResults}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, endgameResults: e.target.checked })}
+                            className="w-3.5 h-3.5 rounded border-gray-700 bg-[#121212] text-fcGreen focus:ring-fcGreen focus:ring-offset-0 focus:ring-1 cursor-pointer"
+                          />
+                          Endgame Results
+                        </label>
                       </div>
                       {/* How a chain may spend its steps. Both on unless you say otherwise, because
                           both rule out chains that spend a step on nothing: the same evo twice is

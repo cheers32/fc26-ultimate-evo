@@ -303,6 +303,18 @@ export interface EvoFilters {
    * recommended — not by Analyze, not by the builder's thumbs-up or its continuations — since a
    * card the player wants left alone can't use those evos however well they score.
    */
+  /**
+   * Search for the best build that exists rather than the best one found quickly.
+   *
+   * Off by default. The search shortlists candidates in pass one on a provisional score and does
+   * the real scoring in pass two, then collapses near-identical builds before showing them — three
+   * trades that pay for themselves everywhere except at the end, where every candidate scores
+   * within a point of every other and the winner is decided by which of them survived the thinning.
+   * On, the shortlist is wide enough that nothing real is dropped, builds are no longer merged for
+   * looking alike, and more of each plan's list is shown. It is slower, and on a full pool it is
+   * much slower.
+   */
+  endgameResults?: boolean;
   noRarityChange?: boolean;
   noPositionChange?: boolean;
   /**

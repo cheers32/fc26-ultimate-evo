@@ -96,6 +96,20 @@ const OUT_PER_TEMPLATE = 4;
 const SAME_BUILD = 2;
 
 /**
+ * The same three, with the thinning taken off — see `EvoFilters.endgameResults`.
+ *
+ * Pass one shortlists on a provisional score and pass two does the real one, so a build can be cut
+ * before anything has scored it properly. That is a fair trade while candidates are spread out and
+ * a bad one at the end, where they bunch inside a point of each other and the survivor is decided
+ * by the cut rather than by the score. Nothing is merged for looking alike either: at 99s across
+ * the board almost every build is within two of every other, and the one being collapsed away is
+ * as often the better one.
+ */
+const ENDGAME_SEARCH_KEEP = 400;
+const ENDGAME_OUT_PER_TEMPLATE = 10;
+const ENDGAME_SAME_BUILD = -1;   // 负数 = 永不判定为重复
+
+/**
  * ...and within this on everything else as well.
  *
  * Closeness on the axes a plan maximises is not closeness. Across the library, builds that sit
@@ -303,6 +317,15 @@ export function analyzeEvolutionsV2(
    */
   const assumeChem = input.filters?.assumeChemStyle === true;
 
+  /**
+   * Whether this run is allowed to be slow in exchange for not missing anything — see
+   * `EvoFilters.endgameResults`. Read once here so the three thinning steps below all agree.
+   */
+  const endgame = input.filters?.endgameResults === true;
+  const searchKeep = endgame ? ENDGAME_SEARCH_KEEP : SEARCH_KEEP;
+  const outPerTemplate = endgame ? ENDGAME_OUT_PER_TEMPLATE : OUT_PER_TEMPLATE;
+  const sameBuild = endgame ? ENDGAME_SAME_BUILD : SAME_BUILD;
+
   const psWeight = PS_WORTH;
   /** The readings a build is allowed: every style, or only the card as it stands. */
   const styleOptions: [string | null, Record<string, number>][] =
@@ -410,14 +433,14 @@ export function analyzeEvolutionsV2(
       if (mine < theirs || (mine === theirs && entry.cand.igs <= list[at].cand.igs)) return;
       list.splice(at, 1);
     }
-    if (list.length >= SEARCH_KEEP && score(entry.cand) <= score(list[list.length - 1].cand)) {
+    if (list.length >= searchKeep && score(entry.cand) <= score(list[list.length - 1].cand)) {
       shortlists.set(key, list);
       return;
     }
     let i = list.length;
     while (i > 0 && score(list[i - 1].cand) < score(entry.cand)) i--;
     list.splice(i, 0, entry);
-    if (list.length > SEARCH_KEEP) list.length = SEARCH_KEEP;
+    if (list.length > searchKeep) list.length = searchKeep;
     shortlists.set(key, list);
   };
 
@@ -984,13 +1007,13 @@ export function analyzeEvolutionsV2(
       const mine = axesOf(row.subs);
       const dup = rows.some(kept => {
         const theirs = axesOf(kept.subs);
-        return mine.every((v, i) => Math.abs(v - theirs[i]) <= SAME_BUILD)
+        return mine.every((v, i) => Math.abs(v - theirs[i]) <= sameBuild)
           && Math.abs(igsOf(kept.subs) - igsOf(row.subs)) <= SAME_IGS
           && kept.e.cand.chainIds.length === row.e.cand.chainIds.length;
       });
       if (dup) continue;
       rows.push(row);
-      if (rows.length >= OUT_PER_TEMPLATE) break;
+      if (rows.length >= outPerTemplate) break;
     }
 
     // A build you liked is on the list whatever the thinning made of it.
