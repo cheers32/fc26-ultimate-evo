@@ -25,7 +25,10 @@ export const sunnyInnit1211: EvolutionDefinition = {
     ballControl: { boost: 25, limit: 98 },
     dribbling: { boost: 25, limit: 98 },
     reactions: { boost: 25, limit: 96 },
-    composure: { boost: 25, limit: 99 },
+    // 97, not 99. The listing this was entered from printed 99; the game stops it at 97. Beckham's
+    // run pins it — 95 Composure plus 25 has to land on the cap, and the card reads 97 while every
+    // other Dribbling cap in this evo reproduces exactly.
+    composure: { boost: 25, limit: 97 },
     curve: { boost: 25, limit: 98 },
     longPass: { boost: 25, limit: 95 },
     shortPass: { boost: 25, limit: 96 },
@@ -74,7 +77,7 @@ export const sunnyInnit1211: EvolutionDefinition = {
       name: 'Level 4',
       upgrades: [
         'Ball Control +25 (98)', 'Dribbling +25 (98)', 'Long Pass +25 (95)',
-        'Volleys +25 (94)', 'Composure +25 (99)', 'PlayStyle+: Quick Step (4)'
+        'Volleys +25 (94)', 'Composure +25 (97)', 'PlayStyle+: Quick Step (4)'
       ]
     },
     {
