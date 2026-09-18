@@ -226,6 +226,9 @@ export function scoreAtPosition(
 }
 
 /** One entry per plan open at a position: the plan's best reading of the card, under the best style. */
+/** What reading a plan on the wrong archetype costs — see readingsAt. */
+const FALLBACK_COST = 2;
+
 function readingsAt(
   stats: StatsData,
   bio: PlayerBio,
@@ -256,7 +259,16 @@ function readingsAt(
       const fallback = archetype !== plan.archetype;
       if (fallback && archetype !== 'Controlled' && !ignoreArchetype) continue;
 
-      const { score, under } = scoreAgainst(styled, plan);
+      const { score: raw, under } = scoreAgainst(styled, plan);
+      // A reading on the wrong archetype pays for it. It used to cost nothing: the fallback was
+      // marked on the result and ignored by the score, so a Controlled card could read a plan built
+      // for Lengthy and take a perfect 100 on it. Lúcio did exactly that on Ball-Playing CB, above
+      // the Lengthy version of himself that actually fits the plan — and on the pitch the Controlled
+      // one could not catch a striker in behind, which is the thing a Lengthy centre-back is for.
+      //
+      // Two points: enough that the card with the right frame wins when the stats are close, small
+      // enough that a card genuinely better everywhere else still does.
+      const score = fallback ? Math.max(0, raw - FALLBACK_COST) : raw;
       // Ties go to the reading that leaves more card. Two styles a plan scores identically are not
       // the same style — first past the post made the answer depend on the order of the tables
       // rather than on the card.
