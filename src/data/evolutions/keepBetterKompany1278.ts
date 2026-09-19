@@ -37,6 +37,9 @@ export const keepBetterKompany1278: EvolutionDefinition = {
     slideTackle: { boost: 15, limit: 98 },
     headingAcc: { boost: 15, limit: 97 },
     strength: { boost: 15, limit: 97 },
+    // Missing from the first entry. Saliba 95's official result reads 92 → 97; the +15 is inferred
+    // from the rest of the physical block, the 97 cap is what the card shows.
+    aggression: { boost: 15, limit: 97 },
     stamina: { boost: 10, limit: 96 },
     reactions: { boost: 15, limit: 99 },
     ballControl: { boost: 15, limit: 94 },
