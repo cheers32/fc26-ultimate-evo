@@ -35,7 +35,10 @@ export const elKaiser987: EvolutionDefinition = {
     shortPass: { boost: 25, limit: 90 },
     freekick: { boost: 50, limit: 91 },
     shotPower: { boost: 50, limit: 93 },
-    slideTackle: { boost: 15, limit: 95 },
+    // 93, not the 95 first copied down. Lúcio's in-game Defending after El Kaiser → Hard Yards →
+    // Auto Defender reads 99/97/99/98/97, and only a 93 here lands his Defending on 94 going into
+    // Hard Yards, which is what prorates to exactly those five.
+    slideTackle: { boost: 15, limit: 93 },
     sprintSpeed: { boost: 20, limit: 90 },
     standTackle: { boost: 15, limit: 94 },
     stamina: { boost: 15, limit: 91 },
@@ -68,7 +71,7 @@ export const elKaiser987: EvolutionDefinition = {
     {
       name: 'Level 3',
       upgrades: [
-        'Dribbling +15 (85)', 'Interceptions +15 (95)', 'Jumping +15 (91)', 'Slide Tackle +15 (95)', 'Stamina +15 (91)', 'Composure +15 (93)'
+        'Dribbling +15 (85)', 'Interceptions +15 (95)', 'Jumping +15 (91)', 'Slide Tackle +15 (93)', 'Stamina +15 (91)', 'Composure +15 (93)'
       ]
     },
     {
