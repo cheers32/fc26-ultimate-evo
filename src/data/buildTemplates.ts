@@ -46,6 +46,15 @@ export interface BuildTemplate {
    * back; they simply do not apply.
    */
   controlledFallback?: boolean;
+  /**
+   * Points charged when the card is read on this plan as Controlled instead of its archetype.
+   *
+   * Only where the frame is the plan, which today means centre-back: a Controlled Lúcio could not
+   * catch a striker in behind, whichever CB plan he was read on. Everywhere else Controlled is a real card
+   * with no plan of its own — no full-back, striker or 10 plan is Controlled — so a flat charge
+   * there marked down every Controlled card at those positions for being Controlled.
+   */
+  archetypeCost?: number;
   /** Sub-stats the plan is built on, weighted. Normalised at use, so these are relative. */
   maximise: Record<string, number>;
   /** Sub-stats that have to pass. The floors come from here; the weak link is measured here. */
@@ -140,6 +149,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Rock CB',
     positions: ['CB'],
     archetype: 'Lengthy',
+    archetypeCost: 2,
     maximise: { strength: 0.17, defAwareness: 0.17, headingAcc: 0.15, standTackle: 0.13, jumping: 0.11, interceptions: 0.1, aggression: 0.07, ...SHARP },
     must: ['strength', 'defAwareness', 'headingAcc', 'standTackle', 'jumping'],
     roles: ['Centre-Half', 'Stopper'],
@@ -150,6 +160,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Pace CB',
     positions: ['CB'],
     archetype: 'Lengthy',
+    archetypeCost: 2,
     maximise: { sprintSpeed: 0.18, defAwareness: 0.16, standTackle: 0.14, acceleration: 0.14, interceptions: 0.12, strength: 0.1, headingAcc: 0.08, ...SHARP },
     must: ['sprintSpeed', 'acceleration', 'defAwareness', 'standTackle', 'strength'],
     floorOverrides: { sprintSpeed: 92 },
@@ -161,6 +172,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Sweeper CB',
     positions: ['CB'],
     archetype: 'Explosive',
+    archetypeCost: 2,
     maximise: { defAwareness: 0.18, interceptions: 0.16, acceleration: 0.14, standTackle: 0.14, agility: 0.12, sprintSpeed: 0.1, shortPass: 0.04, ...SHARP },
     must: ['defAwareness', 'interceptions', 'standTackle', 'acceleration', 'agility'],
     roles: ['Ball-Playing Defender', 'Stopper'],
@@ -171,6 +183,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Ball-Playing CB',
     positions: ['CB'],
     archetype: 'Lengthy',
+    archetypeCost: 2,
     maximise: { defAwareness: 0.18, standTackle: 0.15, shortPass: 0.13, interceptions: 0.12, strength: 0.11, longPass: 0.1, headingAcc: 0.09, ...SHARP },
     must: ['defAwareness', 'standTackle', 'strength', 'shortPass', 'headingAcc'],
     roles: ['Ball-Playing Defender'],
