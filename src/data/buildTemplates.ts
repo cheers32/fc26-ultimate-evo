@@ -144,6 +144,9 @@ const SHARP = { reactions: 0.06, composure: 0.06 };
 
 export const BUILD_TEMPLATES: BuildTemplate[] = [
   // ---- Centre-back -----------------------------------------------------------------------------
+  // Every defender plan carries Aggression. It is what a challenge is thrown into, and players who
+  // defend with these cards say a point of it shows; a plan that ignored it scored Saliba on 98
+  // and on 99 identically. Heaviest on the stopper, lightest on the full-backs who attack first.
   {
     id: 'rock-cb',
     name: 'Rock CB',
@@ -161,7 +164,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     positions: ['CB'],
     archetype: 'Lengthy',
     archetypeCost: 2,
-    maximise: { sprintSpeed: 0.18, defAwareness: 0.16, standTackle: 0.14, acceleration: 0.14, interceptions: 0.12, strength: 0.1, headingAcc: 0.08, ...SHARP },
+    maximise: { sprintSpeed: 0.18, defAwareness: 0.16, standTackle: 0.14, acceleration: 0.14, interceptions: 0.12, strength: 0.1, headingAcc: 0.08, aggression: 0.05, ...SHARP },
     must: ['sprintSpeed', 'acceleration', 'defAwareness', 'standTackle', 'strength'],
     floorOverrides: { sprintSpeed: 92 },
     roles: ['Centre-Half', 'Ball-Playing Defender'],
@@ -173,7 +176,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     positions: ['CB'],
     archetype: 'Explosive',
     archetypeCost: 2,
-    maximise: { defAwareness: 0.18, interceptions: 0.16, acceleration: 0.14, standTackle: 0.14, agility: 0.12, sprintSpeed: 0.1, shortPass: 0.04, ...SHARP },
+    maximise: { defAwareness: 0.18, interceptions: 0.16, acceleration: 0.14, standTackle: 0.14, agility: 0.12, sprintSpeed: 0.1, shortPass: 0.04, aggression: 0.05, ...SHARP },
     must: ['defAwareness', 'interceptions', 'standTackle', 'acceleration', 'agility'],
     roles: ['Ball-Playing Defender', 'Stopper'],
     blurb: 'Reads it early and steps out to take it.'
@@ -184,7 +187,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     positions: ['CB'],
     archetype: 'Lengthy',
     archetypeCost: 2,
-    maximise: { defAwareness: 0.18, standTackle: 0.15, shortPass: 0.13, interceptions: 0.12, strength: 0.11, longPass: 0.1, headingAcc: 0.09, ...SHARP },
+    maximise: { defAwareness: 0.18, standTackle: 0.15, shortPass: 0.13, interceptions: 0.12, strength: 0.11, longPass: 0.1, headingAcc: 0.09, aggression: 0.05, ...SHARP },
     must: ['defAwareness', 'standTackle', 'strength', 'shortPass', 'headingAcc'],
     roles: ['Ball-Playing Defender'],
     blurb: 'Defends the box and starts the move.'
@@ -196,7 +199,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Cafu Full-Back',
     positions: ['LB', 'RB', 'LWB', 'RWB'],
     archetype: 'Explosive',
-    maximise: { acceleration: 0.17, sprintSpeed: 0.15, stamina: 0.14, crossing: 0.12, agility: 0.1, dribbling: 0.1, standTackle: 0.1, ...SHARP },
+    maximise: { acceleration: 0.17, sprintSpeed: 0.15, stamina: 0.14, crossing: 0.12, agility: 0.1, dribbling: 0.1, standTackle: 0.1, aggression: 0.03, ...SHARP },
     must: ['acceleration', 'sprintSpeed', 'stamina', 'crossing', 'standTackle'],
     roles: ['Attacking Wingback', 'Wingback'],
     blurb: 'Ninety minutes of touchline. Attacks first, defends second.'
@@ -216,7 +219,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     name: 'Flying Wing-Back',
     positions: ['LB', 'RB', 'LWB', 'RWB'],
     archetype: 'Lengthy',
-    maximise: { sprintSpeed: 0.18, stamina: 0.16, strength: 0.13, crossing: 0.12, standTackle: 0.12, defAwareness: 0.11, acceleration: 0.1, ...SHARP },
+    maximise: { sprintSpeed: 0.18, stamina: 0.16, strength: 0.13, crossing: 0.12, standTackle: 0.12, defAwareness: 0.11, acceleration: 0.1, aggression: 0.03, ...SHARP },
     must: ['sprintSpeed', 'stamina', 'standTackle', 'defAwareness', 'strength'],
     roles: ['Wingback', 'Attacking Wingback'],
     blurb: 'Long strides, and gets back every time.'
