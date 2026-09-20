@@ -382,6 +382,23 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     blurb: 'Holds it up, wins everything in the air.'
   },
   {
+    /**
+     * The big finisher who is not a target man. Both Lengthy striker plans lean on heading — Ronaldo
+     * ST at 12%, Target Man at 17% with a floor — and the quick-striker plans are Explosive, closed
+     * to him. So a Lengthy forward with 99 Finishing, 99 Shot Power and 86 heading had no plan that
+     * described him and read 89: Saibari, and Haaland before him. This is that card's plan.
+     */
+    id: 'power-finisher',
+    name: 'Power Finisher',
+    positions: ['ST', 'CF'],
+    archetype: 'Lengthy',
+    maximise: { finishing: 0.2, shotPower: 0.15, positioning: 0.14, sprintSpeed: 0.12, ballControl: 0.1, strength: 0.09, longShots: 0.08, ...SHARP },
+    must: ['finishing', 'positioning', 'shotPower', 'sprintSpeed', 'composure'],
+    floorOverrides: { finishing: 92 },
+    roles: ['Advanced Forward', 'Complete Forward'],
+    blurb: 'Runs through you and finishes. Not a header.'
+  },
+  {
     id: 'poacher',
     name: 'Poacher',
     positions: ['ST', 'CF'],
