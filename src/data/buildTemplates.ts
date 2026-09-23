@@ -474,13 +474,14 @@ export function suggestTemplates(
   subs: Record<string, number>,
   roles: Record<string, string[]> | undefined,
   heightCm?: number,
-  limit = 2
+  limit = 2,
+  female = false
 ): string[] {
   const available = templatesAvailable(positions, heightCm);
   if (available.length === 0) return [];
 
   const bare = calculateAccelerateFamily(
-    subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, heightCm
+    subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, heightCm, female
   );
 
   const own = new Map<string, number>();

@@ -6,7 +6,8 @@ import {
   AccelerateType,
   calculateAccelerateType,
   calculateAccelerateFamily,
-  parseHeightCm
+  parseHeightCm,
+  isWomensCard
 } from './statUtils';
 import { effectiveGoldLimit } from './evoEngine';
 import { chemStyles } from '../data/chemStyles';
@@ -101,7 +102,8 @@ export function accelerateOf(stats: StatsData, bio: PlayerBio): AccelerateType {
     subValue(stats, 'acceleration') ?? 50,
     subValue(stats, 'agility') ?? 50,
     subValue(stats, 'strength') ?? 50,
-    parseHeightCm(bio.height)
+    parseHeightCm(bio.height),
+    isWomensCard(bio)
   );
 }
 
@@ -142,7 +144,8 @@ export function accelerateFamilyOf(stats: StatsData, bio: PlayerBio): Accelerate
     subValue(stats, 'acceleration') ?? 50,
     subValue(stats, 'agility') ?? 50,
     subValue(stats, 'strength') ?? 50,
-    parseHeightCm(bio.height)
+    parseHeightCm(bio.height),
+    isWomensCard(bio)
   );
 }
 

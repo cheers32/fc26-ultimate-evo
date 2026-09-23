@@ -2,7 +2,7 @@ import React from 'react';
 import { resolveEvo, parseEvoNodeId } from '../utils/evoLevels';
 import { PlayerBio, OvrData, EvolutionPath, EvolutionDefinition, EvoFilters, PlayStylesData, StatsData, ChainStepResult, PickTarget } from '../types/player';
 import { isPlayStyleNodeId, parsePlayStyleNodeId } from '../utils/evoEngine';
-import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, grantsFifthPsPlus, reachesNinetyNine, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm } from '../utils/statUtils';
+import { calculateChip, getStatColorClass, formatEvoTerms, displayExcludedPositions, grantsFifthPsPlus, reachesNinetyNine, ACCELERATE_TYPES, ACCELERATE_SHORT, ACCELERATE_FAMILIES, STAR_TIERS, STAR_TIER_COUNT, parseHeightCm, isWomensCard } from '../utils/statUtils';
 import { BUILD_TEMPLATES, FIELDABLE, suggestTemplates, templatesAvailable } from '../data/buildTemplates';
 import { IN_GAME_STAR_TIER, isBaseCardPath, isInGamePath, pathLabel } from '../utils/paths';
 import { getPlayStyleIconUrl } from '../utils/playstyles';
@@ -410,7 +410,7 @@ export const HeaderCard: React.FC<HeaderCardProps> = ({
     }
     return {
       available: templatesAvailable(positions, heightCm),
-      suggested: suggestTemplates(positions, subs, bio.roles, heightCm)
+      suggested: suggestTemplates(positions, subs, bio.roles, heightCm, 2, isWomensCard(bio))
     };
   }, [bio, rawStats, rawPositions]);
   // Which name is being edited, and the name being typed. Held here rather than in the path so an

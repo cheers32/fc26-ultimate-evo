@@ -13,7 +13,7 @@ import { StatsGrid } from './components/StatsGrid';
 import { ChemistryGrid } from './components/ChemistryGrid';
 import { EvolutionChainWorkbench } from './components/EvolutionChainWorkbench';
 import { EvoLabModal } from './components/EvoLabModal';
-import { calculateAccelerateType, calculateAccelerateFamily, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
+import { calculateAccelerateType, calculateAccelerateFamily, isWomensCard, parseHeightCm, accelerateLean, STAR_TIER_COUNT } from './utils/statUtils';
 import { isModalOpen } from './utils/modalStack';
 import { bestScore, rankedPlans, scoreAtPosition } from './utils/positionScore';
 import { playStyleScoreAt } from './utils/playStyleScore';
@@ -653,7 +653,7 @@ export default function App() {
       templateId: templateIdFromDescription(path.description, BUILD_TEMPLATES),
       reasons,
       heightCm,
-      archetype: calculateAccelerateFamily(subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, heightCm)
+      archetype: calculateAccelerateFamily(subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, heightCm, isWomensCard(full.finalBio))
     });
     setPathFeedback(next);
   };
@@ -2204,9 +2204,10 @@ export default function App() {
     });
 
     const height = parseHeightCm(playerBio.height);
-    const accType = calculateAccelerateType(accVal, agiVal, strVal, height);
+    const female = isWomensCard(playerBio);
+    const accType = calculateAccelerateType(accVal, agiVal, strVal, height, female);
     // The word the game prints is computed, not derived from the tier — the two disagree.
-    const accFamily = calculateAccelerateFamily(accVal, agiVal, strVal, height);
+    const accFamily = calculateAccelerateFamily(accVal, agiVal, strVal, height, female);
 
     return {
       igs: {

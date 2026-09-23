@@ -2,7 +2,7 @@ import React from 'react';
 import { ChemStylesData, PlayerBio, StatsData } from '../types/player';
 import { withStyleStats } from '../utils/chem';
 import { scoreAtPosition, bestScore } from '../utils/positionScore';
-import { getStatColorClass } from '../utils/statUtils';
+import { getStatColorClass, isWomensCard } from '../utils/statUtils';
 import {
   ACCELERATE_FAMILIES,
   ACCELERATE_TIERS_BY_FAMILY,
@@ -44,6 +44,8 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
   onToggleNominalChemBoost
 }) => {
   const names = Object.keys(chemStyles);
+  // The women's game gates AcceleRATE on its own heights — see isWomensCard.
+  const female = isWomensCard(bio);
 
   // Fastest to slowest, and all seven: the two "controlled" tiers used to be missing from this
   // list and got appended as they turned up, which put them after Lengthy instead of beside the
@@ -67,11 +69,11 @@ export const ChemistryGrid: React.FC<ChemistryGridProps> = ({
     const agi = Math.min(99, agiBase + (boost.agility || 0));
     const str = Math.min(99, strBase + (boost.strength || 0));
 
-    const type = calculateAccelerateType(acc, agi, str, heightCm);
+    const type = calculateAccelerateType(acc, agi, str, heightCm, female);
     if (!groupedChems[type]) groupedChems[type] = [];
     groupedChems[type].push(name);
 
-    groupedByFamily[calculateAccelerateFamily(acc, agi, str, heightCm)].push(name);
+    groupedByFamily[calculateAccelerateFamily(acc, agi, str, heightCm, female)].push(name);
   });
 
   const getFaceBoost = (chemName: string) => {

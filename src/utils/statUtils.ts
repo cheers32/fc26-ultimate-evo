@@ -141,6 +141,48 @@ export const ACCELERATE_FAMILY: Record<AccelerateType, AccelerateFamily> = {
 export const ACCELERATE_FAMILIES: AccelerateFamily[] = ['Explosive', 'Controlled', 'Lengthy'];
 
 /**
+ * How much shorter the women's game's height gates sit.
+ *
+ * FC 26 runs the AcceleRATE height gates separately for women — EA's published men's gates are
+ * 182 for Explosive and 183 for Lengthy against 162 and 164 for women, a shift of 20 and 19. The
+ * men's gates this app uses were read off cards rather than off the article (183 and 185, see
+ * `calculateAccelerateFamily`), and both of those are 21 above the women's published pair, so one
+ * shift carries every gate: a 165cm woman is gated like a 186cm man.
+ *
+ * Mia Hamm is the card that forced it. 165cm, agility 96 against strength 83, and the game reads
+ * her Controlled — the agility lead is far past every Explosive gate, and only the height stops
+ * her.
+ */
+const WOMENS_HEIGHT_SHIFT = 21;
+
+/** Leagues that are the women's game. Matched loosely: the names carry qualifiers by country. */
+const WOMENS_LEAGUE_HINTS = [
+  'liga f', 'nwsl', 'women', 'femenin', 'feminin', 'féminine', 'femminile', 'frauen',
+  'arkema', 'wsl', 'damallsvenskan', 'toppserien', 'uwcl', 'w-league'
+];
+
+/**
+ * Women's Icons and Heroes, who carry no league that says so — theirs reads 'Icons' like every
+ * other. Matched on surname, lower-cased, which is how the cards name them.
+ */
+const WOMENS_ICONS = [
+  'hamm', 'marta', 'sinclair', 'sawa', 'prinz', 'akers', 'wambach', 'sun wen', 'formiga',
+  'kelly smith', 'lilly', 'scurry', 'angerer', 'neid', 'rottenberg', 'boxx', 'pichon'
+];
+
+/** Whether a card is a women's card, which moves every AcceleRATE height gate. */
+export function isWomensCard(bio: { league?: string; name?: string } | null | undefined): boolean {
+  if (!bio) return false;
+  const league = (bio.league || '').toLowerCase();
+  if (WOMENS_LEAGUE_HINTS.some(hint => league.includes(hint))) return true;
+  if (league.includes('icon') || league.includes('hero')) {
+    const name = (bio.name || '').toLowerCase();
+    return WOMENS_ICONS.some(w => name === w || name.endsWith(' ' + w) || name.startsWith(w + ' '));
+  }
+  return false;
+}
+
+/**
  * The archetype FC 26 actually prints, which is *not* the seven-way split collapsed.
  *
  * Measured against FUTBIN rather than derived. Their page renders the same grouping at all three
@@ -188,9 +230,10 @@ export function calculateAccelerateFamily(
   acc: number,
   agi: number,
   str: number,
-  heightCm?: number
+  heightCm?: number,
+  female = false
 ): AccelerateFamily {
-  const h = heightCm ?? 180;
+  const h = (heightCm ?? 180) + (female ? WOMENS_HEIGHT_SHIFT : 0);
   if (agi - str >= 10 && agi >= 65 && acc >= 70 && h <= 183) return 'Explosive';
   if (str - agi >= 4 && str >= 65 && acc >= 40 && h >= 185) return 'Lengthy';
   return 'Controlled';
@@ -256,9 +299,10 @@ export function calculateAccelerateType(
   acc: number,
   agi: number,
   str: number,
-  heightCm?: number
+  heightCm?: number,
+  female = false
 ): AccelerateType {
-  const h = heightCm ?? 180;
+  const h = (heightCm ?? 180) + (female ? WOMENS_HEIGHT_SHIFT : 0);
   const agiLead = agi - str;
   const strLead = str - agi;
 

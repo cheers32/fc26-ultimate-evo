@@ -25,7 +25,7 @@ import {
   suggestTemplates,
   templatesAvailable
 } from '../data/buildTemplates';
-import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './statUtils';
+import { AccelerateFamily, calculateAccelerateFamily, isWomensCard, parseHeightCm } from './statUtils';
 
 /**
  * Analyze V2 — builds toward a finished card, not toward a bigger number.
@@ -183,7 +183,8 @@ const prettySub = (key: string) =>
 function archetypesByChem(
   subs: Record<string, number>,
   heightCm: number | undefined,
-  styles: [string | null, Record<string, number>][]
+  styles: [string | null, Record<string, number>][],
+  female = false
 ): Map<AccelerateFamily, string[]> {
   const out = new Map<AccelerateFamily, string[]>();
   const acc = subs.acceleration ?? 50;
@@ -193,7 +194,7 @@ function archetypesByChem(
   for (const [name, boosts] of styles) {
     const cap = (base: number, key: string) => Math.min(99, base + (boosts[key] || 0));
     const fam = calculateAccelerateFamily(
-      cap(acc, 'acceleration'), cap(agi, 'agility'), cap(str, 'strength'), heightCm
+      cap(acc, 'acceleration'), cap(agi, 'agility'), cap(str, 'strength'), heightCm, female
     );
     const list = out.get(fam) || [];
     list.push(name ?? 'bare');
@@ -287,6 +288,7 @@ export function analyzeEvolutionsV2(
 ): EvolutionPath[] {
   const { baseBio, baseOvr, baseStats, basePlayStyles, poolIds } = input;
   const height = parseHeightCm(baseBio.height);
+  const female = isWomensCard(baseBio);
 
   /**
    * How many steps at the head of every chain are yours rather than the search's.
@@ -461,7 +463,7 @@ export function analyzeEvolutionsV2(
   const wanted = input.filters?.templateIds;
   const pick =
     wanted === undefined
-      ? suggestTemplates(rankPositions, subValues(baseStats), baseBio.roles, height)
+      ? suggestTemplates(rankPositions, subValues(baseStats), baseBio.roles, height, 2, female)
       : wanted.length > 0
         ? wanted
         : null;
@@ -495,14 +497,14 @@ export function analyzeEvolutionsV2(
     const ck = canonical(chainIds);
     if (downVoted.has(ck)) return;
 
-    const byChem = archetypesByChem(subs, height, styleOptions);
+    const byChem = archetypesByChem(subs, height, styleOptions, female);
     const cand: Candidate = {
       chainIds: [...chainIds],
       ovr: state.ovr,
       igs: Object.values(subs).reduce((a, b) => a + b, 0),
       subs,
       byChem,
-      bare: calculateAccelerateFamily(subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height),
+      bare: calculateAccelerateFamily(subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height, female),
       positions: state.bio.primaryPositions.split(',').map(p => p.trim().toUpperCase()).filter(Boolean)
     };
 
@@ -575,7 +577,7 @@ export function analyzeEvolutionsV2(
     for (const [style, boosts] of styleOptions) {
       const subs = style === null ? cand.subs : withStyle(cand.subs, boosts);
       const fam = calculateAccelerateFamily(
-        subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height
+        subs.acceleration ?? 50, subs.agility ?? 50, subs.strength ?? 50, height, female
       );
       if (fam !== arch) continue;
       const scored = scoreForTemplate(subs, t, reach);
@@ -779,7 +781,7 @@ export function analyzeEvolutionsV2(
   const scoreChain = (chainIds: string[], t: BuildTemplate, arch: AccelerateFamily) => {
     const got = subsOfChain(chainIds);
     if (!got) return null;
-    const byChem = archetypesByChem(got.subs, height, styleOptions);
+    const byChem = archetypesByChem(got.subs, height, styleOptions, female);
     // A trim that costs the card its archetype is not a trim, it is a different plan.
     if (!byChem.has(arch)) return null;
     const played = playedAs(got.subs, t, arch);

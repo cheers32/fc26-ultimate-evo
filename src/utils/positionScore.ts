@@ -7,7 +7,7 @@ import {
   floorsOf
 } from '../data/buildTemplates';
 import { STYLE_OPTIONS, withStyle } from './chem';
-import { AccelerateFamily, calculateAccelerateFamily, parseHeightCm } from './statUtils';
+import { AccelerateFamily, calculateAccelerateFamily, isWomensCard, parseHeightCm } from './statUtils';
 
 /**
  * What a card is worth at a position, out of 100.
@@ -238,6 +238,7 @@ function readingsAt(
   const pos = sided ? sided.label : key;
   const wanted = sided ? sided.positions : [key];
   const height = parseHeightCm(bio.height);
+  const female = isWomensCard(bio);
   const plans = BUILD_TEMPLATES.filter(t => t.positions.some(p => wanted.includes(p)));
   if (plans.length === 0) return [];
 
@@ -248,7 +249,7 @@ function readingsAt(
     for (const [style, boosts] of assumeChem ? STYLE_OPTIONS : BARE_ONLY) {
       const styled = style === null ? subs : withStyle(subs, boosts);
       const archetype = calculateAccelerateFamily(
-        styled.acceleration ?? 50, styled.agility ?? 50, styled.strength ?? 50, height
+        styled.acceleration ?? 50, styled.agility ?? 50, styled.strength ?? 50, height, female
       );
       // The plan's archetype, or Controlled where the card cannot reach it — the same fallback the
       // recommendations make, and marked the same way, so a Controlled reading never quietly passes
