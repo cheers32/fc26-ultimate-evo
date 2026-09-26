@@ -24,7 +24,7 @@ export const primeIconicAttacker1279: EvolutionDefinition = {
   },
   ovrBoost: { boost: 45, limit: 98 },
   faceBoosts: {
-    // 98, not 96: Torres 97 comes out of this on 99 acceleration and 97 sprint speed.
+    // 98, not 96: the level card prints the cap, and Torres 97 comes out on 99 / 97.
     pac: { boost: 40, limit: 98 },
     pas: { boost: 20, limit: 95 }
   },
@@ -40,7 +40,7 @@ export const primeIconicAttacker1279: EvolutionDefinition = {
     reactions: { boost: 35, limit: 99 },
     ballControl: { boost: 30, limit: 97 },
     dribbling: { boost: 40, limit: 98 },
-    composure: { boost: 40, limit: 98 },
+    composure: { boost: 40, limit: 96 },
     headingAcc: { boost: 30, limit: 99 },
     jumping: { boost: 40, limit: 95 },
     stamina: { boost: 35, limit: 95 },
@@ -50,5 +50,35 @@ export const primeIconicAttacker1279: EvolutionDefinition = {
   weakFootBoost: 4,
   skillMovesBoost: 4,
   playStylesAdded: { gold: [], silver: [] },
+  levels: [
+    {
+      name: 'Level 1',
+      upgrades: [
+        'OVR +45 (98)', 'PAC +40 (98)', 'Ball Control +30 (97)', 'Jumping +40 (95)',
+        'Att. Position +40'
+      ]
+    },
+    {
+      name: 'Level 2',
+      upgrades: [
+        'Agility +40 (98)', 'Dribbling +40 (98)', 'Finishing +40 (98)', 'Stamina +35 (95)',
+        'Volleys +30 (96)', 'Skills +4'
+      ]
+    },
+    {
+      name: 'Level 3',
+      upgrades: [
+        'Balance +30 (96)', 'Penalties +25 (96)', 'Shot Power +30 (97)', 'Strength +25 (92)',
+        'Composure +40 (96)', 'Weak Foot +4'
+      ]
+    },
+    {
+      name: 'Level 4',
+      upgrades: [
+        'PAS +20 (95)', 'Aggression +20 (92)', 'Heading Acc. +30', 'Long Shots +30 (96)',
+        'Reactions +35'
+      ]
+    }
+  ],
   maxRepeatable: 1
 };
