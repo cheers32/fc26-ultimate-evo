@@ -24,7 +24,8 @@ export const primeIconicAttacker1279: EvolutionDefinition = {
   },
   ovrBoost: { boost: 45, limit: 98 },
   faceBoosts: {
-    pac: { boost: 40, limit: 96 },
+    // 98, not 96: Torres 97 comes out of this on 99 acceleration and 97 sprint speed.
+    pac: { boost: 40, limit: 98 },
     pas: { boost: 20, limit: 95 }
   },
   subStatBoosts: {
@@ -37,9 +38,9 @@ export const primeIconicAttacker1279: EvolutionDefinition = {
     agility: { boost: 40, limit: 98 },
     balance: { boost: 30, limit: 96 },
     reactions: { boost: 35, limit: 99 },
-    ballControl: { boost: 30, limit: 95 },
+    ballControl: { boost: 30, limit: 97 },
     dribbling: { boost: 40, limit: 98 },
-    composure: { boost: 40, limit: 96 },
+    composure: { boost: 40, limit: 98 },
     headingAcc: { boost: 30, limit: 99 },
     jumping: { boost: 40, limit: 95 },
     stamina: { boost: 35, limit: 95 },
