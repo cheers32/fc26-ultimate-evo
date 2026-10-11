@@ -22,7 +22,9 @@ export const maxSweat1201: EvolutionDefinition = {
     sprintSpeed: { boost: 30, limit: 97 },
     stamina: { boost: 20, limit: 94 },
     strength: { boost: 20, limit: 90 },
-    agility: { boost: 30, limit: 97 },
+    // 96, not the 97 printed: Pedri 90 through The Final Pass → Everything at Once → Max Sweat
+    // lands on agility 96, and every other stat on that card matches as transcribed.
+    agility: { boost: 30, limit: 96 },
     balance: { boost: 30, limit: 96 },
     ballControl: { boost: 30, limit: 97 },
     dribbling: { boost: 30, limit: 97 },
@@ -61,7 +63,7 @@ export const maxSweat1201: EvolutionDefinition = {
     {
       name: 'Level 2',
       upgrades: [
-        'Agility +30 (97)', 'Dribbling +30 (97)', 'Att. Position +30 (96)',
+        'Agility +30 (96)', 'Dribbling +30 (97)', 'Att. Position +30 (96)',
         'Short Pass +30 (94)', 'Skill Moves +5', 'PlayStyle+: Rapid (4)'
       ]
     },
