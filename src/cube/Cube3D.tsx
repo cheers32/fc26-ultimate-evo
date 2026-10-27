@@ -75,7 +75,7 @@ export const Cube3D: React.FC<Props> = ({ state, view, onViewChange, anim, highl
     if (!d.moved) return;
     onViewChange({
       yaw: d.view.yaw + dx * 0.5,
-      pitch: Math.max(-85, Math.min(85, d.view.pitch - dy * 0.5))
+      pitch: Math.max(-85, Math.min(85, d.view.pitch + dy * 0.5))
     });
   };
   const onPointerUp = (e: React.PointerEvent) => {
