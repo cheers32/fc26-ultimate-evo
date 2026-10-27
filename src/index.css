@@ -43,3 +43,23 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* 2×2 cube: the stickers of the layer the coach is about to turn */
+@keyframes cube-pulse {
+  0%, 100% { outline-color: rgba(255, 255, 255, 0.95); }
+  50% { outline-color: rgba(255, 255, 255, 0.15); }
+}
+.cube-sticker-lit {
+  outline: 3px solid white;
+  outline-offset: -1px;
+  animation: cube-pulse 1s ease-in-out infinite;
+}
+
+@layer components {
+  .btn-cube {
+    @apply inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border border-gray-800 bg-[#1A1C1A] text-gray-200 hover:bg-[#2A2D2A] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors;
+  }
+  .panel-cube {
+    @apply bg-[#1A1C1A] rounded-2xl border border-gray-800 p-4;
+  }
+}

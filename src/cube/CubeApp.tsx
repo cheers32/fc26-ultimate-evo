@@ -1,0 +1,783 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Check, ChevronRight, FastForward, Play, RefreshCw, RotateCcw, Shuffle, Undo2, Wand2 } from 'lucide-react';
+import {
+  COLORS,
+  COLOR_HEX,
+  COLOR_NAME,
+  Color,
+  CubeState,
+  MOVE_WORDS,
+  applyMove,
+  applyMoves,
+  blankCube,
+  invertMove,
+  invertMoves,
+  isSolved,
+  randomScramble,
+  solvedCube,
+  validateColors
+} from './cubeModel';
+import { CoachSegment, FORMULAS, FormulaId, STAGE_TITLES, Stage, beginnerPlan } from './coach';
+import { solveOptimal } from './solver';
+import { Cube3D, DEFAULT_VIEW, View } from './Cube3D';
+import { CubeNet } from './CubeNet';
+
+/**
+ * A 2×2 to learn on: turn it, paint in the colours of the one in your hand, and have it walk
+ * you through the beginner's method one turn at a time.
+ */
+
+type Tab = 'coach' | 'moves' | 'paint';
+
+interface QueuedMove {
+  move: string;
+  /** Whether Undo should be able to take it back. */
+  log: boolean;
+}
+
+interface Coach {
+  plan: CoachSegment[];
+  seg: number;
+  idx: number;
+}
+
+const SPEEDS = [
+  { label: '慢', ms: 650 },
+  { label: '中', ms: 380 },
+  { label: '快', ms: 180 }
+];
+
+const MoveChip: React.FC<{ move: string; state?: 'done' | 'next' | 'todo'; onClick?: () => void }> = ({
+  move,
+  state = 'todo',
+  onClick
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={!onClick}
+    title={MOVE_WORDS[move]}
+    className={`min-w-[2.4rem] px-2 py-1 rounded-lg font-mono font-bold text-sm transition-colors ${
+      state === 'done'
+        ? 'bg-[#1a1c1a] text-gray-600'
+        : state === 'next'
+          ? 'bg-fcGreen text-black ring-2 ring-fcGreen/40'
+          : 'bg-[#2A2D2A] text-gray-200'
+    } ${onClick ? 'hover:bg-[#3a3d3a] hover:text-white' : ''}`}
+  >
+    {move}
+  </button>
+);
+
+export default function CubeApp() {
+  const [cube, setCube] = useState<CubeState>(() => solvedCube());
+  const [queue, setQueue] = useState<QueuedMove[]>([]);
+  const [anim, setAnim] = useState<{ move: string; t: number } | null>(null);
+  const [log, setLog] = useState<string[]>([]);
+  const [view, setView] = useState<View>(DEFAULT_VIEW);
+  const [speed, setSpeed] = useState(1);
+  const [tab, setTab] = useState<Tab>('coach');
+  const [coach, setCoach] = useState<Coach | null>(null);
+  const [scramble, setScramble] = useState<string[] | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
+  const [draft, setDraft] = useState<CubeState>(() => solvedCube());
+  const [paintColor, setPaintColor] = useState<Color>('W');
+  const [paintErrors, setPaintErrors] = useState<string[]>([]);
+  const [optimal, setOptimal] = useState<string[] | 'busy' | null>(null);
+  const [showFullPlan, setShowFullPlan] = useState(false);
+
+  const busy = useRef(false);
+  const generation = useRef(0);
+  const speedMs = useRef(SPEEDS[speed].ms);
+  speedMs.current = SPEEDS[speed].ms;
+
+  // One turn at a time off the front of the queue, animated, then committed to the cube.
+  useEffect(() => {
+    if (busy.current || queue.length === 0) return;
+    busy.current = true;
+    const gen = generation.current;
+    const { move, log: logIt } = queue[0];
+    const dur = speedMs.current * (move.endsWith('2') ? 1.4 : 1);
+    let start: number | null = null;
+    const step = (now: number) => {
+      if (gen !== generation.current) return; // reset mid-turn: drop it
+      if (start === null) start = now;
+      const t = Math.min(1, (now - start) / dur);
+      if (t < 1) {
+        setAnim({ move, t });
+        requestAnimationFrame(step);
+        return;
+      }
+      busy.current = false;
+      setAnim(null);
+      setCube(c => {
+        const next = applyMove(c, move);
+        if (isSolved(next) && !isSolved(c)) setCelebrate(true);
+        return next;
+      });
+      if (logIt) setLog(l => [...l, move]);
+      setQueue(q => q.slice(1));
+    };
+    setAnim({ move, t: 0 });
+    requestAnimationFrame(step);
+  }, [queue]);
+
+  const idle = queue.length === 0 && !anim;
+
+  /** Throw away anything queued or mid-turn, and put this on the cube right away. */
+  const setCubeNow = useCallback((state: CubeState) => {
+    generation.current++;
+    busy.current = false;
+    setQueue([]);
+    setAnim(null);
+    setCube(state);
+    setLog([]);
+    setCoach(null);
+    setOptimal(null);
+    setCelebrate(false);
+  }, []);
+
+  const enqueue = useCallback((moves: string[], logIt = true) => {
+    setCelebrate(false);
+    setQueue(q => [...q, ...moves.map(move => ({ move, log: logIt }))]);
+  }, []);
+
+  /** A turn the coach didn't ask for: its plan no longer matches the cube. */
+  const manual = useCallback(
+    (moves: string[]) => {
+      setCoach(null);
+      setOptimal(null);
+      enqueue(moves);
+    },
+    [enqueue]
+  );
+
+  const undo = () => {
+    if (!idle || !log.length) return;
+    const last = log[log.length - 1];
+    setLog(l => l.slice(0, -1));
+    setCoach(null);
+    setOptimal(null);
+    enqueue([invertMove(last)], false);
+  };
+
+  const doScramble = () => {
+    const s = randomScramble(11);
+    setCubeNow(applyMoves(solvedCube(), s));
+    setScramble(s);
+    setTab('coach');
+  };
+
+  const doReset = () => {
+    setCubeNow(solvedCube());
+    setScramble(null);
+  };
+
+  // Keyboard: r l u d f b x y z, with Shift for the reverse turn.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (tab === 'paint' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      const k = e.key.toLowerCase();
+      const map: Record<string, string> = { r: 'R', l: 'L', u: 'U', d: 'D', f: 'F', b: 'B', x: 'x', y: 'y', z: 'z' };
+      if (!map[k]) return;
+      e.preventDefault();
+      manual([map[k] + (e.shiftKey ? "'" : '')]);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tab, manual]);
+
+  // --- Coach ---------------------------------------------------------------------------------
+
+  const startCoach = () => {
+    const plan = beginnerPlan(cube);
+    if (!plan) return;
+    setCoach({ plan, seg: 0, idx: 0 });
+    setShowFullPlan(false);
+  };
+
+  const coachDone = coach !== null && coach.seg >= coach.plan.length;
+  const currentSeg = coach && !coachDone ? coach.plan[coach.seg] : null;
+  const nextMove = currentSeg ? currentSeg.moves[coach!.idx] : null;
+
+  const advance = (n: number) =>
+    setCoach(c => {
+      if (!c) return c;
+      let { seg, idx } = c;
+      idx += n;
+      while (seg < c.plan.length && idx >= c.plan[seg].moves.length) {
+        idx -= c.plan[seg].moves.length;
+        seg++;
+      }
+      return { ...c, seg, idx };
+    });
+
+  const coachStep = () => {
+    if (!nextMove || !idle) return;
+    enqueue([nextMove]);
+    advance(1);
+  };
+
+  const coachSegment = () => {
+    if (!currentSeg || !idle) return;
+    const rest = currentSeg.moves.slice(coach!.idx);
+    enqueue(rest);
+    advance(rest.length);
+  };
+
+  // --- Paint ---------------------------------------------------------------------------------
+
+  const paint = (i: number) => {
+    setDraft(d => {
+      const next = d.slice();
+      next[i] = paintColor;
+      return next;
+    });
+    setPaintErrors([]);
+  };
+
+  const applyDraft = () => {
+    const problems = validateColors(draft);
+    setPaintErrors(problems);
+    if (problems.length) return;
+    setCubeNow(draft);
+    setScramble(null);
+    setTab('coach');
+  };
+
+  const counts = useMemo(() => {
+    const c = {} as Record<Color, number>;
+    for (const col of [...COLORS, 'X' as Color]) c[col] = draft.filter(s => s === col).length;
+    return c;
+  }, [draft]);
+
+  // --- What's on screen ----------------------------------------------------------------------
+
+  const shown = tab === 'paint' ? draft : cube;
+  const highlight = tab === 'coach' && idle ? nextMove : null;
+  const playing = anim?.move ?? highlight;
+  const solved = isSolved(cube);
+
+  const runOptimal = () => {
+    setOptimal('busy');
+    setTimeout(() => setOptimal(solveOptimal(cube)), 30);
+  };
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'coach', label: '👩‍🏫 教我还原' },
+    { id: 'moves', label: '🔄 转法和公式' },
+    { id: 'paint', label: '🎨 输入颜色' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#121212] text-white">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <a href="/" className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-[#1f211f]" title="返回 FC Evo">
+              <ArrowLeft className="w-5 h-5" />
+            </a>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-wide">🧊 2×2 魔方小课堂</h1>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] gap-6">
+          {/* ---------------- Left: the cube ---------------- */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-full bg-[#1A1C1A] rounded-2xl border border-gray-800 flex flex-col items-center pt-4 pb-3">
+              <Cube3D
+                state={shown}
+                view={view}
+                onViewChange={setView}
+                anim={tab === 'paint' ? null : anim}
+                highlight={highlight}
+                onStickerClick={tab === 'paint' ? paint : undefined}
+              />
+              <div className="h-14 flex flex-col items-center justify-center text-center px-3">
+                {tab === 'paint' ? (
+                  <span className="text-sm text-gray-400">点格子涂上颜色 · 拖动可以转着看</span>
+                ) : playing ? (
+                  <>
+                    <span className="font-mono text-2xl font-black text-fcGreen">{playing}</span>
+                    <span className="text-sm text-gray-300">{MOVE_WORDS[playing]}</span>
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-500">拖动魔方可以转着看</span>
+                )}
+              </div>
+              {celebrate && tab !== 'paint' && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-fcGreen text-black font-black text-lg shadow-glow-green animate-bounce">
+                  🎉 还原成功！
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2">
+              <button onClick={doScramble} className="btn-cube">
+                <Shuffle className="w-4 h-4" /> 打乱
+              </button>
+              <button onClick={doReset} className="btn-cube">
+                <RefreshCw className="w-4 h-4" /> 复原
+              </button>
+              <button onClick={undo} disabled={!idle || !log.length || tab === 'paint'} className="btn-cube">
+                <Undo2 className="w-4 h-4" /> 撤销
+              </button>
+              <button onClick={() => setView(DEFAULT_VIEW)} className="btn-cube">
+                <RotateCcw className="w-4 h-4" /> 摆正
+              </button>
+              <div className="flex rounded-lg overflow-hidden border border-gray-800">
+                {SPEEDS.map((s, i) => (
+                  <button
+                    key={s.label}
+                    onClick={() => setSpeed(i)}
+                    className={`px-3 text-sm font-bold ${speed === i ? 'bg-[#2A2D2A] text-white' : 'text-gray-500 hover:text-white'}`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {scramble && tab !== 'paint' && (
+              <div className="w-full text-center text-xs text-gray-400 bg-[#1A1C1A] border border-gray-800 rounded-xl px-3 py-2">
+                想让手里的魔方一样乱？白色朝上、绿色朝前，照着转：
+                <div className="font-mono text-sm text-gray-200 mt-1 break-words">{scramble.join(' ')}</div>
+              </div>
+            )}
+
+            <div className="w-full bg-[#1A1C1A] rounded-2xl border border-gray-800 p-4 flex flex-col items-center">
+              <div className="text-xs font-bold text-gray-500 mb-1 self-start">平面展开图（2D 地图）</div>
+              <CubeNet state={shown} highlight={highlight} onStickerClick={tab === 'paint' ? paint : undefined} />
+              <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                把魔方的 6 个面像纸盒一样摊平：中间的"前"就是朝着你的那一面，背面、底面也一眼都能看到。
+              </p>
+            </div>
+          </div>
+
+          {/* ---------------- Right: tabs ---------------- */}
+          <div className="flex flex-col gap-4 min-w-0">
+            <div className="flex gap-1 bg-[#1A1C1A] p-1 rounded-xl border border-gray-800">
+              {tabs.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    if (t.id === 'paint' && tab !== 'paint') {
+                      setDraft(cube);
+                      setPaintErrors([]);
+                    }
+                    setTab(t.id);
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                    tab === t.id ? 'bg-[#2A2D2A] text-white' : 'text-gray-500 hover:text-gray-200'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {tab === 'coach' && (
+              <CoachPanel
+                coach={coach}
+                solved={solved}
+                idle={idle}
+                currentSeg={currentSeg}
+                nextMove={nextMove}
+                celebrate={celebrate}
+                showFullPlan={showFullPlan}
+                onToggleFullPlan={() => setShowFullPlan(v => !v)}
+                onStart={startCoach}
+                onStep={coachStep}
+                onSegment={coachSegment}
+                onScramble={doScramble}
+                onPaint={() => {
+                  setDraft(cube);
+                  setTab('paint');
+                }}
+              />
+            )}
+
+            {tab === 'moves' && (
+              <MovesPanel
+                idle={idle}
+                onMoves={manual}
+                optimal={optimal}
+                solved={solved}
+                onOptimal={runOptimal}
+              />
+            )}
+
+            {tab === 'paint' && (
+              <div className="panel-cube flex flex-col gap-4">
+                <div className="text-sm text-gray-300 leading-relaxed">
+                  <p className="font-bold text-white mb-1">把手里魔方的颜色填进来</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-400">
+                    <li>
+                      拿着魔方，随便选一面<b className="text-gray-200">对着你</b>，这面就是<b className="text-gray-200">"前 F"</b>，朝天的是<b className="text-gray-200">"上 U"</b>。
+                    </li>
+                    <li>先选下面的颜色，再点魔方图上的格子。平面图最好点；3D 图拖着转也能点到背面。</li>
+                    <li>
+                      2×2 没有中心块，24 个格子都要填。看<b className="text-gray-200">"右 R"</b>时把魔方往左转一下看右面，看完记得转回来。
+                    </li>
+                  </ol>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {COLORS.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setPaintColor(c)}
+                      className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl border-2 transition-colors ${
+                        paintColor === c ? 'border-white bg-[#2A2D2A]' : 'border-transparent bg-[#121212] hover:bg-[#222]'
+                      }`}
+                    >
+                      <span className="w-7 h-7 rounded-md border border-black/40" style={{ background: COLOR_HEX[c] }} />
+                      <span className="text-sm font-bold">{COLOR_NAME[c]}</span>
+                      <span className={`text-xs font-mono ${counts[c] === 4 ? 'text-fcGreen' : counts[c] > 4 ? 'text-red-400' : 'text-gray-500'}`}>
+                        {counts[c]}/4
+                      </span>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPaintColor('X')}
+                    className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl border-2 ${
+                      paintColor === 'X' ? 'border-white bg-[#2A2D2A]' : 'border-transparent bg-[#121212] hover:bg-[#222]'
+                    }`}
+                  >
+                    <span className="w-7 h-7 rounded-md border border-black/40" style={{ background: COLOR_HEX.X }} />
+                    <span className="text-sm font-bold text-gray-400">橡皮</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={applyDraft} className="btn-cube bg-fcGreen text-black hover:bg-[#1db954] border-transparent">
+                    <Check className="w-4 h-4" /> 用这个颜色
+                  </button>
+                  <button onClick={() => { setDraft(blankCube()); setPaintErrors([]); }} className="btn-cube">
+                    全部清空
+                  </button>
+                  <button onClick={() => { setDraft(cube); setPaintErrors([]); }} className="btn-cube">
+                    换回屏幕上的魔方
+                  </button>
+                </div>
+
+                {paintErrors.length > 0 && (
+                  <div className="text-sm text-red-300 bg-red-950/30 border border-red-900/50 rounded-xl p-3 space-y-1">
+                    {paintErrors.map(p => (
+                      <div key={p}>⚠️ {p}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+
+const StageBar: React.FC<{ current: Stage | 5 }> = ({ current }) => (
+  <div className="grid grid-cols-4 gap-1.5">
+    {([1, 2, 3, 4] as Stage[]).map(s => (
+      <div
+        key={s}
+        className={`rounded-lg px-2 py-1.5 text-center text-[11px] sm:text-xs font-bold leading-tight ${
+          s < current ? 'bg-fcGreen/15 text-fcGreen' : s === current ? 'bg-fcGreen text-black' : 'bg-[#121212] text-gray-600'
+        }`}
+      >
+        {s < current ? '✓ ' : `${s}. `}
+        {STAGE_TITLES[s]}
+      </div>
+    ))}
+  </div>
+);
+
+interface CoachPanelProps {
+  coach: Coach | null;
+  solved: boolean;
+  idle: boolean;
+  currentSeg: CoachSegment | null;
+  nextMove: string | null;
+  celebrate: boolean;
+  showFullPlan: boolean;
+  onToggleFullPlan: () => void;
+  onStart: () => void;
+  onStep: () => void;
+  onSegment: () => void;
+  onScramble: () => void;
+  onPaint: () => void;
+}
+
+const CoachPanel: React.FC<CoachPanelProps> = ({
+  coach,
+  solved,
+  idle,
+  currentSeg,
+  nextMove,
+  celebrate,
+  showFullPlan,
+  onToggleFullPlan,
+  onStart,
+  onStep,
+  onSegment,
+  onScramble,
+  onPaint
+}) => {
+  if (!coach) {
+    if (solved) {
+      return (
+        <div className="panel-cube space-y-4">
+          <p className="text-gray-300">
+            {celebrate ? '🎉 太棒了，魔方还原啦！' : '屏幕上的魔方现在是还原好的。'}想练习的话：
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={onScramble} className="btn-cube">
+              <Shuffle className="w-4 h-4" /> 随机打乱一个
+            </button>
+            <button onClick={onPaint} className="btn-cube">
+              🎨 输入手里魔方的颜色
+            </button>
+          </div>
+          <MethodOverview />
+        </div>
+      );
+    }
+    return (
+      <div className="panel-cube space-y-4">
+        <p className="text-gray-300">我会按"新手层先法"一步一步教，每一步都告诉你转哪里、转几下。</p>
+        <button
+          onClick={onStart}
+          disabled={!idle}
+          className="w-full py-3 rounded-xl bg-fcGreen text-black font-black text-lg hover:bg-[#1db954] disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <Play className="w-5 h-5" /> 开始教我
+        </button>
+        <MethodOverview />
+      </div>
+    );
+  }
+
+  if (!currentSeg) {
+    return (
+      <div className="panel-cube space-y-4 text-center">
+        <StageBar current={5} />
+        <div className="text-5xl pt-4">🎉</div>
+        <p className="text-xl font-black">还原成功！</p>
+        <p className="text-gray-400 text-sm">再来一次？每次只用这三个公式，多练几遍就能背下来。</p>
+        <button onClick={onScramble} className="btn-cube mx-auto">
+          <Shuffle className="w-4 h-4" /> 再打乱一个
+        </button>
+      </div>
+    );
+  }
+
+  const done = coach.idx;
+  return (
+    <div className="panel-cube space-y-4">
+      <StageBar current={currentSeg.stage} />
+
+      <div className="rounded-xl bg-[#121212] border border-gray-800 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-fcGreen">第 {currentSeg.stage} 步</span>
+          <span className="text-lg font-black">{currentSeg.title}</span>
+        </div>
+        <p className="text-sm text-gray-300 leading-relaxed">{currentSeg.detail}</p>
+        {currentSeg.formula && (
+          <div className="text-xs text-gray-400">
+            公式：<b className="text-gray-200">{FORMULAS[currentSeg.formula].nickname}</b>{' '}
+            <span className="font-mono">{FORMULAS[currentSeg.formula].name}</span>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {currentSeg.moves.map((m, i) => (
+            <MoveChip key={i} move={m} state={i < done ? 'done' : i === done ? 'next' : 'todo'} />
+          ))}
+        </div>
+      </div>
+
+      {nextMove && (
+        <div className="rounded-xl bg-fcGreen/10 border border-fcGreen/30 p-3 flex items-center gap-3">
+          <span className="font-mono text-3xl font-black text-fcGreen w-14 text-center">{nextMove}</span>
+          <span className="text-base text-gray-100">{MOVE_WORDS[nextMove]}</span>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={onStep}
+          disabled={!idle}
+          className="flex-1 py-3 rounded-xl bg-fcGreen text-black font-black text-base hover:bg-[#1db954] disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          <ChevronRight className="w-5 h-5" /> 下一下
+        </button>
+        <button
+          onClick={onSegment}
+          disabled={!idle}
+          className="flex-1 py-3 rounded-xl bg-[#2A2D2A] text-white font-bold text-base hover:bg-[#3a3d3a] disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          <FastForward className="w-5 h-5" /> 这一段做完
+        </button>
+      </div>
+      <div className="flex justify-between items-center">
+        <button onClick={onToggleFullPlan} className="text-xs text-gray-500 hover:text-gray-200">
+          {showFullPlan ? '收起全部步骤' : `查看全部步骤（共 ${coach.plan.length} 段）`}
+        </button>
+        <button onClick={onStart} disabled={!idle} className="text-xs text-gray-500 hover:text-gray-200 flex items-center gap-1">
+          <RefreshCw className="w-3 h-3" /> 重新分析
+        </button>
+      </div>
+      {showFullPlan && (
+        <ol className="space-y-1.5">
+          {coach.plan.map((seg, i) => (
+            <li
+              key={i}
+              className={`text-xs rounded-lg px-3 py-2 ${
+                i < coach.seg ? 'text-gray-600' : i === coach.seg ? 'bg-[#2A2D2A] text-white' : 'text-gray-400'
+              }`}
+            >
+              <span className="font-bold">
+                {i < coach.seg ? '✓ ' : ''}
+                {seg.stage}. {seg.title}
+              </span>
+              <span className="font-mono ml-2">{seg.moves.join(' ')}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className="text-xs text-gray-500 leading-relaxed">
+        手里的魔方跟着一起转：屏幕上朝你的那面 = 手里朝你的那面。转错了也没关系，点"撤销"或者重新输入颜色，再点"重新分析"。
+      </p>
+    </div>
+  );
+};
+
+const MethodOverview: React.FC = () => (
+  <div className="rounded-xl bg-[#121212] border border-gray-800 p-4 text-sm text-gray-400 space-y-2">
+    <p className="font-bold text-gray-200">新手方法：4 步，只要 3 个公式</p>
+    <ol className="space-y-1.5">
+      <li>
+        <b className="text-gray-200">1. 白色底层</b> — 白角放到右前上方，重复 <span className="font-mono text-gray-200">R U R' U'</span>
+      </li>
+      <li>
+        <b className="text-gray-200">2. 黄色朝上</b> — 重复 <span className="font-mono text-gray-200">R' D' R D</span>，只转顶层换下一个角
+      </li>
+      <li>
+        <b className="text-gray-200">3. 顶层换位置</b> — "车灯"放左边，做交换公式 T
+      </li>
+      <li>
+        <b className="text-gray-200">4. 对齐</b> — 转顶层，完成！
+      </li>
+    </ol>
+  </div>
+);
+
+// ---------------------------------------------------------------------------------------------
+
+const MOVE_GROUPS: { title: string; moves: string[] }[] = [
+  { title: '右 R / 左 L', moves: ['R', "R'", 'R2', 'L', "L'", 'L2'] },
+  { title: '上 U / 下 D', moves: ['U', "U'", 'U2', 'D', "D'", 'D2'] },
+  { title: '前 F / 后 B', moves: ['F', "F'", 'F2', 'B', "B'", 'B2'] },
+  { title: '整个魔方', moves: ['x', "x'", 'y', "y'", 'z', "z'"] }
+];
+
+interface MovesPanelProps {
+  idle: boolean;
+  solved: boolean;
+  onMoves: (moves: string[]) => void;
+  optimal: string[] | 'busy' | null;
+  onOptimal: () => void;
+}
+
+const MovesPanel: React.FC<MovesPanelProps> = ({ idle, solved, onMoves, optimal, onOptimal }) => (
+  <div className="flex flex-col gap-4">
+    <div className="panel-cube space-y-3">
+      <p className="font-bold">怎么看转法记号</p>
+      <ul className="text-sm text-gray-400 space-y-1">
+        <li>
+          字母 = 转哪一层：<b className="text-gray-200">R</b>右 <b className="text-gray-200">L</b>左 <b className="text-gray-200">U</b>上{' '}
+          <b className="text-gray-200">D</b>下 <b className="text-gray-200">F</b>前 <b className="text-gray-200">B</b>后
+        </li>
+        <li>
+          只有字母 = 看着那一面<b className="text-gray-200">顺时针</b>转 90°；带 <b className="text-gray-200 font-mono">'</b> = 反过来转；带{' '}
+          <b className="text-gray-200 font-mono">2</b> = 转两下
+        </li>
+        <li>
+          小写 <b className="text-gray-200 font-mono">x y z</b> = 整个魔方一起转（手里换个拿法），不是拧
+        </li>
+        <li>
+          键盘也能转：按 <span className="font-mono">R</span>，加 Shift 就是 <span className="font-mono">R'</span>
+        </li>
+      </ul>
+      <div className="space-y-2">
+        {MOVE_GROUPS.map(g => (
+          <div key={g.title} className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-500 w-20 shrink-0">{g.title}</span>
+            {g.moves.map(m => (
+              <MoveChip key={m} move={m} onClick={() => onMoves([m])} />
+            ))}
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-gray-500">鼠标停在按钮上会显示怎么转。</p>
+    </div>
+
+    <div className="panel-cube space-y-3">
+      <p className="font-bold">三个公式</p>
+      {(Object.keys(FORMULAS) as FormulaId[]).map(id => {
+        const f = FORMULAS[id];
+        return (
+          <div key={id} className="rounded-xl bg-[#121212] border border-gray-800 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <span className="font-black">{f.nickname}</span>
+                <span className="font-mono text-sm text-gray-300 ml-2">{f.name}</span>
+              </div>
+              <div className="flex gap-1.5">
+                <button onClick={() => onMoves(f.moves)} disabled={!idle} className="btn-cube py-1 text-xs">
+                  <Play className="w-3 h-3" /> 演示
+                </button>
+                <button onClick={() => onMoves(invertMoves(f.moves))} disabled={!idle} className="btn-cube py-1 text-xs">
+                  <Undo2 className="w-3 h-3" /> 倒回去
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">{f.use}</p>
+          </div>
+        );
+      })}
+      <p className="text-[11px] text-gray-500">
+        小窍门："右手四步"连做 6 遍，魔方会变回原样——可以用来练手感。
+      </p>
+    </div>
+
+    <div className="panel-cube space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-bold">电脑最快解法</p>
+        <button onClick={onOptimal} disabled={!idle || solved || optimal === 'busy'} className="btn-cube py-1 text-xs">
+          <Wand2 className="w-3 h-3" /> 算一下
+        </button>
+      </div>
+      <p className="text-xs text-gray-400">
+        电脑算出的最少步数（任何 2×2 都不超过 11 步）。适合家长检查，不适合背——小朋友还是学上面的方法。
+      </p>
+      {optimal === 'busy' && <p className="text-sm text-gray-500 animate-pulse">计算中…</p>}
+      {Array.isArray(optimal) && (
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {optimal.map((m, i) => (
+              <MoveChip key={i} move={m} />
+            ))}
+          </div>
+          <button onClick={() => onMoves(optimal)} disabled={!idle} className="btn-cube py-1 text-xs">
+            <Play className="w-3 h-3" /> 播放（{optimal.length} 步）
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+);

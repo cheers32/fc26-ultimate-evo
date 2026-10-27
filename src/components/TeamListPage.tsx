@@ -103,6 +103,14 @@ export const TeamListPage: React.FC<TeamListPageProps> = ({ onOpenTeam, activeTe
           EVO libraries are shared by everyone. Anyone with the link can open any team.
         </p>
 
+        <a
+          href="/cube"
+          className="flex items-center justify-between gap-3 mb-6 px-4 py-3 rounded-xl border border-gray-800 bg-[#1A1C1A] hover:border-gray-600 transition-colors"
+        >
+          <span className="text-sm font-bold text-gray-200">🧊 2×2 魔方小课堂</span>
+          <ArrowRight className="w-4 h-4 text-gray-500" />
+        </a>
+
         <div className="flex gap-2 mb-8">
           <input
             value={newName}
