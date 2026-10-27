@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, FastForward, Play, RefreshCw, RotateCcw, Shuffle, Undo2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, FastForward, Play, RefreshCw, RotateCcw, Shuffle, Undo2, Wand2 } from 'lucide-react';
 import {
   COLORS,
   COLOR_HEX,
@@ -37,8 +37,19 @@ interface QueuedMove {
 
 interface Coach {
   plan: CoachSegment[];
-  seg: number;
-  idx: number;
+  /** How many of the plan's turns have been done, counting across segments. */
+  done: number;
+}
+
+/** Which segment the next turn belongs to, and how far into it that is. */
+function locate(plan: CoachSegment[], done: number) {
+  let seg = 0;
+  let idx = done;
+  while (seg < plan.length && idx >= plan[seg].moves.length) {
+    idx -= plan[seg].moves.length;
+    seg++;
+  }
+  return { seg, idx };
 }
 
 const SPEEDS = [
@@ -153,6 +164,8 @@ export default function CubeApp() {
   );
 
   const undo = () => {
+    // While the coach is going, Undo is its step back, so the lesson keeps its place.
+    if (coach && coach.done > 0) return coachBack();
     if (!idle || !log.length) return;
     const last = log[log.length - 1];
     setLog(l => l.slice(0, -1));
@@ -194,37 +207,35 @@ export default function CubeApp() {
   const startCoach = () => {
     const plan = beginnerPlan(cube);
     if (!plan) return;
-    setCoach({ plan, seg: 0, idx: 0 });
+    setCoach({ plan, done: 0 });
     setShowFullPlan(false);
   };
 
-  const coachDone = coach !== null && coach.seg >= coach.plan.length;
-  const currentSeg = coach && !coachDone ? coach.plan[coach.seg] : null;
-  const nextMove = currentSeg ? currentSeg.moves[coach!.idx] : null;
+  const where = coach ? locate(coach.plan, coach.done) : null;
+  const currentSeg = coach && where!.seg < coach.plan.length ? coach.plan[where!.seg] : null;
+  const nextMove = currentSeg ? currentSeg.moves[where!.idx] : null;
+  const planMoves = useMemo(() => coach?.plan.flatMap(s => s.moves) ?? [], [coach?.plan]);
 
-  const advance = (n: number) =>
-    setCoach(c => {
-      if (!c) return c;
-      let { seg, idx } = c;
-      idx += n;
-      while (seg < c.plan.length && idx >= c.plan[seg].moves.length) {
-        idx -= c.plan[seg].moves.length;
-        seg++;
-      }
-      return { ...c, seg, idx };
-    });
-
+  // The coach's turns stay out of the Undo log: going back through them is the coach's own job.
+  // Clicks queue up rather than wait for the turn in progress, so tapping Back three times
+  // quickly goes back three turns.
   const coachStep = () => {
-    if (!nextMove || !idle) return;
-    enqueue([nextMove]);
-    advance(1);
+    if (!coach || !nextMove) return;
+    enqueue([nextMove], false);
+    setCoach({ ...coach, done: coach.done + 1 });
   };
 
   const coachSegment = () => {
-    if (!currentSeg || !idle) return;
-    const rest = currentSeg.moves.slice(coach!.idx);
-    enqueue(rest);
-    advance(rest.length);
+    if (!coach || !currentSeg) return;
+    const rest = currentSeg.moves.slice(where!.idx);
+    enqueue(rest, false);
+    setCoach({ ...coach, done: coach.done + rest.length });
+  };
+
+  const coachBack = () => {
+    if (!coach || coach.done === 0) return;
+    enqueue([invertMove(planMoves[coach.done - 1])], false);
+    setCoach({ ...coach, done: coach.done - 1 });
   };
 
   // --- Paint ---------------------------------------------------------------------------------
@@ -321,7 +332,11 @@ export default function CubeApp() {
               <button onClick={doReset} className="btn-cube">
                 <RefreshCw className="w-4 h-4" /> 复原
               </button>
-              <button onClick={undo} disabled={!idle || !log.length || tab === 'paint'} className="btn-cube">
+              <button
+                onClick={undo}
+                disabled={tab === 'paint' || !((coach && coach.done > 0) || (idle && log.length))}
+                className="btn-cube"
+              >
                 <Undo2 className="w-4 h-4" /> 撤销
               </button>
               <button onClick={() => setView(DEFAULT_VIEW)} className="btn-cube">
@@ -389,8 +404,10 @@ export default function CubeApp() {
                 showFullPlan={showFullPlan}
                 onToggleFullPlan={() => setShowFullPlan(v => !v)}
                 onStart={startCoach}
+                where={where}
                 onStep={coachStep}
                 onSegment={coachSegment}
+                onBack={coachBack}
                 onScramble={doScramble}
                 onPaint={() => {
                   setDraft(cube);
@@ -503,12 +520,14 @@ interface CoachPanelProps {
   idle: boolean;
   currentSeg: CoachSegment | null;
   nextMove: string | null;
+  where: { seg: number; idx: number } | null;
   celebrate: boolean;
   showFullPlan: boolean;
   onToggleFullPlan: () => void;
   onStart: () => void;
   onStep: () => void;
   onSegment: () => void;
+  onBack: () => void;
   onScramble: () => void;
   onPaint: () => void;
 }
@@ -519,12 +538,14 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
   idle,
   currentSeg,
   nextMove,
+  where,
   celebrate,
   showFullPlan,
   onToggleFullPlan,
   onStart,
   onStep,
   onSegment,
+  onBack,
   onScramble,
   onPaint
 }) => {
@@ -569,14 +590,19 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
         <div className="text-5xl pt-4">🎉</div>
         <p className="text-xl font-black">还原成功！</p>
         <p className="text-gray-400 text-sm">再来一次？每次只用这三个公式，多练几遍就能背下来。</p>
-        <button onClick={onScramble} className="btn-cube mx-auto">
-          <Shuffle className="w-4 h-4" /> 再打乱一个
-        </button>
+        <div className="flex justify-center gap-2">
+          <button onClick={onBack} className="btn-cube">
+            <ChevronLeft className="w-4 h-4" /> 上一步
+          </button>
+          <button onClick={onScramble} className="btn-cube">
+            <Shuffle className="w-4 h-4" /> 再打乱一个
+          </button>
+        </div>
       </div>
     );
   }
 
-  const done = coach.idx;
+  const done = where!.idx;
   return (
     <div className="panel-cube space-y-4">
       <StageBar current={currentSeg.stage} />
@@ -609,15 +635,21 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
 
       <div className="flex gap-2">
         <button
+          onClick={onBack}
+          disabled={coach.done === 0}
+          title="退回上一下，可以一直往回退"
+          className="px-4 py-3 rounded-xl bg-[#2A2D2A] text-white font-bold text-base hover:bg-[#3a3d3a] disabled:opacity-40 flex items-center justify-center gap-1"
+        >
+          <ChevronLeft className="w-5 h-5" /> 上一步
+        </button>
+        <button
           onClick={onStep}
-          disabled={!idle}
           className="flex-1 py-3 rounded-xl bg-fcGreen text-black font-black text-base hover:bg-[#1db954] disabled:opacity-50 flex items-center justify-center gap-1.5"
         >
           <ChevronRight className="w-5 h-5" /> 下一下
         </button>
         <button
           onClick={onSegment}
-          disabled={!idle}
           className="flex-1 py-3 rounded-xl bg-[#2A2D2A] text-white font-bold text-base hover:bg-[#3a3d3a] disabled:opacity-50 flex items-center justify-center gap-1.5"
         >
           <FastForward className="w-5 h-5" /> 这一段做完
@@ -637,11 +669,11 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
             <li
               key={i}
               className={`text-xs rounded-lg px-3 py-2 ${
-                i < coach.seg ? 'text-gray-600' : i === coach.seg ? 'bg-[#2A2D2A] text-white' : 'text-gray-400'
+                i < where!.seg ? 'text-gray-600' : i === where!.seg ? 'bg-[#2A2D2A] text-white' : 'text-gray-400'
               }`}
             >
               <span className="font-bold">
-                {i < coach.seg ? '✓ ' : ''}
+                {i < where!.seg ? '✓ ' : ''}
                 {seg.stage}. {seg.title}
               </span>
               <span className="font-mono ml-2">{seg.moves.join(' ')}</span>
