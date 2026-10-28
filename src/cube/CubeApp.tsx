@@ -35,7 +35,11 @@ interface QueuedMove {
   log: boolean;
 }
 
+type CoachKind = 'beginner' | 'optimal';
+
 interface Coach {
+  /** The beginner's method, or the computer's fewest-turns solve walked through the same way. */
+  kind: CoachKind;
   plan: CoachSegment[];
   /** How many of the plan's turns have been done, counting across segments. */
   done: number;
@@ -94,7 +98,8 @@ export default function CubeApp() {
   const [draft, setDraft] = useState<CubeState>(() => solvedCube());
   const [paintColor, setPaintColor] = useState<Color>('W');
   const [paintErrors, setPaintErrors] = useState<string[]>([]);
-  const [optimal, setOptimal] = useState<string[] | 'busy' | null>(null);
+  /** The fewest-turns search is under way (its tables take a moment the first time). */
+  const [solving, setSolving] = useState(false);
   const [showFullPlan, setShowFullPlan] = useState(false);
 
   const busy = useRef(false);
@@ -144,7 +149,6 @@ export default function CubeApp() {
     setCube(state);
     setLog([]);
     setCoach(null);
-    setOptimal(null);
     setCelebrate(false);
   }, []);
 
@@ -157,8 +161,7 @@ export default function CubeApp() {
   const manual = useCallback(
     (moves: string[]) => {
       setCoach(null);
-      setOptimal(null);
-      enqueue(moves);
+        enqueue(moves);
     },
     [enqueue]
   );
@@ -170,7 +173,6 @@ export default function CubeApp() {
     const last = log[log.length - 1];
     setLog(l => l.slice(0, -1));
     setCoach(null);
-    setOptimal(null);
     enqueue([invertMove(last)], false);
   };
 
@@ -204,11 +206,33 @@ export default function CubeApp() {
 
   // --- Coach ---------------------------------------------------------------------------------
 
-  const startCoach = () => {
-    const plan = beginnerPlan(cube);
-    if (!plan) return;
-    setCoach({ plan, done: 0 });
+  const startCoach = (kind: CoachKind = coach?.kind ?? 'beginner') => {
     setShowFullPlan(false);
+    setTab('coach');
+    if (kind === 'beginner') {
+      const plan = beginnerPlan(cube);
+      if (plan) setCoach({ kind, plan, done: 0 });
+      return;
+    }
+    setSolving(true);
+    // Let "计算中" paint before the search holds the thread.
+    setTimeout(() => {
+      const moves = solveOptimal(cube);
+      setSolving(false);
+      if (!moves) return;
+      const plan: CoachSegment[] = moves.length
+        ? [
+            {
+              stage: 1,
+              title: `电脑最快解法：${moves.length} 下`,
+              detail:
+                '这是电脑算出来的最少步数。魔方拿着别换方向：屏幕上朝你的那面就是手里朝你的那面，然后一下一下跟着转。只用右、上、前三层，左后下那个角从头到尾不会动。',
+              moves
+            }
+          ]
+        : [];
+      setCoach({ kind, plan, done: 0 });
+    }, 30);
   };
 
   const where = coach ? locate(coach.plan, coach.done) : null;
@@ -270,11 +294,6 @@ export default function CubeApp() {
   const highlight = tab === 'coach' && idle ? nextMove : null;
   const playing = anim?.move ?? highlight;
   const solved = isSolved(cube);
-
-  const runOptimal = () => {
-    setOptimal('busy');
-    setTimeout(() => setOptimal(solveOptimal(cube)), 30);
-  };
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'coach', label: '👩‍🏫 教我还原' },
@@ -403,6 +422,7 @@ export default function CubeApp() {
                 celebrate={celebrate}
                 showFullPlan={showFullPlan}
                 onToggleFullPlan={() => setShowFullPlan(v => !v)}
+                solving={solving}
                 onStart={startCoach}
                 where={where}
                 onStep={coachStep}
@@ -420,9 +440,9 @@ export default function CubeApp() {
               <MovesPanel
                 idle={idle}
                 onMoves={manual}
-                optimal={optimal}
+                solving={solving}
                 solved={solved}
-                onOptimal={runOptimal}
+                onOptimal={() => startCoach('optimal')}
               />
             )}
 
@@ -524,7 +544,8 @@ interface CoachPanelProps {
   celebrate: boolean;
   showFullPlan: boolean;
   onToggleFullPlan: () => void;
-  onStart: () => void;
+  solving: boolean;
+  onStart: (kind?: CoachKind) => void;
   onStep: () => void;
   onSegment: () => void;
   onBack: () => void;
@@ -542,6 +563,7 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
   celebrate,
   showFullPlan,
   onToggleFullPlan,
+  solving,
   onStart,
   onStep,
   onSegment,
@@ -572,11 +594,18 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
       <div className="panel-cube space-y-4">
         <p className="text-gray-300">我会按"新手层先法"一步一步教，每一步都告诉你转哪里、转几下。</p>
         <button
-          onClick={onStart}
-          disabled={!idle}
+          onClick={() => onStart('beginner')}
+          disabled={!idle || solving}
           className="w-full py-3 rounded-xl bg-fcGreen text-black font-black text-lg hover:bg-[#1db954] disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <Play className="w-5 h-5" /> 开始教我
+        </button>
+        <button
+          onClick={() => onStart('optimal')}
+          disabled={!idle || solving}
+          className="w-full py-2.5 rounded-xl bg-[#2A2D2A] text-white font-bold hover:bg-[#3a3d3a] disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <Wand2 className="w-4 h-4" /> {solving ? '计算中…' : '跟着电脑最快解法做（不超过 11 下）'}
         </button>
         <MethodOverview />
       </div>
@@ -586,10 +615,14 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
   if (!currentSeg) {
     return (
       <div className="panel-cube space-y-4 text-center">
-        <StageBar current={5} />
+        {coach.kind === 'beginner' && <StageBar current={5} />}
         <div className="text-5xl pt-4">🎉</div>
         <p className="text-xl font-black">还原成功！</p>
-        <p className="text-gray-400 text-sm">再来一次？每次只用这三个公式，多练几遍就能背下来。</p>
+        <p className="text-gray-400 text-sm">
+          {coach.kind === 'beginner'
+            ? '再来一次？每次只用这三个公式，多练几遍就能背下来。'
+            : `电脑只用了 ${coach.done} 下。想自己学会还原，还是用"开始教我"的新手方法。`}
+        </p>
         <div className="flex justify-center gap-2">
           <button onClick={onBack} className="btn-cube">
             <ChevronLeft className="w-4 h-4" /> 上一步
@@ -603,13 +636,16 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
   }
 
   const done = where!.idx;
+  const optimal = coach.kind === 'optimal';
   return (
     <div className="panel-cube space-y-4">
-      <StageBar current={currentSeg.stage} />
+      {!optimal && <StageBar current={currentSeg.stage} />}
 
       <div className="rounded-xl bg-[#121212] border border-gray-800 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-fcGreen">第 {currentSeg.stage} 步</span>
+          <span className="text-xs font-bold text-fcGreen">
+            {optimal ? `第 ${done + 1} / ${currentSeg.moves.length} 下` : `第 ${currentSeg.stage} 步`}
+          </span>
           <span className="text-lg font-black">{currentSeg.title}</span>
         </div>
         <p className="text-sm text-gray-300 leading-relaxed">{currentSeg.detail}</p>
@@ -652,18 +688,31 @@ const CoachPanel: React.FC<CoachPanelProps> = ({
           onClick={onSegment}
           className="flex-1 py-3 rounded-xl bg-[#2A2D2A] text-white font-bold text-base hover:bg-[#3a3d3a] disabled:opacity-50 flex items-center justify-center gap-1.5"
         >
-          <FastForward className="w-5 h-5" /> 这一段做完
+          <FastForward className="w-5 h-5" /> {optimal ? '全部做完' : '这一段做完'}
         </button>
       </div>
-      <div className="flex justify-between items-center">
-        <button onClick={onToggleFullPlan} className="text-xs text-gray-500 hover:text-gray-200">
-          {showFullPlan ? '收起全部步骤' : `查看全部步骤（共 ${coach.plan.length} 段）`}
-        </button>
-        <button onClick={onStart} disabled={!idle} className="text-xs text-gray-500 hover:text-gray-200 flex items-center gap-1">
-          <RefreshCw className="w-3 h-3" /> 重新分析
-        </button>
+      <div className="flex justify-between items-center gap-3 flex-wrap">
+        {optimal ? (
+          <button onClick={() => onStart('beginner')} disabled={!idle || solving} className="text-xs text-gray-500 hover:text-gray-200">
+            换成新手方法教我
+          </button>
+        ) : (
+          <button onClick={onToggleFullPlan} className="text-xs text-gray-500 hover:text-gray-200">
+            {showFullPlan ? '收起全部步骤' : `查看全部步骤（共 ${coach.plan.length} 段）`}
+          </button>
+        )}
+        <div className="flex gap-3">
+          {!optimal && (
+            <button onClick={() => onStart('optimal')} disabled={!idle || solving} className="text-xs text-gray-500 hover:text-gray-200 flex items-center gap-1">
+              <Wand2 className="w-3 h-3" /> {solving ? '计算中…' : '换成电脑最快解法'}
+            </button>
+          )}
+          <button onClick={() => onStart()} disabled={!idle || solving} className="text-xs text-gray-500 hover:text-gray-200 flex items-center gap-1">
+            <RefreshCw className="w-3 h-3" /> 重新分析
+          </button>
+        </div>
       </div>
-      {showFullPlan && (
+      {!optimal && showFullPlan && (
         <ol className="space-y-1.5">
           {coach.plan.map((seg, i) => (
             <li
@@ -721,11 +770,11 @@ interface MovesPanelProps {
   idle: boolean;
   solved: boolean;
   onMoves: (moves: string[]) => void;
-  optimal: string[] | 'busy' | null;
+  solving: boolean;
   onOptimal: () => void;
 }
 
-const MovesPanel: React.FC<MovesPanelProps> = ({ idle, solved, onMoves, optimal, onOptimal }) => (
+const MovesPanel: React.FC<MovesPanelProps> = ({ idle, solved, onMoves, solving, onOptimal }) => (
   <div className="flex flex-col gap-4">
     <div className="panel-cube space-y-3">
       <p className="font-bold">怎么看转法记号</p>
@@ -790,26 +839,13 @@ const MovesPanel: React.FC<MovesPanelProps> = ({ idle, solved, onMoves, optimal,
     <div className="panel-cube space-y-3">
       <div className="flex items-center justify-between gap-2">
         <p className="font-bold">电脑最快解法</p>
-        <button onClick={onOptimal} disabled={!idle || solved || optimal === 'busy'} className="btn-cube py-1 text-xs">
-          <Wand2 className="w-3 h-3" /> 算一下
+        <button onClick={onOptimal} disabled={!idle || solved || solving} className="btn-cube py-1 text-xs">
+          <Wand2 className="w-3 h-3" /> {solving ? '计算中…' : '一步步跟着做'}
         </button>
       </div>
       <p className="text-xs text-gray-400">
-        电脑算出的最少步数（任何 2×2 都不超过 11 步）。适合家长检查，不适合背——小朋友还是学上面的方法。
+        电脑算出的最少步数（任何 2×2 都不超过 11 下）。会跳到"教我还原"，跟新手方法一样能一下一下前进、后退。适合家长检查，不适合背——小朋友还是学上面的方法。
       </p>
-      {optimal === 'busy' && <p className="text-sm text-gray-500 animate-pulse">计算中…</p>}
-      {Array.isArray(optimal) && (
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-1.5">
-            {optimal.map((m, i) => (
-              <MoveChip key={i} move={m} />
-            ))}
-          </div>
-          <button onClick={() => onMoves(optimal)} disabled={!idle} className="btn-cube py-1 text-xs">
-            <Play className="w-3 h-3" /> 播放（{optimal.length} 步）
-          </button>
-        </div>
-      )}
     </div>
   </div>
 );
