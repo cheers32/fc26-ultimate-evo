@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, FastForward, Play, RefreshCw, RotateCcw, Shuffle, Undo2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, FastForward, Play, RefreshCw, RotateCcw, Shuffle, Undo2, Wand2 } from 'lucide-react';
 import {
   COLORS,
   COLOR_HEX,
@@ -21,6 +21,7 @@ import { CoachSegment, FORMULAS, FormulaId, STAGE_TITLES, Stage, beginnerPlan } 
 import { solveOptimal } from './solver';
 import { Cube3D, DEFAULT_VIEW, View } from './Cube3D';
 import { CubeNet } from './CubeNet';
+import { CameraScan } from './CameraScan';
 
 /**
  * A 2×2 to learn on: turn it, paint in the colours of the one in your hand, and have it walk
@@ -114,6 +115,8 @@ export default function CubeApp() {
   const editing = tab === 'paint' && !paintFollowing;
   const [paintColor, setPaintColor] = useState<Color>('W');
   const [paintErrors, setPaintErrors] = useState<string[]>([]);
+  const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState(false);
   /** The fewest-turns search is under way (its tables take a moment the first time). */
   const [solving, setSolving] = useState(false);
   const [showFullPlan, setShowFullPlan] = useState(false);
@@ -497,6 +500,20 @@ export default function CubeApp() {
                   </ol>
                 </div>
 
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setScanning(true)}
+                    className="btn-cube justify-center py-3 text-base bg-[#2A2D2A] hover:bg-[#333]"
+                  >
+                    <Camera className="w-5 h-5" /> 用摄像头拍，自动填色
+                  </button>
+                  {scanNote && (
+                    <p className="text-sm text-fcGreen">
+                      📷 拍好了！对着手里的魔方检查一遍，哪个格子不对，选好颜色点它一下就改过来了。
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex flex-wrap gap-2">
                   {COLORS.map(c => (
                     <button
@@ -537,10 +554,10 @@ export default function CubeApp() {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => { setDraft(blankCube()); setPaintErrors([]); }} className="btn-cube">
+                  <button onClick={() => { setDraft(blankCube()); setPaintErrors([]); setScanNote(false); }} className="btn-cube">
                     全部清空
                   </button>
-                  <button onClick={() => { setDraft(cube); setPaintErrors([]); }} className="btn-cube">
+                  <button onClick={() => { setDraft(cube); setPaintErrors([]); setScanNote(false); }} className="btn-cube">
                     换回屏幕上的魔方
                   </button>
                 </div>
@@ -557,6 +574,17 @@ export default function CubeApp() {
           </div>
         </div>
       </div>
+      {scanning && (
+        <CameraScan
+          onClose={() => setScanning(false)}
+          onDone={state => {
+            setScanning(false);
+            setDraft(state);
+            setPaintErrors(validateColors(state));
+            setScanNote(true);
+          }}
+        />
+      )}
     </div>
   );
 }
