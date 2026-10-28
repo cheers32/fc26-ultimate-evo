@@ -37,6 +37,17 @@ interface QueuedMove {
 
 type CoachKind = 'beginner' | 'optimal';
 
+const DRAFT_KEY = 'cube.paintDraft';
+
+function loadDraft(): CubeState | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null');
+    return Array.isArray(saved) && saved.length === 24 ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
 interface Coach {
   /** The beginner's method, or the computer's fewest-turns solve walked through the same way. */
   kind: CoachKind;
@@ -95,7 +106,12 @@ export default function CubeApp() {
   const [coach, setCoach] = useState<Coach | null>(null);
   const [scramble, setScramble] = useState<string[] | null>(null);
   const [celebrate, setCelebrate] = useState(false);
-  const [draft, setDraft] = useState<CubeState>(() => solvedCube());
+  // The painting is slow work, so it outlives tab switches and reloads; only the buttons that
+  // say so replace it.
+  const [draft, setDraft] = useState<CubeState>(() => loadDraft() ?? solvedCube());
+  /** On the colour tab: false while painting, true once the painted cube is being solved there. */
+  const [paintFollowing, setPaintFollowing] = useState(false);
+  const editing = tab === 'paint' && !paintFollowing;
   const [paintColor, setPaintColor] = useState<Color>('W');
   const [paintErrors, setPaintErrors] = useState<string[]>([]);
   /** The fewest-turns search is under way (its tables take a moment the first time). */
@@ -191,7 +207,7 @@ export default function CubeApp() {
   // Keyboard: r l u d f b x y z, with Shift for the reverse turn.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (tab === 'paint' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (editing || e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
       const k = e.key.toLowerCase();
@@ -202,22 +218,21 @@ export default function CubeApp() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tab, manual]);
+  }, [editing, manual]);
 
   // --- Coach ---------------------------------------------------------------------------------
 
-  const startCoach = (kind: CoachKind = coach?.kind ?? 'beginner') => {
+  const startCoach = (kind: CoachKind = coach?.kind ?? 'beginner', state: CubeState = cube) => {
     setShowFullPlan(false);
-    setTab('coach');
     if (kind === 'beginner') {
-      const plan = beginnerPlan(cube);
+      const plan = beginnerPlan(state);
       if (plan) setCoach({ kind, plan, done: 0 });
       return;
     }
     setSolving(true);
     // Let "计算中" paint before the search holds the thread.
     setTimeout(() => {
-      const moves = solveOptimal(cube);
+      const moves = solveOptimal(state);
       setSolving(false);
       if (!moves) return;
       const plan: CoachSegment[] = moves.length
@@ -273,14 +288,24 @@ export default function CubeApp() {
     setPaintErrors([]);
   };
 
-  const applyDraft = () => {
+  /** Put the painted colours on the cube and start solving it right here on the colour tab. */
+  const applyDraft = (kind: CoachKind) => {
     const problems = validateColors(draft);
     setPaintErrors(problems);
     if (problems.length) return;
     setCubeNow(draft);
     setScramble(null);
-    setTab('coach');
+    setPaintFollowing(true);
+    startCoach(kind, draft);
   };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // Private window or storage off: the painting just won't survive a reload.
+    }
+  }, [draft]);
 
   const counts = useMemo(() => {
     const c = {} as Record<Color, number>;
@@ -290,10 +315,34 @@ export default function CubeApp() {
 
   // --- What's on screen ----------------------------------------------------------------------
 
-  const shown = tab === 'paint' ? draft : cube;
-  const highlight = tab === 'coach' && idle ? nextMove : null;
+  const shown = editing ? draft : cube;
+  const highlight = (tab === 'coach' || (tab === 'paint' && paintFollowing)) && idle ? nextMove : null;
   const playing = anim?.move ?? highlight;
   const solved = isSolved(cube);
+
+  const coachPanel = (
+    <CoachPanel
+      coach={coach}
+      solved={solved}
+      idle={idle}
+      currentSeg={currentSeg}
+      nextMove={nextMove}
+      celebrate={celebrate}
+      showFullPlan={showFullPlan}
+      onToggleFullPlan={() => setShowFullPlan(v => !v)}
+      solving={solving}
+      onStart={kind => startCoach(kind)}
+      where={where}
+      onStep={coachStep}
+      onSegment={coachSegment}
+      onBack={coachBack}
+      onScramble={doScramble}
+      onPaint={() => {
+        setPaintFollowing(false);
+        setTab('paint');
+      }}
+    />
+  );
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'coach', label: '👩‍🏫 教我还原' },
@@ -321,12 +370,12 @@ export default function CubeApp() {
                 state={shown}
                 view={view}
                 onViewChange={setView}
-                anim={tab === 'paint' ? null : anim}
+                anim={editing ? null : anim}
                 highlight={highlight}
-                onStickerClick={tab === 'paint' ? paint : undefined}
+                onStickerClick={editing ? paint : undefined}
               />
               <div className="h-14 flex flex-col items-center justify-center text-center px-3">
-                {tab === 'paint' ? (
+                {editing ? (
                   <span className="text-sm text-gray-400">点格子涂上颜色 · 拖动可以转着看</span>
                 ) : playing ? (
                   <>
@@ -337,7 +386,7 @@ export default function CubeApp() {
                   <span className="text-sm text-gray-500">拖动魔方可以转着看</span>
                 )}
               </div>
-              {celebrate && tab !== 'paint' && (
+              {celebrate && !editing && (
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-fcGreen text-black font-black text-lg shadow-glow-green animate-bounce">
                   🎉 还原成功！
                 </div>
@@ -353,7 +402,7 @@ export default function CubeApp() {
               </button>
               <button
                 onClick={undo}
-                disabled={tab === 'paint' || !((coach && coach.done > 0) || (idle && log.length))}
+                disabled={editing || !((coach && coach.done > 0) || (idle && log.length))}
                 className="btn-cube"
               >
                 <Undo2 className="w-4 h-4" /> 撤销
@@ -374,7 +423,7 @@ export default function CubeApp() {
               </div>
             </div>
 
-            {scramble && tab !== 'paint' && (
+            {scramble && !editing && (
               <div className="w-full text-center text-xs text-gray-400 bg-[#1A1C1A] border border-gray-800 rounded-xl px-3 py-2">
                 想让手里的魔方一样乱？白色朝上、绿色朝前，照着转：
                 <div className="font-mono text-sm text-gray-200 mt-1 break-words">{scramble.join(' ')}</div>
@@ -383,7 +432,7 @@ export default function CubeApp() {
 
             <div className="w-full bg-[#1A1C1A] rounded-2xl border border-gray-800 p-4 flex flex-col items-center">
               <div className="text-xs font-bold text-gray-500 mb-1 self-start">平面展开图（2D 地图）</div>
-              <CubeNet state={shown} highlight={highlight} onStickerClick={tab === 'paint' ? paint : undefined} />
+              <CubeNet state={shown} highlight={highlight} onStickerClick={editing ? paint : undefined} />
               <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
                 把魔方的 6 个面像纸盒一样摊平：中间的"前"就是朝着你的那一面，背面、底面也一眼都能看到。
               </p>
@@ -396,13 +445,7 @@ export default function CubeApp() {
               {tabs.map(t => (
                 <button
                   key={t.id}
-                  onClick={() => {
-                    if (t.id === 'paint' && tab !== 'paint') {
-                      setDraft(cube);
-                      setPaintErrors([]);
-                    }
-                    setTab(t.id);
-                  }}
+                  onClick={() => setTab(t.id)}
                   className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
                     tab === t.id ? 'bg-[#2A2D2A] text-white' : 'text-gray-500 hover:text-gray-200'
                   }`}
@@ -412,29 +455,7 @@ export default function CubeApp() {
               ))}
             </div>
 
-            {tab === 'coach' && (
-              <CoachPanel
-                coach={coach}
-                solved={solved}
-                idle={idle}
-                currentSeg={currentSeg}
-                nextMove={nextMove}
-                celebrate={celebrate}
-                showFullPlan={showFullPlan}
-                onToggleFullPlan={() => setShowFullPlan(v => !v)}
-                solving={solving}
-                onStart={startCoach}
-                where={where}
-                onStep={coachStep}
-                onSegment={coachSegment}
-                onBack={coachBack}
-                onScramble={doScramble}
-                onPaint={() => {
-                  setDraft(cube);
-                  setTab('paint');
-                }}
-              />
-            )}
+            {tab === 'coach' && coachPanel}
 
             {tab === 'moves' && (
               <MovesPanel
@@ -442,11 +463,26 @@ export default function CubeApp() {
                 onMoves={manual}
                 solving={solving}
                 solved={solved}
-                onOptimal={() => startCoach('optimal')}
+                onOptimal={() => {
+                  setTab('coach');
+                  startCoach('optimal');
+                }}
               />
             )}
 
-            {tab === 'paint' && (
+            {tab === 'paint' && paintFollowing && (
+              <>
+                <div className="panel-cube flex items-center justify-between gap-3 flex-wrap py-3">
+                  <span className="text-sm text-gray-300">🎨 正在解你涂的这个魔方</span>
+                  <button onClick={() => setPaintFollowing(false)} className="btn-cube py-1.5">
+                    ✏️ 回去改颜色
+                  </button>
+                </div>
+                {coachPanel}
+              </>
+            )}
+
+            {editing && (
               <div className="panel-cube flex flex-col gap-4">
                 <div className="text-sm text-gray-300 leading-relaxed">
                   <p className="font-bold text-white mb-1">把手里魔方的颜色填进来</p>
@@ -489,9 +525,18 @@ export default function CubeApp() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={applyDraft} className="btn-cube bg-fcGreen text-black hover:bg-[#1db954] border-transparent">
-                    <Check className="w-4 h-4" /> 用这个颜色
+                  <button
+                    onClick={() => applyDraft('beginner')}
+                    disabled={solving}
+                    className="btn-cube bg-fcGreen text-black hover:bg-[#1db954] hover:text-black border-transparent"
+                  >
+                    <Check className="w-4 h-4" /> 涂好了，教我还原
                   </button>
+                  <button onClick={() => applyDraft('optimal')} disabled={solving} className="btn-cube">
+                    <Wand2 className="w-4 h-4" /> {solving ? '计算中…' : '涂好了，用电脑最快解法'}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <button onClick={() => { setDraft(blankCube()); setPaintErrors([]); }} className="btn-cube">
                     全部清空
                   </button>
